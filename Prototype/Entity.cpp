@@ -22,6 +22,27 @@ void Entity::ApplyWorldTransform()
 	}
 }
 
+
+void Entity::Initialize()
+{
+	ApplyWorldTransform();
+	if (!m_children.empty())
+	{
+		for (auto const& child : m_children)
+		{
+			child->Initialize();
+		}
+	}
+
+	if (!m_components.empty())
+	{
+		for (auto const& comp : m_components)
+		{
+			comp.get()->Initialize();
+		}
+	}
+}
+
 void Entity::Update()
 {
 	ApplyWorldTransform();
@@ -31,6 +52,14 @@ void Entity::Update()
 		{
 			if (child->IsActive())
 				child->Update();
+		}
+	}
+
+	if (!m_components.empty())
+	{
+		for (auto const& comp : m_components)
+		{
+			comp.get()->Update();
 		}
 	}
 }

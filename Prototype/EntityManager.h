@@ -20,6 +20,8 @@ class EntityManager
 	float m_elapsedTime = 0;
 	unsigned int lastEntityId = 0;
 
+	bool m_initialized = false;
+
 public:
 	
 	EntityManager() = default;

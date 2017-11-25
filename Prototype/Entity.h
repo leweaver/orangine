@@ -4,6 +4,7 @@
 #include <vector>
 #include "Component.h"
 #include <map>
+#include "Constants.h"
 
 namespace OE {
 
@@ -25,7 +26,7 @@ __declspec(align(16)) class Entity
 	
 	ID_TYPE m_id;
 	const std::string m_name;
-	bool m_active = true;
+	bool m_active;
 
 	EntityPtrVec m_children;
 	Entity* m_parent;
@@ -34,12 +35,23 @@ __declspec(align(16)) class Entity
 	std::vector<std::unique_ptr<Component>> m_components;
 
 	explicit Entity(EntityManager& entityManager, std::string name, ID_TYPE id)
-		: m_id(id)
+		: m_worldTransform(Math::MAT4_IDENTITY)
+		, m_localRotation(Math::QUAT_IDENTITY)
+		, m_localPosition(Math::VEC_ZERO)
+		, m_localScale(Math::VEC_ONE)
+		, m_id(id)
 		, m_name(name)
+		, m_active(true)
 		, m_parent(nullptr)
 		, m_entityManager(entityManager)
 	{
 	}
+
+	/**
+	 * Called when the scene has completed loading, before the game loop starts.
+	 * If entities are created after the game loop starts, this is called immediately.
+	 */
+	void Initialize();
 
 protected:
 	bool HasParent() const { return m_parent != nullptr; }
@@ -56,6 +68,11 @@ public:
 
 	void RemoveParent();
 	void SetParent(Entity& newParent);
+
+	/**
+	* Applies transforms recursively down (from root -> leaves),
+	* then updates components from bottom up (from leaves -> root)
+	*/
 	void Update();
 
 	const ID_TYPE& GetId() const { return m_id; }

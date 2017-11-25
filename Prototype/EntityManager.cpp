@@ -6,14 +6,31 @@ using namespace OE;
 
 void EntityManager::Tick(float elapsedTime)
 {
+	if (!m_initialized)
+	{
+		for (auto const& weakPtr : m_rootEntities)
+		{
+			std::shared_ptr<Entity> entity = weakPtr.lock();
+			if (entity == nullptr) {
+				assert(false);
+				continue;
+			}
+
+			entity->Initialize();
+		}
+		m_initialized = true;
+	}
+
 	m_deltaTime = elapsedTime - m_elapsedTime;
 	m_elapsedTime = elapsedTime;
 
 	for (auto const& weakPtr : m_rootEntities)
 	{
 		std::shared_ptr<Entity> entity = weakPtr.lock();
-		if (entity == nullptr)
+		if (entity == nullptr) {
+			assert(false);
 			continue;
+		}
 
 		if (!entity->IsActive())
 			continue;
@@ -28,6 +45,10 @@ Entity& EntityManager::Instantiate(std::string name)
 	const auto entityPtr = std::shared_ptr<Entity>(entity);
 	m_entities[entity->GetId()] = entityPtr;
 	m_rootEntities.push_back(std::weak_ptr<Entity>(entityPtr));
+
+	if (m_initialized)
+		entity->Initialize();
+
 	return *entity;
 }
 

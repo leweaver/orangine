@@ -6,8 +6,10 @@ namespace OE {
 //DECLARE_COMPONENT(TestComponent)
 class TestComponent : public Component
 {
+	std::string m_testString;
+
 public:
-	virtual void Init();
-	virtual void Update();
+	void Initialize() override;
+	void Update() override;
 };
 }

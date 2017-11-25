@@ -17,5 +17,6 @@ namespace OE
 		const DirectX::XMVECTOR VEC_FORWARD = DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f);
 		const DirectX::XMVECTOR VEC_BACKWARD = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 		const DirectX::XMVECTOR QUAT_IDENTITY = DirectX::XMQuaternionIdentity();
+		const DirectX::XMMATRIX MAT4_IDENTITY = DirectX::XMMatrixIdentity();
 	}
 }

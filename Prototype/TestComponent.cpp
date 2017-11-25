@@ -3,8 +3,9 @@
 
 using namespace OE;
 
-void TestComponent::Init()
+void TestComponent::Initialize()
 {
+	m_testString = std::string("asdf");
 }
 
 void TestComponent::Update()

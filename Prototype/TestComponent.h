@@ -3,9 +3,11 @@
 #include "Component.h"
 
 namespace OE {
-DECLARE_COMPONENT(TestComponent)
-
-	void Init() override;
-	void Update() override;
+//DECLARE_COMPONENT(TestComponent)
+class TestComponent : public Component
+{
+public:
+	virtual void Init();
+	virtual void Update();
 };
 }

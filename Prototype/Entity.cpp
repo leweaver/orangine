@@ -51,8 +51,9 @@ void Entity::SetParent(Entity& newParent)
 	{
 		RemoveParent();
 	}
-	
-	newParent.m_children.push_back(m_entityManager.TakeRoot(*this));
+
+	const std::shared_ptr<Entity> thisPtr = m_entityManager.RemoveFromRoot(*this);
+	newParent.m_children.push_back(thisPtr);
 	m_parent = &newParent;
 }
 
@@ -61,17 +62,15 @@ void Entity::RemoveParent()
 	if (m_parent == nullptr)
 		return;
 
-	EntityVector& children = m_parent->m_children;
-	for (EntityVector::iterator iter = children.begin(); iter != children.end(); ++iter)
-	{
-		auto &child = *iter;
-		if (child->m_id == m_id)
-		{
-			std::unique_ptr<Entity> newRoot = move(child);
-			children.erase(iter);
-			m_entityManager.PutRoot(newRoot);
-			m_parent = nullptr;
+	EntityPtrVec& children = m_parent->m_children;
+	for (auto it = children.begin(); it != children.end(); ++it) {
+		const auto child = (*it).get();
+		if (child->GetId() == GetId()) {
+			children.erase(it);
 			break;
 		}
 	}
+
+	m_entityManager.AddToRoot(*this);
+	m_parent = nullptr;
 }

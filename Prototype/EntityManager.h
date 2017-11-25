@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "Entity.h"
 #include <vector>
-#include <set>
 #include <map>
 
 namespace OE {
@@ -10,7 +9,11 @@ class EntityManager
 {
 	friend Entity;
 
-	std::map<unsigned int, std::unique_ptr<Entity>> m_rootEntities;
+	// A cache of entities that have no parents
+	std::vector<std::weak_ptr<Entity>> m_rootEntities;
+
+	// All entities
+	Entity::EntityPtrMap m_entities;
 	
 	// Values as of the last call to Tick.
 	float m_deltaTime = 0;
@@ -18,6 +21,10 @@ class EntityManager
 	unsigned int lastEntityId = 0;
 
 public:
+	
+	EntityManager() = default;
+	EntityManager(const EntityManager& other) = delete;
+
 	const float& MElapsedTime() const
 	{
 		return m_elapsedTime;
@@ -32,10 +39,13 @@ public:
 
 	Entity& Instantiate(std::string name);
 	Entity& Instantiate(std::string name, Entity& parent);
-	
+
+	void Destroy(Entity& entity);
+	void Destroy(const Entity::ID_TYPE& entity);
+
 private:
-	std::unique_ptr<Entity> TakeRoot(Entity& entity);
-	void PutRoot(std::unique_ptr<Entity>& entity);
+	std::shared_ptr<Entity> RemoveFromRoot(const Entity& entity);
+	void AddToRoot(const Entity& entity);
 };
 
 }

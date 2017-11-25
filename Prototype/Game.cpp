@@ -5,6 +5,7 @@
 #include "pch.h"
 #include "Game.h"
 #include "EntityManager.h"
+#include "TestComponent.h"
 
 extern void ExitGame();
 
@@ -41,9 +42,19 @@ void Game::Initialize(HWND window, int width, int height)
 	Entity& root1 = m_entityManager->Instantiate("Root 1");
 	Entity& root2 = m_entityManager->Instantiate("Root 2");
 	Entity& child = m_entityManager->Instantiate("Child");
+	
+	// Test 1
 	child.SetParent(root1);
-	child.SetParent(root2);
 	child.RemoveParent();
+	child.SetParent(root2);
+
+	// Teset 2
+	auto compRef = child.AddComponent<TestComponent>();
+	const TestComponent* comp = child.GetFirstComponentOfType<TestComponent>();
+	
+	child.AddComponent<TestComponent>();
+	auto comps = child.GetComponentsOfType<TestComponent>();
+	assert(comps.size() == 2);
 }
 
 #pragma region Frame Update

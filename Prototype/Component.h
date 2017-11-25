@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 namespace OE {
 
 /**
@@ -9,13 +7,10 @@ namespace OE {
  */
 class Component
 {
-protected:
-	const std::string m_name;
 
 public:
 
-	Component(const std::string& name) 
-		: m_name(name)
+	Component() 
 	{		
 	}
 
@@ -23,11 +18,6 @@ public:
 	
 	virtual void Init() = 0;
 	virtual void Update() = 0;
-	
-	const std::string& Name() const
-	{
-		return m_name;
-	}
 
 };
 

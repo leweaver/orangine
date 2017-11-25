@@ -4,25 +4,31 @@
 
 using namespace OE;
 
-void OE::EntityManager::Tick(float elapsedTime)
+void EntityManager::Tick(float elapsedTime)
 {
 	m_deltaTime = elapsedTime - m_elapsedTime;
 	m_elapsedTime = elapsedTime;
 
-	for (auto const& entity : m_rootEntities)
+	for (auto const& weakPtr : m_rootEntities)
 	{
-		if (!entity.second->IsActive())
+		std::shared_ptr<Entity> entity = weakPtr.lock();
+		if (entity == nullptr)
 			continue;
 
-		entity.second->Update();
+		if (!entity->IsActive())
+			continue;
+
+		entity->Update();
 	}
 }
 
 Entity& EntityManager::Instantiate(std::string name)
 {
 	Entity* entity = new Entity(*this, name, ++lastEntityId);
-	m_rootEntities[entity->m_id] = std::unique_ptr<Entity>(entity);
-	return *m_rootEntities[entity->m_id].get();
+	const auto entityPtr = std::shared_ptr<Entity>(entity);
+	m_entities[entity->GetId()] = entityPtr;
+	m_rootEntities.push_back(std::weak_ptr<Entity>(entityPtr));
+	return *entity;
 }
 
 Entity& EntityManager::Instantiate(std::string name, Entity& parent)
@@ -32,15 +38,41 @@ Entity& EntityManager::Instantiate(std::string name, Entity& parent)
 	return entity;
 }
 
-std::unique_ptr<Entity> EntityManager::TakeRoot(Entity& entity)
+void EntityManager::Destroy(Entity& entity)
 {
-	std::unique_ptr<Entity> &root = m_rootEntities[entity.m_id];
-	std::unique_ptr<Entity> newRoot = move(root);
-	m_rootEntities.erase(entity.m_id);
-	return newRoot;
+	entity.RemoveParent();
+	RemoveFromRoot(entity);
+
+	// This will delete the object. Make sure it is the last operation!
+	m_entities.erase(entity.GetId());
 }
 
-void EntityManager::PutRoot(std::unique_ptr<Entity>& entity)
+void EntityManager::Destroy(const Entity::ID_TYPE& entityId)
 {
-	m_rootEntities[entity.get()->m_id] = move(entity);
+	auto& entityPtr = m_entities[entityId];
+	const auto entity = entityPtr.get();
+	if (entity != nullptr) {
+		Destroy(*entity);
+	}
+}
+
+std::shared_ptr<Entity> EntityManager::RemoveFromRoot(const Entity& entity)
+{
+	const std::shared_ptr<Entity> entityPtr = m_entities[entity.GetId()];
+
+	// remove from root array
+	for (auto rootIter = m_rootEntities.begin(); rootIter != m_rootEntities.end(); ++rootIter) {
+		auto rootEntity = (*rootIter).lock();
+		if (rootEntity != nullptr && rootEntity->GetId() == entity.GetId()) {
+			m_rootEntities.erase(rootIter);
+			break;
+		}
+	}
+
+	return entityPtr;
+}
+
+void EntityManager::AddToRoot(const Entity& entity)
+{
+	m_rootEntities.push_back(m_entities[entity.GetId()]);
 }

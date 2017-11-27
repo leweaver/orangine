@@ -3,13 +3,18 @@
 #include "Component.h"
 
 namespace OE {
-//DECLARE_COMPONENT(TestComponent)
-class TestComponent : public Component
-{
-	std::string m_testString;
+	class Entity;
 
-public:
-	void Initialize() override;
-	void Update() override;
-};
+	class TestComponent : public Component
+	{
+		std::string m_testString;
+
+	public:
+		TestComponent(Entity& entity)
+			: Component(entity)
+		{			
+		}
+		void Initialize() override;
+		void Update() override;
+	};
 }

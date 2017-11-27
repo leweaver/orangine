@@ -23,38 +23,41 @@ Game::Game()
 // Initialize the Direct3D resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
+	m_scene = std::make_unique<Scene>();
+
     m_deviceResources->SetWindow(window, width, height);
 
-    m_deviceResources->CreateDeviceResources();
-    CreateDeviceDependentResources();
+	{
+		// TODO: Change the timer settings if you want something other than the default variable timestep mode.
+		// e.g. for 60 FPS fixed timestep update logic, call:
+		/*
+		m_timer.SetFixedTimeStep(true);
+		m_timer.SetTargetElapsedSeconds(1.0 / 60);
+		*/
+		EntityManager& entityManager = m_scene->EntityManager();
+		Entity& root1 = entityManager.Instantiate("Root 1");
+		Entity& root2 = entityManager.Instantiate("Root 2");
+		Entity& child = entityManager.Instantiate("Child");
 
-    m_deviceResources->CreateWindowSizeDependentResources();
-    CreateWindowSizeDependentResources();
+		// Test 1
+		child.SetParent(root1);
+		child.RemoveParent();
+		child.SetParent(root2);
 
-    // TODO: Change the timer settings if you want something other than the default variable timestep mode.
-    // e.g. for 60 FPS fixed timestep update logic, call:
-    /*
-    m_timer.SetFixedTimeStep(true);
-    m_timer.SetTargetElapsedSeconds(1.0 / 60);
-    */
+		// Teset 2
+		auto compRef = child.AddComponent<TestComponent>();
+		const TestComponent* comp = child.GetFirstComponentOfType<TestComponent>();
 
-	m_entityManager = std::make_unique<EntityManager>();
-	Entity& root1 = m_entityManager->Instantiate("Root 1");
-	Entity& root2 = m_entityManager->Instantiate("Root 2");
-	Entity& child = m_entityManager->Instantiate("Child");
-	
-	// Test 1
-	child.SetParent(root1);
-	child.RemoveParent();
-	child.SetParent(root2);
+		child.AddComponent<TestComponent>();
+		auto comps = child.GetComponentsOfType<TestComponent>();
+		assert(comps.size() == 2);
+	}
 
-	// Teset 2
-	auto compRef = child.AddComponent<TestComponent>();
-	const TestComponent* comp = child.GetFirstComponentOfType<TestComponent>();
-	
-	child.AddComponent<TestComponent>();
-	auto comps = child.GetComponentsOfType<TestComponent>();
-	assert(comps.size() == 2);
+	m_deviceResources->CreateDeviceResources();
+	CreateDeviceDependentResources();
+
+	m_deviceResources->CreateWindowSizeDependentResources();
+	CreateWindowSizeDependentResources();
 }
 
 #pragma region Frame Update
@@ -75,7 +78,7 @@ void Game::Update(DX::StepTimer const& timer)
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here.
-	m_entityManager->Tick(elapsedTime);
+	m_scene->EntityManager().Tick(elapsedTime);
 }
 #pragma endregion
 
@@ -95,7 +98,7 @@ void Game::Render()
     auto context = m_deviceResources->GetD3DDeviceContext();
 
     // TODO: Add your rendering code here.
-    context;
+	m_scene->EntityRenderer().Render(*m_deviceResources);
 
     m_deviceResources->PIXEndEvent();
 
@@ -178,16 +181,13 @@ void Game::GetDefaultSize(int& width, int& height) const
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
-    auto device = m_deviceResources->GetD3DDevice();
-
-    // TODO: Initialize device dependent objects here (independent of window size).
-    device;
+	m_scene->EntityRenderer().CreateDeviceDependentResources(*m_deviceResources);
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
-    // TODO: Initialize windows-size dependent objects here.
+	m_scene->EntityRenderer().CreateWindowSizeDependentResources(*m_deviceResources);
 }
 
 void Game::OnDeviceLost()

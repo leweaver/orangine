@@ -9,6 +9,8 @@ class EntityManager
 {
 	friend Entity;
 
+	Scene& m_scene;
+
 	// A cache of entities that have no parents
 	std::vector<std::weak_ptr<Entity>> m_rootEntities;
 
@@ -24,15 +26,15 @@ class EntityManager
 
 public:
 	
-	EntityManager() = default;
+	explicit EntityManager(Scene& scene);
 	EntityManager(const EntityManager& other) = delete;
 
-	const float& MElapsedTime() const
+	const float& ElapsedTime() const
 	{
 		return m_elapsedTime;
 	}
 
-	const float& MDeltaTime() const
+	const float& DeltaTime() const
 	{
 		return m_deltaTime;
 	}

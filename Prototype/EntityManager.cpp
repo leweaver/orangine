@@ -4,6 +4,11 @@
 
 using namespace OE;
 
+EntityManager::EntityManager(Scene& scene)
+	: m_scene(scene)
+{
+}
+
 void EntityManager::Tick(float elapsedTime)
 {
 	if (!m_initialized)
@@ -41,7 +46,7 @@ void EntityManager::Tick(float elapsedTime)
 
 Entity& EntityManager::Instantiate(std::string name)
 {
-	Entity* entity = new Entity(*this, name, ++lastEntityId);
+	Entity* entity = new Entity(this->m_scene, name, ++lastEntityId);
 	const auto entityPtr = std::shared_ptr<Entity>(entity);
 	m_entities[entity->GetId()] = entityPtr;
 	m_rootEntities.push_back(std::weak_ptr<Entity>(entityPtr));
@@ -83,7 +88,7 @@ std::shared_ptr<Entity> EntityManager::RemoveFromRoot(const Entity& entity)
 
 	// remove from root array
 	for (auto rootIter = m_rootEntities.begin(); rootIter != m_rootEntities.end(); ++rootIter) {
-		auto rootEntity = (*rootIter).lock();
+		const auto rootEntity = (*rootIter).lock();
 		if (rootEntity != nullptr && rootEntity->GetId() == entity.GetId()) {
 			m_rootEntities.erase(rootIter);
 			break;

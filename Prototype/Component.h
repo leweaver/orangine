@@ -1,27 +1,26 @@
 #pragma once
 
 namespace OE {
+	class Entity;
+	class Scene;
 
-/**
- * Abstract base class for components, which are added to entities.
- */
-class Component
-{
+	/**
+	 * Abstract base class for components, which are added to entities.
+	 */
+	class Component
+	{
+		Entity& m_entity;
 
-public:
+	public:
+		explicit Component(Entity& entity)
+			: m_entity(entity)
+		{
+		}
 
-	Component() 
-	{		
-	}
+		virtual ~Component() {}
 
-	virtual ~Component() {}
-	
-	virtual void Initialize() = 0;
-	virtual void Update() = 0;
-
-};
+		virtual void Initialize() = 0;
+		virtual void Update() = 0;
+	};
 
 }
-
-#define DECLARE_COMPONENT(name) class name : public Component {\
-	private:

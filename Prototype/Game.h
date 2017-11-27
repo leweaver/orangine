@@ -8,7 +8,8 @@
 #include "StepTimer.h"
 #include <memory>
 
-#include "EntityManager.h"
+#include "Scene.h"
+
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
 class Game : public DX::IDeviceNotify
@@ -55,5 +56,5 @@ private:
     DX::StepTimer                           m_timer;
 
 	// Services
-	std::unique_ptr<OE::EntityManager>      m_entityManager;
+	std::unique_ptr<OE::Scene>      m_scene;
 };

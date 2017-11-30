@@ -44,13 +44,16 @@ void Game::Initialize(HWND window, int width, int height)
 		child.RemoveParent();
 		child.SetParent(root2);
 
-		// Teset 2
+		// Test 2
 		auto compRef = child.AddComponent<TestComponent>();
 		const TestComponent* comp = child.GetFirstComponentOfType<TestComponent>();
 
 		child.AddComponent<TestComponent>();
 		auto comps = child.GetComponentsOfType<TestComponent>();
 		assert(comps.size() == 2);
+
+		RenderableComponent &renderable = child.AddComponent<RenderableComponent>();
+		renderable.SetMaterial(std::make_shared<Material>());
 	}
 
 	m_deviceResources->CreateDeviceResources();

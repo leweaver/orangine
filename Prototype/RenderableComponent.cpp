@@ -3,12 +3,13 @@
 #include "DeviceResources.h"
 
 using namespace DirectX;
+using namespace OE;
 
-void OE::RenderableComponent::Initialize()
+void RenderableComponent::Initialize()
 {
 }
 
-void OE::RenderableComponent::Update()
+void RenderableComponent::Update()
 {
 }
 
@@ -18,24 +19,34 @@ struct SimpleVertexCombined
 	XMFLOAT3 Col;
 };
 
-void OE::RenderableComponent::CreateRendererData(const DX::DeviceResources deviceResources)
+RendererData* RenderableComponent::CreateRendererData(const DX::DeviceResources deviceResources)
 {
+	m_rendererData = std::make_unique<RendererData>();
 	{
 		// Supply the actual vertex data.
+		const float size = 1.0f;
+		const unsigned int NUM_VERTICES = 8;
 		SimpleVertexCombined verticesCombo[] =
-		{
-			XMFLOAT3(0.0f, 0.5f, 0.5f),
-			XMFLOAT3(0.0f, 0.0f, 0.5f),
-			XMFLOAT3(0.5f, -0.5f, 0.5f),
-			XMFLOAT3(0.5f, 0.0f, 0.0f),
-			XMFLOAT3(-0.5f, -0.5f, 0.5f),
-			XMFLOAT3(0.0f, 0.5f, 0.0f),
+		{/*
+			XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f),
+			XMFLOAT3(1.0f, -0.0f, 0.0f), XMFLOAT3(0.5f, 0.0f, 0.0f),
+			XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0.0f, 0.5f, 0.0f)
+			*/				
+			XMFLOAT3( size,  size,  size), XMFLOAT3(0.0f, 0.5f, 0.0f),
+			XMFLOAT3(-size,  size,  size), XMFLOAT3(0.0f, 0.5f, 0.0f),
+			XMFLOAT3( size, -size,  size), XMFLOAT3(0.0f, 0.5f, 0.0f),
+			XMFLOAT3(-size, -size,  size), XMFLOAT3(0.0f, 0.5f, 0.0f),
+
+			XMFLOAT3( size,  size, -size), XMFLOAT3(0.0f, 0.5f, 0.0f),
+			XMFLOAT3(-size,  size, -size), XMFLOAT3(0.0f, 0.5f, 0.0f),
+			XMFLOAT3( size, -size, -size), XMFLOAT3(0.0f, 0.5f, 0.0f),
+			XMFLOAT3(-size, -size, -size), XMFLOAT3(0.0f, 0.5f, 0.0f),
 		};
 
 		// Fill in a buffer description.
 		D3D11_BUFFER_DESC bufferDesc;
 		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		bufferDesc.ByteWidth = sizeof(SimpleVertexCombined) * 3;
+		bufferDesc.ByteWidth = sizeof(SimpleVertexCombined) * NUM_VERTICES;
 		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 		bufferDesc.CPUAccessFlags = 0;
 		bufferDesc.MiscFlags = 0;
@@ -47,20 +58,53 @@ void OE::RenderableComponent::CreateRendererData(const DX::DeviceResources devic
 		InitData.SysMemSlicePitch = 0;
 
 		// Create the vertex buffer.
-		ID3D11Buffer*      pVertexBuffer;
-		HRESULT hr = deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &pVertexBuffer);
+		m_rendererData->m_vertexBuffers.push_back(std::make_unique<VertexBufferDesc>());
+		VertexBufferDesc &vertexBufferDesc = *m_rendererData->m_vertexBuffers.rbegin()->get();
+
+		// Get a reference
+		vertexBufferDesc.m_stride = sizeof(SimpleVertexCombined);
+		HRESULT hr = deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &vertexBufferDesc.m_buffer);
 		assert(!FAILED(hr));
 	}
 
 	// ---------------
 	{
 		// Create indices.
-		unsigned int indices[] = { 0, 1, 2 };
+		//unsigned int indices[] = { 0, 1, 2 };
+		const int NUM_INDICES = 36;
+		unsigned int indices[NUM_INDICES];
+
+		int pos = 0;
+		// -X side
+		indices[pos++] = 5; indices[pos++] = 7; indices[pos++] = 3;
+		indices[pos++] = 5; indices[pos++] = 3; indices[pos++] = 1;
+
+		// +X side
+		indices[pos++] = 6; indices[pos++] = 4; indices[pos++] = 0;
+		indices[pos++] = 6; indices[pos++] = 0; indices[pos++] = 2;
+
+		// -Y side
+		indices[pos++] = 7; indices[pos++] = 6; indices[pos++] = 2;
+		indices[pos++] = 7; indices[pos++] = 2; indices[pos++] = 3;
+
+		// +Y side
+		indices[pos++] = 4; indices[pos++] = 5; indices[pos++] = 1;
+		indices[pos++] = 4; indices[pos++] = 1; indices[pos++] = 0;
+
+		// -Z side
+		indices[pos++] = 5; indices[pos++] = 4; indices[pos++] = 6;
+		indices[pos++] = 5; indices[pos++] = 6; indices[pos++] = 7;
+
+		// +Z side
+		indices[pos++] = 3; indices[pos++] = 2; indices[pos++] = 0;
+		indices[pos++] = 3; indices[pos++] = 0; indices[pos++] = 1;
+
 
 		// Fill in a buffer description.
+		m_rendererData->m_indexCount = NUM_INDICES;
 		D3D11_BUFFER_DESC bufferDesc;
 		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		bufferDesc.ByteWidth = sizeof(unsigned int) * 3;
+		bufferDesc.ByteWidth = sizeof(unsigned int) * NUM_INDICES;
 		bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 		bufferDesc.CPUAccessFlags = 0;
 		bufferDesc.MiscFlags = 0;
@@ -72,11 +116,9 @@ void OE::RenderableComponent::CreateRendererData(const DX::DeviceResources devic
 		InitData.SysMemSlicePitch = 0;
 
 		// Create the buffer with the device.
-		ID3D11Buffer *g_pIndexBuffer = nullptr;
-		HRESULT hr = deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &g_pIndexBuffer);
+		HRESULT hr = deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &m_rendererData->m_indexBuffer);
 		assert(!FAILED(hr));
-
-		// Set the buffer.
-		deviceResources.GetD3DDeviceContext()->IASetIndexBuffer(g_pIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 	}
+
+	return m_rendererData.get();
 }

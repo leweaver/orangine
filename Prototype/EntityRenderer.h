@@ -1,6 +1,5 @@
 #pragma once
 #include "DeviceResources.h"
-#include <memory>
 #include "RenderableComponent.h"
 #include <set>
 

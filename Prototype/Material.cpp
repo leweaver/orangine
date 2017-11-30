@@ -131,7 +131,7 @@ bool Material::Render(const DX::DeviceResources &deviceResources)
 
 	// Update constant buffers
 	const auto worldMatrix = Math::MAT4_IDENTITY;
-	const auto viewMatrix = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(10.0f, 0.0f, -10.0f, 0.0f), Math::VEC_ZERO, Math::VEC_UP);
+	const auto viewMatrix = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(5.0f,3.0f, -10.0f, 0.0f), Math::VEC_ZERO, Math::VEC_UP);
 
 	const float aspectRatio = deviceResources.GetScreenViewport().Width / deviceResources.GetScreenViewport().Height;
 	const auto projMatrix = DirectX::XMMatrixPerspectiveFovRH(
@@ -139,7 +139,9 @@ bool Material::Render(const DX::DeviceResources &deviceResources)
 		aspectRatio,
 		0.01f, 
 		1000.0f);
-	constants.m_worldViewProjection = XMMatrixMultiply(XMMatrixMultiply(worldMatrix, viewMatrix), projMatrix);
+
+	// Convert to LH, for DirectX.
+	constants.m_worldViewProjection = XMMatrixTranspose(XMMatrixMultiply(viewMatrix, projMatrix));
 	constants.m_world = Math::MAT4_IDENTITY;
 	context->UpdateSubresource(m_constantBuffer, 0, nullptr, &constants, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &m_constantBuffer);

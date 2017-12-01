@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Common">
+      <UniqueIdentifier>c644818c-5266-4a1f-ad2c-d656004a9640</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>0e1b36f7-2536-4edf-a796-6c7dda2f6a04</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dds;dlg;fbx;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Scenegraph">
+      <UniqueIdentifier>{a82e037c-f09d-4da8-ad77-13cdd17ce8c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Components">
+      <UniqueIdentifier>{a1dbed6d-878d-4e6f-a6a2-e1f02dd1bc54}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer">
+      <UniqueIdentifier>{e2abaab7-70a2-434c-bf13-f8d8bbc91183}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets\shaders">
+      <UniqueIdentifier>{5552b684-2186-4d88-a4a8-3b3fd05d6580}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="Game.h" />
+    <ClInclude Include="StepTimer.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="DeviceResources.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity.h">
+      <Filter>Scenegraph</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityManager.h">
+      <Filter>Scenegraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Bound.h" />
+    <ClInclude Include="Constants.h" />
+    <ClInclude Include="Component.h">
+      <Filter>Scenegraph</Filter>
+    </ClInclude>
+    <ClInclude Include="TestComponent.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>Scenegraph</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityRenderer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="RendererData.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderableComponent.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="DeviceResources.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity.cpp">
+      <Filter>Scenegraph</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityManager.cpp">
+      <Filter>Scenegraph</Filter>
+    </ClCompile>
+    <ClCompile Include="Bound.cpp" />
+    <ClCompile Include="Component.cpp">
+      <Filter>Scenegraph</Filter>
+    </ClCompile>
+    <ClCompile Include="TestComponent.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>Scenegraph</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityRenderer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RendererData.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderableComponent.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="directx.ico">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="settings.manifest">
+      <Filter>Assets</Filter>
+    </Manifest>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\vertex_colors_PS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </None>
+    <None Include="shaders\vertex_colors_VS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>

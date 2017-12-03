@@ -42,17 +42,18 @@ void Game::Initialize(HWND window, int width, int height)
 		Entity& child3 = entityManager.Instantiate("Child 3", root1);
 
 		// Test 2
+		root1.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
 		child1.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.5f, 0.0f, 0.0f, 0.0f));
 		child2.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.5f, 0.0f, 0.0f));
 		child3.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.0f, 0.5f, 0.0f));
 		
-		child1.SetLocalScale(DirectX::XMVectorSet(2, 1, 1, 1));
-		child2.SetLocalScale(DirectX::XMVectorSet(1, 2, 1, 1));
-		child3.SetLocalScale(DirectX::XMVectorSet(1, 1, 2, 1));
+		child1.SetLocalScale(XMVectorSet(2, 1, 1, 1));
+		child2.SetLocalScale(XMVectorSet(1, 2, 1, 1));
+		child3.SetLocalScale(XMVectorSet(1, 1, 2, 1));
 
-		child1.SetLocalPosition(DirectX::XMVectorSet(4, 0, 0, 1));
-		child2.SetLocalPosition(DirectX::XMVectorSet(0, 0, 0, 1));
-		child3.SetLocalPosition(DirectX::XMVectorSet(-4, 0, 0, 1));
+		child1.SetLocalPosition(XMVectorSet(4, 0, 0, 1));
+		child2.SetLocalPosition(XMVectorSet(0, 0, 0, 1));
+		child3.SetLocalPosition(XMVectorSet(-4, 0, 0, 1));
 
 		auto matl = std::make_shared<Material>();
 		child1.AddComponent<RenderableComponent>().SetMaterial(matl);

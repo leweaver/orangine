@@ -8,19 +8,22 @@ using namespace OE;
 
 void Entity::ComputeWorldTransform()
 {
-	const auto localTransform = DirectX::XMMatrixTransformation(
-		Math::VEC_ZERO, Math::QUAT_IDENTITY, m_localScale,
-		Math::VEC_ZERO, m_localRotation,
-		m_localPosition);
-
 	if (HasParent())
 	{
-		m_worldTransform = XMMatrixMultiply(m_parent->m_worldTransform, localTransform);		
+		const auto worldPosition = XMVector3Transform(m_localPosition, m_parent->m_worldTransform);
+
 		m_worldScale = DirectX::XMVectorMultiply(m_parent->m_worldScale, m_localScale);
+		m_worldTransform = DirectX::XMMatrixTransformation(
+			Math::VEC_ZERO, Math::QUAT_IDENTITY, m_worldScale,
+			Math::VEC_ZERO, DirectX::XMQuaternionMultiply(m_localRotation, m_parent->Rotation()),
+			worldPosition);
 	}
 	else
 	{
-		m_worldTransform = localTransform;
+		m_worldTransform = DirectX::XMMatrixTransformation(
+			Math::VEC_ZERO, Math::QUAT_IDENTITY, m_localScale,
+			Math::VEC_ZERO, m_localRotation,
+			m_localPosition);
 		m_worldScale = m_localScale;
 	}
 }

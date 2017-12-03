@@ -5,22 +5,21 @@
 #include "Constants.h"
 
 using namespace OE;
+using namespace DirectX;
 
 void Entity::ComputeWorldTransform()
 {
 	if (HasParent())
 	{
-		const auto worldPosition = XMVector3Transform(m_localPosition, m_parent->m_worldTransform);
-
-		m_worldScale = DirectX::XMVectorMultiply(m_parent->m_worldScale, m_localScale);
-		m_worldTransform = DirectX::XMMatrixTransformation(
+		m_worldScale = XMVectorMultiply(m_parent->m_worldScale, m_localScale);
+		m_worldTransform = XMMatrixTransformation(
 			Math::VEC_ZERO, Math::QUAT_IDENTITY, m_worldScale,
-			Math::VEC_ZERO, DirectX::XMQuaternionMultiply(m_localRotation, m_parent->Rotation()),
-			worldPosition);
+			Math::VEC_ZERO, XMQuaternionMultiply(m_localRotation, m_parent->Rotation()),
+			XMVector3Transform(m_localPosition, m_parent->m_worldTransform));
 	}
 	else
 	{
-		m_worldTransform = DirectX::XMMatrixTransformation(
+		m_worldTransform = XMMatrixTransformation(
 			Math::VEC_ZERO, Math::QUAT_IDENTITY, m_localScale,
 			Math::VEC_ZERO, m_localRotation,
 			m_localPosition);
@@ -78,14 +77,14 @@ Component& Entity::GetComponent(unsigned int index) const
 void Entity::LookAt(const Entity& other)
 {
 	// Generate a world transform matrix
-	const auto laMat = DirectX::XMMatrixLookAtRH(Position(), other.Position(), Math::VEC_UP);
+	const auto laMat = XMMatrixLookAtRH(Position(), other.Position(), Math::VEC_UP);
 
-	m_localRotation = DirectX::XMQuaternionRotationMatrix(laMat);
+	m_localRotation = XMQuaternionRotationMatrix(laMat);
 	if (HasParent())
 	{
-		const auto worldInv = DirectX::XMMatrixInverse(nullptr, m_worldTransform);
+		const auto worldInv = XMMatrixInverse(nullptr, m_worldTransform);
 		const auto worldRotInv = XMQuaternionRotationMatrix(worldInv);
-		m_localRotation = DirectX::XMQuaternionMultiply(worldRotInv, m_localRotation);		
+		m_localRotation = XMQuaternionMultiply(worldRotInv, m_localRotation);		
 	}
 }
 
@@ -124,17 +123,17 @@ void Entity::RemoveParent()
 	m_parent = nullptr;
 }
 
-DirectX::XMVECTOR Entity::Position() const
+XMVECTOR Entity::Position() const
 {
 	return XMVector4Transform(m_localPosition, m_worldTransform);
 }
 
-const DirectX::XMVECTOR& Entity::Scale() const
+const XMVECTOR& Entity::Scale() const
 {
 	return m_worldScale;
 }
 
-DirectX::XMVECTOR Entity::Rotation() const
+XMVECTOR Entity::Rotation() const
 {
 	return XMQuaternionRotationMatrix(m_worldTransform);
 }

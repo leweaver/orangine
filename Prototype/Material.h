@@ -17,7 +17,7 @@ namespace OE {
 		~Material();
 
 		void Release();
-		bool Render(const DX::DeviceResources& deviceResources);
+		bool Render(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix, const DX::DeviceResources& deviceResources);
 
 	protected:
 		static void ThrowShaderError(HRESULT hr, ID3D10Blob* errorMessage, const wchar_t* shaderFilename);

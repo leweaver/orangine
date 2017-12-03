@@ -9,7 +9,7 @@ EntityManager::EntityManager(Scene& scene)
 {
 }
 
-void EntityManager::Tick(float elapsedTime)
+void EntityManager::Tick(double elapsedTime)
 {
 	if (!m_initialized)
 	{
@@ -26,8 +26,8 @@ void EntityManager::Tick(float elapsedTime)
 		m_initialized = true;
 	}
 
-	m_deltaTime = elapsedTime - m_elapsedTime;
-	m_elapsedTime = elapsedTime;
+	m_deltaTime = elapsedTime;
+	m_elapsedTime += elapsedTime;
 
 	for (auto const& weakPtr : m_rootEntities)
 	{

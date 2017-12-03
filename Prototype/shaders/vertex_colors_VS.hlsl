@@ -5,7 +5,7 @@
 
 cbuffer cbPerObject : register(b0)
 {
-	matrix        g_mWorldViewProjection    : packoffset(c0);
+	matrix        g_mViewProjection    : packoffset(c0);
 	matrix        g_mWorld                : packoffset(c4);
 };
 
@@ -30,7 +30,8 @@ struct VS_OUTPUT
 VS_OUTPUT VSMain(VS_INPUT Input)
 {
 	VS_OUTPUT Output;
-	Output.vPosition = mul(Input.vPosition, g_mWorldViewProjection);
+	matrix mWorldViewProjection = mul(g_mWorld, g_mViewProjection);
+	Output.vPosition = mul(Input.vPosition, mWorldViewProjection);
 	Output.vColor = Input.vColor;
 
 	return Output;

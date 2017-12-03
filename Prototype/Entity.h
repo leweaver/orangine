@@ -84,7 +84,7 @@ namespace OE {
 		void ComputeWorldTransform();
 
 		const ID_TYPE& GetId() const { return m_id; }
-		unsigned int GetComponentCount() const { return m_components.size(); }
+		size_t GetComponentCount() const { return m_components.size(); }
 
 		Component& GetComponent(unsigned int index) const;
 
@@ -114,12 +114,17 @@ namespace OE {
 			_mm_free(p);
 		}
 
+		const DirectX::XMMATRIX& GetWorldTransform() const
+		{
+			return m_worldTransform;
+		}
+
 		const DirectX::XMVECTOR& LocalRotation() const
 		{
 			return m_localRotation;
 		}
 
-		void SetLocalRotation(const DirectX::XMVECTOR& xmvector)
+		void SetLocalRotation(const DirectX::FXMVECTOR& xmvector)
 		{
 			m_localRotation = xmvector;
 		}
@@ -129,7 +134,7 @@ namespace OE {
 			return m_localPosition;
 		}
 
-		void SetLocalPosition(const DirectX::XMVECTOR& xmvector)
+		void SetLocalPosition(const DirectX::FXMVECTOR& xmvector)
 		{
 			m_localPosition = xmvector;
 		}
@@ -139,12 +144,12 @@ namespace OE {
 			return m_localScale;
 		}
 
-		void SetLocalScale(const DirectX::XMVECTOR& xmvector)
+		void SetLocalScale(const DirectX::FXMVECTOR& xmvector)
 		{
 			m_localScale = xmvector;
 		}
 
-		Scene& Scene() const
+		Scene& GetScene() const
 		{
 			return m_scene;
 		}

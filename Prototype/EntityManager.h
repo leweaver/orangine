@@ -18,8 +18,8 @@ class EntityManager
 	Entity::EntityPtrMap m_entities;
 	
 	// Values as of the last call to Tick.
-	float m_deltaTime = 0;
-	float m_elapsedTime = 0;
+	double m_deltaTime = 0;
+	double m_elapsedTime = 0;
 	unsigned int lastEntityId = 0;
 
 	bool m_initialized = false;
@@ -29,17 +29,19 @@ public:
 	explicit EntityManager(Scene& scene);
 	EntityManager(const EntityManager& other) = delete;
 
-	const float& ElapsedTime() const
+	/** Total time since game start, in seconds. */
+	const double& ElapsedTime() const
 	{
 		return m_elapsedTime;
 	}
 
-	const float& DeltaTime() const
+	/** Time since last frame, in seconds. */
+	const double& DeltaTime() const
 	{
 		return m_deltaTime;
 	}
 
-	void Tick(float elapsedTime);
+	void Tick(double elapsedTime);
 
 	Entity& Instantiate(std::string name);
 	Entity& Instantiate(std::string name, Entity& parent);

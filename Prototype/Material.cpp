@@ -10,6 +10,7 @@
 #include "Constants.h"
 
 using namespace OE;
+using namespace DirectX;
 
 Material::Material()
 	: m_vertexShader(nullptr)
@@ -54,11 +55,11 @@ void Material::Release()
 
 struct Constants
 {
-	DirectX::XMMATRIX m_worldViewProjection;
+	DirectX::XMMATRIX m_viewProjection;
 	DirectX::XMMATRIX m_world;
 };
 
-bool Material::Render(const DX::DeviceResources &deviceResources)
+bool Material::Render(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix, const DX::DeviceResources &deviceResources)
 {
 	if (m_errorState)
 		return false;
@@ -103,8 +104,8 @@ bool Material::Render(const DX::DeviceResources &deviceResources)
 			bufferDesc.CPUAccessFlags = 0;
 			bufferDesc.MiscFlags = 0;
 			
-			constants.m_worldViewProjection = Math::MAT4_IDENTITY;
-			constants.m_world = Math::MAT4_IDENTITY;
+			constants.m_viewProjection = Math::MAT4_IDENTITY;
+			constants.m_world = worldMatrix;
 
 			D3D11_SUBRESOURCE_DATA initData;
 			initData.pSysMem = &constants;
@@ -130,19 +131,10 @@ bool Material::Render(const DX::DeviceResources &deviceResources)
 	m_errorState = false;
 
 	// Update constant buffers
-	const auto worldMatrix = Math::MAT4_IDENTITY;
-	const auto viewMatrix = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(5.0f,3.0f, -10.0f, 0.0f), Math::VEC_ZERO, Math::VEC_UP);
-
-	const float aspectRatio = deviceResources.GetScreenViewport().Width / deviceResources.GetScreenViewport().Height;
-	const auto projMatrix = DirectX::XMMatrixPerspectiveFovRH(
-		DirectX::XMConvertToRadians(45.0f), 
-		aspectRatio,
-		0.01f, 
-		1000.0f);
 
 	// Convert to LH, for DirectX.
-	constants.m_worldViewProjection = XMMatrixTranspose(XMMatrixMultiply(viewMatrix, projMatrix));
-	constants.m_world = Math::MAT4_IDENTITY;
+	constants.m_viewProjection = XMMatrixTranspose(XMMatrixMultiply(viewMatrix, projMatrix));
+	constants.m_world = XMMatrixTranspose(worldMatrix);
 	context->UpdateSubresource(m_constantBuffer, 0, nullptr, &constants, 0, 0);
 	context->VSSetConstantBuffers(0, 1, &m_constantBuffer);
 

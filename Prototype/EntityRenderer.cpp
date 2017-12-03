@@ -2,6 +2,7 @@
 #include "EntityRenderer.h"
 #include "RendererData.h"
 #include "Material.h"
+#include "Entity.h"
 
 using namespace OE;
 
@@ -24,6 +25,15 @@ void EntityRenderer::CreateWindowSizeDependentResources(const DX::DeviceResource
 
 void EntityRenderer::Render(const DX::DeviceResources &deviceResources)
 {
+	// Hard Coded Camera
+	const DirectX::XMMATRIX &viewMatrix = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(5.0f, 3.0f, -10.0f, 0.0f), Math::VEC_ZERO, Math::VEC_UP);
+	const float aspectRatio = deviceResources.GetScreenViewport().Width / deviceResources.GetScreenViewport().Height;
+	const auto projMatrix = DirectX::XMMatrixPerspectiveFovRH(
+		DirectX::XMConvertToRadians(45.0f),
+		aspectRatio,
+		0.01f,
+		1000.0f);
+
 	for (RenderableComponent* renderable : m_renderables)
 	{
 		if (!renderable->GetVisible())
@@ -42,7 +52,8 @@ void EntityRenderer::Render(const DX::DeviceResources &deviceResources)
 				for (std::vector<VertexBufferDesc>::size_type i = 0; i < vertexBuffers.size(); ++i)
 				{
 					const VertexBufferDesc &vertexBufferDesc = *rendererData->m_vertexBuffers[i].get();
-					deviceContext->IASetVertexBuffers(i, 1, &vertexBufferDesc.m_buffer, &vertexBufferDesc.m_stride, &vertexBufferDesc.m_offset);
+					
+					deviceContext->IASetVertexBuffers(static_cast<UINT>(i), 1, &vertexBufferDesc.m_buffer, &vertexBufferDesc.m_stride, &vertexBufferDesc.m_offset);
 				}
 
 				// Set the type of primitive that should be rendered from this vertex buffer, in this case triangles.
@@ -57,14 +68,14 @@ void EntityRenderer::Render(const DX::DeviceResources &deviceResources)
 					if (material == nullptr)
 						throw "Missing material for component";
 					
-					if (material->Render(deviceResources))
+					if (material->Render(renderable->GetEntity().GetWorldTransform(), viewMatrix, projMatrix, deviceResources))
 						deviceContext->DrawIndexed(rendererData->m_indexCount, 0, 0);
 				}
 				else
 				{
 					auto material = renderable->GetMaterial();
 					if (material != nullptr)
-						material->Render(deviceResources);
+						material->Render(renderable->GetEntity().GetWorldTransform(), viewMatrix, projMatrix, deviceResources);
 
 					// Render the triangles.
 					deviceContext->Draw(rendererData->m_vertexCount, rendererData->m_vertexCount);

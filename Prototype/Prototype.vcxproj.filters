@@ -56,7 +56,9 @@
     <ClInclude Include="RenderableComponent.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Material.h" />
+    <ClInclude Include="Material.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -90,7 +92,9 @@
     <ClCompile Include="RenderableComponent.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Material.cpp" />
+    <ClCompile Include="Material.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

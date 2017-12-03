@@ -24,14 +24,10 @@ RendererData* RenderableComponent::CreateRendererData(const DX::DeviceResources 
 	m_rendererData = std::make_unique<RendererData>();
 	{
 		// Supply the actual vertex data.
-		const float size = 1.0f;
-		const unsigned int NUM_VERTICES = 8;
+		constexpr float size = 1.0f;
+		constexpr unsigned int NUM_VERTICES = 8;
 		SimpleVertexCombined verticesCombo[] =
-		{/*
-			XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f),
-			XMFLOAT3(1.0f, -0.0f, 0.0f), XMFLOAT3(0.5f, 0.0f, 0.0f),
-			XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT3(0.0f, 0.5f, 0.0f)
-			*/				
+		{
 			XMFLOAT3( size,  size, -size), XMFLOAT3(1.0f, 1.0f, 1.0f),
 			XMFLOAT3(-size,  size, -size), XMFLOAT3(0.0f, 1.0f, 1.0f),
 			XMFLOAT3( size, -size, -size), XMFLOAT3(1.0f, 0.0f, 1.0f),

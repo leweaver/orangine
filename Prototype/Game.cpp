@@ -34,26 +34,30 @@ void Game::Initialize(HWND window, int width, int height)
 		m_timer.SetFixedTimeStep(true);
 		m_timer.SetTargetElapsedSeconds(1.0 / 60);
 		*/
+
 		EntityManager& entityManager = m_scene->EntityManager();
 		Entity& root1 = entityManager.Instantiate("Root 1");
-		Entity& root2 = entityManager.Instantiate("Root 2");
-		Entity& child = entityManager.Instantiate("Child");
-
-		// Test 1
-		child.SetParent(root1);
-		child.RemoveParent();
-		child.SetParent(root2);
+		Entity& child1 = entityManager.Instantiate("Child 1", root1);
+		Entity& child2 = entityManager.Instantiate("Child 2", root1);
+		Entity& child3 = entityManager.Instantiate("Child 3", root1);
 
 		// Test 2
-		auto compRef = child.AddComponent<TestComponent>();
-		const TestComponent* comp = child.GetFirstComponentOfType<TestComponent>();
+		child1.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.5f, 0.0f, 0.0f, 0.0f));
+		child2.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.5f, 0.0f, 0.0f));
+		child3.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.0f, 0.5f, 0.0f));
+		
+		child1.SetLocalScale(DirectX::XMVectorSet(2, 1, 1, 1));
+		child2.SetLocalScale(DirectX::XMVectorSet(1, 2, 1, 1));
+		child3.SetLocalScale(DirectX::XMVectorSet(1, 1, 2, 1));
 
-		child.AddComponent<TestComponent>();
-		auto comps = child.GetComponentsOfType<TestComponent>();
-		assert(comps.size() == 2);
+		child1.SetLocalPosition(DirectX::XMVectorSet(4, 0, 0, 1));
+		child2.SetLocalPosition(DirectX::XMVectorSet(0, 0, 0, 1));
+		child3.SetLocalPosition(DirectX::XMVectorSet(-4, 0, 0, 1));
 
-		RenderableComponent &renderable = child.AddComponent<RenderableComponent>();
-		renderable.SetMaterial(std::make_shared<Material>());
+		auto matl = std::make_shared<Material>();
+		child1.AddComponent<RenderableComponent>().SetMaterial(matl);
+		child2.AddComponent<RenderableComponent>().SetMaterial(matl);
+		child3.AddComponent<RenderableComponent>().SetMaterial(matl);
 	}
 
 	m_deviceResources->CreateDeviceResources();
@@ -78,10 +82,8 @@ void Game::Tick()
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
 {
-    float elapsedTime = float(timer.GetElapsedSeconds());
-
     // TODO: Add your game logic here.
-	m_scene->EntityManager().Tick(elapsedTime);
+	m_scene->EntityManager().Tick(timer.GetElapsedSeconds());
 }
 #pragma endregion
 

@@ -9,6 +9,7 @@ namespace OE {
 	 */
 	class Component
 	{
+	protected:
 		Entity& m_entity;
 
 	public:
@@ -21,6 +22,8 @@ namespace OE {
 
 		virtual void Initialize() = 0;
 		virtual void Update() = 0;
+
+		Entity& GetEntity() const { return m_entity; }
 	};
 
 }

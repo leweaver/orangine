@@ -86,7 +86,7 @@ namespace OE {
 		const ID_TYPE& GetId() const { return m_id; }
 		size_t GetComponentCount() const { return m_components.size(); }
 
-		Component& GetComponent(unsigned int index) const;
+		Component& GetComponent(size_t index) const;
 
 		template<typename TComponent>
 		std::vector<std::reference_wrapper<TComponent>> GetComponentsOfType() const;
@@ -193,7 +193,7 @@ namespace OE {
 	template <typename TComponent>
 	TComponent& Entity::AddComponent()
 	{
-		TComponent* component = new TComponent(*this);
+		TComponent* component = new TComponent();
 		m_components.push_back(std::unique_ptr<Component>(component));
 
 		this->OnComponentAdded(*component);

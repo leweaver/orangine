@@ -14,11 +14,11 @@
     <Filter Include="Components">
       <UniqueIdentifier>{a1dbed6d-878d-4e6f-a6a2-e1f02dd1bc54}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Renderer">
-      <UniqueIdentifier>{e2abaab7-70a2-434c-bf13-f8d8bbc91183}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Assets\shaders">
       <UniqueIdentifier>{5552b684-2186-4d88-a4a8-3b3fd05d6580}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RenderService">
+      <UniqueIdentifier>{e2abaab7-70a2-434c-bf13-f8d8bbc91183}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -47,17 +47,20 @@
     <ClInclude Include="Scene.h">
       <Filter>Scenegraph</Filter>
     </ClInclude>
-    <ClInclude Include="EntityRenderer.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="RendererData.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderableComponent.h">
-      <Filter>Renderer</Filter>
+      <Filter>RenderService</Filter>
     </ClInclude>
     <ClInclude Include="Material.h">
-      <Filter>Renderer</Filter>
+      <Filter>RenderService</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderableComponent.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityRenderService.h">
+      <Filter>RenderService</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityFilter.h">
+      <Filter>Scenegraph</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -83,17 +86,17 @@
     <ClCompile Include="Scene.cpp">
       <Filter>Scenegraph</Filter>
     </ClCompile>
-    <ClCompile Include="EntityRenderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="RendererData.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderableComponent.cpp">
-      <Filter>Renderer</Filter>
+      <Filter>RenderService</Filter>
     </ClCompile>
     <ClCompile Include="Material.cpp">
-      <Filter>Renderer</Filter>
+      <Filter>RenderService</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderableComponent.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityRenderService.cpp">
+      <Filter>RenderService</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

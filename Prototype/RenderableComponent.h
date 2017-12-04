@@ -1,43 +1,36 @@
 ﻿#pragma once
 #include "Component.h"
-#include "RendererData.h"
-#include "Material.h"
 
 namespace DX
 {
 	class DeviceResources;
 }
 namespace OE {
+
 	class RenderableComponent : public Component
 	{
+		DECLARE_COMPONENT_TYPE;
+
 		bool m_visible;
-		std::unique_ptr<RendererData> m_rendererData;
-		std::shared_ptr<Material> m_material;
+		
+		// TODO: Some kind of asset ID?
+		std::string m_meshName;
+		std::string m_materialName;
 
 	public:
 
-		explicit RenderableComponent(Entity &entity)
-			: Component(entity)
-			, m_visible(true)
-			, m_rendererData(nullptr)
-			, m_material(nullptr)
+		explicit RenderableComponent()
+			: m_visible(true)
 		{}
-
-		void Initialize() override;
-		void Update() override;
-
+		
 		bool GetVisible() const { return m_visible; }
 		void SetVisible(bool visible) { m_visible = visible; }
 
-		const RendererData *GetRendererData() const
-		{
-			return m_rendererData.get();
-		}
+		const std::string &GetMeshName() const { return m_meshName; }
+		void SetMeshName(const std::string &meshName) { m_meshName = meshName; }
 
-		virtual RendererData *CreateRendererData(const DX::DeviceResources deviceResources);
-
-		void SetMaterial(std::shared_ptr<Material> material) { m_material = material; }
-		std::shared_ptr<Material> GetMaterial() const { return m_material; }
+		const std::string &GetMaterialName() const { return m_materialName; }
+		void SetMaterialName(const std::string &materialName) { m_materialName = materialName; }
 		
 	};
 

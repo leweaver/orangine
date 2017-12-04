@@ -8,6 +8,8 @@
 using namespace DirectX;
 using namespace OE;
 
+DEFINE_COMPONENT_TYPE(TestComponent);
+/*
 void TestComponent::Initialize()
 {
 	m_testString = std::string("asdf");
@@ -27,3 +29,4 @@ void TestComponent::Update()
 		animTimeYaw));
 
 }
+*/

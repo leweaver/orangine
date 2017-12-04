@@ -38,14 +38,6 @@ void Entity::Initialize()
 			child->Initialize();
 		}
 	}
-
-	if (!m_components.empty())
-	{
-		for (auto const& comp : m_components)
-		{
-			comp.get()->Initialize();
-		}
-	}
 }
 
 void Entity::Update()
@@ -59,17 +51,9 @@ void Entity::Update()
 				child->Update();
 		}
 	}
-
-	if (!m_components.empty())
-	{
-		for (auto const& comp : m_components)
-		{
-			comp.get()->Update();
-		}
-	}
 }
 
-Component& Entity::GetComponent(unsigned int index) const
+Component& Entity::GetComponent(size_t index) const
 {
 	return *m_components[index].get();
 }

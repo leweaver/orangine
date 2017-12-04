@@ -5,7 +5,11 @@
 #include "pch.h"
 #include "Game.h"
 #include "EntityManager.h"
+#include "Scene.h"
 #include "TestComponent.h"
+#include "RenderableComponent.h"
+#include "EntityRenderService.h"
+#include "EntityManager.h"
 
 extern void ExitGame();
 
@@ -55,10 +59,9 @@ void Game::Initialize(HWND window, int width, int height)
 		child2.SetLocalPosition(XMVectorSet(0, 0, 0, 1));
 		child3.SetLocalPosition(XMVectorSet(-4, 0, 0, 1));
 
-		auto matl = std::make_shared<Material>();
-		child1.AddComponent<RenderableComponent>().SetMaterial(matl);
-		child2.AddComponent<RenderableComponent>().SetMaterial(matl);
-		child3.AddComponent<RenderableComponent>().SetMaterial(matl);
+		child1.AddComponent<RenderableComponent>().SetMaterialName("VertexColorTest");
+		child2.AddComponent<RenderableComponent>().SetMaterialName("VertexColorTest");
+		child3.AddComponent<RenderableComponent>().SetMaterialName("VertexColorTest");
 	}
 
 	m_deviceResources->CreateDeviceResources();
@@ -104,7 +107,7 @@ void Game::Render()
     auto context = m_deviceResources->GetD3DDeviceContext();
 
     // TODO: Add your rendering code here.
-	m_scene->EntityRenderer().Render(*m_deviceResources);
+	m_scene->EntityRenderService().Render(*m_deviceResources);
 
     m_deviceResources->PIXEndEvent();
 
@@ -187,13 +190,13 @@ void Game::GetDefaultSize(int& width, int& height) const
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
-	m_scene->EntityRenderer().CreateDeviceDependentResources(*m_deviceResources);
+	m_scene->EntityRenderService().CreateDeviceDependentResources(*m_deviceResources);
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
-	m_scene->EntityRenderer().CreateWindowSizeDependentResources(*m_deviceResources);
+	m_scene->EntityRenderService().CreateWindowSizeDependentResources(*m_deviceResources);
 }
 
 void Game::OnDeviceLost()

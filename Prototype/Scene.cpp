@@ -3,22 +3,36 @@
 
 #include "Entity.h"
 #include "Component.h"
-#include "EntityRenderService.h"
-#include "EntityManager.h"
+#include "EntityRenderManager.h"
+#include "SceneGraphManager.h"
 #include "RenderableComponent.h"
+#include "EntityScriptingManager.h"
 
 using namespace OE;
 
 Scene::Scene()
 {
-	m_entityManager = std::make_unique<OE::EntityManager>(*this);
-	m_entityRenderer = std::make_unique<OE::EntityRenderService>(*this);
+	m_entityManager = std::make_unique<OE::SceneGraphManager>(*this);
+	m_entityRenderer = std::make_unique<OE::EntityRenderManager>(*this);
+	m_entityScriptinigManager = std::make_unique<EntityScriptingManager>(*this);
 
+	m_entityManager->Initialize();
 	m_entityRenderer->Initialize();
+	m_entityScriptinigManager->Initialize();
 }
 
 Scene::~Scene()
 {
+}
+
+void Scene::Tick(DX::StepTimer const& timer)
+{	
+	m_deltaTime = timer.GetElapsedSeconds();
+	m_elapsedTime += m_deltaTime;
+
+	m_entityManager->Tick();
+	m_entityRenderer->Tick();
+	m_entityScriptinigManager->Tick();
 }
 
 void Scene::OnComponentAdded(Entity& entity, Component& component) const

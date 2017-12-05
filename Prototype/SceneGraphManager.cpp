@@ -1,16 +1,20 @@
 ﻿#include "pch.h"
-#include "EntityManager.h"
+#include "SceneGraphManager.h"
 
 #include <algorithm>
 
 using namespace OE;
 
-EntityManager::EntityManager(Scene& scene)
-	: m_scene(scene)
+SceneGraphManager::SceneGraphManager(Scene& scene)
+	: ManagerBase(scene)
 {
 }
 
-void EntityManager::Tick(double elapsedTime)
+void SceneGraphManager::Initialize()
+{
+}
+
+void SceneGraphManager::Tick()
 {
 	if (!m_initialized)
 	{
@@ -27,8 +31,6 @@ void EntityManager::Tick(double elapsedTime)
 		m_initialized = true;
 	}
 
-	m_deltaTime = elapsedTime;
-	m_elapsedTime += elapsedTime;
 
 	for (auto const& weakPtr : m_rootEntities)
 	{
@@ -45,7 +47,7 @@ void EntityManager::Tick(double elapsedTime)
 	}
 }
 
-Entity& EntityManager::Instantiate(std::string name)
+Entity& SceneGraphManager::Instantiate(std::string name)
 {
 	Entity* entity = new Entity(this->m_scene, name, ++lastEntityId);
 	const auto entityPtr = std::shared_ptr<Entity>(entity);
@@ -58,14 +60,14 @@ Entity& EntityManager::Instantiate(std::string name)
 	return *entity;
 }
 
-Entity& EntityManager::Instantiate(std::string name, Entity& parent)
+Entity& SceneGraphManager::Instantiate(std::string name, Entity& parent)
 {
 	Entity& entity = Instantiate(name);
 	entity.SetParent(parent);
 	return entity;
 }
 
-void EntityManager::Destroy(Entity& entity)
+void SceneGraphManager::Destroy(Entity& entity)
 {
 	entity.RemoveParent();
 	RemoveFromRoot(entity);
@@ -74,7 +76,7 @@ void EntityManager::Destroy(Entity& entity)
 	m_entities.erase(entity.GetId());
 }
 
-void EntityManager::Destroy(const Entity::ID_TYPE& entityId)
+void SceneGraphManager::Destroy(const Entity::ID_TYPE& entityId)
 {
 	auto& entityPtr = m_entities[entityId];
 	const auto entity = entityPtr.get();
@@ -83,7 +85,7 @@ void EntityManager::Destroy(const Entity::ID_TYPE& entityId)
 	}
 }
 
-std::shared_ptr<Entity> EntityManager::RemoveFromRoot(const Entity& entity)
+std::shared_ptr<Entity> SceneGraphManager::RemoveFromRoot(const Entity& entity)
 {
 	const std::shared_ptr<Entity> entityPtr = m_entities[entity.GetId()];
 
@@ -99,13 +101,13 @@ std::shared_ptr<Entity> EntityManager::RemoveFromRoot(const Entity& entity)
 	return entityPtr;
 }
 
-void EntityManager::AddToRoot(const Entity& entity)
+void SceneGraphManager::AddToRoot(const Entity& entity)
 {
 	m_rootEntities.push_back(m_entities[entity.GetId()]);
 }
 
 
-std::shared_ptr<EntityFilter> EntityManager::GetEntityFilter(const ComponentTypeSet &componentTypes) {
+std::shared_ptr<EntityFilter> SceneGraphManager::GetEntityFilter(const ComponentTypeSet &componentTypes) {
 	// Does an entity filter exist with all of the given component types?
 	for (auto efIter = m_entityFilters.begin(); efIter != m_entityFilters.end(); ++efIter) {
 		if (std::equal(componentTypes.begin(), componentTypes.end(), (*efIter)->m_componentTypes.begin()))
@@ -118,35 +120,35 @@ std::shared_ptr<EntityFilter> EntityManager::GetEntityFilter(const ComponentType
 	return filter;
 }
 
-void EntityManager::HandleEntityAdd(const Entity &entity) {
+void SceneGraphManager::HandleEntityAdd(const Entity &entity) {
 	for (auto filter : m_entityFilters)
 		filter->HandleEntityAdd(m_entities[entity.GetId()]);
 }
 
-void EntityManager::HandleEntityRemove(const Entity &entity) {
+void SceneGraphManager::HandleEntityRemove(const Entity &entity) {
 	for (auto filter : m_entityFilters)
 		filter->HandleEntityRemove(m_entities[entity.GetId()]);
 }
 
-void EntityManager::HandleEntityComponentAdd(const Entity &entity, const Component &componentType) {
+void SceneGraphManager::HandleEntityComponentAdd(const Entity &entity, const Component &componentType) {
 	for (auto filter : m_entityFilters)
 		filter->HandleEntityComponentsUpdated(m_entities[entity.GetId()]);
 }
-void EntityManager::HandleEntityComponentRemove(const Entity &entity, const Component &componentType) {
+void SceneGraphManager::HandleEntityComponentRemove(const Entity &entity, const Component &componentType) {
 	for (auto filter : m_entityFilters) {
 		filter->HandleEntityComponentsUpdated(m_entities[entity.GetId()]);
 	}
 }
 
-EntityManager::EntityFilterImpl::EntityFilterImpl(const ComponentTypeSet::const_iterator &begin, const ComponentTypeSet::const_iterator &end)
+SceneGraphManager::EntityFilterImpl::EntityFilterImpl(const ComponentTypeSet::const_iterator &begin, const ComponentTypeSet::const_iterator &end)
 {
 	m_componentTypes = std::set<Component::ComponentType>(begin, end);
 }
 
 
-void EntityManager::EntityFilterImpl::HandleEntityAdd(const std::shared_ptr<Entity> &entity)
+void SceneGraphManager::EntityFilterImpl::HandleEntityAdd(const std::shared_ptr<Entity> &entity)
 {
-	unsigned int foundCount = 0;
+	size_t foundCount = 0;
 
 	// Add it to the filter if all of the components we look for is present.
 	size_t componentCount = entity->GetComponentCount();
@@ -155,16 +157,16 @@ void EntityManager::EntityFilterImpl::HandleEntityAdd(const std::shared_ptr<Enti
 
 		auto pos = m_componentTypes.find(component.GetType());
 		if (pos == m_componentTypes.end())
-			break;
+			continue;
 
 		++foundCount;
 	}
 
-	if (foundCount == static_cast<unsigned int>(componentCount))
+	if (foundCount == m_componentTypes.size())
 		m_entities.insert(entity);
 }
 
-void EntityManager::EntityFilterImpl::HandleEntityRemove(const std::shared_ptr<Entity> &entity)
+void SceneGraphManager::EntityFilterImpl::HandleEntityRemove(const std::shared_ptr<Entity> &entity)
 {
 	// Remove it from the filter if any one of the components we look for is present.
 	size_t componentCount = entity->GetComponentCount();
@@ -180,7 +182,7 @@ void EntityManager::EntityFilterImpl::HandleEntityRemove(const std::shared_ptr<E
 	}
 }
 
-void EntityManager::EntityFilterImpl::HandleEntityComponentsUpdated(const std::shared_ptr<Entity> &entity) {
+void SceneGraphManager::EntityFilterImpl::HandleEntityComponentsUpdated(const std::shared_ptr<Entity> &entity) {
 	// TODO: Optimize.
 	HandleEntityRemove(entity);
 	HandleEntityAdd(entity);

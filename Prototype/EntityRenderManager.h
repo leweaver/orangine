@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DeviceResources.h"
+#include "ManagerBase.h"
 
 #include <map>
 
@@ -10,18 +11,18 @@ namespace OE {
 	class RendererData;
 	class EntityFilter;
 
-	class EntityRenderService
+	class EntityRenderManager : public ManagerBase
 	{
-		Scene& m_scene;
 		std::map<std::string, std::unique_ptr<RendererData>> m_meshRendererData;
 		std::map<std::string, std::unique_ptr<Material>> m_materials;
 		std::shared_ptr<EntityFilter> entityFilter;
 
 	public:
-		explicit EntityRenderService(Scene& scene);
-		~EntityRenderService();
-
-		void Initialize();
+		explicit EntityRenderManager(Scene& scene);
+		~EntityRenderManager();
+		
+		void Initialize() override;
+		void Tick() override;
 
 		void CreateDeviceDependentResources(const DX::DeviceResources& deviceResources);
 		void CreateWindowSizeDependentResources(const DX::DeviceResources& deviceResources);

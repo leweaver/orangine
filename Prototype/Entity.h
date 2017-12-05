@@ -9,10 +9,10 @@
 namespace OE {
 
 	class Scene;
-	class EntityManager;
+	class SceneGraphManager;
 	__declspec(align(16)) class Entity
 	{
-		friend EntityManager;
+		friend SceneGraphManager;
 
 		typedef unsigned int ID_TYPE;
 		typedef std::vector<std::shared_ptr<Entity>> EntityPtrVec;

@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "EntityRenderService.h"
-#include "EntityManager.h"
+#include "EntityRenderManager.h"
+#include "SceneGraphManager.h"
 #include "RendererData.h"
 #include "Material.h"
 #include "Entity.h"
@@ -13,31 +13,35 @@
 using namespace OE;
 using namespace DirectX;
 
-EntityRenderService::EntityRenderService(Scene &scene)
-	: m_scene(scene)
+EntityRenderManager::EntityRenderManager(Scene &scene)
+	: ManagerBase(scene)
 {
 }
 
-EntityRenderService::~EntityRenderService()
+EntityRenderManager::~EntityRenderManager()
 {
 }
 
-void EntityRenderService::Initialize() 
+void EntityRenderManager::Initialize() 
 {
 	std::set<Component::ComponentType> filter;
 	filter.insert(RenderableComponent::Type());
-	entityFilter = m_scene.EntityManager().GetEntityFilter(filter);
+	entityFilter = m_scene.GetEntityManager().GetEntityFilter(filter);
 }
 
-void EntityRenderService::CreateDeviceDependentResources(const DX::DeviceResources &deviceResources)
+void EntityRenderManager::Tick() {
+	// Update camera etc.
+}
+
+void EntityRenderManager::CreateDeviceDependentResources(const DX::DeviceResources &deviceResources)
 {
 }
 
-void EntityRenderService::CreateWindowSizeDependentResources(const DX::DeviceResources &deviceResources)
+void EntityRenderManager::CreateWindowSizeDependentResources(const DX::DeviceResources &deviceResources)
 {
 }
 
-void EntityRenderService::Render(const DX::DeviceResources &deviceResources)
+void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 {
 	// Hard Coded Camera
 	const DirectX::XMMATRIX &viewMatrix = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(5.0f, 3.0f, -10.0f, 0.0f), Math::VEC_ZERO, Math::VEC_UP);
@@ -118,7 +122,7 @@ struct SimpleVertexCombined
 	XMFLOAT3 Col;
 };
 
-std::unique_ptr<RendererData> EntityRenderService::CreateRendererData(const DX::DeviceResources deviceResources)
+std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const DX::DeviceResources deviceResources)
 {
 	auto rendererData = std::make_unique<RendererData>();
 	{
@@ -218,7 +222,7 @@ std::unique_ptr<RendererData> EntityRenderService::CreateRendererData(const DX::
 	return rendererData;
 }
 
-std::unique_ptr<Material> EntityRenderService::LoadMaterial(const std::string &materialName) {
+std::unique_ptr<Material> EntityRenderManager::LoadMaterial(const std::string &materialName) {
 	// TODO: Look up by name. For now, hard coded!!
 	materialName;
 

@@ -2,6 +2,7 @@
 #include "Entity.h"
 #include "Component.h"
 #include "EntityFilter.h"
+#include "ManagerBase.h"
 
 #include <vector>
 #include <map>
@@ -10,12 +11,10 @@
 
 namespace OE {
 
-class EntityManager
+class SceneGraphManager : public ManagerBase
 {
 	friend Entity;
 	class EntityFilterImpl;
-
-	Scene& m_scene;
 
 	// A cache of entities that have no parents
 	std::vector<std::weak_ptr<Entity>> m_rootEntities;
@@ -25,32 +24,17 @@ class EntityManager
 
 	// All entities
 	Entity::EntityPtrMap m_entities;
-	
-	// Values as of the last call to Tick.
-	double m_deltaTime = 0;
-	double m_elapsedTime = 0;
 	unsigned int lastEntityId = 0;
 
 	bool m_initialized = false;
 
 public:
 	
-	explicit EntityManager(Scene& scene);
-	EntityManager(const EntityManager& other) = delete;
+	explicit SceneGraphManager(Scene& scene);
+	SceneGraphManager(const SceneGraphManager& other) = delete;
 
-	/** Total time since game start, in seconds. */
-	const double& ElapsedTime() const
-	{
-		return m_elapsedTime;
-	}
-
-	/** Time since last frame, in seconds. */
-	const double& DeltaTime() const
-	{
-		return m_deltaTime;
-	}
-
-	void Tick(double elapsedTime);
+	void Initialize() override;
+	void Tick() override;
 
 	Entity& Instantiate(std::string name);
 	Entity& Instantiate(std::string name, Entity& parent);

@@ -8,17 +8,20 @@
       <UniqueIdentifier>0e1b36f7-2536-4edf-a796-6c7dda2f6a04</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dds;dlg;fbx;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Scenegraph">
-      <UniqueIdentifier>{a82e037c-f09d-4da8-ad77-13cdd17ce8c7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Components">
-      <UniqueIdentifier>{a1dbed6d-878d-4e6f-a6a2-e1f02dd1bc54}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Assets\shaders">
       <UniqueIdentifier>{5552b684-2186-4d88-a4a8-3b3fd05d6580}</UniqueIdentifier>
     </Filter>
-    <Filter Include="RenderService">
+    <Filter Include="Managers">
+      <UniqueIdentifier>{a1dbed6d-878d-4e6f-a6a2-e1f02dd1bc54}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers\SceneGraph">
+      <UniqueIdentifier>{a82e037c-f09d-4da8-ad77-13cdd17ce8c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers\Renderer">
       <UniqueIdentifier>{e2abaab7-70a2-434c-bf13-f8d8bbc91183}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Managers\Scripting">
+      <UniqueIdentifier>{aa84136d-04a0-4739-bf9b-a40477a648cf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -31,36 +34,42 @@
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="Entity.h">
-      <Filter>Scenegraph</Filter>
-    </ClInclude>
-    <ClInclude Include="EntityManager.h">
-      <Filter>Scenegraph</Filter>
+      <Filter>Managers\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="Bound.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Component.h">
-      <Filter>Scenegraph</Filter>
-    </ClInclude>
-    <ClInclude Include="TestComponent.h">
-      <Filter>Components</Filter>
+      <Filter>Managers\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="Scene.h">
-      <Filter>Scenegraph</Filter>
+      <Filter>Managers\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="RendererData.h">
-      <Filter>RenderService</Filter>
+      <Filter>Managers\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Material.h">
-      <Filter>RenderService</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderableComponent.h">
-      <Filter>Components</Filter>
-    </ClInclude>
-    <ClInclude Include="EntityRenderService.h">
-      <Filter>RenderService</Filter>
+      <Filter>Managers\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="EntityFilter.h">
-      <Filter>Scenegraph</Filter>
+      <Filter>Managers\SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityScriptingManager.h">
+      <Filter>Managers\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="ManagerBase.h">
+      <Filter>Managers\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneGraphManager.h">
+      <Filter>Managers\SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityRenderManager.h">
+      <Filter>Managers\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderableComponent.h">
+      <Filter>Managers\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="TestComponent.h">
+      <Filter>Managers\Scripting</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -71,32 +80,35 @@
       <Filter>Common</Filter>
     </ClCompile>
     <ClCompile Include="Entity.cpp">
-      <Filter>Scenegraph</Filter>
-    </ClCompile>
-    <ClCompile Include="EntityManager.cpp">
-      <Filter>Scenegraph</Filter>
+      <Filter>Managers\SceneGraph</Filter>
     </ClCompile>
     <ClCompile Include="Bound.cpp" />
     <ClCompile Include="Component.cpp">
-      <Filter>Scenegraph</Filter>
-    </ClCompile>
-    <ClCompile Include="TestComponent.cpp">
-      <Filter>Components</Filter>
+      <Filter>Managers\SceneGraph</Filter>
     </ClCompile>
     <ClCompile Include="Scene.cpp">
-      <Filter>Scenegraph</Filter>
+      <Filter>Managers\SceneGraph</Filter>
     </ClCompile>
     <ClCompile Include="RendererData.cpp">
-      <Filter>RenderService</Filter>
+      <Filter>Managers\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Material.cpp">
-      <Filter>RenderService</Filter>
+      <Filter>Managers\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityScriptingManager.cpp">
+      <Filter>Managers\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneGraphManager.cpp">
+      <Filter>Managers\SceneGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityRenderManager.cpp">
+      <Filter>Managers\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="RenderableComponent.cpp">
-      <Filter>Components</Filter>
+      <Filter>Managers\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="EntityRenderService.cpp">
-      <Filter>RenderService</Filter>
+    <ClCompile Include="TestComponent.cpp">
+      <Filter>Managers\Scripting</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -20,5 +20,6 @@ namespace OE {
 		}
 
 		void SetSpeed(const DirectX::FXMVECTOR &speed) { m_speed = speed; }
+		const DirectX::XMVECTOR &GetSpeed() const { return m_speed; }
 	};
 }

@@ -1,14 +1,16 @@
 #pragma once
 #include <vector>
+#include <memory>
+#include <d3d11.h>
 
-namespace OE {
-
+namespace OE 
+{
 	struct VertexBufferAccessor
 	{
 		VertexBufferAccessor();
 		~VertexBufferAccessor();
 
-		ID3D11Buffer* m_buffer;
+		ID3D11Buffer *m_buffer;
 		unsigned int m_stride;
 		unsigned int m_offset;
 	};

@@ -4,8 +4,12 @@
 
 #include "pch.h"
 #include "Game.h"
-#include "EntityManager.h"
+#include "SceneGraphManager.h"
+#include "Scene.h"
 #include "TestComponent.h"
+#include "RenderableComponent.h"
+#include "EntityRenderManager.h"
+#include "SceneGraphManager.h"
 
 extern void ExitGame();
 
@@ -35,7 +39,7 @@ void Game::Initialize(HWND window, int width, int height)
 		m_timer.SetTargetElapsedSeconds(1.0 / 60);
 		*/
 
-		EntityManager& entityManager = m_scene->EntityManager();
+		SceneGraphManager& entityManager = m_scene->GetEntityManager();
 		Entity& root1 = entityManager.Instantiate("Root 1");
 		Entity& child1 = entityManager.Instantiate("Child 1", root1);
 		Entity& child2 = entityManager.Instantiate("Child 2", root1);
@@ -55,10 +59,9 @@ void Game::Initialize(HWND window, int width, int height)
 		child2.SetLocalPosition(XMVectorSet(0, 0, 0, 1));
 		child3.SetLocalPosition(XMVectorSet(-4, 0, 0, 1));
 
-		auto matl = std::make_shared<Material>();
-		child1.AddComponent<RenderableComponent>().SetMaterial(matl);
-		child2.AddComponent<RenderableComponent>().SetMaterial(matl);
-		child3.AddComponent<RenderableComponent>().SetMaterial(matl);
+		child1.AddComponent<RenderableComponent>().SetMaterialName("VertexColorTest");
+		child2.AddComponent<RenderableComponent>().SetMaterialName("VertexColorTest");
+		child3.AddComponent<RenderableComponent>().SetMaterialName("VertexColorTest");
 	}
 
 	m_deviceResources->CreateDeviceResources();
@@ -84,7 +87,7 @@ void Game::Tick()
 void Game::Update(DX::StepTimer const& timer)
 {
     // TODO: Add your game logic here.
-	m_scene->EntityManager().Tick(timer.GetElapsedSeconds());
+	m_scene->Tick(timer);
 }
 #pragma endregion
 
@@ -104,7 +107,7 @@ void Game::Render()
     auto context = m_deviceResources->GetD3DDeviceContext();
 
     // TODO: Add your rendering code here.
-	m_scene->EntityRenderer().Render(*m_deviceResources);
+	m_scene->GetEntityRenderService().Render(*m_deviceResources);
 
     m_deviceResources->PIXEndEvent();
 
@@ -187,13 +190,13 @@ void Game::GetDefaultSize(int& width, int& height) const
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
-	m_scene->EntityRenderer().CreateDeviceDependentResources(*m_deviceResources);
+	m_scene->GetEntityRenderService().CreateDeviceDependentResources(*m_deviceResources);
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
-	m_scene->EntityRenderer().CreateWindowSizeDependentResources(*m_deviceResources);
+	m_scene->GetEntityRenderService().CreateWindowSizeDependentResources(*m_deviceResources);
 }
 
 void Game::OnDeviceLost()

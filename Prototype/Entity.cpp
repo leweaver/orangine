@@ -1,6 +1,6 @@
 ﻿#include "pch.h"
 #include "Entity.h"
-#include "EntityManager.h"
+#include "SceneGraphManager.h"
 #include "Scene.h"
 #include "Constants.h"
 
@@ -38,14 +38,6 @@ void Entity::Initialize()
 			child->Initialize();
 		}
 	}
-
-	if (!m_components.empty())
-	{
-		for (auto const& comp : m_components)
-		{
-			comp.get()->Initialize();
-		}
-	}
 }
 
 void Entity::Update()
@@ -59,17 +51,9 @@ void Entity::Update()
 				child->Update();
 		}
 	}
-
-	if (!m_components.empty())
-	{
-		for (auto const& comp : m_components)
-		{
-			comp.get()->Update();
-		}
-	}
 }
 
-Component& Entity::GetComponent(unsigned int index) const
+Component& Entity::GetComponent(size_t index) const
 {
 	return *m_components[index].get();
 }
@@ -100,7 +84,7 @@ void Entity::SetParent(Entity& newParent)
 		RemoveParent();
 	}
 
-	const std::shared_ptr<Entity> thisPtr = m_scene.EntityManager().RemoveFromRoot(*this);
+	const std::shared_ptr<Entity> thisPtr = m_scene.GetEntityManager().RemoveFromRoot(*this);
 	newParent.m_children.push_back(thisPtr);
 	m_parent = &newParent;
 }
@@ -119,7 +103,7 @@ void Entity::RemoveParent()
 		}
 	}
 
-	m_scene.EntityManager().AddToRoot(*this);
+	m_scene.GetEntityManager().AddToRoot(*this);
 	m_parent = nullptr;
 }
 

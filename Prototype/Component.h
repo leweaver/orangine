@@ -9,21 +9,33 @@ namespace OE {
 	 */
 	class Component
 	{
-	protected:
-		Entity& m_entity;
+	public:
+		using ComponentType = unsigned int;
+
+	private:
+		static ComponentType ms_maxComponentId;
 
 	public:
-		explicit Component(Entity& entity)
-			: m_entity(entity)
-		{
-		}
+		/** Returns a new, unique component id */
+		static ComponentType CreateComponentTypeId();
 
+		Component() {}
 		virtual ~Component() {}
 
-		virtual void Initialize() = 0;
-		virtual void Update() = 0;
+		virtual ComponentType GetType() const = 0;
 
-		Entity& GetEntity() const { return m_entity; }
 	};
 
 }
+
+#define DECLARE_COMPONENT_TYPE \
+public:\
+	ComponentType GetType() const override; \
+	static ComponentType Type(); \
+private:\
+	static Component::ComponentType ms_typeId;
+
+#define DEFINE_COMPONENT_TYPE(classname) \
+Component::ComponentType classname::ms_typeId = Component::CreateComponentTypeId(); \
+classname::ComponentType classname::GetType() const { return ms_typeId; }\
+classname::ComponentType classname::Type() { return ms_typeId; }

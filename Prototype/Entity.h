@@ -9,7 +9,7 @@
 namespace OE {
 
 	class Scene;
-	class EntityManager;
+	class SceneGraphManager;
 
 	/**
 	 * A node in the scenegraph. This class is not designed to be extended via polymorphism; 
@@ -18,7 +18,7 @@ namespace OE {
 	 */
 	__declspec(align(16)) class Entity
 	{
-		friend EntityManager;
+		friend SceneGraphManager;
 
 		typedef unsigned int ID_TYPE;
 		typedef std::vector<std::shared_ptr<Entity>> EntityPtrVec;
@@ -92,7 +92,7 @@ namespace OE {
 		const ID_TYPE& GetId() const { return m_id; }
 		size_t GetComponentCount() const { return m_components.size(); }
 
-		Component& GetComponent(unsigned int index) const;
+		Component& GetComponent(size_t index) const;
 
 		template<typename TComponent>
 		std::vector<std::reference_wrapper<TComponent>> GetComponentsOfType() const;
@@ -199,7 +199,7 @@ namespace OE {
 	template <typename TComponent>
 	TComponent& Entity::AddComponent()
 	{
-		TComponent* component = new TComponent(*this);
+		TComponent* component = new TComponent();
 		m_components.push_back(std::unique_ptr<Component>(component));
 
 		this->OnComponentAdded(*component);

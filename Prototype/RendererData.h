@@ -3,10 +3,10 @@
 
 namespace OE {
 
-	struct VertexBufferDesc
+	struct VertexBufferAccessor
 	{
-		VertexBufferDesc();
-		~VertexBufferDesc();
+		VertexBufferAccessor();
+		~VertexBufferAccessor();
 
 		ID3D11Buffer* m_buffer;
 		unsigned int m_stride;
@@ -21,7 +21,7 @@ namespace OE {
 
 		void Release();
 
-		std::vector<std::unique_ptr<VertexBufferDesc>> m_vertexBuffers;
+		std::vector<std::unique_ptr<VertexBufferAccessor>> m_vertexBuffers;
 		unsigned int m_vertexCount;
 
 		ID3D11Buffer* m_indexBuffer;

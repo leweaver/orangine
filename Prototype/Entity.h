@@ -10,6 +10,12 @@ namespace OE {
 
 	class Scene;
 	class EntityManager;
+
+	/**
+	 * A node in the scenegraph. This class is not designed to be extended via polymorphism; 
+	 * functionality and behaviors should be added in the form of Components (for storing state)
+	 * and GameServices (for executing behavior).
+	 */
 	__declspec(align(16)) class Entity
 	{
 		friend EntityManager;

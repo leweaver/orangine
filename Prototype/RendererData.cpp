@@ -3,14 +3,14 @@
 
 using namespace OE;
 
-VertexBufferDesc::VertexBufferDesc()
+VertexBufferAccessor::VertexBufferAccessor()
 	: m_buffer(nullptr)
 	, m_stride(0)
 	, m_offset(0)
 {
 }
 
-VertexBufferDesc::~VertexBufferDesc()
+VertexBufferAccessor::~VertexBufferAccessor()
 {
 	if (m_buffer)
 		m_buffer->Release();

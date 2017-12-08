@@ -49,9 +49,9 @@ void EntityRenderer::Render(const DX::DeviceResources &deviceResources)
 			// Send the buffers to the input assembler
 			if (rendererData->m_vertexBuffers.size()) {
 				auto &vertexBuffers = rendererData->m_vertexBuffers;
-				for (std::vector<VertexBufferDesc>::size_type i = 0; i < vertexBuffers.size(); ++i)
+				for (std::vector<VertexBufferAccessor>::size_type i = 0; i < vertexBuffers.size(); ++i)
 				{
-					const VertexBufferDesc &vertexBufferDesc = *rendererData->m_vertexBuffers[i].get();
+					const VertexBufferAccessor &vertexBufferDesc = *rendererData->m_vertexBuffers[i].get();
 					
 					deviceContext->IASetVertexBuffers(static_cast<UINT>(i), 1, &vertexBufferDesc.m_buffer, &vertexBufferDesc.m_stride, &vertexBufferDesc.m_offset);
 				}

@@ -54,8 +54,8 @@ RendererData* RenderableComponent::CreateRendererData(const DX::DeviceResources 
 		InitData.SysMemSlicePitch = 0;
 
 		// Create the vertex buffer.
-		m_rendererData->m_vertexBuffers.push_back(std::make_unique<VertexBufferDesc>());
-		VertexBufferDesc &vertexBufferDesc = *m_rendererData->m_vertexBuffers.rbegin()->get();
+		m_rendererData->m_vertexBuffers.push_back(std::make_unique<VertexBufferAccessor>());
+		VertexBufferAccessor &vertexBufferDesc = *m_rendererData->m_vertexBuffers.rbegin()->get();
 
 		// Get a reference
 		vertexBufferDesc.m_stride = sizeof(SimpleVertexCombined);

@@ -4,6 +4,7 @@
 #include "ManagerBase.h"
 
 #include <map>
+#include "RendererData.h"
 
 namespace OE {
 	class Scene;
@@ -18,18 +19,19 @@ namespace OE {
 		std::shared_ptr<EntityFilter> entityFilter;
 
 	public:
-		explicit EntityRenderManager(Scene& scene);
+		explicit EntityRenderManager(Scene &scene);
 		~EntityRenderManager();
 		
 		void Initialize() override;
 		void Tick() override;
 
-		void CreateDeviceDependentResources(const DX::DeviceResources& deviceResources);
-		void CreateWindowSizeDependentResources(const DX::DeviceResources& deviceResources);
-		void Render(const DX::DeviceResources& deviceResources);
+		void CreateDeviceDependentResources(const DX::DeviceResources &deviceResources);
+		void CreateWindowSizeDependentResources(const DX::DeviceResources &deviceResources);
+		void Render(const DX::DeviceResources &deviceResources);
 		
 	private:
-		std::unique_ptr<RendererData> CreateRendererData(const DX::DeviceResources deviceResources);
+		std::unique_ptr<VertexBufferAccessor> CreateBufferFromData(const DX::DeviceResources &deviceResources, const void *data, UINT elementSize, UINT numVertices) const;
+		std::unique_ptr<RendererData> CreateRendererData(const DX::DeviceResources &deviceResources) const;
 		std::unique_ptr<Material> LoadMaterial(const std::string &materialName);
 	};
 

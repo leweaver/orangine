@@ -47,21 +47,10 @@ void Game::Initialize(HWND window, int width, int height)
 
 		// Test 2
 		root1.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
-		child1.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.5f, 0.0f, 0.0f, 0.0f));
-		child2.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.5f, 0.0f, 0.0f));
-		child3.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.0f, 0.5f, 0.0f));
-		
-		child1.SetLocalScale(XMVectorSet(2, 1, 1, 1));
-		child2.SetLocalScale(XMVectorSet(1, 2, 1, 1));
-		child3.SetLocalScale(XMVectorSet(1, 1, 2, 1));
 
-		child1.SetLocalPosition(XMVectorSet(4, 0, 0, 1));
-		child2.SetLocalPosition(XMVectorSet(0, 0, 0, 1));
-		child3.SetLocalPosition(XMVectorSet(-4, 0, 0, 1));
-
-		child1.AddComponent<RenderableComponent>().SetMaterialName("VertexColorTest");
-		child2.AddComponent<RenderableComponent>().SetMaterialName("VertexColorTest");
-		child3.AddComponent<RenderableComponent>().SetMaterialName("VertexColorTest");
+		AddCubeToEntity(child1, XMVectorSet(0.5f, 0.0f, 0.0f, 0.0f),  XMVectorSet(2, 1, 1, 1), XMVectorSet(4, 0, 0, 1));
+		AddCubeToEntity(child2, XMVectorSet(0.0f, 0.5f, 0.0f, 0.0f), XMVectorSet(1, 2, 1, 1), XMVectorSet(0, 0, 0, 1));
+		AddCubeToEntity(child3, XMVectorSet(0.0f, 0.0f, 0.5f, 0.0f), XMVectorSet(1, 1, 2, 1), XMVectorSet(-4, 0, 0, 1));
 	}
 
 	m_deviceResources->CreateDeviceResources();
@@ -69,6 +58,18 @@ void Game::Initialize(HWND window, int width, int height)
 
 	m_deviceResources->CreateWindowSizeDependentResources();
 	CreateWindowSizeDependentResources();
+}
+
+void Game::AddCubeToEntity(Entity& entity, FXMVECTOR animationSpeed, FXMVECTOR localScale, FXMVECTOR localPosition)
+{
+	entity.AddComponent<TestComponent>().SetSpeed(animationSpeed);
+
+	entity.SetLocalScale(localScale);
+	entity.SetLocalPosition(localPosition);
+	
+	auto renderable = entity.AddComponent<RenderableComponent>();
+	renderable.SetMaterialName("VertexColorTest");
+	renderable.SetMeshName("dynamicColor");
 }
 
 #pragma region Frame Update

@@ -3,6 +3,18 @@
 
 using namespace OE;
 
+
+VertexBuffer::VertexBuffer(ID3D11Buffer *buffer) 
+	: m_buffer(buffer)
+{
+}
+
+VertexBuffer::~VertexBuffer()
+{
+	if (m_buffer != nullptr)
+		m_buffer->Release();
+}
+
 VertexBufferAccessor::VertexBufferAccessor()
 	: m_buffer(nullptr)
 	, m_stride(0)
@@ -12,8 +24,6 @@ VertexBufferAccessor::VertexBufferAccessor()
 
 VertexBufferAccessor::~VertexBufferAccessor()
 {
-	if (m_buffer)
-		m_buffer->Release();
 	m_buffer = nullptr;
 }
 

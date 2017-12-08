@@ -50,13 +50,13 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 		DirectX::XMConvertToRadians(45.0f),
 		aspectRatio,
 		0.01f,
-		1000.0f);
+		10000.0f);
 
 	auto deviceContext = deviceResources.GetD3DDeviceContext();
 
 	for (auto iter = entityFilter->begin(); iter != entityFilter->end(); ++iter)
 	{
-		auto entity = *iter;
+		const auto entity = *iter;
 		auto renderable = entity->GetFirstComponentOfType<RenderableComponent>();
 		if (!renderable->GetVisible())
 			continue;
@@ -64,7 +64,7 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 		try {
 			// TODO: Don't look up the mesh data by name in a map each frame... perhaps cache it on the component? Are we allowing that?
 			const std::string &meshName = renderable->GetMeshName();
-			auto meshRendererDataPos = m_meshRendererData.find(meshName);
+			const auto meshRendererDataPos = m_meshRendererData.find(meshName);
 			if (meshRendererDataPos == m_meshRendererData.end()) {
 				m_meshRendererData[meshName] = std::move(CreateRendererData(deviceResources));
 			}
@@ -73,11 +73,26 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 			// Send the buffers to the input assembler
 			if (rendererData->m_vertexBuffers.size()) {
 				auto &vertexBuffers = rendererData->m_vertexBuffers;
-				for (std::vector<VertexBufferAccessor>::size_type i = 0; i < vertexBuffers.size(); ++i)
+				const size_t numBuffers = vertexBuffers.size();
+
+				if (numBuffers > 1) {
+					ID3D11Buffer **buffers = new ID3D11Buffer*[numBuffers];
+					UINT *strides = new UINT[numBuffers];
+					UINT *offsets = new UINT[numBuffers];
+
+					for (std::vector<VertexBufferAccessor>::size_type i = 0; i < numBuffers; ++i)
+					{
+						const VertexBufferAccessor &vertexBufferDesc = *rendererData->m_vertexBuffers[i].get();
+						buffers[i] = vertexBufferDesc.m_buffer->m_buffer;
+						strides[i] = vertexBufferDesc.m_stride;
+						offsets[i] = vertexBufferDesc.m_offset;
+					}
+					deviceContext->IASetVertexBuffers(0, static_cast<UINT>(numBuffers), buffers, strides, offsets);
+				} 
+				else
 				{
-					const VertexBufferAccessor &vertexBufferDesc = *rendererData->m_vertexBuffers[i].get();
-					
-					deviceContext->IASetVertexBuffers(static_cast<UINT>(i), 1, &vertexBufferDesc.m_buffer, &vertexBufferDesc.m_stride, &vertexBufferDesc.m_offset);
+					const VertexBufferAccessor &vertexBufferDesc = *rendererData->m_vertexBuffers[0].get();
+					deviceContext->IASetVertexBuffers(0, 1, &vertexBufferDesc.m_buffer->m_buffer, &vertexBufferDesc.m_stride, &vertexBufferDesc.m_offset);
 				}
 
 				// Set the type of primitive that should be rendered from this vertex buffer, in this case triangles.
@@ -115,55 +130,49 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 	}
 }
 
-
+/*
 struct SimpleVertexCombined
 {
 	XMFLOAT3 Pos;
 	XMFLOAT3 Col;
 };
+*/
 
-std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const DX::DeviceResources deviceResources)
+std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const DX::DeviceResources &deviceResources) const
 {
 	auto rendererData = std::make_unique<RendererData>();
 	{
-		// Supply the actual vertex data.
 		constexpr float size = 1.0f;
 		constexpr unsigned int NUM_VERTICES = 8;
-		SimpleVertexCombined verticesCombo[] =
-		{
-			XMFLOAT3(size,  size, -size), XMFLOAT3(1.0f, 1.0f, 1.0f),
-			XMFLOAT3(-size,  size, -size), XMFLOAT3(0.0f, 1.0f, 1.0f),
-			XMFLOAT3(size, -size, -size), XMFLOAT3(1.0f, 0.0f, 1.0f),
-			XMFLOAT3(-size, -size, -size), XMFLOAT3(0.0f, 0.0f, 1.0f),
 
-			XMFLOAT3(size,  size,  size), XMFLOAT3(1.0f, 1.0f, 0.0f),
-			XMFLOAT3(-size,  size,  size), XMFLOAT3(0.0f, 1.0f, 0.0f),
-			XMFLOAT3(size, -size,  size), XMFLOAT3(1.0f, 0.0f, 0.0f),
-			XMFLOAT3(-size, -size,  size), XMFLOAT3(0.0f, 0.0f, 0.0f),
+		// Supply the actual vertex data.
+		XMFLOAT3 positions[] = {
+			XMFLOAT3( size,  size, -size),
+			XMFLOAT3(-size,  size, -size),
+			XMFLOAT3( size, -size, -size),
+			XMFLOAT3(-size, -size, -size),
+			XMFLOAT3( size,  size,  size),
+			XMFLOAT3(-size,  size,  size),
+			XMFLOAT3( size, -size,  size),
+			XMFLOAT3(-size, -size,  size),
+		};
+		XMFLOAT3 colors[] = {
+			XMFLOAT3(1.0f, 1.0f, 1.0f),
+			XMFLOAT3(0.0f, 1.0f, 1.0f),
+			XMFLOAT3(1.0f, 0.0f, 1.0f),
+			XMFLOAT3(0.0f, 0.0f, 1.0f),
+
+			XMFLOAT3(1.0f, 1.0f, 0.0f),
+			XMFLOAT3(0.0f, 1.0f, 0.0f),
+			XMFLOAT3(1.0f, 0.0f, 0.0f),
+			XMFLOAT3(0.0f, 0.0f, 0.0f),
 		};
 
-		// Fill in a buffer description.
-		D3D11_BUFFER_DESC bufferDesc;
-		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		bufferDesc.ByteWidth = sizeof(SimpleVertexCombined) * NUM_VERTICES;
-		bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		bufferDesc.CPUAccessFlags = 0;
-		bufferDesc.MiscFlags = 0;
+		auto positionsPtr = CreateBufferFromData(deviceResources, positions, sizeof(XMFLOAT3), NUM_VERTICES);
+		rendererData->m_vertexBuffers.push_back(move(positionsPtr));
 
-		// Fill in the subresource data.
-		D3D11_SUBRESOURCE_DATA InitData;
-		InitData.pSysMem = verticesCombo;
-		InitData.SysMemPitch = 0;
-		InitData.SysMemSlicePitch = 0;
-
-		// Create the vertex buffer.
-		rendererData->m_vertexBuffers.push_back(std::make_unique<VertexBufferAccessor>());
-		VertexBufferAccessor &vertexBufferDesc = *rendererData->m_vertexBuffers.rbegin()->get();
-
-		// Get a reference
-		vertexBufferDesc.m_stride = sizeof(SimpleVertexCombined);
-		HRESULT hr = deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &vertexBufferDesc.m_buffer);
-		assert(!FAILED(hr));
+		auto colorsPtr = CreateBufferFromData(deviceResources, colors, sizeof(XMFLOAT3), NUM_VERTICES);
+		rendererData->m_vertexBuffers.push_back(move(colorsPtr));
 	}
 
 	// ---------------
@@ -222,9 +231,40 @@ std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const DX::
 	return rendererData;
 }
 
+std::unique_ptr<VertexBufferAccessor> EntityRenderManager::CreateBufferFromData(const DX::DeviceResources &deviceResources,
+	const void *data, UINT elementSize, UINT numVertices) const
+{
+	// Create the vertex buffer.
+	auto accessor = std::make_unique<VertexBufferAccessor>();
+
+	// Fill in a buffer description.
+	D3D11_BUFFER_DESC bufferDesc;
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.ByteWidth = elementSize * numVertices;
+	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferDesc.CPUAccessFlags = 0;
+	bufferDesc.MiscFlags = 0;
+
+	// Fill in the subresource data.
+	D3D11_SUBRESOURCE_DATA InitData;
+	InitData.pSysMem = data;
+	InitData.SysMemPitch = 0;
+	InitData.SysMemSlicePitch = 0;
+
+	// Get a reference
+	accessor->m_stride = elementSize;
+	ID3D11Buffer* buffer;
+	HRESULT hr = deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &buffer);
+	assert(!FAILED(hr));
+
+	accessor->m_buffer = std::make_shared<VertexBuffer>(buffer);
+
+	return accessor;
+}
+
 std::unique_ptr<Material> EntityRenderManager::LoadMaterial(const std::string &materialName) {
 	// TODO: Look up by name. For now, hard coded!!
-	materialName;
+	(void)materialName;
 
 	return std::make_unique<Material>();
 }

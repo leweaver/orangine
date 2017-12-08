@@ -59,7 +59,7 @@ struct Constants
 	DirectX::XMMATRIX m_world;
 };
 
-bool Material::Render(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix, const DX::DeviceResources &deviceResources)
+bool Material::Render(const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix, const DX::DeviceResources &deviceResources)
 {
 	if (m_errorState)
 		return false;
@@ -88,7 +88,7 @@ bool Material::Render(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMAT
 			D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
 			{
 				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-				{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+				{ "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 			};
 			const unsigned int numElements = ARRAYSIZE(inputLayoutDesc);
 

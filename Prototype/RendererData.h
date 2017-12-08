@@ -5,12 +5,20 @@
 
 namespace OE 
 {
+	struct VertexBuffer
+	{
+		VertexBuffer(ID3D11Buffer *buffer);
+		~VertexBuffer();
+
+		ID3D11Buffer *const m_buffer;
+	};
+
 	struct VertexBufferAccessor
 	{
 		VertexBufferAccessor();
 		~VertexBufferAccessor();
 
-		ID3D11Buffer *m_buffer;
+		std::shared_ptr<VertexBuffer> m_buffer;
 		unsigned int m_stride;
 		unsigned int m_offset;
 	};

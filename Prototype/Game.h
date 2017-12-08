@@ -17,7 +17,7 @@ class Game : public DX::IDeviceNotify
 public:
 
     Game();
-
+	
     // Initialization and management
     void Initialize(HWND window, int width, int height);
 
@@ -48,6 +48,8 @@ private:
 
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
+
+	static void AddCubeToEntity(OE::Entity& entity, DirectX::FXMVECTOR animationSpeed, DirectX::FXMVECTOR localScale, DirectX::FXMVECTOR localPosition);
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;

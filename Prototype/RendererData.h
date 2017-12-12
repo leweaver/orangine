@@ -5,6 +5,15 @@
 
 namespace OE 
 {
+	enum VertexAttribute
+	{
+		VA_POSITION,
+		VA_COLOR,
+		VA_NORMAL,
+		VA_TANGENT,
+		VA_TEXCOORD_0,
+	};
+
 	struct VertexBuffer
 	{
 		VertexBuffer(ID3D11Buffer *buffer);

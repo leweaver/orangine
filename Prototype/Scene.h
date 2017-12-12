@@ -6,6 +6,7 @@ namespace OE {
 	class SceneGraphManager;
 	class EntityRenderManager;
 	class EntityScriptingManager;
+	class AssetManager;
 	class Entity;
 	class Component;
 
@@ -14,6 +15,7 @@ namespace OE {
 		std::unique_ptr<SceneGraphManager> m_entityManager;
 		std::unique_ptr<EntityRenderManager> m_entityRenderer;
 		std::unique_ptr<EntityScriptingManager> m_entityScriptinigManager;
+		std::unique_ptr<AssetManager> m_assetManager;
 
 		// Values as of the last call to Tick.
 		double m_deltaTime = 0;
@@ -23,9 +25,10 @@ namespace OE {
 		Scene();
 		~Scene();
 
-		SceneGraphManager& GetEntityManager() const { return *m_entityManager; }
-		EntityRenderManager& GetEntityRenderService() const { return *m_entityRenderer; }
-		EntityScriptingManager& GetEntityScriptingManager() const { return *m_entityScriptinigManager; }
+		SceneGraphManager &GetEntityManager() const { return *m_entityManager; }
+		EntityRenderManager &GetEntityRenderService() const { return *m_entityRenderer; }
+		EntityScriptingManager &GetEntityScriptingManager() const { return *m_entityScriptinigManager; }
+		AssetManager &GetAssetManager() const { return *m_assetManager; }
 
 		void Tick(DX::StepTimer const& timer);
 

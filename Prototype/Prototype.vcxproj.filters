@@ -23,6 +23,12 @@
     <Filter Include="Managers\Scripting">
       <UniqueIdentifier>{aa84136d-04a0-4739-bf9b-a40477a648cf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="lib">
+      <UniqueIdentifier>{3422d8bf-059e-46ea-82ad-33032b7c1166}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\tinygltf">
+      <UniqueIdentifier>{e9aa8d28-b8b8-4226-a8e9-b0f2775146f4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -56,9 +62,6 @@
     <ClInclude Include="EntityScriptingManager.h">
       <Filter>Managers\Scripting</Filter>
     </ClInclude>
-    <ClInclude Include="ManagerBase.h">
-      <Filter>Managers\Scripting</Filter>
-    </ClInclude>
     <ClInclude Include="SceneGraphManager.h">
       <Filter>Managers\SceneGraph</Filter>
     </ClInclude>
@@ -70,6 +73,28 @@
     </ClInclude>
     <ClInclude Include="TestComponent.h">
       <Filter>Managers\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\tinygltf\json.hpp">
+      <Filter>lib\tinygltf</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\tinygltf\stb_image.h">
+      <Filter>lib\tinygltf</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\tinygltf\tiny_gltf.h">
+      <Filter>lib\tinygltf</Filter>
+    </ClInclude>
+    <ClInclude Include="glTFMeshLoader.h">
+      <Filter>Managers\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshLoader.h">
+      <Filter>Managers\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetManager.h">
+      <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="SimpleTypes.h" />
+    <ClInclude Include="ManagerBase.h">
+      <Filter>Managers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -109,6 +134,12 @@
     </ClCompile>
     <ClCompile Include="TestComponent.cpp">
       <Filter>Managers\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="glTFMeshLoader.cpp">
+      <Filter>Managers\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="AssetManager.cpp">
+      <Filter>Managers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -5,20 +5,22 @@
 #include "Component.h"
 #include "EntityRenderManager.h"
 #include "SceneGraphManager.h"
-#include "RenderableComponent.h"
 #include "EntityScriptingManager.h"
+#include "AssetManager.h"
 
 using namespace OE;
 
 Scene::Scene()
 {
-	m_entityManager = std::make_unique<OE::SceneGraphManager>(*this);
-	m_entityRenderer = std::make_unique<OE::EntityRenderManager>(*this);
+	m_entityManager = std::make_unique<SceneGraphManager>(*this);
+	m_entityRenderer = std::make_unique<EntityRenderManager>(*this);
 	m_entityScriptinigManager = std::make_unique<EntityScriptingManager>(*this);
+	m_assetManager = std::make_unique<AssetManager>(*this);
 
 	m_entityManager->Initialize();
 	m_entityRenderer->Initialize();
 	m_entityScriptinigManager->Initialize();
+	m_assetManager->Initialize();
 }
 
 Scene::~Scene()

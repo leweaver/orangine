@@ -67,9 +67,9 @@ void Game::AddCubeToEntity(Entity& entity, FXMVECTOR animationSpeed, FXMVECTOR l
 	entity.SetLocalScale(localScale);
 	entity.SetLocalPosition(localPosition);
 	
-	auto renderable = entity.AddComponent<RenderableComponent>();
+	RenderableComponent &renderable = entity.AddComponent<RenderableComponent>();
 	renderable.SetMaterialName("VertexColorTest");
-	renderable.SetMeshName("dynamicColor");
+	renderable.SetMeshName("data/meshes/Cube/Cube.gltf");
 }
 
 #pragma region Frame Update

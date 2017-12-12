@@ -9,6 +9,9 @@
 #include "Scene.h"
 
 #include <set>
+#include "glTFMeshLoader.h"
+#include <functional>
+#include <iostream>
 
 using namespace OE;
 using namespace DirectX;
@@ -26,7 +29,9 @@ void EntityRenderManager::Initialize()
 {
 	std::set<Component::ComponentType> filter;
 	filter.insert(RenderableComponent::Type());
-	entityFilter = m_scene.GetEntityManager().GetEntityFilter(filter);
+	m_entityFilter = m_scene.GetEntityManager().GetEntityFilter(filter);
+	
+	AddMeshLoader<glTFMeshLoader>();
 }
 
 void EntityRenderManager::Tick() {
@@ -54,7 +59,7 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 
 	auto deviceContext = deviceResources.GetD3DDeviceContext();
 
-	for (auto iter = entityFilter->begin(); iter != entityFilter->end(); ++iter)
+	for (auto iter = m_entityFilter->begin(); iter != m_entityFilter->end(); ++iter)
 	{
 		const auto entity = *iter;
 		auto renderable = entity->GetFirstComponentOfType<RenderableComponent>();
@@ -66,7 +71,7 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 			const std::string &meshName = renderable->GetMeshName();
 			const auto meshRendererDataPos = m_meshRendererData.find(meshName);
 			if (meshRendererDataPos == m_meshRendererData.end()) {
-				m_meshRendererData[meshName] = std::move(CreateRendererData(deviceResources));
+				m_meshRendererData[meshName] = std::move(LoadRendererDataFromFile(meshName, deviceResources));
 			}
 			RendererData* rendererData = m_meshRendererData[meshName].get();
 
@@ -123,9 +128,10 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 				}
 			}
 		} 
-		catch (...)
+		catch (std::runtime_error &err)
 		{
 			renderable->SetVisible(false);
+			throw err;
 		}
 	}
 }
@@ -138,8 +144,25 @@ struct SimpleVertexCombined
 };
 */
 
-std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const DX::DeviceResources &deviceResources) const
+std::unique_ptr<RendererData> EntityRenderManager::LoadRendererDataFromFile(const std::string &filename, const DX::DeviceResources &deviceResources) const
 {
+	// Get the file extension
+	const auto dotPos = filename.find_last_of('.');
+	if (dotPos == std::string::npos)
+		throw std::runtime_error("Cannot load mesh; given file doesn't have an extension.");
+
+	std::string extension = filename.substr(dotPos + 1);
+	const auto extPos = m_meshLoaders.find(extension);
+	if (extPos == m_meshLoaders.end())
+		throw std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension);
+
+	// TODO: This is the wrong place for glTF load. Should move to something higher up... EntityManager? That should then create meshes.
+	return extPos->second->LoadFile(filename, deviceResources);
+}
+
+std::unique_ptr<RendererData> EntityRenderManager::LoadDummyData(const DX::DeviceResources &deviceResources) const {
+
+
 	auto rendererData = std::make_unique<RendererData>();
 	{
 		constexpr float size = 1.0f;

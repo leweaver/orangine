@@ -66,8 +66,8 @@ bool Material::Render(const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, c
 
 	auto device = deviceResources.GetD3DDevice();
 	auto context = deviceResources.GetD3DDeviceContext();
-	const auto vsName = L"shaders/vertex_colors_VS.hlsl";
-	const auto psName = L"shaders/vertex_colors_PS.hlsl";
+	const auto vsName = L"data/shaders/vertex_colors_VS.hlsl";
+	const auto psName = L"data/shaders/vertex_colors_PS.hlsl";
 
 	Constants constants;
 

@@ -81,3 +81,5 @@ namespace DX
         }
     }
 }
+
+#include "SimpleTypes.h"

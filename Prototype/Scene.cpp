@@ -7,18 +7,27 @@
 #include "SceneGraphManager.h"
 #include "EntityScriptingManager.h"
 #include "AssetManager.h"
+#include "glTFMeshLoader.h"
 
 using namespace OE;
 
 Scene::Scene()
 {
-	m_entityManager = std::make_unique<SceneGraphManager>(*this);
-	m_entityRenderer = std::make_unique<EntityRenderManager>(*this);
+	// Mesh loaders
+	AddMeshLoader<glTFMeshLoader>();
+
+	// Repositories
+	m_entityRepository = std::make_shared<EntityRepository>(*this);
+	m_materialRepository = std::make_shared<MaterialRepository>();
+
+	// Services / Managers
+	m_sceneGraphManager = std::make_unique<SceneGraphManager>(*this, m_entityRepository);
+	m_entityRenderManager = std::make_unique<EntityRenderManager>(*this, m_materialRepository);
 	m_entityScriptinigManager = std::make_unique<EntityScriptingManager>(*this);
 	m_assetManager = std::make_unique<AssetManager>(*this);
 
-	m_entityManager->Initialize();
-	m_entityRenderer->Initialize();
+	m_sceneGraphManager->Initialize();
+	m_entityRenderManager->Initialize();
 	m_entityScriptinigManager->Initialize();
 	m_assetManager->Initialize();
 }
@@ -27,32 +36,67 @@ Scene::~Scene()
 {
 }
 
+void Scene::LoadEntities(const std::string& filename)
+{
+	return LoadEntities(filename, nullptr);
+}
+
+
+void Scene::LoadEntities(const std::string& filename, Entity &parentEntity)
+{
+	auto entity = m_entityRepository->GetEntityPtrById(parentEntity.GetId());
+	return LoadEntities(filename, entity.get());
+}
+
+void Scene::LoadEntities(const std::string& filename, Entity *parentEntity)
+{
+	// Get the file extension
+	const auto dotPos = filename.find_last_of('.');
+	if (dotPos == std::string::npos)
+		throw std::runtime_error("Cannot load mesh; given file doesn't have an extension.");
+
+	const std::string extension = filename.substr(dotPos + 1);
+	const auto extPos = m_entityGraphLoaders.find(extension);
+	if (extPos == m_entityGraphLoaders.end())
+		throw std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension);
+
+	std::vector<std::shared_ptr<Entity>> newRootEntities = extPos->second->LoadFile(filename, *m_entityRepository.get(), *m_materialRepository.get());
+	
+	if (parentEntity)
+	{
+		for (const auto &entity : newRootEntities)
+			entity->SetParent(*parentEntity);
+	}
+
+	m_sceneGraphManager->HandleEntitiesLoaded(newRootEntities);
+}
+
 void Scene::Tick(DX::StepTimer const& timer)
 {	
 	m_deltaTime = timer.GetElapsedSeconds();
 	m_elapsedTime += m_deltaTime;
 
-	m_entityManager->Tick();
-	m_entityRenderer->Tick();
+	m_sceneGraphManager->Tick();
+	m_entityRenderManager->Tick();
 	m_entityScriptinigManager->Tick();
 }
 
 void Scene::OnComponentAdded(Entity& entity, Component& component) const
 {
-	m_entityManager->HandleEntityComponentAdd(entity, component);
+	m_sceneGraphManager->HandleEntityComponentAdd(entity, component);
 }
 
 void Scene::OnComponentRemoved(Entity& entity, Component& component) const
 {
-	m_entityManager->HandleEntityComponentAdd(entity, component);
+	m_sceneGraphManager->HandleEntityComponentAdd(entity, component);
 }
 
 void Scene::OnEntityAdded(Entity& entity) const
 {
-	m_entityManager->HandleEntityAdd(entity);
+	m_sceneGraphManager->HandleEntityAdd(entity);
 }
 
 void Scene::OnEntityRemoved(Entity& entity) const
 {
-	m_entityManager->HandleEntityRemove(entity);
+	m_sceneGraphManager->HandleEntityRemove(entity);
 }

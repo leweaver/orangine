@@ -9,15 +9,15 @@
 #include "Scene.h"
 
 #include <set>
-#include "glTFMeshLoader.h"
 #include <functional>
-#include <iostream>
 
 using namespace OE;
 using namespace DirectX;
 
-EntityRenderManager::EntityRenderManager(Scene &scene)
+EntityRenderManager::EntityRenderManager(Scene& scene, const std::shared_ptr<MaterialRepository> &materialRepository)
 	: ManagerBase(scene)
+	, m_renderableEntities(nullptr)
+	, m_materialRepository(materialRepository)
 {
 }
 
@@ -29,9 +29,7 @@ void EntityRenderManager::Initialize()
 {
 	std::set<Component::ComponentType> filter;
 	filter.insert(RenderableComponent::Type());
-	m_entityFilter = m_scene.GetEntityManager().GetEntityFilter(filter);
-	
-	AddMeshLoader<glTFMeshLoader>();
+	m_renderableEntities = m_scene.GetSceneGraphManager().GetEntityFilter(filter);
 }
 
 void EntityRenderManager::Tick() {
@@ -59,7 +57,11 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 
 	auto deviceContext = deviceResources.GetD3DDeviceContext();
 
-	for (auto iter = m_entityFilter->begin(); iter != m_entityFilter->end(); ++iter)
+	std::vector<ID3D11Buffer*> bufferArray;
+	std::vector<UINT> strideArray;
+	std::vector<UINT> offsetArray;
+
+	for (auto iter = m_renderableEntities->begin(); iter != m_renderableEntities->end(); ++iter)
 	{
 		const auto entity = *iter;
 		auto renderable = entity->GetFirstComponentOfType<RenderableComponent>();
@@ -67,71 +69,73 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 			continue;
 
 		try {
-			// TODO: Don't look up the mesh data by name in a map each frame... perhaps cache it on the component? Are we allowing that?
-			const std::string &meshName = renderable->GetMeshName();
-			const auto meshRendererDataPos = m_meshRendererData.find(meshName);
-			if (meshRendererDataPos == m_meshRendererData.end()) {
-				m_meshRendererData[meshName] = std::move(LoadRendererDataFromFile(meshName, deviceResources));
+			const RendererData *rendererData = renderable->GetRendererData().get();
+			if (rendererData == nullptr) {
+				const auto meshData = entity->GetFirstComponentOfType<MeshDataComponent>();
+				if (meshData == nullptr)
+				{
+					// There is no mesh data, we can't render.
+					continue;
+				}
+
+				std::unique_ptr<RendererData> rendererDataPtr = CreateRendererData(*meshData, deviceResources);
+				rendererData = rendererDataPtr.get();
+				renderable->SetRendererData(rendererDataPtr);
 			}
-			RendererData* rendererData = m_meshRendererData[meshName].get();
 
 			// Send the buffers to the input assembler
 			if (rendererData->m_vertexBuffers.size()) {
 				auto &vertexBuffers = rendererData->m_vertexBuffers;
 				const size_t numBuffers = vertexBuffers.size();
-
 				if (numBuffers > 1) {
-					ID3D11Buffer **buffers = new ID3D11Buffer*[numBuffers];
-					UINT *strides = new UINT[numBuffers];
-					UINT *offsets = new UINT[numBuffers];
+					bufferArray.clear();
+					strideArray.clear();
+					offsetArray.clear();
 
-					for (std::vector<VertexBufferAccessor>::size_type i = 0; i < numBuffers; ++i)
+					for (std::vector<MeshBufferAccessor>::size_type i = 0; i < numBuffers; ++i)
 					{
-						const VertexBufferAccessor &vertexBufferDesc = *rendererData->m_vertexBuffers[i].get();
-						buffers[i] = vertexBufferDesc.m_buffer->m_buffer;
-						strides[i] = vertexBufferDesc.m_stride;
-						offsets[i] = vertexBufferDesc.m_offset;
+						const D3DBufferAccessor *vertexBufferDesc = rendererData->m_vertexBuffers[i].get();
+						bufferArray.push_back(vertexBufferDesc->m_buffer->m_d3dBuffer);
+						strideArray.push_back(vertexBufferDesc->m_stride);
+						offsetArray.push_back(vertexBufferDesc->m_offset);
 					}
-					deviceContext->IASetVertexBuffers(0, static_cast<UINT>(numBuffers), buffers, strides, offsets);
-				} 
+
+					deviceContext->IASetVertexBuffers(0, static_cast<UINT>(numBuffers), bufferArray.data(), strideArray.data(), offsetArray.data());
+				}
 				else
 				{
-					const VertexBufferAccessor &vertexBufferDesc = *rendererData->m_vertexBuffers[0].get();
-					deviceContext->IASetVertexBuffers(0, 1, &vertexBufferDesc.m_buffer->m_buffer, &vertexBufferDesc.m_stride, &vertexBufferDesc.m_offset);
+					const D3DBufferAccessor *vertexBufferDesc = rendererData->m_vertexBuffers[0].get();
+					deviceContext->IASetVertexBuffers(0, 1, &vertexBufferDesc->m_buffer->m_d3dBuffer, &vertexBufferDesc->m_stride, &vertexBufferDesc->m_offset);
 				}
 
 				// Set the type of primitive that should be rendered from this vertex buffer, in this case triangles.
 				deviceContext->IASetPrimitiveTopology(rendererData->m_topology);
 
-				const std::string &materialName = renderable->GetMaterialName();
-				auto materialPos = m_materials.find(materialName);
-				if (materialPos == m_materials.end()) {
-					m_materials[materialName] = std::move(LoadMaterial(materialName));
-				}
-				Material *material = m_materials[materialName].get();
+				Material *material = renderable->GetMaterial().get();
 				assert(material != nullptr);
 
-				if (rendererData->m_indexBuffer)
+				if (rendererData->m_indexBufferAccessor != nullptr)
 				{
 					// Set the index buffer to active in the input assembler so it can be rendered.
-					deviceContext->IASetIndexBuffer(rendererData->m_indexBuffer, DXGI_FORMAT_R32_UINT, rendererData->m_indexBufferOffset);
+					auto indexAccessor = rendererData->m_indexBufferAccessor.get();
+					deviceContext->IASetIndexBuffer(indexAccessor->m_buffer->m_d3dBuffer, rendererData->m_indexFormat, indexAccessor->m_offset);
 
-					if (material->Render(entity->GetWorldTransform(), viewMatrix, projMatrix, deviceResources))
+					if (material->Render(*rendererData, entity->GetWorldTransform(), viewMatrix, projMatrix, deviceResources))
 						deviceContext->DrawIndexed(rendererData->m_indexCount, 0, 0);
 				}
 				else
 				{
-					material->Render(entity->GetWorldTransform(), viewMatrix, projMatrix, deviceResources);
+					material->Render(*rendererData, entity->GetWorldTransform(), viewMatrix, projMatrix, deviceResources);
 
 					// Render the triangles.
 					deviceContext->Draw(rendererData->m_vertexCount, rendererData->m_vertexCount);
 				}
 			}
 		} 
-		catch (std::runtime_error &err)
+		catch (std::runtime_error &)
 		{
 			renderable->SetVisible(false);
-			throw err;
+			throw;
 		}
 	}
 }
@@ -144,150 +148,67 @@ struct SimpleVertexCombined
 };
 */
 
-std::unique_ptr<RendererData> EntityRenderManager::LoadRendererDataFromFile(const std::string &filename, const DX::DeviceResources &deviceResources) const
+std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const MeshDataComponent &meshData, const DX::DeviceResources &deviceResources) const
 {
-	// Get the file extension
-	const auto dotPos = filename.find_last_of('.');
-	if (dotPos == std::string::npos)
-		throw std::runtime_error("Cannot load mesh; given file doesn't have an extension.");
-
-	std::string extension = filename.substr(dotPos + 1);
-	const auto extPos = m_meshLoaders.find(extension);
-	if (extPos == m_meshLoaders.end())
-		throw std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension);
-
-	// TODO: This is the wrong place for glTF load. Should move to something higher up... EntityManager? That should then create meshes.
-	return extPos->second->LoadFile(filename, deviceResources);
-}
-
-std::unique_ptr<RendererData> EntityRenderManager::LoadDummyData(const DX::DeviceResources &deviceResources) const {
-
-
 	auto rendererData = std::make_unique<RendererData>();
-	{
-		constexpr float size = 1.0f;
-		constexpr unsigned int NUM_VERTICES = 8;
+	rendererData->m_topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-		// Supply the actual vertex data.
-		XMFLOAT3 positions[] = {
-			XMFLOAT3( size,  size, -size),
-			XMFLOAT3(-size,  size, -size),
-			XMFLOAT3( size, -size, -size),
-			XMFLOAT3(-size, -size, -size),
-			XMFLOAT3( size,  size,  size),
-			XMFLOAT3(-size,  size,  size),
-			XMFLOAT3( size, -size,  size),
-			XMFLOAT3(-size, -size,  size),
-		};
-		XMFLOAT3 colors[] = {
-			XMFLOAT3(1.0f, 1.0f, 1.0f),
-			XMFLOAT3(0.0f, 1.0f, 1.0f),
-			XMFLOAT3(1.0f, 0.0f, 1.0f),
-			XMFLOAT3(0.0f, 0.0f, 1.0f),
-
-			XMFLOAT3(1.0f, 1.0f, 0.0f),
-			XMFLOAT3(0.0f, 1.0f, 0.0f),
-			XMFLOAT3(1.0f, 0.0f, 0.0f),
-			XMFLOAT3(0.0f, 0.0f, 0.0f),
-		};
-
-		auto positionsPtr = CreateBufferFromData(deviceResources, positions, sizeof(XMFLOAT3), NUM_VERTICES);
-		rendererData->m_vertexBuffers.push_back(move(positionsPtr));
-
-		auto colorsPtr = CreateBufferFromData(deviceResources, colors, sizeof(XMFLOAT3), NUM_VERTICES);
-		rendererData->m_vertexBuffers.push_back(move(colorsPtr));
+	// Create D3D Index Buffer
+	rendererData->m_indexCount = meshData.m_indexCount;
+	if (rendererData->m_indexCount) {
+		rendererData->m_indexBufferAccessor = std::make_unique<D3DBufferAccessor>(
+			CreateBufferFromData(*meshData.m_indexBufferAccessor->m_buffer, D3D11_BIND_INDEX_BUFFER, deviceResources),
+			meshData.m_indexBufferAccessor->m_stride,
+			meshData.m_indexBufferAccessor->m_offset);
+		rendererData->m_indexFormat = meshData.m_indexBufferAccessor->m_format;
+	}
+	else {
+		// TODO: Simply log a warning?
+		throw std::runtime_error("Missing index buffer");
 	}
 
-	// ---------------
+	// Create D3D vertex buffers
+	rendererData->m_vertexCount = meshData.m_vertexCount;
+	for (const auto &meshAccessor : meshData.m_vertexBufferAccessors)
 	{
-		// Create indices.
-		//unsigned int indices[] = { 0, 1, 2 };
-		const int NUM_INDICES = 36;
-		unsigned int indices[NUM_INDICES];
+		auto d3dAccessor = std::make_unique<D3DBufferAccessor>(
+			CreateBufferFromData(*meshAccessor->m_buffer, D3D11_BIND_VERTEX_BUFFER, deviceResources),
+			meshAccessor->m_stride, 
+			meshAccessor->m_offset);
 
-		int pos = 0;
-		// -X side
-		indices[pos++] = 5; indices[pos++] = 7; indices[pos++] = 3;
-		indices[pos++] = 5; indices[pos++] = 3; indices[pos++] = 1;
-
-		// +X side
-		indices[pos++] = 6; indices[pos++] = 4; indices[pos++] = 0;
-		indices[pos++] = 6; indices[pos++] = 0; indices[pos++] = 2;
-
-		// -Y side
-		indices[pos++] = 7; indices[pos++] = 6; indices[pos++] = 2;
-		indices[pos++] = 7; indices[pos++] = 2; indices[pos++] = 3;
-
-		// +Y side
-		indices[pos++] = 4; indices[pos++] = 5; indices[pos++] = 1;
-		indices[pos++] = 4; indices[pos++] = 1; indices[pos++] = 0;
-
-		// -Z side
-		indices[pos++] = 5; indices[pos++] = 4; indices[pos++] = 6;
-		indices[pos++] = 5; indices[pos++] = 6; indices[pos++] = 7;
-
-		// +Z side
-		indices[pos++] = 3; indices[pos++] = 2; indices[pos++] = 0;
-		indices[pos++] = 3; indices[pos++] = 0; indices[pos++] = 1;
-
-
-		// Fill in a buffer description.
-		rendererData->m_indexCount = NUM_INDICES;
-		D3D11_BUFFER_DESC bufferDesc;
-		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		bufferDesc.ByteWidth = sizeof(unsigned int) * NUM_INDICES;
-		bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-		bufferDesc.CPUAccessFlags = 0;
-		bufferDesc.MiscFlags = 0;
-
-		// Define the resource data.
-		D3D11_SUBRESOURCE_DATA InitData;
-		InitData.pSysMem = indices;
-		InitData.SysMemPitch = 0;
-		InitData.SysMemSlicePitch = 0;
-
-		// Create the buffer with the device.
-		HRESULT hr = deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &rendererData->m_indexBuffer);
-		assert(!FAILED(hr));
+		rendererData->m_vertexBuffers.push_back(move(d3dAccessor));
 	}
 
 	return rendererData;
 }
 
-std::unique_ptr<VertexBufferAccessor> EntityRenderManager::CreateBufferFromData(const DX::DeviceResources &deviceResources,
-	const void *data, UINT elementSize, UINT numVertices) const
+std::shared_ptr<D3DBuffer> EntityRenderManager::CreateBufferFromData(const MeshBuffer &buffer, UINT bindFlags, const DX::DeviceResources &deviceResources) const
 {
 	// Create the vertex buffer.
-	auto accessor = std::make_unique<VertexBufferAccessor>();
+	auto d3dBuffer = std::make_shared<D3DBuffer>();
 
 	// Fill in a buffer description.
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.ByteWidth = elementSize * numVertices;
-	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferDesc.ByteWidth = static_cast<UINT>(buffer.m_dataSize);
+	bufferDesc.BindFlags = bindFlags;
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = 0;
 
 	// Fill in the subresource data.
 	D3D11_SUBRESOURCE_DATA InitData;
-	InitData.pSysMem = data;
+	InitData.pSysMem = buffer.m_data;
 	InitData.SysMemPitch = 0;
 	InitData.SysMemSlicePitch = 0;
 
 	// Get a reference
-	accessor->m_stride = elementSize;
-	ID3D11Buffer* buffer;
-	HRESULT hr = deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &buffer);
-	assert(!FAILED(hr));
+	HRESULT hr = deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &d3dBuffer->m_d3dBuffer);
+	assert(!FAILED(hr));	
 
-	accessor->m_buffer = std::make_shared<VertexBuffer>(buffer);
-
-	return accessor;
+	return d3dBuffer;
 }
 
-std::unique_ptr<Material> EntityRenderManager::LoadMaterial(const std::string &materialName) {
-	// TODO: Look up by name. For now, hard coded!!
-	(void)materialName;
-
-	return std::make_unique<Material>();
+std::unique_ptr<Material> EntityRenderManager::LoadMaterial(const std::string &materialName) const
+{
+	return m_materialRepository->Instantiate(materialName);
 }

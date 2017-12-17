@@ -8,18 +8,20 @@
 
 #include <comdef.h>
 #include "Constants.h"
+#include "RendererData.h"
 
 using namespace OE;
 using namespace DirectX;
+
 
 Material::Material()
 	: m_vertexShader(nullptr)
 	, m_pixelShader(nullptr)
 	, m_inputLayout(nullptr)
+	, m_constantBuffer(nullptr)
 	, m_errorState(false)
 {
 }
-
 
 Material::~Material()
 {
@@ -53,13 +55,42 @@ void Material::Release()
 	}
 }
 
+void Material::GetVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const {
+	vertexAttributes.push_back(VertexAttribute::VA_POSITION);
+	vertexAttributes.push_back(VertexAttribute::VA_COLOR);
+}
+
+const DXGI_FORMAT Material::format(VertexAttribute attribute)
+{
+	switch (attribute)
+	{
+	case VertexAttribute::VA_TEXCOORD_0:
+		return DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT;
+
+	case VertexAttribute::VA_POSITION:
+	case VertexAttribute::VA_COLOR:
+	case VertexAttribute::VA_NORMAL:
+		return DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT;
+
+	case VertexAttribute::VA_TANGENT:
+		return DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT;
+	}
+
+	throw std::logic_error("Material does not support format: " + VertexAttributeMeta::str(attribute));
+}
+
+UINT Material::inputSlot(VertexAttribute attribute)
+{
+	return attribute == VertexAttribute::VA_POSITION ? 0 : 1;
+}
+
 struct Constants
 {
 	DirectX::XMMATRIX m_viewProjection;
 	DirectX::XMMATRIX m_world;
 };
 
-bool Material::Render(const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix, const DX::DeviceResources &deviceResources)
+bool Material::Render(const RendererData &rendererData, const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix, const DX::DeviceResources &deviceResources)
 {
 	if (m_errorState)
 		return false;
@@ -85,14 +116,35 @@ bool Material::Render(const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, c
 				return false;
 			}
 
+			std::vector<VertexAttribute> attributes;
+			GetVertexAttributes(attributes);
+			std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementDesc;
+			for (const auto &attr : attributes)
+			{
+				inputElementDesc.push_back(
+					{ 
+						VertexAttributeMeta::semanticName(attr), 
+						VertexAttributeMeta::semanticIndex(attr), 
+						format(attr), 
+						inputSlot(attr),
+						D3D11_APPEND_ALIGNED_ELEMENT, 
+						D3D11_INPUT_PER_VERTEX_DATA, 
+						0 
+					}
+				);
+			}
+			/*
 			D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
 			{
 				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 				{ "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 			};
-			const unsigned int numElements = ARRAYSIZE(inputLayoutDesc);
+			const unsigned int numElements = inputElementDesc.size();
+			*/
+			device->CreateInputLayout(inputElementDesc.data(), static_cast<UINT>(inputElementDesc.size()), 
+				vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), 
+				&m_inputLayout);
 
-			device->CreateInputLayout(inputLayoutDesc, numElements, vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), &m_inputLayout);
 			device->CreateVertexShader(vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), nullptr, &m_vertexShader);
 
 			vertexShaderBytecode->Release();

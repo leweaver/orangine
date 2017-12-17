@@ -26,7 +26,7 @@ void EntityScriptingManager::Initialize()
 {
 	std::set<Component::ComponentType> filter;
 	filter.insert(TestComponent::Type());
-	m_scriptableEntityFilter = m_scene.GetEntityManager().GetEntityFilter(filter);
+	m_scriptableEntityFilter = m_scene.GetSceneGraphManager().GetEntityFilter(filter);
 }
 
 void EntityScriptingManager::Tick() {

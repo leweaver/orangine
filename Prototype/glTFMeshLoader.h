@@ -1,13 +1,15 @@
 ﻿#pragma once
 
-#include "MeshLoader.h"
+#include "EntityGraphLoader.h"
 
 namespace OE {
-	class glTFMeshLoader : public MeshLoader
+	class Entity;
+
+	class glTFMeshLoader : public EntityGraphLoader
 	{
 	public:
 		void GetSupportedFileExtensions(std::vector<std::string> &extensions) const override;
-		std::unique_ptr<RendererData> LoadFile(const std::string &path, const DX::DeviceResources &deviceResources) const override;
+		std::vector<std::shared_ptr<Entity>> LoadFile(const std::string &path, EntityRepository &entityFactor, MaterialRepository &materialRepositoryy) const override;
 	};
 
 }

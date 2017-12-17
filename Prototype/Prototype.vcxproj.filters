@@ -83,18 +83,27 @@
     <ClInclude Include="lib\tinygltf\tiny_gltf.h">
       <Filter>lib\tinygltf</Filter>
     </ClInclude>
-    <ClInclude Include="glTFMeshLoader.h">
-      <Filter>Managers\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="MeshLoader.h">
-      <Filter>Managers\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="AssetManager.h">
       <Filter>Managers</Filter>
     </ClInclude>
     <ClInclude Include="SimpleTypes.h" />
     <ClInclude Include="ManagerBase.h">
       <Filter>Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="glTFMeshLoader.h">
+      <Filter>Managers\SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityGraphLoader.h">
+      <Filter>Managers\SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshDataComponent.h">
+      <Filter>Managers\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityRepository.h">
+      <Filter>Managers\SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="MaterialRepository.h">
+      <Filter>Managers\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -135,11 +144,20 @@
     <ClCompile Include="TestComponent.cpp">
       <Filter>Managers\Scripting</Filter>
     </ClCompile>
-    <ClCompile Include="glTFMeshLoader.cpp">
-      <Filter>Managers\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="AssetManager.cpp">
       <Filter>Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="glTFMeshLoader.cpp">
+      <Filter>Managers\SceneGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshDataComponent.cpp">
+      <Filter>Managers\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityRepository.cpp">
+      <Filter>Managers\SceneGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="MaterialRepository.cpp">
+      <Filter>Managers\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -159,11 +177,15 @@
     <Text Include="LICENSE.md" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\vertex_colors_PS.hlsl">
+    <None Include="data\meshes\Cube\Cube.gltf" />
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="data\shaders\vertex_colors_VS.hlsl">
       <Filter>Assets\shaders</Filter>
-    </None>
-    <None Include="shaders\vertex_colors_VS.hlsl">
+    </FxCompile>
+    <FxCompile Include="data\shaders\vertex_colors_PS.hlsl">
       <Filter>Assets\shaders</Filter>
-    </None>
+    </FxCompile>
   </ItemGroup>
 </Project>

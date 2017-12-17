@@ -39,13 +39,12 @@ void Game::Initialize(HWND window, int width, int height)
 		m_timer.SetTargetElapsedSeconds(1.0 / 60);
 		*/
 
-		SceneGraphManager& entityManager = m_scene->GetEntityManager();
+		SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
 		Entity& root1 = entityManager.Instantiate("Root 1");
 		Entity& child1 = entityManager.Instantiate("Child 1", root1);
 		Entity& child2 = entityManager.Instantiate("Child 2", root1);
 		Entity& child3 = entityManager.Instantiate("Child 3", root1);
 
-		// Test 2
 		root1.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
 
 		AddCubeToEntity(child1, XMVectorSet(0.5f, 0.0f, 0.0f, 0.0f),  XMVectorSet(2, 1, 1, 1), XMVectorSet(4, 0, 0, 1));
@@ -60,16 +59,14 @@ void Game::Initialize(HWND window, int width, int height)
 	CreateWindowSizeDependentResources();
 }
 
-void Game::AddCubeToEntity(Entity& entity, FXMVECTOR animationSpeed, FXMVECTOR localScale, FXMVECTOR localPosition)
+void Game::AddCubeToEntity(Entity& entity, FXMVECTOR animationSpeed, FXMVECTOR localScale, FXMVECTOR localPosition) const
 {
 	entity.AddComponent<TestComponent>().SetSpeed(animationSpeed);
 
 	entity.SetLocalScale(localScale);
 	entity.SetLocalPosition(localPosition);
 	
-	RenderableComponent &renderable = entity.AddComponent<RenderableComponent>();
-	renderable.SetMaterialName("VertexColorTest");
-	renderable.SetMeshName("data/meshes/Cube/Cube.gltf");
+	m_scene->LoadEntities("data/meshes/Cube/Cube.gltf", entity);
 }
 
 #pragma region Frame Update
@@ -108,7 +105,7 @@ void Game::Render()
     auto context = m_deviceResources->GetD3DDeviceContext();
 
     // TODO: Add your rendering code here.
-	m_scene->GetEntityRenderService().Render(*m_deviceResources);
+	m_scene->GetEntityRenderManger().Render(*m_deviceResources);
 
     m_deviceResources->PIXEndEvent();
 
@@ -191,13 +188,13 @@ void Game::GetDefaultSize(int& width, int& height) const
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
-	m_scene->GetEntityRenderService().CreateDeviceDependentResources(*m_deviceResources);
+	m_scene->GetEntityRenderManger().CreateDeviceDependentResources(*m_deviceResources);
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
-	m_scene->GetEntityRenderService().CreateWindowSizeDependentResources(*m_deviceResources);
+	m_scene->GetEntityRenderManger().CreateWindowSizeDependentResources(*m_deviceResources);
 }
 
 void Game::OnDeviceLost()

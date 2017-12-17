@@ -9,3 +9,4 @@ using namespace DirectX;
 using namespace OE;
 
 DEFINE_COMPONENT_TYPE(TestComponent);
+	

@@ -5,29 +5,21 @@
 
 namespace OE 
 {
-	enum VertexAttribute
+	struct D3DBuffer
 	{
-		VA_POSITION,
-		VA_COLOR,
-		VA_NORMAL,
-		VA_TANGENT,
-		VA_TEXCOORD_0,
+		D3DBuffer(ID3D11Buffer *buffer);
+		D3DBuffer();
+		~D3DBuffer();
+
+		ID3D11Buffer *m_d3dBuffer;
 	};
 
-	struct VertexBuffer
+	struct D3DBufferAccessor
 	{
-		VertexBuffer(ID3D11Buffer *buffer);
-		~VertexBuffer();
+		D3DBufferAccessor(const std::shared_ptr<D3DBuffer> &buffer, unsigned stride, unsigned offset);
+		~D3DBufferAccessor();
 
-		ID3D11Buffer *const m_buffer;
-	};
-
-	struct VertexBufferAccessor
-	{
-		VertexBufferAccessor();
-		~VertexBufferAccessor();
-
-		std::shared_ptr<VertexBuffer> m_buffer;
+		std::shared_ptr<D3DBuffer> m_buffer;
 		unsigned int m_stride;
 		unsigned int m_offset;
 	};
@@ -40,12 +32,13 @@ namespace OE
 
 		void Release();
 
-		std::vector<std::unique_ptr<VertexBufferAccessor>> m_vertexBuffers;
+		std::vector<std::unique_ptr<D3DBufferAccessor>> m_vertexBuffers;
 		unsigned int m_vertexCount;
 
-		ID3D11Buffer* m_indexBuffer;
+		std::unique_ptr<D3DBufferAccessor> m_indexBufferAccessor;
+		DXGI_FORMAT m_indexFormat;
 		unsigned int m_indexCount;
-		unsigned int m_indexBufferOffset;
+
 		D3D11_PRIMITIVE_TOPOLOGY m_topology;
 	};
 }

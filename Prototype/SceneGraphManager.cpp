@@ -1,40 +1,40 @@
 ﻿#include "pch.h"
-#include "SceneGraphManager.h"
-
 #include <algorithm>
+
+#include "SceneGraphManager.h"
+#include <deque>
 
 using namespace OE;
 
-SceneGraphManager::SceneGraphManager(Scene& scene)
+SceneGraphManager::SceneGraphManager(Scene& scene, const std::shared_ptr<EntityRepository> &entityRepository)
 	: ManagerBase(scene)
+	, m_entityRepository(entityRepository)
 {
 }
 
 void SceneGraphManager::Initialize()
 {
+	assert(m_rootEntities.size() == 0);
 }
 
 void SceneGraphManager::Tick()
 {
 	if (!m_initialized)
 	{
-		for (auto const& weakPtr : m_rootEntities)
+		for (auto const& entity : m_rootEntities)
 		{
-			std::shared_ptr<Entity> entity = weakPtr.lock();
 			if (entity == nullptr) {
 				assert(false);
 				continue;
 			}
 
-			entity->Initialize();
+			InitializeEntity(entity);
 		}
 		m_initialized = true;
 	}
 
-
-	for (auto const& weakPtr : m_rootEntities)
+	for (auto const& entity : m_rootEntities)
 	{
-		std::shared_ptr<Entity> entity = weakPtr.lock();
 		if (entity == nullptr) {
 			assert(false);
 			continue;
@@ -47,52 +47,91 @@ void SceneGraphManager::Tick()
 	}
 }
 
-Entity& SceneGraphManager::Instantiate(std::string name)
+Entity& SceneGraphManager::Instantiate(const std::string &name)
 {
-	Entity* entity = new Entity(this->m_scene, name, ++lastEntityId);
-	const auto entityPtr = std::shared_ptr<Entity>(entity);
-	m_entities[entity->GetId()] = entityPtr;
-	m_rootEntities.push_back(std::weak_ptr<Entity>(entityPtr));
+	return Instantiate(name, nullptr);
+}
+
+Entity& SceneGraphManager::Instantiate(const std::string &name, Entity &parentEntity)
+{
+	auto entity = m_entityRepository->GetEntityPtrById(parentEntity.GetId());
+	return Instantiate(name, entity.get());
+}
+
+Entity& SceneGraphManager::Instantiate(const std::string &name, Entity *parentEntity)
+{
+	const auto entityPtr = m_entityRepository->Instantiate(name);
+	m_rootEntities.push_back(entityPtr);
 
 	if (m_initialized)
-		entity->Initialize();
+		InitializeEntity(entityPtr);
+	
+	if (parentEntity)
+		entityPtr->SetParent(*parentEntity);
 
-	return *entity;
+	AddEntityToScene(entityPtr);
+
+	return *entityPtr;
 }
 
-Entity& SceneGraphManager::Instantiate(std::string name, Entity& parent)
+void SceneGraphManager::InitializeEntity(const std::shared_ptr<Entity>& entityPtr) const
 {
-	Entity& entity = Instantiate(name);
-	entity.SetParent(parent);
-	return entity;
+	std::deque<Entity*> entities;
+	entities.push_back(entityPtr.get());
+
+	while (!entities.empty())
+	{
+		Entity *entity = entities.front();
+		entities.pop_front();
+
+		entity->ComputeWorldTransform();
+		entity->m_state = EntityState::INITIALIZED;
+
+		for (const auto &child : entity->m_children)
+		{
+			entities.push_back(child.get());
+		}
+	}
 }
 
-void SceneGraphManager::Destroy(Entity& entity)
+void SceneGraphManager::AddEntityToScene(const std::shared_ptr<Entity>& entityPtr) const
 {
-	entity.RemoveParent();
-	RemoveFromRoot(entity);
-
-	// This will delete the object. Make sure it is the last operation!
-	m_entities.erase(entity.GetId());
+	entityPtr->m_state = EntityState::READY;
+	m_scene.OnEntityAdded(*entityPtr.get());
 }
 
 void SceneGraphManager::Destroy(const Entity::ID_TYPE& entityId)
 {
-	auto& entityPtr = m_entities[entityId];
-	const auto entity = entityPtr.get();
-	if (entity != nullptr) {
-		Destroy(*entity);
+	auto entityPtr = m_entityRepository->GetEntityPtrById(entityId);
+	if (entityPtr != nullptr) {
+
+		entityPtr->m_state = EntityState::DESTROYED;
+
+		entityPtr->RemoveParent();
+
+		RemoveFromRoot(entityPtr);
+
+		// This will delete the object. Make sure it is the last operation!
+		m_entityRepository->Remove(entityId);
 	}
 }
 
-std::shared_ptr<Entity> SceneGraphManager::RemoveFromRoot(const Entity& entity)
+std::shared_ptr<Entity> SceneGraphManager::GetEntityPtrById(const Entity::ID_TYPE id) const
 {
-	const std::shared_ptr<Entity> entityPtr = m_entities[entity.GetId()];
+	return m_entityRepository->GetEntityPtrById(id);
+}
 
+Entity &SceneGraphManager::GetEntityById(const Entity::ID_TYPE id) const
+{
+	return m_entityRepository->GetEntityById(id);
+}
+
+std::shared_ptr<Entity> SceneGraphManager::RemoveFromRoot(std::shared_ptr<Entity> entityPtr)
+{
 	// remove from root array
 	for (auto rootIter = m_rootEntities.begin(); rootIter != m_rootEntities.end(); ++rootIter) {
-		const auto rootEntity = (*rootIter).lock();
-		if (rootEntity != nullptr && rootEntity->GetId() == entity.GetId()) {
+		const auto rootEntity = (*rootIter);
+		if (rootEntity != nullptr && rootEntity->GetId() == entityPtr->GetId()) {
 			m_rootEntities.erase(rootIter);
 			break;
 		}
@@ -101,11 +140,10 @@ std::shared_ptr<Entity> SceneGraphManager::RemoveFromRoot(const Entity& entity)
 	return entityPtr;
 }
 
-void SceneGraphManager::AddToRoot(const Entity& entity)
+void SceneGraphManager::AddToRoot(std::shared_ptr<Entity> entityPtr)
 {
-	m_rootEntities.push_back(m_entities[entity.GetId()]);
+	m_rootEntities.push_back(entityPtr);
 }
-
 
 std::shared_ptr<EntityFilter> SceneGraphManager::GetEntityFilter(const ComponentTypeSet &componentTypes) {
 	// Does an entity filter exist with all of the given component types?
@@ -121,22 +159,63 @@ std::shared_ptr<EntityFilter> SceneGraphManager::GetEntityFilter(const Component
 }
 
 void SceneGraphManager::HandleEntityAdd(const Entity &entity) {
-	for (auto filter : m_entityFilters)
-		filter->HandleEntityAdd(m_entities[entity.GetId()]);
+	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.GetId());
+	if (entityPtr) {
+		for (auto filter : m_entityFilters)
+			filter->HandleEntityAdd(entityPtr);
+	}
 }
 
 void SceneGraphManager::HandleEntityRemove(const Entity &entity) {
-	for (auto filter : m_entityFilters)
-		filter->HandleEntityRemove(m_entities[entity.GetId()]);
+	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.GetId());
+	if (entityPtr) {
+		for (auto filter : m_entityFilters)
+			filter->HandleEntityRemove(entityPtr);
+	}
 }
 
 void SceneGraphManager::HandleEntityComponentAdd(const Entity &entity, const Component &componentType) {
-	for (auto filter : m_entityFilters)
-		filter->HandleEntityComponentsUpdated(m_entities[entity.GetId()]);
+	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.GetId());
+	if (entityPtr) {
+		for (auto filter : m_entityFilters)
+			filter->HandleEntityComponentsUpdated(entityPtr);
+	}
 }
 void SceneGraphManager::HandleEntityComponentRemove(const Entity &entity, const Component &componentType) {
-	for (auto filter : m_entityFilters) {
-		filter->HandleEntityComponentsUpdated(m_entities[entity.GetId()]);
+	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.GetId());
+	if (entityPtr) {
+		for (auto filter : m_entityFilters) {
+			filter->HandleEntityComponentsUpdated(entityPtr);
+		}
+	}
+}
+
+void SceneGraphManager::HandleEntitiesLoaded(const std::vector<std::shared_ptr<Entity>> &loadedEntities)
+{
+	for (const auto &entity : loadedEntities)
+	{
+		if (!entity->HasParent())
+		{
+			m_rootEntities.push_back(entity);
+		}
+	}
+
+	std::deque<std::shared_ptr<Entity>> newEntities(loadedEntities.begin(), loadedEntities.end());
+	while (!newEntities.empty())
+	{
+		std::shared_ptr<Entity> entityPtr = newEntities.front();
+		newEntities.pop_front();
+
+		assert(entityPtr != nullptr);
+		AddEntityToScene(entityPtr);
+
+		newEntities.insert(newEntities.end(), entityPtr->m_children.begin(), entityPtr->m_children.end());
+	}
+
+	if (m_initialized)
+	{
+		for (const auto &entity : loadedEntities)
+			InitializeEntity(entity);
 	}
 }
 

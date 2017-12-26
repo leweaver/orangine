@@ -49,7 +49,7 @@ private:
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
 
-	static void AddCubeToEntity(OE::Entity& entity, DirectX::FXMVECTOR animationSpeed, DirectX::FXMVECTOR localScale, DirectX::FXMVECTOR localPosition);
+	void AddCubeToEntity(OE::Entity& entity, DirectX::FXMVECTOR animationSpeed, DirectX::FXMVECTOR localScale, DirectX::FXMVECTOR localPosition) const;
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;

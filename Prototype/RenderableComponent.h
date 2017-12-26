@@ -1,37 +1,39 @@
 ﻿#pragma once
+
 #include "Component.h"
+#include "RendererData.h"
+#include "Material.h"
 
-namespace DX
+namespace OE 
 {
-	class DeviceResources;
-}
-namespace OE {
-
 	class RenderableComponent : public Component
 	{
 		DECLARE_COMPONENT_TYPE;
 
 		bool m_visible;
-		
-		// TODO: Some kind of asset ID?
-		std::string m_meshName;
-		std::string m_materialName;
+
+		// Runtime, non-serializable
+		std::unique_ptr<RendererData> m_rendererData;
+		std::unique_ptr<Material> m_material;
 
 	public:
 
-		explicit RenderableComponent()
+		RenderableComponent()
 			: m_visible(true)
+			, m_rendererData(nullptr)
+			, m_material(nullptr)
 		{}
 		
 		bool GetVisible() const { return m_visible; }
 		void SetVisible(bool visible) { m_visible = visible; }
 
-		const std::string &GetMeshName() const { return m_meshName; }
-		void SetMeshName(const std::string &meshName) { m_meshName = meshName; }
+		// Runtime, non-serializable
+		const std::unique_ptr<Material>& GetMaterial() const { return m_material; }
+		void SetMaterial(std::unique_ptr<Material> &material) { m_material = std::move(material); }
 
-		const std::string &GetMaterialName() const { return m_materialName; }
-		void SetMaterialName(const std::string &materialName) { m_materialName = materialName; }
-		
+		const std::unique_ptr<RendererData> &GetRendererData() const { return m_rendererData; }
+		void SetRendererData(std::unique_ptr<RendererData> &rendererData) { m_rendererData = std::move(rendererData); }
+
 	};
 
 }

@@ -12,9 +12,10 @@ void Entity::ComputeWorldTransform()
 	if (HasParent())
 	{
 		m_worldScale = XMVectorMultiply(m_parent->m_worldScale, m_localScale);
+		m_worldRotation = XMQuaternionMultiply(m_localRotation, m_parent->Rotation());
 		m_worldTransform = XMMatrixTransformation(
 			Math::VEC_ZERO, Math::QUAT_IDENTITY, m_worldScale,
-			Math::VEC_ZERO, XMQuaternionMultiply(m_localRotation, m_parent->Rotation()),
+			Math::VEC_ZERO, m_worldRotation,
 			XMVector3Transform(m_localPosition, m_parent->m_worldTransform));
 	}
 	else
@@ -23,20 +24,8 @@ void Entity::ComputeWorldTransform()
 			Math::VEC_ZERO, Math::QUAT_IDENTITY, m_localScale,
 			Math::VEC_ZERO, m_localRotation,
 			m_localPosition);
+		m_worldRotation = m_localRotation;
 		m_worldScale = m_localScale;
-	}
-}
-
-
-void Entity::Initialize()
-{
-	ComputeWorldTransform();
-	if (!m_children.empty())
-	{
-		for (auto const& child : m_children)
-		{
-			child->Initialize();
-		}
 	}
 }
 
@@ -79,12 +68,16 @@ void Entity::SetActive(bool bActive)
 
 void Entity::SetParent(Entity& newParent)
 {
+	// TODO: Check that we don't create a cycle?
 	if (HasParent())
 	{
 		RemoveParent();
 	}
 
-	const std::shared_ptr<Entity> thisPtr = m_scene.GetEntityManager().RemoveFromRoot(*this);
+	auto &entityManager = m_scene.GetSceneGraphManager();
+	const auto thisPtr = entityManager.GetEntityPtrById(GetId());
+	entityManager.RemoveFromRoot(thisPtr);
+
 	newParent.m_children.push_back(thisPtr);
 	m_parent = &newParent;
 }
@@ -103,7 +96,9 @@ void Entity::RemoveParent()
 		}
 	}
 
-	m_scene.GetEntityManager().AddToRoot(*this);
+	auto &entityManager = m_scene.GetSceneGraphManager();
+	const auto thisPtr = entityManager.GetEntityPtrById(GetId());
+	entityManager.AddToRoot(thisPtr);
 	m_parent = nullptr;
 }
 
@@ -119,7 +114,8 @@ const XMVECTOR& Entity::Scale() const
 
 XMVECTOR Entity::Rotation() const
 {
-	return XMQuaternionRotationMatrix(m_worldTransform);
+	return m_worldRotation;
+	//return XMQuaternionRotationMatrix(m_worldTransform);
 }
 
 void Entity::OnComponentAdded(Component& component)

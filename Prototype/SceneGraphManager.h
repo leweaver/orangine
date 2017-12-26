@@ -3,11 +3,12 @@
 #include "Component.h"
 #include "EntityFilter.h"
 #include "ManagerBase.h"
+#include "EntityGraphLoader.h"
+#include "EntityRepository.h"
 
 #include <vector>
 #include <map>
 #include <set>
-#include <typeinfo>
 
 namespace OE {
 
@@ -16,42 +17,54 @@ class SceneGraphManager : public ManagerBase
 	friend Entity;
 	class EntityFilterImpl;
 
-	// A cache of entities that have no parents
-	std::vector<std::weak_ptr<Entity>> m_rootEntities;
 	std::vector<std::shared_ptr<EntityFilterImpl>> m_entityFilters;
 
 	using ComponentTypeSet = std::set<Component::ComponentType>;
 
 	// All entities
-	Entity::EntityPtrMap m_entities;
-	unsigned int lastEntityId = 0;
+	std::shared_ptr<EntityRepository> m_entityRepository;
+
+	// A cache of entities that have no parents
+	// TODO: Turn this into a filter?
+	std::vector<std::shared_ptr<Entity>> m_rootEntities;
 
 	bool m_initialized = false;
 
 public:
 	
-	explicit SceneGraphManager(Scene& scene);
+	SceneGraphManager(Scene& scene, const std::shared_ptr<EntityRepository> &entityRepository);
 	SceneGraphManager(const SceneGraphManager& other) = delete;
 
 	void Initialize() override;
 	void Tick() override;
 
-	Entity& Instantiate(std::string name);
-	Entity& Instantiate(std::string name, Entity& parent);
+	Entity& Instantiate(const std::string &name);
+	Entity& Instantiate(const std::string &name, Entity& parentEntity);
 
-	void Destroy(Entity& entity);
+	/**
+	 * Will do nothing if no entity exists with the given ID.
+	 */
 	void Destroy(const Entity::ID_TYPE& entity);
 
+	Entity &GetEntityById(const Entity::ID_TYPE id) const;
 	std::shared_ptr<EntityFilter> GetEntityFilter(const ComponentTypeSet &componentTypes);
 
 	void HandleEntityAdd(const Entity &entity);
 	void HandleEntityRemove(const Entity &entity);
 	void HandleEntityComponentAdd(const Entity &entity, const Component &componentType);
 	void HandleEntityComponentRemove(const Entity &entity, const Component &componentType);
+	void HandleEntitiesLoaded(const std::vector<std::shared_ptr<Entity>> &newEntities);
 
 private:
-	std::shared_ptr<Entity> RemoveFromRoot(const Entity& entity);
-	void AddToRoot(const Entity& entity);
+
+	// Entity Lifecycle
+	Entity& Instantiate(const std::string &name, Entity *parentEntity);
+	void InitializeEntity(const std::shared_ptr<Entity> &entityPtr) const;
+	void AddEntityToScene(const std::shared_ptr<Entity> &entityPtr) const;
+
+	std::shared_ptr<Entity> GetEntityPtrById(const Entity::ID_TYPE id) const;
+	std::shared_ptr<Entity> RemoveFromRoot(std::shared_ptr<Entity> entity);
+	void AddToRoot(std::shared_ptr<Entity> entity);
 
 	class EntityFilterImpl : public EntityFilter {
 	public:

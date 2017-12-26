@@ -2,27 +2,24 @@
 
 #include "DeviceResources.h"
 #include "ManagerBase.h"
+#include "RendererData.h"
+#include "MeshDataComponent.h"
 
 #include <map>
-#include "RendererData.h"
-#include "MeshLoader.h"
+#include "MaterialRepository.h"
 
 namespace OE {
 	class Scene;
 	class Material;
-	class RendererData;
 	class EntityFilter;
 
 	class EntityRenderManager : public ManagerBase
 	{
-		std::map<std::string, std::unique_ptr<RendererData>> m_meshRendererData;
-		std::map<std::string, std::unique_ptr<Material>> m_materials;
-		std::shared_ptr<EntityFilter> m_entityFilter;
-		std::map<std::string, std::shared_ptr<MeshLoader>> m_meshLoaders;
-
+		std::shared_ptr<EntityFilter> m_renderableEntities;
+		std::shared_ptr<MaterialRepository> m_materialRepository;
 
 	public:
-		explicit EntityRenderManager(Scene &scene);
+		EntityRenderManager(Scene& scene, const std::shared_ptr<MaterialRepository> &materialRepository);
 		~EntityRenderManager();
 		
 		void Initialize() override;
@@ -32,27 +29,12 @@ namespace OE {
 		void CreateWindowSizeDependentResources(const DX::DeviceResources &deviceResources);
 		void Render(const DX::DeviceResources &deviceResources);
 		
-		template <typename TLoader>
-		std::shared_ptr<TLoader> AddMeshLoader()
-		{
-			const std::shared_ptr<TLoader> ml = std::make_shared<TLoader>();
-			std::vector<std::string> extensions;
-			ml->GetSupportedFileExtensions(extensions);
-			for (const auto extension : extensions) {
-				if (m_meshLoaders.find(extension) != m_meshLoaders.end())
-					throw std::runtime_error("Failed to register mesh loader, extension is already registered: " + extension);
-				m_meshLoaders[extension] = ml;
-			}
-			return ml;
-		}
-		
 	private:
-		std::unique_ptr<VertexBufferAccessor> CreateBufferFromData(const DX::DeviceResources &deviceResources, const void *data, UINT elementSize, UINT numVertices) const;
-		std::unique_ptr<RendererData> LoadRendererDataFromFile(const std::string &meshName, const DX::DeviceResources &deviceResources) const;
-		std::unique_ptr<Material> LoadMaterial(const std::string &materialName);
 
+		std::unique_ptr<Material> LoadMaterial(const std::string &materialName) const;
 
-		std::unique_ptr<RendererData> LoadDummyData(const DX::DeviceResources &deviceResources) const;
+		std::shared_ptr<D3DBuffer> CreateBufferFromData(const MeshBuffer &buffer, UINT bindFlags, const DX::DeviceResources &deviceResources) const;
+		std::unique_ptr<RendererData> CreateRendererData(const MeshDataComponent &meshData, const DX::DeviceResources &deviceResources) const;
 	};
 
 }

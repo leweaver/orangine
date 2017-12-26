@@ -93,6 +93,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>lib/tinygltf</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -109,6 +110,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
       <AdditionalIncludeDirectories>lib/tinygltf</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -162,12 +164,15 @@
     <ClInclude Include="Constants.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="Entity.h" />
+    <ClInclude Include="EntityRepository.h" />
     <ClInclude Include="EntityFilter.h" />
     <ClInclude Include="glTFMeshLoader.h" />
     <ClInclude Include="lib\tinygltf\json.hpp" />
     <ClInclude Include="lib\tinygltf\stb_image.h" />
     <ClInclude Include="lib\tinygltf\tiny_gltf.h" />
-    <ClInclude Include="MeshLoader.h" />
+    <ClInclude Include="MaterialRepository.h" />
+    <ClInclude Include="MeshDataComponent.h" />
+    <ClInclude Include="EntityGraphLoader.h" />
     <ClInclude Include="SceneGraphManager.h" />
     <ClInclude Include="ManagerBase.h" />
     <ClInclude Include="EntityRenderManager.h" />
@@ -188,7 +193,10 @@
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="EntityRepository.cpp" />
     <ClCompile Include="glTFMeshLoader.cpp" />
+    <ClCompile Include="MaterialRepository.cpp" />
+    <ClCompile Include="MeshDataComponent.cpp" />
     <ClCompile Include="SceneGraphManager.cpp" />
     <ClCompile Include="EntityRenderManager.cpp" />
     <ClCompile Include="EntityScriptingManager.cpp" />
@@ -219,8 +227,22 @@
     <Text Include="LICENSE.md" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\vertex_colors_PS.hlsl" />
-    <None Include="shaders\vertex_colors_VS.hlsl" />
+    <None Include="data\meshes\Cube\Cube.gltf" />
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="data\shaders\vertex_colors_PS.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">PSMain</EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PSMain</EntryPointName>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="data\shaders\vertex_colors_VS.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">VSMain</EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VSMain</EntryPointName>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

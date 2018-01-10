@@ -17,9 +17,11 @@ class Game : public DX::IDeviceNotify
 public:
 
     Game();
-	
+	~Game();
+
     // Initialization and management
     void Initialize(HWND window, int width, int height);
+	void InitRasterizer();
 
     // Basic game loop
     void Tick();

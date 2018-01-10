@@ -3,11 +3,9 @@
 #include "Component.h"
 #include "EntityFilter.h"
 #include "ManagerBase.h"
-#include "EntityGraphLoader.h"
 #include "EntityRepository.h"
 
 #include <vector>
-#include <map>
 #include <set>
 
 namespace OE {
@@ -34,9 +32,11 @@ public:
 	
 	SceneGraphManager(Scene& scene, const std::shared_ptr<EntityRepository> &entityRepository);
 	SceneGraphManager(const SceneGraphManager& other) = delete;
+	~SceneGraphManager();
 
 	void Initialize() override;
 	void Tick() override;
+	void Shutdown() override {}
 
 	Entity& Instantiate(const std::string &name);
 	Entity& Instantiate(const std::string &name, Entity& parentEntity);

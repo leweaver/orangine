@@ -12,6 +12,11 @@ SceneGraphManager::SceneGraphManager(Scene& scene, const std::shared_ptr<EntityR
 {
 }
 
+SceneGraphManager::~SceneGraphManager()
+{
+	m_rootEntities.clear();
+}
+
 void SceneGraphManager::Initialize()
 {
 	assert(m_rootEntities.size() == 0);

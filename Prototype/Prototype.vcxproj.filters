@@ -23,12 +23,6 @@
     <Filter Include="Managers\Scripting">
       <UniqueIdentifier>{aa84136d-04a0-4739-bf9b-a40477a648cf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="lib">
-      <UniqueIdentifier>{3422d8bf-059e-46ea-82ad-33032b7c1166}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="lib\tinygltf">
-      <UniqueIdentifier>{e9aa8d28-b8b8-4226-a8e9-b0f2775146f4}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -74,15 +68,6 @@
     <ClInclude Include="TestComponent.h">
       <Filter>Managers\Scripting</Filter>
     </ClInclude>
-    <ClInclude Include="lib\tinygltf\json.hpp">
-      <Filter>lib\tinygltf</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\tinygltf\stb_image.h">
-      <Filter>lib\tinygltf</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\tinygltf\tiny_gltf.h">
-      <Filter>lib\tinygltf</Filter>
-    </ClInclude>
     <ClInclude Include="AssetManager.h">
       <Filter>Managers</Filter>
     </ClInclude>
@@ -103,6 +88,16 @@
       <Filter>Managers\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="MaterialRepository.h">
+      <Filter>Managers\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="PBRMaterial.h">
+      <Filter>Managers\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h" />
+    <ClInclude Include="Texture.h">
+      <Filter>Managers\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureImpl.h">
       <Filter>Managers\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
@@ -159,6 +154,13 @@
     <ClCompile Include="MaterialRepository.cpp">
       <Filter>Managers\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="PBRMaterial.cpp">
+      <Filter>Managers\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="TextureImpl.cpp">
+      <Filter>Managers\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -185,6 +187,12 @@
       <Filter>Assets\shaders</Filter>
     </FxCompile>
     <FxCompile Include="data\shaders\vertex_colors_PS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\pbr_metallic_VS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\pbr_metallic_PS.hlsl">
       <Filter>Assets\shaders</Filter>
     </FxCompile>
   </ItemGroup>

@@ -81,6 +81,21 @@ void Scene::Tick(DX::StepTimer const& timer)
 	m_entityScriptinigManager->Tick();
 }
 
+void Scene::Shutdown()
+{
+	m_entityRenderManager->Shutdown();
+	m_entityScriptinigManager->Shutdown();
+	m_sceneGraphManager->Shutdown();
+	
+	m_assetManager.reset();
+	m_entityScriptinigManager.reset();
+	m_entityRenderManager.reset();
+	m_sceneGraphManager.reset();
+	
+	m_entityRepository.reset();
+	m_materialRepository.reset();
+}
+
 void Scene::OnComponentAdded(Entity& entity, Component& component) const
 {
 	m_sceneGraphManager->HandleEntityComponentAdd(entity, component);

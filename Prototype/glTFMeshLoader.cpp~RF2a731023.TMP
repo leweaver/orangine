@@ -2,9 +2,7 @@
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
-#define _SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING
 #include <tiny_gltf.h>
-#include <wincodec.h>
 
 #include "Material.h"
 #include "EntityRepository.h"
@@ -12,7 +10,7 @@
 #include "RenderableComponent.h"
 #include "MaterialRepository.h"
 #include "PBRMaterial.h"
-#include "TextureImpl.h"
+#include "Texture.h"
 
 using namespace std;
 using namespace tinygltf;
@@ -28,25 +26,19 @@ map<VertexAttribute, string> g_gltfMappingToAttributeMap = {
 
 struct LoaderData
 {
-	LoaderData(Model &model, const string &baseDir, IWICImagingFactory *imagingFactory) 
-		: model(model)
-		, baseDir(baseDir)
-		, imagingFactory(imagingFactory)
-	{}
+	explicit LoaderData(Model &model) : m_model(model) {}
 
-	Model &model;
-	string baseDir;
-	IWICImagingFactory* imagingFactory;
-	map<size_t, shared_ptr<MeshBuffer>> accessorIdxToMeshVertexBuffers;
+	Model &m_model;
+	map<size_t, shared_ptr<MeshBuffer>> m_accessorIdxToMeshVertexBuffers;
 };
 
 unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
 	VertexAttribute vertexAttribute,
-	vector<Accessor>::size_type accessorIndex,
+	const vector<Accessor>::size_type accessorIndex,
 	LoaderData &loaderData);
 
 unique_ptr<MeshIndexBufferAccessor> read_index_buffer(const Model& model,
-	vector<Accessor>::size_type accessorIndex,
+	const vector<Accessor>::size_type accessorIndex,
 	LoaderData &loaderData);
 
 shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepository, MaterialRepository &materialRepository, LoaderData &loaderData);
@@ -58,13 +50,6 @@ string g_pbrPropertyName_BaseColorTexture = "baseColorTexture";
 string g_pbrPropertyName_MetallicFactor = "metallicFactor";
 string g_pbrPropertyName_RoughnessFactor = "roughnessFactor";
 string g_pbrPropertyName_MetallicRoughnessTexture = "metallicRoughnessTexture";
-
-glTFMeshLoader::glTFMeshLoader()
-{
-	// Create the COM imaging factory
-	HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_imagingFactory));
-	assert(SUCCEEDED(S_OK));
-}
 
 void glTFMeshLoader::GetSupportedFileExtensions(vector<string> &extensions) const
 {
@@ -92,11 +77,7 @@ vector<shared_ptr<Entity>> glTFMeshLoader::LoadFile(const string& filename, Enti
 		throw runtime_error("Failed to parse glTF: defaultScene points to an invalid scene index");
 
 	const auto &scene = model.scenes[model.defaultScene];
-	string baseDir = tinygltf::GetBaseDir(filename);
-	if (baseDir.empty())
-		baseDir = ".";
-	LoaderData loaderData(model, baseDir, m_imagingFactory.Get());
-	
+	LoaderData loaderData(model);
 	for (int nodeIdx : scene.nodes) 
 	{
 		const Node &rootNode = model.nodes.at(nodeIdx);
@@ -118,78 +99,21 @@ shared_ptr<OE::Texture> try_create_texture(const LoaderData &loaderData, const t
 		throw runtime_error("missing property 'index' from " + textureName);
 
 	const auto gltfTextureIndex = static_cast<int>(indexPos->second);
-	assert(loaderData.model.textures.size() < INT_MAX);
-	if (gltfTextureIndex < 0 || gltfTextureIndex >= static_cast<int>(loaderData.model.textures.size()))
+	assert(loaderData.m_model.textures.size() < INT_MAX);
+	if (gltfTextureIndex < 0 || gltfTextureIndex >= static_cast<int>(loaderData.m_model.textures.size()))
 		throw runtime_error("invalid texture index '"+to_string(gltfTextureIndex)+"' for " + textureName);
 
-	const auto &gltfTexture = loaderData.model.textures.at(gltfTextureIndex);
-	const auto &gltfSampler = loaderData.model.samplers.at(gltfTexture.sampler);
-	const auto &gltfImage = loaderData.model.images.at(gltfTexture.source);
+	const auto &gltfTexture = loaderData.m_model.textures.at(indexPos->second);
+	const auto &gltfSampler = loaderData.m_model.samplers.at(gltfTexture.sampler);
+	const auto &gltfImage = loaderData.m_model.images.at(gltfTexture.source);
 
 	if (!gltfImage.uri.empty())
 	{
-		const auto filename = utf8_decode(loaderData.baseDir + "\\" + gltfImage.uri);
-
-		return make_shared<OE::FileTexture>(filename, true);
-		/*
-		Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
-		HRESULT hr = loaderData.imagingFactory->CreateDecoderFromFilename(
-			filename.c_str(),				 // Image to be decoded 
-			nullptr,                         // Do not prefer a particular vendor 
-			GENERIC_READ,                    // Desired read access to the file 
-			WICDecodeMetadataCacheOnDemand,  // Cache metadata when needed 
-			&decoder                         // Pointer to the decoder 
-		);
-
-		// Retrieve the first frame of the image from the decoder 
-		IWICBitmapFrameDecode *pFrame = nullptr;
-		if (SUCCEEDED(hr))
-		{
-			hr = decoder->GetFrame(0, &pFrame);
-		}
-
-		//Step 3: Format convert the frame to 32bppPBGRA 
-		Microsoft::WRL::ComPtr<IWICFormatConverter> formatConverter;
-		if (SUCCEEDED(hr))
-		{
-			hr = loaderData.imagingFactory->CreateFormatConverter(&formatConverter);
-		}
-		if (SUCCEEDED(hr))
-		{
-			hr = formatConverter->Initialize(
-				pFrame,                          // Input bitmap to convert 
-				GUID_WICPixelFormat32bppPBGRA,   // Destination pixel format 
-				WICBitmapDitherTypeNone,         // Specified dither pattern 
-				nullptr,                         // Specify a particular palette  
-				0.f,                             // Alpha threshold 
-				WICBitmapPaletteTypeCustom       // Palette translation type 
-			);
-		}
-
-		UINT width, height;
-		if (SUCCEEDED(hr))
-		{
-			hr = pFrame->GetSize(&width, &height);
-		}
-		if (SUCCEEDED(hr))
-		{
-			UINT stride = 4 * sizeof(uint8_t);
-			UINT rowStride = stride * width;
-			UINT bufferSize = rowStride * height;
-			unique_ptr<uint8_t> buffer = unique_ptr<uint8_t>(new uint8_t[bufferSize]);
-			
-			// Not really required; null should be equivolent
-			hr = formatConverter->CopyPixels(nullptr, rowStride, bufferSize, buffer.get());
-			if (SUCCEEDED(hr))
-			{
-				return make_shared<OE::Texture>(width, height, stride, bufferSize, buffer);
-			}
-		}
-		*/
+		
 	}
 	else if (!gltfImage.mimeType.empty())
 	{
-		throw runtime_error("not implemented");
+		
 	}
 	else
 	{
@@ -199,7 +123,7 @@ shared_ptr<OE::Texture> try_create_texture(const LoaderData &loaderData, const t
 
 unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialRepository &materialRepository, LoaderData &loaderData)
 {
-	const tinygltf::Material &gltfMaterial = loaderData.model.materials.at(prim.material);
+	const tinygltf::Material &gltfMaterial = loaderData.m_model.materials.at(prim.material);
 	auto material = materialRepository.instantiate<PBRMaterial>();
 
 
@@ -224,7 +148,7 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 
 	// base color texture
 	{
-		material->setBaseColorTexture(try_create_texture(loaderData, gltfMaterial, "baseColorTexture"));
+		shared_ptr<OE::Texture> texture = try_create_texture(loaderData, gltfMaterial, "baseColorTexture");
 	}
 
 	// TODO: Other material parameters; roughness etc
@@ -236,7 +160,7 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 	shared_ptr<Entity> rootEntity = entityRepository.Instantiate(node.name);
 
 	if (node.mesh > -1) {
-		const Mesh &mesh = loaderData.model.meshes.at(node.mesh);
+		const Mesh &mesh = loaderData.m_model.meshes.at(node.mesh);
 		for (int primIdx = 0; primIdx < mesh.primitives.size(); ++primIdx)
 		{
 			shared_ptr<Entity> primitiveEntity = entityRepository.Instantiate(node.name + " primitive " + to_string(primIdx));
@@ -251,7 +175,7 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 				// Read Index
 				try
 				{
-					auto accessor = read_index_buffer(loaderData.model, prim.indices, loaderData);
+					auto accessor = read_index_buffer(loaderData.m_model, prim.indices, loaderData);
 
 					// TODO: either remove count from the accessor, or from the meshData struct.
 					meshData.m_indexCount = accessor->m_count;
@@ -274,7 +198,7 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 					if (gltfAttributePos == prim.attributes.end())
 						throw logic_error("Missing " + gltfPositionAttributeName + " attribute");
 
-					size_t dataLen = loaderData.model.accessors.at(gltfAttributePos->second).count;
+					size_t dataLen = loaderData.m_model.accessors.at(gltfAttributePos->second).count;
 					assert(dataLen < UINT32_MAX);
 
 					meshData.m_vertexCount = static_cast<UINT>(dataLen);
@@ -305,7 +229,7 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 					}
 					else {
 						try {
-							unique_ptr<MeshVertexBufferAccessor> accessor = read_vertex_buffer(loaderData.model, requiredAttr, primAttrPos->second, loaderData);
+							unique_ptr<MeshVertexBufferAccessor> accessor = read_vertex_buffer(loaderData.m_model, requiredAttr, primAttrPos->second, loaderData);
 							meshData.m_vertexBufferAccessors.push_back(move(accessor));
 						}
 						catch (const exception &e)
@@ -328,7 +252,7 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 
 	for (auto childIdx : node.children)
 	{
-		const Node &childNode = loaderData.model.nodes.at(childIdx);
+		const Node &childNode = loaderData.m_model.nodes.at(childIdx);
 		auto childEntity = create_entity(childNode, entityRepository, materialRepository, loaderData);
 		childEntity->SetParent(*rootEntity.get());
 	}
@@ -384,28 +308,15 @@ unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
 	
 	// Have we already created an identical buffer? If so, re-use it.
 	shared_ptr<MeshBuffer> meshBuffer;
-	const auto pos = loaderData.accessorIdxToMeshVertexBuffers.find(accessorIndex);
+	const auto pos = loaderData.m_accessorIdxToMeshVertexBuffers.find(accessorIndex);
 
-	if (pos != loaderData.accessorIdxToMeshVertexBuffers.end())
+	if (pos != loaderData.m_accessorIdxToMeshVertexBuffers.end())
 		meshBuffer = pos->second;
 	else
 	{
 		// Copy the data.
-		LOG(INFO) << "Reading vertex buffer data: " << g_gltfMappingToAttributeMap[vertexAttribute];
 		meshBuffer = create_buffer(elementSize, accessor.count, buffer.data, stride, bufferView.byteOffset);
-		loaderData.accessorIdxToMeshVertexBuffers[accessorIndex] = meshBuffer;
-		/*
-		 // Output stream data to the log
-		if (accessor.type == TINYGLTF_TYPE_VEC2)
-		{
-			float *floatData = reinterpret_cast<float*>(meshBuffer->m_data);
-			for (size_t i = 0; i < accessor.count; i++)
-			{
-				LOG(INFO) << to_string(i) << ": " << floatData[0] << ", " << floatData[1];
-				floatData += 2;
-			}			
-		}
-		*/
+		loaderData.m_accessorIdxToMeshVertexBuffers[accessorIndex] = meshBuffer;
 
 		/*
 		if (vertexAttribute == VertexAttribute::VA_POSITION && elementSize == 3 * sizeof(float))
@@ -470,15 +381,15 @@ unique_ptr<MeshIndexBufferAccessor> read_index_buffer(const Model& model,
 
 	// Have we already created an identical buffer? If so, re-use it.
 	shared_ptr<MeshBuffer> meshBuffer;
-	const auto pos = loaderData.accessorIdxToMeshVertexBuffers.find(accessorIndex);
+	const auto pos = loaderData.m_accessorIdxToMeshVertexBuffers.find(accessorIndex);
 
-	if (pos != loaderData.accessorIdxToMeshVertexBuffers.end())
+	if (pos != loaderData.m_accessorIdxToMeshVertexBuffers.end())
 		meshBuffer = pos->second;
 	else
 	{
 		// Copy the data.
 		meshBuffer = create_buffer(elementSize, accessor.count, buffer.data, stride, bufferView.byteOffset);
-		loaderData.accessorIdxToMeshVertexBuffers[accessorIndex] = meshBuffer;
+		loaderData.m_accessorIdxToMeshVertexBuffers[accessorIndex] = meshBuffer;
 	}
 	
 	return make_unique<MeshIndexBufferAccessor>(meshBuffer, format, static_cast<UINT>(accessor.count), static_cast<UINT>(elementSize), 0);

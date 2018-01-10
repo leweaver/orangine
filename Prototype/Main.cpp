@@ -5,12 +5,18 @@
 #include "pch.h"
 #include "Game.h"
 
+#include <g3log/logworker.hpp>
+
+#include <algorithm>
+
 using namespace DirectX;
 
 namespace
 {
     std::unique_ptr<Game> g_game;
 };
+
+const std::string path_to_log_file = "./";
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -30,9 +36,32 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     if (!XMVerifyCPUSupport())
         return 1;
 
-    HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
-    if (FAILED(hr))
-        return 1;
+	// Initialize logger
+	std::string logFileName;
+	auto logWorker = g3::LogWorker::createLogWorker();
+	{
+		auto execName = OE::utf8_encode(__wargv[0]);
+		auto pos = execName.find_last_of("\\");
+		if (pos != std::string::npos)
+			logFileName = execName.substr(pos + 1);
+		else
+			logFileName = execName;
+		execName = OE::str_replace_all(execName, "\\", "/");
+	}
+	auto logFileSinkHandle = logWorker->addDefaultLogger(logFileName, path_to_log_file, "game");
+
+	g3::initializeLogging(logWorker.get());
+
+#if (_WIN32_WINNT >= 0x0A00 /*_WIN32_WINNT_WIN10*/)
+	Microsoft::WRL::Wrappers::RoInitializeWrapper initialize(RO_INIT_MULTITHREADED);
+	if (FAILED(initialize))
+		return 1;
+#else
+	HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
+	if (FAILED(hr))
+		return 1;
+#endif
+
 
     g_game = std::make_unique<Game>();
 

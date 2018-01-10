@@ -7,9 +7,7 @@
 #include "SceneGraphManager.h"
 #include "Scene.h"
 #include "TestComponent.h"
-#include "RenderableComponent.h"
 #include "EntityRenderManager.h"
-#include "SceneGraphManager.h"
 
 extern void ExitGame();
 
@@ -22,6 +20,24 @@ Game::Game()
 {
     m_deviceResources = std::make_unique<DX::DeviceResources>();
     m_deviceResources->RegisterDeviceNotify(this);
+}
+
+Game::~Game()
+{
+	if (m_scene) {
+		m_scene->GetEntityRenderManger().DestroyDeviceDependentResources();
+		m_scene->Shutdown();
+	}
+
+	// Uncomment to output debug information on shutdown
+	/*
+	Microsoft::WRL::ComPtr<ID3D11Debug> d3D11Debug;	
+	HRESULT hr = m_deviceResources->GetD3DDevice()->QueryInterface(IID_PPV_ARGS(&d3D11Debug));
+	if (d3D11Debug != nullptr)
+	{
+		d3D11Debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+	}
+	*/
 }
 
 // Initialize the Direct3D resources required to run.
@@ -102,7 +118,6 @@ void Game::Render()
     Clear();
 
     m_deviceResources->PIXBeginEvent(L"Render");
-    auto context = m_deviceResources->GetD3DDeviceContext();
 
     // TODO: Add your rendering code here.
 	m_scene->GetEntityRenderManger().Render(*m_deviceResources);
@@ -199,7 +214,7 @@ void Game::CreateWindowSizeDependentResources()
 
 void Game::OnDeviceLost()
 {
-    // TODO: Add Direct3D resource cleanup here.
+	m_scene->GetEntityRenderManger().DestroyDeviceDependentResources();
 }
 
 void Game::OnDeviceRestored()

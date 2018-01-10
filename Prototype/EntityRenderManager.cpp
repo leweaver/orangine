@@ -18,6 +18,7 @@ EntityRenderManager::EntityRenderManager(Scene& scene, const std::shared_ptr<Mat
 	: ManagerBase(scene)
 	, m_renderableEntities(nullptr)
 	, m_materialRepository(materialRepository)
+	, m_rasterizerState(nullptr)
 {
 }
 
@@ -36,12 +37,34 @@ void EntityRenderManager::Tick() {
 	// Update camera etc.
 }
 
+void EntityRenderManager::Shutdown()
+{
+	if (m_rasterizerState)
+		m_rasterizerState->Release();
+}
+
 void EntityRenderManager::CreateDeviceDependentResources(const DX::DeviceResources &deviceResources)
 {
+	if (m_rasterizerState)
+		m_rasterizerState->Release();
+
+	D3D11_RASTERIZER_DESC rasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
+	// Render using a right handed coordinate system
+	rasterizerDesc.FrontCounterClockwise = true;
+
+	deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, &m_rasterizerState);
+	deviceResources.GetD3DDeviceContext()->RSSetState(m_rasterizerState);
 }
 
 void EntityRenderManager::CreateWindowSizeDependentResources(const DX::DeviceResources &deviceResources)
 {
+}
+
+void EntityRenderManager::DestroyDeviceDependentResources()
+{
+	if (m_rasterizerState)
+		m_rasterizerState->Release();
+	m_rasterizerState = nullptr;
 }
 
 void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
@@ -117,36 +140,28 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 				if (rendererData->m_indexBufferAccessor != nullptr)
 				{
 					// Set the index buffer to active in the input assembler so it can be rendered.
-					auto indexAccessor = rendererData->m_indexBufferAccessor.get();
+					const auto indexAccessor = rendererData->m_indexBufferAccessor.get();
 					deviceContext->IASetIndexBuffer(indexAccessor->m_buffer->m_d3dBuffer, rendererData->m_indexFormat, indexAccessor->m_offset);
 
-					if (material->Render(*rendererData, entity->GetWorldTransform(), viewMatrix, projMatrix, deviceResources))
+					if (material->render(*rendererData, entity->GetWorldTransform(), viewMatrix, projMatrix, deviceResources))
 						deviceContext->DrawIndexed(rendererData->m_indexCount, 0, 0);
 				}
 				else
 				{
-					material->Render(*rendererData, entity->GetWorldTransform(), viewMatrix, projMatrix, deviceResources);
+					material->render(*rendererData, entity->GetWorldTransform(), viewMatrix, projMatrix, deviceResources);
 
 					// Render the triangles.
 					deviceContext->Draw(rendererData->m_vertexCount, rendererData->m_vertexCount);
 				}
 			}
 		} 
-		catch (std::runtime_error &)
+		catch (std::runtime_error &e)
 		{
 			renderable->SetVisible(false);
-			throw;
+			LOG(WARNING) << "Failed to render mesh on entity with ID " << entity->GetId() << ".\n" << e.what();
 		}
 	}
 }
-
-/*
-struct SimpleVertexCombined
-{
-	XMFLOAT3 Pos;
-	XMFLOAT3 Col;
-};
-*/
 
 std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const MeshDataComponent &meshData, const DX::DeviceResources &deviceResources) const
 {
@@ -161,6 +176,9 @@ std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const Mesh
 			meshData.m_indexBufferAccessor->m_stride,
 			meshData.m_indexBufferAccessor->m_offset);
 		rendererData->m_indexFormat = meshData.m_indexBufferAccessor->m_format;
+
+		std::string name("Index Buffer (count: " + std::to_string(meshData.m_indexCount) + ")");
+		rendererData->m_indexBufferAccessor->m_buffer->m_d3dBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
 	}
 	else {
 		// TODO: Simply log a warning?
@@ -203,12 +221,12 @@ std::shared_ptr<D3DBuffer> EntityRenderManager::CreateBufferFromData(const MeshB
 
 	// Get a reference
 	HRESULT hr = deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &d3dBuffer->m_d3dBuffer);
-	assert(!FAILED(hr));	
+	assert(!FAILED(hr));
 
 	return d3dBuffer;
 }
 
 std::unique_ptr<Material> EntityRenderManager::LoadMaterial(const std::string &materialName) const
 {
-	return m_materialRepository->Instantiate(materialName);
+	return m_materialRepository->instantiate(materialName);
 }

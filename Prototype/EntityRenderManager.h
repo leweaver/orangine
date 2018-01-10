@@ -24,12 +24,17 @@ namespace OE {
 		
 		void Initialize() override;
 		void Tick() override;
+		void Shutdown() override;
 
 		void CreateDeviceDependentResources(const DX::DeviceResources &deviceResources);
 		void CreateWindowSizeDependentResources(const DX::DeviceResources &deviceResources);
+		void DestroyDeviceDependentResources();
+
 		void Render(const DX::DeviceResources &deviceResources);
-		
+
 	private:
+
+		ID3D11RasterizerState *m_rasterizerState;
 
 		std::unique_ptr<Material> LoadMaterial(const std::string &materialName) const;
 

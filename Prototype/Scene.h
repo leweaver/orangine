@@ -38,6 +38,7 @@ namespace OE {
 		AssetManager &GetAssetManager() const { return *m_assetManager; }
 
 		void Tick(DX::StepTimer const& timer);
+		void Shutdown();
 
 		/** Total time since game start, in seconds. */
 		const double& GetElapsedTime() const { return m_elapsedTime; }

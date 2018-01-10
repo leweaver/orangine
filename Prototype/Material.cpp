@@ -3,7 +3,6 @@
 
 #include <d3dcompiler.h>
 #include <locale>
-#include <codecvt>
 #include <sstream>
 
 #include <comdef.h>
@@ -12,6 +11,7 @@
 
 using namespace OE;
 using namespace DirectX;
+using namespace std::literals;
 
 
 Material::Material()
@@ -25,10 +25,10 @@ Material::Material()
 
 Material::~Material()
 {
-	Release();
+	release();
 }
 
-void Material::Release()
+void Material::release()
 {
 	if (m_vertexShader)
 	{
@@ -55,12 +55,12 @@ void Material::Release()
 	}
 }
 
-void Material::GetVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const {
+void Material::getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const {
 	vertexAttributes.push_back(VertexAttribute::VA_POSITION);
 	vertexAttributes.push_back(VertexAttribute::VA_COLOR);
 }
 
-const DXGI_FORMAT Material::format(VertexAttribute attribute)
+DXGI_FORMAT Material::format(VertexAttribute attribute)
 {
 	switch (attribute)
 	{
@@ -74,9 +74,10 @@ const DXGI_FORMAT Material::format(VertexAttribute attribute)
 
 	case VertexAttribute::VA_TANGENT:
 		return DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT;
-	}
 
-	throw std::logic_error("Material does not support format: " + VertexAttributeMeta::str(attribute));
+	default:
+		throw std::logic_error("Material does not support format: " + VertexAttributeMeta::str(attribute));
+	}
 }
 
 UINT Material::inputSlot(VertexAttribute attribute)
@@ -84,110 +85,130 @@ UINT Material::inputSlot(VertexAttribute attribute)
 	return attribute == VertexAttribute::VA_POSITION ? 0 : 1;
 }
 
-struct Constants
+Material::ShaderCompileSettings Material::vertexShaderSettings() const
 {
-	DirectX::XMMATRIX m_viewProjection;
-	DirectX::XMMATRIX m_world;
-};
+	return ShaderCompileSettings
+	{
+		L"data/shaders/vertex_colors_VS.hlsl"s,
+		"VSMain"s,
+		std::set<std::string>(),
+		std::set<std::string>()
+	};
+}
 
-bool Material::Render(const RendererData &rendererData, const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix, const DX::DeviceResources &deviceResources)
+Material::ShaderCompileSettings Material::pixelShaderSettings() const
+{
+	return ShaderCompileSettings
+	{
+		L"data/shaders/vertex_colors_PS.hlsl"s,
+		"PSMain"s,
+		std::set<std::string>(),
+		std::set<std::string>()
+	};
+}
+
+bool Material::createVertexShader(ID3D11Device* device)
+{
+	ID3DBlob* errorMsgs;
+	HRESULT hr;
+	ID3D10Blob *vertexShaderBytecode;
+	auto settings = vertexShaderSettings();
+	hr = D3DCompileFromFile(settings.filename.c_str(), 
+	                        nullptr, nullptr, 
+	                        settings.entryPoint.c_str(), 
+	                        "vs_4_0", 
+	                        0, 0, 
+	                        &vertexShaderBytecode, &errorMsgs);
+
+	if (!SUCCEEDED(hr)) {
+		throwShaderError(hr, errorMsgs, settings);
+		release();
+		return false;
+	}
+
+	std::vector<VertexAttribute> attributes;
+	getVertexAttributes(attributes);
+	std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementDesc;
+
+	LOG(INFO) << "Adding vertex attr's";
+	for (const auto &attr : attributes)
+	{
+		const auto semanticName = VertexAttributeMeta::semanticName(attr);
+		LOG(INFO) << semanticName << " to slot " << inputSlot(attr);
+		inputElementDesc.push_back(
+			{ 
+				semanticName, 
+				VertexAttributeMeta::semanticIndex(attr), 
+				format(attr), 
+				inputSlot(attr),
+				D3D11_APPEND_ALIGNED_ELEMENT, 
+				D3D11_INPUT_PER_VERTEX_DATA, 
+				0 
+			}
+		);
+	}
+
+	device->CreateInputLayout(inputElementDesc.data(), static_cast<UINT>(inputElementDesc.size()), 
+	                          vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), 
+	                          &m_inputLayout);
+
+	device->CreateVertexShader(vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), nullptr, &m_vertexShader);
+
+	vertexShaderBytecode->Release();
+	return true;
+}
+
+bool Material::createPixelShader(ID3D11Device* device)
+{
+	ID3DBlob* errorMsgs;
+	HRESULT hr;
+	ID3D10Blob *pixelShaderBytecode;
+
+	auto settings = pixelShaderSettings();
+	hr = D3DCompileFromFile(settings.filename.c_str(),
+	                        nullptr, nullptr,
+	                        settings.entryPoint.c_str(),
+	                        "ps_4_0",
+	                        0, 0,
+	                        &pixelShaderBytecode, &errorMsgs);
+	if (!SUCCEEDED(hr)) {
+		throwShaderError(hr, errorMsgs, settings);
+		release();
+		return false;
+	}
+
+	device->CreatePixelShader(pixelShaderBytecode->GetBufferPointer(), pixelShaderBytecode->GetBufferSize(), nullptr, &m_pixelShader);
+	pixelShaderBytecode->Release();
+
+	return true;
+}
+
+bool Material::render(const RendererData &rendererData, const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix, const DX::DeviceResources &deviceResources)
 {
 	if (m_errorState)
 		return false;
 
-	auto device = deviceResources.GetD3DDevice();
+	const auto device = deviceResources.GetD3DDevice();
 	auto context = deviceResources.GetD3DDeviceContext();
-	const auto vsName = L"data/shaders/vertex_colors_VS.hlsl";
-	const auto psName = L"data/shaders/vertex_colors_PS.hlsl";
-
-	Constants constants;
-
-	ID3DBlob* errorMsgs = nullptr;
-	HRESULT hr;
+	
 	m_errorState = true;
 	{
-
 		if (!m_vertexShader) {
-			ID3D10Blob *vertexShaderBytecode;
-			hr = D3DCompileFromFile(vsName, nullptr, nullptr, "VSMain", "vs_4_0", 0, 0, &vertexShaderBytecode, &errorMsgs);
-			if (!SUCCEEDED(hr)) {
-				ThrowShaderError(hr, errorMsgs, vsName);
-				Release();
+			if (!createVertexShader(device)) 
 				return false;
-			}
 
-			std::vector<VertexAttribute> attributes;
-			GetVertexAttributes(attributes);
-			std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementDesc;
-			for (const auto &attr : attributes)
-			{
-				inputElementDesc.push_back(
-					{ 
-						VertexAttributeMeta::semanticName(attr), 
-						VertexAttributeMeta::semanticIndex(attr), 
-						format(attr), 
-						inputSlot(attr),
-						D3D11_APPEND_ALIGNED_ELEMENT, 
-						D3D11_INPUT_PER_VERTEX_DATA, 
-						0 
-					}
-				);
-			}
-			/*
-			D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
-			{
-				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-				{ "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-			};
-			const unsigned int numElements = inputElementDesc.size();
-			*/
-			device->CreateInputLayout(inputElementDesc.data(), static_cast<UINT>(inputElementDesc.size()), 
-				vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), 
-				&m_inputLayout);
-
-			device->CreateVertexShader(vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), nullptr, &m_vertexShader);
-
-			vertexShaderBytecode->Release();
-
-			D3D11_BUFFER_DESC bufferDesc;
-			bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-			bufferDesc.ByteWidth = sizeof(Constants);
-			bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-			bufferDesc.CPUAccessFlags = 0;
-			bufferDesc.MiscFlags = 0;
-			
-			constants.m_viewProjection = Math::MAT4_IDENTITY;
-			constants.m_world = worldMatrix;
-
-			D3D11_SUBRESOURCE_DATA initData;
-			initData.pSysMem = &constants;
-			initData.SysMemPitch = 0;
-			initData.SysMemSlicePitch = 0;
-
-			device->CreateBuffer(&bufferDesc, &initData, &m_constantBuffer);
+			createConstantBuffer(device, m_constantBuffer);
 		}
 
 		if (!m_pixelShader) {
-			ID3D10Blob *m_pixelShaderBytecode;
-			hr = D3DCompileFromFile(psName, nullptr, nullptr, "PSMain", "ps_4_0", 0, 0, &m_pixelShaderBytecode, &errorMsgs);
-			if (!SUCCEEDED(hr)) {
-				ThrowShaderError(hr, errorMsgs, psName);
-				Release();
+			if (!createPixelShader(device)) 
 				return false;
-			}
-
-			device->CreatePixelShader(m_pixelShaderBytecode->GetBufferPointer(), m_pixelShaderBytecode->GetBufferSize(), nullptr, &m_pixelShader);
-			m_pixelShaderBytecode->Release();
 		}
 	}
 	m_errorState = false;
 
 	// Update constant buffers
-
-	// Convert to LH, for DirectX.
-	constants.m_viewProjection = XMMatrixTranspose(XMMatrixMultiply(viewMatrix, projMatrix));
-	constants.m_world = XMMatrixTranspose(worldMatrix);
-	context->UpdateSubresource(m_constantBuffer, 0, nullptr, &constants, 0, 0);
+	updateConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, m_constantBuffer);
 	context->VSSetConstantBuffers(0, 1, &m_constantBuffer);
 
 	// We have a valid shader
@@ -195,17 +216,16 @@ bool Material::Render(const RendererData &rendererData, const XMMATRIX &worldMat
 	context->VSSetShader(m_vertexShader, nullptr, 0);
 	context->PSSetShader(m_pixelShader, nullptr, 0);
 
+	setContextSamplers(deviceResources);
+
 	return true;
 }
 
-void Material::ThrowShaderError(HRESULT hr, ID3D10Blob* errorMessage, const wchar_t* shaderFilename)
+void Material::throwShaderError(HRESULT hr, ID3D10Blob* errorMessage, const ShaderCompileSettings &compileSettings)
 {
-	using convert_type = std::codecvt_utf8<wchar_t>;
-	std::wstring_convert<convert_type, wchar_t> converter;
-
 	std::stringstream ss;
 
-	const std::string shaderFilenameUtf8 = converter.to_bytes(std::wstring(shaderFilename));
+	const std::string shaderFilenameUtf8 = utf8_encode(compileSettings.filename);
 	ss << "Error compiling shader \"" << shaderFilenameUtf8 << "\"" << std::endl;
 
 	// Get a pointer to the error message text buffer.
@@ -217,7 +237,7 @@ void Material::ThrowShaderError(HRESULT hr, ID3D10Blob* errorMessage, const wcha
 	else
 	{
 		_com_error err(hr);
-		ss << converter.to_bytes(std::wstring(err.ErrorMessage()));
+		ss << utf8_encode(std::wstring(err.ErrorMessage()));
 	}
 
 	throw std::runtime_error(ss.str());

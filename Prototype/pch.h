@@ -28,6 +28,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+//#include <atlcomcli.h> // for CComPtr
 
 #include <wrl/client.h>
 
@@ -82,4 +83,6 @@ namespace DX
     }
 }
 
+#include <g3log/g3log.hpp>
 #include "SimpleTypes.h"
+#include "Utils.h"

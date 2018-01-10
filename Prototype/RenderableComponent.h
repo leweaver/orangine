@@ -23,6 +23,7 @@ namespace OE
 			, m_rendererData(nullptr)
 			, m_material(nullptr)
 		{}
+		~RenderableComponent();
 		
 		bool GetVisible() const { return m_visible; }
 		void SetVisible(bool visible) { m_visible = visible; }

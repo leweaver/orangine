@@ -27,7 +27,7 @@ D3DBufferAccessor::D3DBufferAccessor(const std::shared_ptr<D3DBuffer> &buffer, u
 
 D3DBufferAccessor::~D3DBufferAccessor()
 {
-	m_buffer = nullptr;
+	m_buffer.reset();
 }
 
 RendererData::RendererData()
@@ -46,5 +46,5 @@ RendererData::~RendererData()
 void RendererData::Release()
 {
 	m_vertexBuffers.clear();
-	m_indexBufferAccessor.release();
+	m_indexBufferAccessor.reset();
 }

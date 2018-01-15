@@ -25,7 +25,7 @@ Game::Game()
 Game::~Game()
 {
 	if (m_scene) {
-		m_scene->GetEntityRenderManger().DestroyDeviceDependentResources();
+		m_scene->GetEntityRenderManger().destroyDeviceDependentResources();
 		m_scene->Shutdown();
 	}
 
@@ -120,7 +120,7 @@ void Game::Render()
     m_deviceResources->PIXBeginEvent(L"Render");
 
     // TODO: Add your rendering code here.
-	m_scene->GetEntityRenderManger().Render(*m_deviceResources);
+	m_scene->GetEntityRenderManger().render(*m_deviceResources);
 
     m_deviceResources->PIXEndEvent();
 
@@ -203,18 +203,18 @@ void Game::GetDefaultSize(int& width, int& height) const
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
-	m_scene->GetEntityRenderManger().CreateDeviceDependentResources(*m_deviceResources);
+	m_scene->GetEntityRenderManger().createDeviceDependentResources(*m_deviceResources);
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
-	m_scene->GetEntityRenderManger().CreateWindowSizeDependentResources(*m_deviceResources);
+	m_scene->GetEntityRenderManger().createWindowSizeDependentResources(*m_deviceResources);
 }
 
 void Game::OnDeviceLost()
 {
-	m_scene->GetEntityRenderManger().DestroyDeviceDependentResources();
+	m_scene->GetEntityRenderManger().destroyDeviceDependentResources();
 }
 
 void Game::OnDeviceRestored()

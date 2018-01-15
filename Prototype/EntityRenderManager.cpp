@@ -10,6 +10,7 @@
 
 #include <set>
 #include <functional>
+#include "LightComponent.h"
 
 using namespace OE;
 using namespace DirectX;
@@ -28,9 +29,13 @@ EntityRenderManager::~EntityRenderManager()
 
 void EntityRenderManager::Initialize() 
 {
-	std::set<Component::ComponentType> filter;
-	filter.insert(RenderableComponent::Type());
-	m_renderableEntities = m_scene.GetSceneGraphManager().GetEntityFilter(filter);
+	std::set<Component::ComponentType> requiredTypes;
+	requiredTypes.insert(RenderableComponent::Type());
+	m_renderableEntities = m_scene.GetSceneGraphManager().GetEntityFilter(requiredTypes);
+
+	requiredTypes.clear();
+	requiredTypes.insert(DirectionalLightComponent::Type());
+	m_lightEntities = m_scene.GetSceneGraphManager().GetEntityFilter(requiredTypes);
 }
 
 void EntityRenderManager::Tick() {
@@ -43,7 +48,7 @@ void EntityRenderManager::Shutdown()
 		m_rasterizerState->Release();
 }
 
-void EntityRenderManager::CreateDeviceDependentResources(const DX::DeviceResources &deviceResources)
+void EntityRenderManager::createDeviceDependentResources(const DX::DeviceResources &deviceResources)
 {
 	if (m_rasterizerState)
 		m_rasterizerState->Release();
@@ -56,18 +61,18 @@ void EntityRenderManager::CreateDeviceDependentResources(const DX::DeviceResourc
 	deviceResources.GetD3DDeviceContext()->RSSetState(m_rasterizerState);
 }
 
-void EntityRenderManager::CreateWindowSizeDependentResources(const DX::DeviceResources &deviceResources)
+void EntityRenderManager::createWindowSizeDependentResources(const DX::DeviceResources &deviceResources)
 {
 }
 
-void EntityRenderManager::DestroyDeviceDependentResources()
+void EntityRenderManager::destroyDeviceDependentResources()
 {
 	if (m_rasterizerState)
 		m_rasterizerState->Release();
 	m_rasterizerState = nullptr;
 }
 
-void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
+void EntityRenderManager::render(const DX::DeviceResources &deviceResources)
 {
 	// Hard Coded Camera
 	const DirectX::XMMATRIX &viewMatrix = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(5.0f, 3.0f, -10.0f, 0.0f), Math::VEC_ZERO, Math::VEC_UP);
@@ -107,9 +112,9 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 			}
 
 			// Send the buffers to the input assembler
-			if (rendererData->m_vertexBuffers.size()) {
+			if (!rendererData->m_vertexBuffers.empty()) {
 				auto &vertexBuffers = rendererData->m_vertexBuffers;
-				const size_t numBuffers = vertexBuffers.size();
+				const auto numBuffers = vertexBuffers.size();
 				if (numBuffers > 1) {
 					bufferArray.clear();
 					strideArray.clear();
@@ -134,7 +139,7 @@ void EntityRenderManager::Render(const DX::DeviceResources &deviceResources)
 				// Set the type of primitive that should be rendered from this vertex buffer, in this case triangles.
 				deviceContext->IASetPrimitiveTopology(rendererData->m_topology);
 
-				Material *material = renderable->GetMaterial().get();
+				auto material = renderable->GetMaterial().get();
 				assert(material != nullptr);
 
 				if (rendererData->m_indexBufferAccessor != nullptr)

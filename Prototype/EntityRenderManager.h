@@ -4,9 +4,8 @@
 #include "ManagerBase.h"
 #include "RendererData.h"
 #include "MeshDataComponent.h"
-
-#include <map>
 #include "MaterialRepository.h"
+#include "Game.h"
 
 namespace OE {
 	class Scene;
@@ -16,6 +15,7 @@ namespace OE {
 	class EntityRenderManager : public ManagerBase
 	{
 		std::shared_ptr<EntityFilter> m_renderableEntities;
+		std::shared_ptr<EntityFilter> m_lightEntities;
 		std::shared_ptr<MaterialRepository> m_materialRepository;
 
 	public:
@@ -26,11 +26,11 @@ namespace OE {
 		void Tick() override;
 		void Shutdown() override;
 
-		void CreateDeviceDependentResources(const DX::DeviceResources &deviceResources);
-		void CreateWindowSizeDependentResources(const DX::DeviceResources &deviceResources);
-		void DestroyDeviceDependentResources();
+		void createDeviceDependentResources(const DX::DeviceResources &deviceResources);
+		void createWindowSizeDependentResources(const DX::DeviceResources &deviceResources);
+		void destroyDeviceDependentResources();
 
-		void Render(const DX::DeviceResources &deviceResources);
+		void render(const DX::DeviceResources &deviceResources);
 
 	private:
 

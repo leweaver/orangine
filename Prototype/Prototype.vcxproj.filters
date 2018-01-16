@@ -11,17 +11,20 @@
     <Filter Include="Assets\shaders">
       <UniqueIdentifier>{5552b684-2186-4d88-a4a8-3b3fd05d6580}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers">
+    <Filter Include="Systems">
       <UniqueIdentifier>{a1dbed6d-878d-4e6f-a6a2-e1f02dd1bc54}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers\SceneGraph">
+    <Filter Include="Systems\SceneGraph">
       <UniqueIdentifier>{a82e037c-f09d-4da8-ad77-13cdd17ce8c7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers\Renderer">
+    <Filter Include="Systems\Renderer">
       <UniqueIdentifier>{e2abaab7-70a2-434c-bf13-f8d8bbc91183}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Managers\Scripting">
+    <Filter Include="Systems\Scripting">
       <UniqueIdentifier>{aa84136d-04a0-4739-bf9b-a40477a648cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems\Renderer\Materials">
+      <UniqueIdentifier>{93383671-ad64-448f-9e94-7d1a56a37cb7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -34,75 +37,82 @@
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="Entity.h">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="Bound.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Component.h">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="Scene.h">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="RendererData.h">
-      <Filter>Managers\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="EntityFilter.h">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="EntityScriptingManager.h">
-      <Filter>Managers\Scripting</Filter>
+      <Filter>Systems\Scripting</Filter>
     </ClInclude>
     <ClInclude Include="SceneGraphManager.h">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="EntityRenderManager.h">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="RenderableComponent.h">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="TestComponent.h">
-      <Filter>Managers\Scripting</Filter>
+      <Filter>Systems\Scripting</Filter>
     </ClInclude>
     <ClInclude Include="AssetManager.h">
-      <Filter>Managers</Filter>
+      <Filter>Systems</Filter>
     </ClInclude>
     <ClInclude Include="SimpleTypes.h" />
     <ClInclude Include="ManagerBase.h">
-      <Filter>Managers</Filter>
+      <Filter>Systems</Filter>
     </ClInclude>
     <ClInclude Include="glTFMeshLoader.h">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="EntityGraphLoader.h">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="MeshDataComponent.h">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="EntityRepository.h">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="MaterialRepository.h">
-      <Filter>Managers\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="PBRMaterial.h">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Texture.h">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="TextureImpl.h">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="LightComponent.h">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="PBRMaterial.h">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="ClearGBufferMaterial.h">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshData.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="PrimitiveMeshDataFactory.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -112,61 +122,68 @@
       <Filter>Common</Filter>
     </ClCompile>
     <ClCompile Include="Entity.cpp">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClCompile>
     <ClCompile Include="Bound.cpp" />
     <ClCompile Include="Component.cpp">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClCompile>
     <ClCompile Include="Scene.cpp">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClCompile>
     <ClCompile Include="RendererData.cpp">
-      <Filter>Managers\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Material.cpp">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="EntityScriptingManager.cpp">
-      <Filter>Managers\Scripting</Filter>
+      <Filter>Systems\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="SceneGraphManager.cpp">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClCompile>
     <ClCompile Include="EntityRenderManager.cpp">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="RenderableComponent.cpp">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="TestComponent.cpp">
-      <Filter>Managers\Scripting</Filter>
+      <Filter>Systems\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="AssetManager.cpp">
-      <Filter>Managers</Filter>
+      <Filter>Systems</Filter>
     </ClCompile>
     <ClCompile Include="glTFMeshLoader.cpp">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClCompile>
     <ClCompile Include="MeshDataComponent.cpp">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="EntityRepository.cpp">
-      <Filter>Managers\SceneGraph</Filter>
+      <Filter>Systems\SceneGraph</Filter>
     </ClCompile>
     <ClCompile Include="MaterialRepository.cpp">
-      <Filter>Managers\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="PBRMaterial.cpp">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="TextureImpl.cpp">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="LightComponent.cpp">
-      <Filter>Managers\Renderer</Filter>
+      <Filter>Systems\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClCompile>
+    <ClCompile Include="PBRMaterial.cpp">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClCompile>
+    <ClCompile Include="ClearGBufferMaterial.cpp">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshData.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="PrimitiveMeshDataFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -199,6 +216,12 @@
       <Filter>Assets\shaders</Filter>
     </FxCompile>
     <FxCompile Include="data\shaders\pbr_metallic_PS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\clear_gbuffer_VS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\clear_gbuffer_PS.hlsl">
       <Filter>Assets\shaders</Filter>
     </FxCompile>
   </ItemGroup>

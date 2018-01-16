@@ -12,19 +12,28 @@ struct PS_INPUT
 
 struct PS_OUTPUT
 {
-	float4  Color : COLOR0;  // xyz: Diffuse          w: Specular intensity
-	float4  Color1 : COLOR1; // xyz: World normals    w: Specular power
+	float4 Color        : COLOR0;
+	float4 Normal       : COLOR1;
+	float4 Depth        : COLOR2;
 };
-
-Texture2D baseColorTexture;
-SamplerState baseColorSampler;
 
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
 PS_OUTPUT PSMain(PS_INPUT input) : SV_TARGET
 {
-	PS_OUTPUT output;
-	output.Color = baseColorTexture.Sample(baseColorSampler, input.vTexCoord0);
-	output.Color1 = float4(vWorldNormal.xyz, 1.0);
+	PS_OUTPUT output;    
+	output.Color = 0.0f;
+	output.Color.a = 0.0f;
+
+	//when transforming 0.5f into [-1,1], we will get 0.0f
+	output.Normal.rgb = 0.5f;
+
+	//no specular power
+	output.Normal.a = 0.0f;
+
+	//max depth
+	output.Depth = 1.0f;
+
+	return output;
 }

@@ -24,7 +24,8 @@ struct VS_INPUT
 struct VS_OUTPUT
 {
 	float4 vColor       : COLOR0;
-	float3 vNormal      : NORMAL;
+	float3 vNormal      : NORMAL0;
+	float3 vWorldNormal : NORMAL1;
 	float4 vTangent     : TANGENT;
 	float2 vTexCoord0   : TEXCOORD0;
 	float4 vPosition    : SV_POSITION;
@@ -39,9 +40,11 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	matrix mWorldViewProjection = mul(g_mWorld, g_mViewProjection);
 	Output.vPosition = mul(Input.vPosition, mWorldViewProjection);
 	Output.vNormal = Input.vNormal;
+	Output.vWorldNormal = mul(Input.vNormal, g_mWorld);
 	Output.vTangent = Input.vTangent;
 	Output.vTexCoord0 = Input.vTexCoord0;
 	Output.vColor = g_baseColor;
+
 
 	return Output;
 }

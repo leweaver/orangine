@@ -92,7 +92,6 @@ namespace OE {
 			DirectX::XMFLOAT4 baseColor;
 		} m_constants;
 
-		DXGI_FORMAT format(VertexAttribute attribute) override;
 		UINT inputSlot(VertexAttribute attribute) override;
 
 		ShaderCompileSettings vertexShaderSettings() const override;

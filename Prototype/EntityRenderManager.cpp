@@ -11,14 +11,24 @@
 #include <set>
 #include <functional>
 #include "LightComponent.h"
+#include "ClearGBufferMaterial.h"
 
 using namespace OE;
 using namespace DirectX;
+using namespace std::literals;
+
+EntityRenderManager::Renderable::Renderable()
+	: meshData(nullptr)
+	, material(nullptr)
+	, rendererData(nullptr)
+{
+}
 
 EntityRenderManager::EntityRenderManager(Scene& scene, const std::shared_ptr<MaterialRepository> &materialRepository)
 	: ManagerBase(scene)
 	, m_renderableEntities(nullptr)
 	, m_materialRepository(materialRepository)
+	, m_primitiveMeshDataFactory(nullptr)
 	, m_rasterizerState(nullptr)
 {
 }
@@ -36,6 +46,8 @@ void EntityRenderManager::Initialize()
 	requiredTypes.clear();
 	requiredTypes.insert(DirectionalLightComponent::Type());
 	m_lightEntities = m_scene.GetSceneGraphManager().GetEntityFilter(requiredTypes);
+
+	m_primitiveMeshDataFactory = std::make_unique<PrimitiveMeshDataFactory>();
 }
 
 void EntityRenderManager::Tick() {
@@ -44,8 +56,13 @@ void EntityRenderManager::Tick() {
 
 void EntityRenderManager::Shutdown()
 {
+	if (m_primitiveMeshDataFactory)
+		m_primitiveMeshDataFactory.reset();
+
 	if (m_rasterizerState)
 		m_rasterizerState->Release();
+
+	m_screenSpaceQuad = Renderable();
 }
 
 void EntityRenderManager::createDeviceDependentResources(const DX::DeviceResources &deviceResources)
@@ -59,6 +76,8 @@ void EntityRenderManager::createDeviceDependentResources(const DX::DeviceResourc
 
 	deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, &m_rasterizerState);
 	deviceResources.GetD3DDeviceContext()->RSSetState(m_rasterizerState);
+
+	initScreenSpaceQuad(deviceResources);
 }
 
 void EntityRenderManager::createWindowSizeDependentResources(const DX::DeviceResources &deviceResources)
@@ -70,6 +89,8 @@ void EntityRenderManager::destroyDeviceDependentResources()
 	if (m_rasterizerState)
 		m_rasterizerState->Release();
 	m_rasterizerState = nullptr;
+
+	m_screenSpaceQuad.rendererData.reset();
 }
 
 void EntityRenderManager::render(const DX::DeviceResources &deviceResources)
@@ -89,6 +110,8 @@ void EntityRenderManager::render(const DX::DeviceResources &deviceResources)
 	std::vector<UINT> strideArray;
 	std::vector<UINT> offsetArray;
 
+	std::vector<VertexAttribute> vertexAttributes;
+
 	for (auto iter = m_renderableEntities->begin(); iter != m_renderableEntities->end(); ++iter)
 	{
 		const auto entity = *iter;
@@ -97,16 +120,23 @@ void EntityRenderManager::render(const DX::DeviceResources &deviceResources)
 			continue;
 
 		try {
+			auto material = renderable->GetMaterial().get();
+			assert(material != nullptr);
+
 			const RendererData *rendererData = renderable->GetRendererData().get();
 			if (rendererData == nullptr) {
-				const auto meshData = entity->GetFirstComponentOfType<MeshDataComponent>();
-				if (meshData == nullptr)
+				const auto meshDataComponent = entity->GetFirstComponentOfType<MeshDataComponent>();
+				if (meshDataComponent == nullptr || meshDataComponent->getMeshData() == nullptr)
 				{
 					// There is no mesh data, we can't render.
 					continue;
 				}
+				const auto &meshData = meshDataComponent->getMeshData();
 
-				std::unique_ptr<RendererData> rendererDataPtr = CreateRendererData(*meshData, deviceResources);
+				vertexAttributes.clear();
+				material->getVertexAttributes(vertexAttributes);
+
+				std::unique_ptr<RendererData> rendererDataPtr = CreateRendererData(*meshData, vertexAttributes, deviceResources);
 				rendererData = rendererDataPtr.get();
 				renderable->SetRendererData(rendererDataPtr);
 			}
@@ -138,10 +168,7 @@ void EntityRenderManager::render(const DX::DeviceResources &deviceResources)
 
 				// Set the type of primitive that should be rendered from this vertex buffer, in this case triangles.
 				deviceContext->IASetPrimitiveTopology(rendererData->m_topology);
-
-				auto material = renderable->GetMaterial().get();
-				assert(material != nullptr);
-
+				
 				if (rendererData->m_indexBufferAccessor != nullptr)
 				{
 					// Set the index buffer to active in the input assembler so it can be rendered.
@@ -168,41 +195,71 @@ void EntityRenderManager::render(const DX::DeviceResources &deviceResources)
 	}
 }
 
-std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const MeshDataComponent &meshData, const DX::DeviceResources &deviceResources) const
+std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const MeshData &meshData, const std::vector<VertexAttribute> &vertexAttributes, const DX::DeviceResources &deviceResources) const
 {
 	auto rendererData = std::make_unique<RendererData>();
 	rendererData->m_topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	// Create D3D Index Buffer
-	rendererData->m_indexCount = meshData.m_indexCount;
-	if (rendererData->m_indexCount) {
+	if (rendererData->m_indexBufferAccessor) {
+		rendererData->m_indexCount = meshData.m_indexBufferAccessor->m_count;
+
 		rendererData->m_indexBufferAccessor = std::make_unique<D3DBufferAccessor>(
 			CreateBufferFromData(*meshData.m_indexBufferAccessor->m_buffer, D3D11_BIND_INDEX_BUFFER, deviceResources),
 			meshData.m_indexBufferAccessor->m_stride,
 			meshData.m_indexBufferAccessor->m_offset);
 		rendererData->m_indexFormat = meshData.m_indexBufferAccessor->m_format;
 
-		std::string name("Index Buffer (count: " + std::to_string(meshData.m_indexCount) + ")");
+		std::string name("Index Buffer (count: " + std::to_string(rendererData->m_indexCount) + ")");
 		rendererData->m_indexBufferAccessor->m_buffer->m_d3dBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
 	}
 	else {
 		// TODO: Simply log a warning?
+		rendererData->m_indexCount = 0;
 		throw std::runtime_error("Missing index buffer");
 	}
 
 	// Create D3D vertex buffers
-	rendererData->m_vertexCount = meshData.m_vertexCount;
-	for (const auto &meshAccessor : meshData.m_vertexBufferAccessors)
+	rendererData->m_vertexCount = meshData.getVertexCount();
+	for (auto vertexAttr : vertexAttributes)
 	{
+		const auto vabaPos = meshData.m_vertexBufferAccessors.find(vertexAttr);
+		if (vabaPos == meshData.m_vertexBufferAccessors.end())
+			throw std::runtime_error("Missing vertex attribute: "s + VertexAttributeMeta::semanticName(vertexAttr));
+
+		const auto &meshAccessor = vabaPos->second;
 		auto d3dAccessor = std::make_unique<D3DBufferAccessor>(
 			CreateBufferFromData(*meshAccessor->m_buffer, D3D11_BIND_VERTEX_BUFFER, deviceResources),
 			meshAccessor->m_stride, 
 			meshAccessor->m_offset);
 
-		rendererData->m_vertexBuffers.push_back(move(d3dAccessor));
+		rendererData->m_vertexBuffers.push_back(std::move(d3dAccessor));
 	}
 
 	return rendererData;
+}
+
+void EntityRenderManager::initScreenSpaceQuad(const DX::DeviceResources &deviceResources)
+{
+	if (m_screenSpaceQuad.meshData == nullptr)
+		m_screenSpaceQuad.meshData = m_primitiveMeshDataFactory->createQuad(Rect(0.f, 0.f, 1.0f, 1.0f));
+
+	if (m_screenSpaceQuad.material == nullptr)
+		m_screenSpaceQuad.material = std::make_shared<ClearGBufferMaterial>();
+
+	if (m_screenSpaceQuad.rendererData == nullptr) {
+		std::vector<VertexAttribute> vertexAttributes;
+		m_screenSpaceQuad.material->getVertexAttributes(vertexAttributes);
+		m_screenSpaceQuad.rendererData = CreateRendererData(*m_screenSpaceQuad.meshData, vertexAttributes, deviceResources);
+	}
+}
+
+void EntityRenderManager::clearGBuffer()
+{
+	if (m_screenSpaceQuad.rendererData == nullptr) {
+		LOG(WARNING) << "cannot clear G-Buffer; screen space quad rendererData is null.";
+		return;
+	}	
 }
 
 std::shared_ptr<D3DBuffer> EntityRenderManager::CreateBufferFromData(const MeshBuffer &buffer, UINT bindFlags, const DX::DeviceResources &deviceResources) const

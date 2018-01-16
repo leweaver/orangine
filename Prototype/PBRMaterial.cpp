@@ -26,11 +26,6 @@ void PBRMaterial::getVertexAttributes(std::vector<VertexAttribute> &vertexAttrib
 	vertexAttributes.push_back(VertexAttribute::VA_TEXCOORD_0);
 }
 
-DXGI_FORMAT PBRMaterial::format(VertexAttribute attribute)
-{
-	return Material::format(attribute);
-}
-
 UINT PBRMaterial::inputSlot(VertexAttribute attribute)
 {
 	switch (attribute)

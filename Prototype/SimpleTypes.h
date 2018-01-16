@@ -18,4 +18,11 @@ namespace OE {
 
 		uint8_t r, g, b, a;
 	};
+	struct Rect
+	{
+		Rect() : left(0.f), bottom(0.f), width(0.f), height(0.f) {}
+		Rect(float left, float bottom, float width, float height) : left(left), bottom(bottom), width(width), height(height) {}
+
+		float left, bottom, width, height;
+	};
 }

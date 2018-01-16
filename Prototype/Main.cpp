@@ -7,8 +7,6 @@
 
 #include <g3log/logworker.hpp>
 
-#include <algorithm>
-
 using namespace DirectX;
 
 namespace

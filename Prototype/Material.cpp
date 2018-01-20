@@ -208,8 +208,10 @@ bool Material::render(const RendererData &rendererData, const XMMATRIX &worldMat
 	m_errorState = false;
 
 	// Update constant buffers
-	updateConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, m_constantBuffer);
-	context->VSSetConstantBuffers(0, 1, &m_constantBuffer);
+	if (m_constantBuffer != nullptr) {
+		updateConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, m_constantBuffer);
+		context->VSSetConstantBuffers(0, 1, &m_constantBuffer);
+	}
 
 	// We have a valid shader
 	context->IASetInputLayout(m_inputLayout);

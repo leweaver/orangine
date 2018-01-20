@@ -11,7 +11,7 @@
 
 using namespace OE;
 
-Scene::Scene()
+Scene::Scene(DX::DeviceResources &deviceResources)
 {
 	// Mesh loaders
 	AddMeshLoader<glTFMeshLoader>();
@@ -22,7 +22,7 @@ Scene::Scene()
 
 	// Services / Managers
 	m_sceneGraphManager = std::make_unique<SceneGraphManager>(*this, m_entityRepository);
-	m_entityRenderManager = std::make_unique<EntityRenderManager>(*this, m_materialRepository);
+	m_entityRenderManager = std::make_unique<EntityRenderManager>(*this, m_materialRepository, deviceResources);
 	m_entityScriptinigManager = std::make_unique<EntityScriptingManager>(*this);
 	m_assetManager = std::make_unique<AssetManager>(*this);
 

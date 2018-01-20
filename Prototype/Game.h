@@ -60,5 +60,5 @@ private:
     DX::StepTimer                           m_timer;
 
 	// Services
-	std::unique_ptr<OE::Scene>      m_scene;
+	std::unique_ptr<OE::Scene>              m_scene;
 };

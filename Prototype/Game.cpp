@@ -43,7 +43,7 @@ Game::~Game()
 // Initialize the Direct3D resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
-	m_scene = std::make_unique<Scene>();
+	m_scene = std::make_unique<Scene>(*(m_deviceResources.get()));
 
     m_deviceResources->SetWindow(window, width, height);
 
@@ -120,7 +120,7 @@ void Game::Render()
     m_deviceResources->PIXBeginEvent(L"Render");
 
     // TODO: Add your rendering code here.
-	m_scene->GetEntityRenderManger().render(*m_deviceResources);
+	m_scene->GetEntityRenderManger().render();
 
     m_deviceResources->PIXEndEvent();
 
@@ -131,22 +131,7 @@ void Game::Render()
 // Helper method to clear the back buffers.
 void Game::Clear()
 {
-    m_deviceResources->PIXBeginEvent(L"Clear");
-
-    // Clear the views.
-    auto context = m_deviceResources->GetD3DDeviceContext();
-    auto renderTarget = m_deviceResources->GetRenderTargetView();
-    auto depthStencil = m_deviceResources->GetDepthStencilView();
-
-    context->ClearRenderTargetView(renderTarget, Colors::CornflowerBlue);
-    context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    context->OMSetRenderTargets(1, &renderTarget, depthStencil);
-
-    // Set the viewport.
-    auto viewport = m_deviceResources->GetScreenViewport();
-    context->RSSetViewports(1, &viewport);
-
-    m_deviceResources->PIXEndEvent();
+	m_scene->GetEntityRenderManger().clearGBuffer();
 }
 #pragma endregion
 
@@ -203,13 +188,13 @@ void Game::GetDefaultSize(int& width, int& height) const
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
-	m_scene->GetEntityRenderManger().createDeviceDependentResources(*m_deviceResources);
+	m_scene->GetEntityRenderManger().createDeviceDependentResources();
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
-	m_scene->GetEntityRenderManger().createWindowSizeDependentResources(*m_deviceResources);
+	m_scene->GetEntityRenderManger().createWindowSizeDependentResources();
 }
 
 void Game::OnDeviceLost()

@@ -24,8 +24,9 @@ EntityRenderManager::Renderable::Renderable()
 {
 }
 
-EntityRenderManager::EntityRenderManager(Scene& scene, const std::shared_ptr<MaterialRepository> &materialRepository)
+EntityRenderManager::EntityRenderManager(Scene& scene, const std::shared_ptr<MaterialRepository> &materialRepository, DX::DeviceResources &deviceResources)
 	: ManagerBase(scene)
+	, m_deviceResources(deviceResources)
 	, m_renderableEntities(nullptr)
 	, m_materialRepository(materialRepository)
 	, m_primitiveMeshDataFactory(nullptr)
@@ -37,7 +38,7 @@ EntityRenderManager::~EntityRenderManager()
 {
 }
 
-void EntityRenderManager::Initialize() 
+void EntityRenderManager::Initialize()
 {
 	std::set<Component::ComponentType> requiredTypes;
 	requiredTypes.insert(RenderableComponent::Type());
@@ -65,7 +66,7 @@ void EntityRenderManager::Shutdown()
 	m_screenSpaceQuad = Renderable();
 }
 
-void EntityRenderManager::createDeviceDependentResources(const DX::DeviceResources &deviceResources)
+void EntityRenderManager::createDeviceDependentResources()
 {
 	if (m_rasterizerState)
 		m_rasterizerState->Release();
@@ -74,13 +75,13 @@ void EntityRenderManager::createDeviceDependentResources(const DX::DeviceResourc
 	// Render using a right handed coordinate system
 	rasterizerDesc.FrontCounterClockwise = true;
 
-	deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, &m_rasterizerState);
-	deviceResources.GetD3DDeviceContext()->RSSetState(m_rasterizerState);
+	m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, &m_rasterizerState);
+	m_deviceResources.GetD3DDeviceContext()->RSSetState(m_rasterizerState);
 
-	initScreenSpaceQuad(deviceResources);
+	initScreenSpaceQuad();
 }
 
-void EntityRenderManager::createWindowSizeDependentResources(const DX::DeviceResources &deviceResources)
+void EntityRenderManager::createWindowSizeDependentResources()
 {
 }
 
@@ -93,18 +94,18 @@ void EntityRenderManager::destroyDeviceDependentResources()
 	m_screenSpaceQuad.rendererData.reset();
 }
 
-void EntityRenderManager::render(const DX::DeviceResources &deviceResources)
+void EntityRenderManager::render()
 {
 	// Hard Coded Camera
 	const DirectX::XMMATRIX &viewMatrix = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(5.0f, 3.0f, -10.0f, 0.0f), Math::VEC_ZERO, Math::VEC_UP);
-	const float aspectRatio = deviceResources.GetScreenViewport().Width / deviceResources.GetScreenViewport().Height;
+	const float aspectRatio = m_deviceResources.GetScreenViewport().Width / m_deviceResources.GetScreenViewport().Height;
 	const auto projMatrix = DirectX::XMMatrixPerspectiveFovRH(
 		DirectX::XMConvertToRadians(45.0f),
 		aspectRatio,
 		0.01f,
 		10000.0f);
 
-	auto deviceContext = deviceResources.GetD3DDeviceContext();
+	auto deviceContext = m_deviceResources.GetD3DDeviceContext();
 
 	std::vector<ID3D11Buffer*> bufferArray;
 	std::vector<UINT> strideArray;
@@ -136,7 +137,7 @@ void EntityRenderManager::render(const DX::DeviceResources &deviceResources)
 				vertexAttributes.clear();
 				material->getVertexAttributes(vertexAttributes);
 
-				std::unique_ptr<RendererData> rendererDataPtr = CreateRendererData(*meshData, vertexAttributes, deviceResources);
+				std::unique_ptr<RendererData> rendererDataPtr = CreateRendererData(*meshData, vertexAttributes);
 				rendererData = rendererDataPtr.get();
 				renderable->SetRendererData(rendererDataPtr);
 			}
@@ -175,12 +176,12 @@ void EntityRenderManager::render(const DX::DeviceResources &deviceResources)
 					const auto indexAccessor = rendererData->m_indexBufferAccessor.get();
 					deviceContext->IASetIndexBuffer(indexAccessor->m_buffer->m_d3dBuffer, rendererData->m_indexFormat, indexAccessor->m_offset);
 
-					if (material->render(*rendererData, entity->GetWorldTransform(), viewMatrix, projMatrix, deviceResources))
+					if (material->render(*rendererData, entity->GetWorldTransform(), viewMatrix, projMatrix, m_deviceResources))
 						deviceContext->DrawIndexed(rendererData->m_indexCount, 0, 0);
 				}
 				else
 				{
-					material->render(*rendererData, entity->GetWorldTransform(), viewMatrix, projMatrix, deviceResources);
+					material->render(*rendererData, entity->GetWorldTransform(), viewMatrix, projMatrix, m_deviceResources);
 
 					// Render the triangles.
 					deviceContext->Draw(rendererData->m_vertexCount, rendererData->m_vertexCount);
@@ -195,7 +196,7 @@ void EntityRenderManager::render(const DX::DeviceResources &deviceResources)
 	}
 }
 
-std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const MeshData &meshData, const std::vector<VertexAttribute> &vertexAttributes, const DX::DeviceResources &deviceResources) const
+std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const MeshData &meshData, const std::vector<VertexAttribute> &vertexAttributes) const
 {
 	auto rendererData = std::make_unique<RendererData>();
 	rendererData->m_topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -205,7 +206,7 @@ std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const Mesh
 		rendererData->m_indexCount = meshData.m_indexBufferAccessor->m_count;
 
 		rendererData->m_indexBufferAccessor = std::make_unique<D3DBufferAccessor>(
-			CreateBufferFromData(*meshData.m_indexBufferAccessor->m_buffer, D3D11_BIND_INDEX_BUFFER, deviceResources),
+			CreateBufferFromData(*meshData.m_indexBufferAccessor->m_buffer, D3D11_BIND_INDEX_BUFFER),
 			meshData.m_indexBufferAccessor->m_stride,
 			meshData.m_indexBufferAccessor->m_offset);
 		rendererData->m_indexFormat = meshData.m_indexBufferAccessor->m_format;
@@ -229,7 +230,7 @@ std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const Mesh
 
 		const auto &meshAccessor = vabaPos->second;
 		auto d3dAccessor = std::make_unique<D3DBufferAccessor>(
-			CreateBufferFromData(*meshAccessor->m_buffer, D3D11_BIND_VERTEX_BUFFER, deviceResources),
+			CreateBufferFromData(*meshAccessor->m_buffer, D3D11_BIND_VERTEX_BUFFER),
 			meshAccessor->m_stride, 
 			meshAccessor->m_offset);
 
@@ -239,7 +240,7 @@ std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const Mesh
 	return rendererData;
 }
 
-void EntityRenderManager::initScreenSpaceQuad(const DX::DeviceResources &deviceResources)
+void EntityRenderManager::initScreenSpaceQuad()
 {
 	if (m_screenSpaceQuad.meshData == nullptr)
 		m_screenSpaceQuad.meshData = m_primitiveMeshDataFactory->createQuad(Rect(0.f, 0.f, 1.0f, 1.0f));
@@ -250,19 +251,36 @@ void EntityRenderManager::initScreenSpaceQuad(const DX::DeviceResources &deviceR
 	if (m_screenSpaceQuad.rendererData == nullptr) {
 		std::vector<VertexAttribute> vertexAttributes;
 		m_screenSpaceQuad.material->getVertexAttributes(vertexAttributes);
-		m_screenSpaceQuad.rendererData = CreateRendererData(*m_screenSpaceQuad.meshData, vertexAttributes, deviceResources);
+		m_screenSpaceQuad.rendererData = CreateRendererData(*m_screenSpaceQuad.meshData, vertexAttributes);
 	}
 }
 
 void EntityRenderManager::clearGBuffer()
 {
+	m_deviceResources.PIXBeginEvent(L"Clear");
+
+	// Clear the views.
+	auto context = m_deviceResources.GetD3DDeviceContext();
+	auto renderTarget = m_deviceResources.GetRenderTargetView();
+	auto depthStencil = m_deviceResources.GetDepthStencilView();
+
+	context->ClearRenderTargetView(renderTarget, Colors::CornflowerBlue);
+	context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	context->OMSetRenderTargets(1, &renderTarget, depthStencil);
+
+	// Set the viewport.
+	auto viewport = m_deviceResources.GetScreenViewport();
+	context->RSSetViewports(1, &viewport);
+
+	m_deviceResources.PIXEndEvent();
+
 	if (m_screenSpaceQuad.rendererData == nullptr) {
 		LOG(WARNING) << "cannot clear G-Buffer; screen space quad rendererData is null.";
 		return;
 	}	
 }
 
-std::shared_ptr<D3DBuffer> EntityRenderManager::CreateBufferFromData(const MeshBuffer &buffer, UINT bindFlags, const DX::DeviceResources &deviceResources) const
+std::shared_ptr<D3DBuffer> EntityRenderManager::CreateBufferFromData(const MeshBuffer &buffer, UINT bindFlags) const
 {
 	// Create the vertex buffer.
 	auto d3dBuffer = std::make_shared<D3DBuffer>();
@@ -282,7 +300,7 @@ std::shared_ptr<D3DBuffer> EntityRenderManager::CreateBufferFromData(const MeshB
 	InitData.SysMemSlicePitch = 0;
 
 	// Get a reference
-	HRESULT hr = deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &d3dBuffer->m_d3dBuffer);
+	HRESULT hr = m_deviceResources.GetD3DDevice()->CreateBuffer(&bufferDesc, &InitData, &d3dBuffer->m_d3dBuffer);
 	assert(!FAILED(hr));
 
 	return d3dBuffer;

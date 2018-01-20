@@ -29,7 +29,7 @@ namespace OE {
 		double m_elapsedTime = 0;
 
 	public:
-		Scene();
+		Scene(DX::DeviceResources &deviceResources);
 		~Scene();
 
 		SceneGraphManager &GetSceneGraphManager() const { return *m_sceneGraphManager; }

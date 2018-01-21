@@ -17,7 +17,7 @@ struct PS_OUTPUT
 PS_OUTPUT PSMain(PS_INPUT input)
 {
 	PS_OUTPUT output;    
-	output.Color = 0.6f;
+	output.Color = 0.0f;
 	output.Color.a = 1.0f;
 
 	//when transforming 0.5f into [-1,1], we will get 0.0f

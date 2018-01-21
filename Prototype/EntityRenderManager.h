@@ -42,10 +42,10 @@ namespace OE {
 
 		bool m_fatalError;
 
-		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_pass1RasterizerState;
-		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_pass2RasterizerState;
-		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_pass1DepthStencilState;
-		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_pass2DepthStencilState;
+		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerStateDepthDisabled;
+		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerStateDepthEnabled;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthStencilStateDepthDisabled;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthStencilStateDepthEnabled;
 
 		std::vector<std::shared_ptr<TextureRenderTarget>> m_pass1RenderTargets;
 		
@@ -74,8 +74,9 @@ namespace OE {
 
 	private:
 
-		void setupPass1();
-		void setupPass2();
+		void setDepthEnabled(bool enabled);
+		void setupRenderEntities();
+		void setupRenderLights();
 
 		std::unique_ptr<Material> loadMaterial(const std::string &materialName) const;
 

@@ -110,19 +110,20 @@ Material::ShaderCompileSettings Material::pixelShaderSettings() const
 
 bool Material::createVertexShader(ID3D11Device* device)
 {
-	ID3DBlob* errorMsgs;
 	HRESULT hr;
-	ID3D10Blob *vertexShaderBytecode;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorMsgs;
+	Microsoft::WRL::ComPtr<ID3D10Blob> vertexShaderBytecode;
 	auto settings = vertexShaderSettings();
 	hr = D3DCompileFromFile(settings.filename.c_str(), 
 	                        nullptr, nullptr, 
 	                        settings.entryPoint.c_str(), 
 	                        "vs_4_0", 
 	                        0, 0, 
-	                        &vertexShaderBytecode, &errorMsgs);
+	                        vertexShaderBytecode.ReleaseAndGetAddressOf(), 
+							errorMsgs.ReleaseAndGetAddressOf());
 
 	if (!SUCCEEDED(hr)) {
-		throwShaderError(hr, errorMsgs, settings);
+		LOG(WARNING) << createShaderError(hr, errorMsgs.Get(), settings);
 		release();
 		return false;
 	}
@@ -149,21 +150,32 @@ bool Material::createVertexShader(ID3D11Device* device)
 		);
 	}
 
-	device->CreateInputLayout(inputElementDesc.data(), static_cast<UINT>(inputElementDesc.size()), 
+	hr = device->CreateInputLayout(inputElementDesc.data(), static_cast<UINT>(inputElementDesc.size()), 
 	                          vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), 
 	                          &m_inputLayout);
+	if (!SUCCEEDED(hr))
+	{
+		LOG(WARNING) << "Failed to create vertex input layout: " << to_string(hr);
+		release();
+		return false;
+	}
 
-	device->CreateVertexShader(vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), nullptr, &m_vertexShader);
+	hr = device->CreateVertexShader(vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), nullptr, &m_vertexShader);
+	if (!SUCCEEDED(hr))
+	{
+		LOG(WARNING) << "Failed to create vertex shader: " << to_string(hr);
+		release();
+		return false;
+	}
 
-	vertexShaderBytecode->Release();
 	return true;
 }
 
 bool Material::createPixelShader(ID3D11Device* device)
 {
-	ID3DBlob* errorMsgs;
 	HRESULT hr;
-	ID3D10Blob *pixelShaderBytecode;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorMsgs;
+	Microsoft::WRL::ComPtr<ID3DBlob> pixelShaderBytecode;
 
 	auto settings = pixelShaderSettings();
 	hr = D3DCompileFromFile(settings.filename.c_str(),
@@ -171,15 +183,20 @@ bool Material::createPixelShader(ID3D11Device* device)
 	                        settings.entryPoint.c_str(),
 	                        "ps_4_0",
 	                        0, 0,
-	                        &pixelShaderBytecode, &errorMsgs);
+	                        pixelShaderBytecode.ReleaseAndGetAddressOf(), errorMsgs.ReleaseAndGetAddressOf());
 	if (!SUCCEEDED(hr)) {
-		throwShaderError(hr, errorMsgs, settings);
+		LOG(WARNING) << createShaderError(hr, errorMsgs.Get(), settings);
 		release();
 		return false;
 	}
 
-	device->CreatePixelShader(pixelShaderBytecode->GetBufferPointer(), pixelShaderBytecode->GetBufferSize(), nullptr, &m_pixelShader);
-	pixelShaderBytecode->Release();
+	hr = device->CreatePixelShader(pixelShaderBytecode->GetBufferPointer(), pixelShaderBytecode->GetBufferSize(), nullptr, &m_pixelShader);
+	if (!SUCCEEDED(hr))
+	{
+		LOG(WARNING) << "Failed to create vertex shader: " << to_string(hr);
+		release();
+		return false;
+	}
 
 	return true;
 }
@@ -229,7 +246,7 @@ void Material::unbind(const DX::DeviceResources& deviceResources)
 	unsetContextSamplers(deviceResources);
 }
 
-void Material::throwShaderError(HRESULT hr, ID3D10Blob* errorMessage, const ShaderCompileSettings &compileSettings)
+std::string Material::createShaderError(HRESULT hr, ID3D10Blob* errorMessage, const ShaderCompileSettings &compileSettings)
 {
 	std::stringstream ss;
 
@@ -248,7 +265,7 @@ void Material::throwShaderError(HRESULT hr, ID3D10Blob* errorMessage, const Shad
 		ss << utf8_encode(std::wstring(err.ErrorMessage()));
 	}
 
-	throw std::runtime_error(ss.str());
+	return ss.str();
 }
 
 bool Material::ensureSamplerState(const DX::DeviceResources &deviceResources, Texture &texture, ID3D11SamplerState **d3D11SamplerState)

@@ -15,7 +15,6 @@
 #include "TextureRenderTarget.h"
 #include "RenderableComponent.h"
 #include "DeferredLightMaterial.h"
-#include <minwinbase.h>
 
 using namespace OE;
 using namespace DirectX;
@@ -35,8 +34,8 @@ EntityRenderManager::EntityRenderManager(Scene& scene, const std::shared_ptr<Mat
 	, m_materialRepository(materialRepository)
 	, m_primitiveMeshDataFactory(nullptr)
 	, m_fatalError(false)
-	, m_pass1RasterizerState(nullptr)
-	, m_pass2RasterizerState(nullptr)
+	, m_rasterizerStateDepthDisabled(nullptr)
+	, m_rasterizerStateDepthEnabled(nullptr)
 {
 }
 
@@ -66,8 +65,8 @@ void EntityRenderManager::Shutdown()
 	if (m_primitiveMeshDataFactory)
 		m_primitiveMeshDataFactory.reset();
 
-	m_pass1RasterizerState.Reset();
-	m_pass2RasterizerState.Reset();
+	m_rasterizerStateDepthDisabled.Reset();
+	m_rasterizerStateDepthEnabled.Reset();
 
 	m_pass1ScreenSpaceQuad = Renderable();
 	m_pass2ScreenSpaceQuad = Renderable();
@@ -75,27 +74,31 @@ void EntityRenderManager::Shutdown()
 
 void EntityRenderManager::createDeviceDependentResources()
 {
-	m_pass1RasterizerState.Reset();
-	m_pass2RasterizerState.Reset();
+	m_rasterizerStateDepthDisabled.Reset();
+	m_rasterizerStateDepthEnabled.Reset();
 
 	D3D11_RASTERIZER_DESC rasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
+	rasterizerDesc.FrontCounterClockwise = true;
 	rasterizerDesc.DepthClipEnable = false;
-	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, m_pass1RasterizerState.ReleaseAndGetAddressOf()));
+	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, m_rasterizerStateDepthDisabled.ReleaseAndGetAddressOf()));
 
 	// Render using a right handed coordinate system
 	rasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
 	rasterizerDesc.FrontCounterClockwise = true;
-	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, m_pass2RasterizerState.ReleaseAndGetAddressOf()));
+	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, m_rasterizerStateDepthEnabled.ReleaseAndGetAddressOf()));
 
 	// Depth buffer settings
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
 	depthStencilDesc.DepthEnable = false;
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
-	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, m_pass1DepthStencilState.ReleaseAndGetAddressOf()));
+	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, m_depthStencilStateDepthDisabled.ReleaseAndGetAddressOf()));
 
 	depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
-	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, m_pass2DepthStencilState.ReleaseAndGetAddressOf()));
+	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, m_depthStencilStateDepthEnabled.ReleaseAndGetAddressOf()));
+
+	// Initial settings
+	setDepthEnabled(false);
 
 	// Deffered Lighting Material
 	m_deferredLightMaterial = std::make_shared<DeferredLightMaterial>();
@@ -124,12 +127,16 @@ void EntityRenderManager::createWindowSizeDependentResources()
 
 	m_deferredLightMaterial->setColor0Texture(m_pass1RenderTargets.at(0));
 	m_deferredLightMaterial->setColor1Texture(m_pass1RenderTargets.at(1));
+
+	// Set the viewport.
+	auto viewport = m_deviceResources.GetScreenViewport();
+	m_deviceResources.GetD3DDeviceContext()->RSSetViewports(1, &viewport);
 }
 
 void EntityRenderManager::destroyDeviceDependentResources()
 {
-	m_pass1RasterizerState.Reset();
-	m_pass2RasterizerState.Reset();
+	m_rasterizerStateDepthDisabled.Reset();
+	m_rasterizerStateDepthEnabled.Reset();
 
 	m_pass1RenderTargets.clear();
 
@@ -142,14 +149,10 @@ void EntityRenderManager::destroyDeviceDependentResources()
 
 void EntityRenderManager::render()
 {
-	// Set the viewport.
-	auto viewport = m_deviceResources.GetScreenViewport();
-	m_deviceResources.GetD3DDeviceContext()->RSSetViewports(1, &viewport);
-
 	if (!m_fatalError)
 	{
 		m_deviceResources.PIXBeginEvent(L"setupPass1");
-		setupPass1();
+		setupRenderEntities();
 		m_deviceResources.PIXEndEvent();
 
 		m_deviceResources.PIXBeginEvent(L"renderEntities");
@@ -158,7 +161,7 @@ void EntityRenderManager::render()
 	}
 
 	m_deviceResources.PIXBeginEvent(L"setupPass2");
-	setupPass2();
+	setupRenderLights();
 	m_deviceResources.PIXEndEvent();
 
 	if (!m_fatalError)
@@ -170,9 +173,7 @@ void EntityRenderManager::render()
 }
 
 void EntityRenderManager::renderEntities()
-{
-	auto deviceContext = m_deviceResources.GetD3DDeviceContext();
-	
+{	
 	// Hard Coded Camera
 	const DirectX::XMMATRIX &viewMatrix = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(5.0f, 3.0f, -10.0f, 0.0f), Math::VEC_ZERO, Math::VEC_UP);
 	const auto viewport = m_deviceResources.GetScreenViewport();
@@ -242,6 +243,21 @@ void EntityRenderManager::renderLights()
 	{
 		m_fatalError = true;
 		LOG(WARNING) << "Failed to clear G Buffer.\n" << e.what();
+	}
+}
+
+void EntityRenderManager::setDepthEnabled(bool enabled)
+{
+	const auto deviceContext = m_deviceResources.GetD3DDeviceContext();
+	if (enabled)
+	{
+		deviceContext->RSSetState(m_rasterizerStateDepthEnabled.Get());
+		deviceContext->OMSetDepthStencilState(m_depthStencilStateDepthEnabled.Get(), 0);
+	}
+	else
+	{
+		deviceContext->RSSetState(m_rasterizerStateDepthDisabled.Get());
+		deviceContext->OMSetDepthStencilState(m_depthStencilStateDepthDisabled.Get(), 0);
 	}
 }
 
@@ -363,12 +379,13 @@ EntityRenderManager::Renderable EntityRenderManager::initScreenSpaceQuad(std::sh
 	return renderable;
 }
 
-void EntityRenderManager::setupPass1()
+void EntityRenderManager::setupRenderEntities()
 {
 	// Clear the views.
 	auto context = m_deviceResources.GetD3DDeviceContext();
 
-	const auto depthStencil = nullptr;// m_deviceResources.GetDepthStencilView();
+	const auto depthStencil = m_deviceResources.GetDepthStencilView();
+	context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	assert(m_pass1RenderTargets.size() == 2);
 	ID3D11RenderTargetView *renderTargets[2] = {
@@ -376,8 +393,6 @@ void EntityRenderManager::setupPass1()
 		m_pass1RenderTargets[1]->getRenderTargetView(),
 	};
 
-	context->RSSetState(m_pass1RasterizerState.Get());
-	context->OMSetDepthStencilState(m_pass1DepthStencilState.Get(), 0);
 	context->OMSetRenderTargets(2, renderTargets, depthStencil);
 	
 	// Clear the rendered textures (ignoring depth)
@@ -396,23 +411,18 @@ void EntityRenderManager::setupPass1()
 		}
 	}
 
-	// Clear the depth buffer
-	//context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	setDepthEnabled(true);
 }
 
-void EntityRenderManager::setupPass2()
+void EntityRenderManager::setupRenderLights()
 {
 	// Clear the views.
 	auto context = m_deviceResources.GetD3DDeviceContext();
 
 	const auto depthStencil = m_deviceResources.GetDepthStencilView();
 	const auto finalColorRenderTarget = m_deviceResources.GetRenderTargetView();
-
-	context->ClearRenderTargetView(finalColorRenderTarget, Colors::BlanchedAlmond);
-	context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-	context->OMSetDepthStencilState(m_pass2DepthStencilState.Get(), 0);
-	context->RSSetState(m_pass2RasterizerState.Get());
+	
+	setDepthEnabled(false);
 	context->OMSetRenderTargets(1, &finalColorRenderTarget, depthStencil);
 }
 

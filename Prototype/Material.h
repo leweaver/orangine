@@ -43,7 +43,7 @@ namespace OE {
 			std::set<std::string> includes;
 		};
 
-		static void throwShaderError(HRESULT hr, ID3D10Blob *errorMessage, const ShaderCompileSettings &compileSettings);
+		static std::string Material::createShaderError(HRESULT hr, ID3D10Blob* errorMessage, const ShaderCompileSettings &compileSettings);
 		
 		virtual DXGI_FORMAT format(VertexAttribute attribute);
 		virtual UINT inputSlot(VertexAttribute attribute);

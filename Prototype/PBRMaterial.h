@@ -102,6 +102,7 @@ namespace OE {
 			const DirectX::XMMATRIX& projMatrix, ID3D11DeviceContext* context, ID3D11Buffer *buffer) override;
 
 		void setContextSamplers(const DX::DeviceResources &deviceResources) override;
+		void unsetContextSamplers(const DX::DeviceResources &deviceResources) override;
 	};
 
 	template <>

@@ -7,6 +7,8 @@
 
 namespace OE {
 	class RendererData;
+	class Texture;
+
 	class Material
 	{
 		ID3D11VertexShader *m_vertexShader;
@@ -25,7 +27,12 @@ namespace OE {
 		virtual void getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const;
 
 		void release();
+
+		// Binds material textures on to the GPU
 		bool render(const RendererData &rendererData, const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix, const DX::DeviceResources& deviceResources);
+
+		// Unbinds textures
+		void unbind(const DX::DeviceResources& deviceResources);
 
 	protected:
 		struct ShaderCompileSettings
@@ -51,6 +58,9 @@ namespace OE {
 			const DirectX::XMMATRIX &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer) = 0;
 
 		virtual void setContextSamplers(const DX::DeviceResources &deviceResources) = 0;
+		virtual void unsetContextSamplers(const DX::DeviceResources &deviceResources) {}
+
+		bool ensureSamplerState(const DX::DeviceResources &deviceResources, Texture &texture, ID3D11SamplerState **d3D11SamplerState);
 	};
 
 }

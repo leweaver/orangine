@@ -10,9 +10,7 @@ Texture::~Texture()
 
 void Texture::unload()
 {
-	if (m_shaderResourceView)
-		m_shaderResourceView->Release();
-	m_shaderResourceView = nullptr;
+	m_shaderResourceView.Reset();
 }
 
 HRESULT TextureBase::loadShaderResourceView(ID3D11Device *device, const DirectX::TexMetadata &metaData, const DirectX::ScratchImage &scratchImage)

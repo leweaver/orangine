@@ -133,3 +133,14 @@ void PBRMaterial::setContextSamplers(const DX::DeviceResources &deviceResources)
 		}
 	}
 }
+
+void PBRMaterial::unsetContextSamplers(const DX::DeviceResources &deviceResources)
+{
+	auto context = deviceResources.GetD3DDeviceContext();
+
+	ID3D11ShaderResourceView *shaderResourceViews[] = { nullptr };
+	context->PSSetShaderResources(0, 1, shaderResourceViews);
+
+	ID3D11SamplerState *samplerStates[] = { nullptr };
+	context->PSSetSamplers(0, 1, samplerStates);
+}

@@ -8,6 +8,7 @@
 #include <comdef.h>
 #include "Constants.h"
 #include "RendererData.h"
+#include "Texture.h"
 
 using namespace OE;
 using namespace DirectX;
@@ -223,6 +224,11 @@ bool Material::render(const RendererData &rendererData, const XMMATRIX &worldMat
 	return true;
 }
 
+void Material::unbind(const DX::DeviceResources& deviceResources)
+{
+	unsetContextSamplers(deviceResources);
+}
+
 void Material::throwShaderError(HRESULT hr, ID3D10Blob* errorMessage, const ShaderCompileSettings &compileSettings)
 {
 	std::stringstream ss;
@@ -243,4 +249,34 @@ void Material::throwShaderError(HRESULT hr, ID3D10Blob* errorMessage, const Shad
 	}
 
 	throw std::runtime_error(ss.str());
+}
+
+bool Material::ensureSamplerState(const DX::DeviceResources &deviceResources, Texture &texture, ID3D11SamplerState **d3D11SamplerState)
+{
+	const auto device = deviceResources.GetD3DDevice();
+	if (texture.isValid() || texture.load(device))
+	{
+		if (!*d3D11SamplerState) {
+			D3D11_SAMPLER_DESC samplerDesc;
+			// Create a texture sampler state description.
+			samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+			samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+			samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+			samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+			samplerDesc.MipLODBias = 0.0f;
+			samplerDesc.MaxAnisotropy = 1;
+			samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+			samplerDesc.BorderColor[0] = 0;
+			samplerDesc.BorderColor[1] = 0;
+			samplerDesc.BorderColor[2] = 0;
+			samplerDesc.BorderColor[3] = 0;
+			samplerDesc.MinLOD = 0;
+			samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+			// Create the texture sampler state.
+			DX::ThrowIfFailed(device->CreateSamplerState(&samplerDesc, d3D11SamplerState));
+		}
+	}
+
+	return true;
 }

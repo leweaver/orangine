@@ -479,7 +479,13 @@ unique_ptr<MeshIndexBufferAccessor> read_index_buffer(const Model& model,
 	else
 	{
 		// Copy the data.
-		meshBuffer = create_buffer(elementSize, accessor.count, buffer.data, stride, bufferView.byteOffset);
+		meshBuffer = create_buffer(
+			static_cast<uint32_t>(elementSize), 
+			static_cast<uint32_t>(accessor.count), 
+			buffer.data, 
+			static_cast<uint32_t>(stride), 
+			static_cast<uint32_t>(bufferView.byteOffset));
+
 		loaderData.accessorIdxToMeshVertexBuffers[accessorIndex] = meshBuffer;
 	}
 	

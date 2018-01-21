@@ -185,6 +185,7 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
     <ClInclude Include="ClearGBufferMaterial.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="DeferredLightMaterial.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="EntityRepository.h" />
@@ -220,6 +221,7 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
     <ClCompile Include="Bound.cpp" />
     <ClCompile Include="ClearGBufferMaterial.cpp" />
     <ClCompile Include="Component.cpp" />
+    <ClCompile Include="DeferredLightMaterial.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="EntityRepository.cpp" />
@@ -278,6 +280,14 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="data\shaders\deferred_light_PS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="data\shaders\deferred_light_VS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="data\shaders\pbr_metallic_PS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

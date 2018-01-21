@@ -5,7 +5,7 @@
 #include "Material.h"
 #include "Entity.h"
 #include "EntityFilter.h"
-#include "RenderableComponent.h"
+#include "Component.h"
 #include "Scene.h"
 
 #include <set>
@@ -13,6 +13,9 @@
 #include "LightComponent.h"
 #include "ClearGBufferMaterial.h"
 #include "TextureRenderTarget.h"
+#include "RenderableComponent.h"
+#include "DeferredLightMaterial.h"
+#include <minwinbase.h>
 
 using namespace OE;
 using namespace DirectX;
@@ -31,8 +34,9 @@ EntityRenderManager::EntityRenderManager(Scene& scene, const std::shared_ptr<Mat
 	, m_renderableEntities(nullptr)
 	, m_materialRepository(materialRepository)
 	, m_primitiveMeshDataFactory(nullptr)
-	, m_rasterizerState(nullptr)
 	, m_fatalError(false)
+	, m_pass1RasterizerState(nullptr)
+	, m_pass2RasterizerState(nullptr)
 {
 }
 
@@ -62,23 +66,43 @@ void EntityRenderManager::Shutdown()
 	if (m_primitiveMeshDataFactory)
 		m_primitiveMeshDataFactory.reset();
 
-	m_rasterizerState.Reset();
+	m_pass1RasterizerState.Reset();
+	m_pass2RasterizerState.Reset();
 
-	m_screenSpaceQuad = Renderable();
+	m_pass1ScreenSpaceQuad = Renderable();
+	m_pass2ScreenSpaceQuad = Renderable();
 }
 
 void EntityRenderManager::createDeviceDependentResources()
 {
-	m_rasterizerState.Reset();
+	m_pass1RasterizerState.Reset();
+	m_pass2RasterizerState.Reset();
 
 	D3D11_RASTERIZER_DESC rasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
+	rasterizerDesc.DepthClipEnable = false;
+	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, m_pass1RasterizerState.ReleaseAndGetAddressOf()));
+
 	// Render using a right handed coordinate system
+	rasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
 	rasterizerDesc.FrontCounterClockwise = true;
+	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, m_pass2RasterizerState.ReleaseAndGetAddressOf()));
 
-	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, m_rasterizerState.ReleaseAndGetAddressOf()));
-	m_deviceResources.GetD3DDeviceContext()->RSSetState(m_rasterizerState.Get());
+	// Depth buffer settings
+	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
+	depthStencilDesc.DepthEnable = false;
+	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, m_pass1DepthStencilState.ReleaseAndGetAddressOf()));
 
-	initScreenSpaceQuad();
+	depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
+	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, m_pass2DepthStencilState.ReleaseAndGetAddressOf()));
+
+	// Deffered Lighting Material
+	m_deferredLightMaterial = std::make_shared<DeferredLightMaterial>();
+
+	// Full-screen quads
+	m_pass1ScreenSpaceQuad = initScreenSpaceQuad(std::make_shared<ClearGBufferMaterial>());
+	m_pass2ScreenSpaceQuad = initScreenSpaceQuad(m_deferredLightMaterial);
 }
 
 void EntityRenderManager::createWindowSizeDependentResources()
@@ -93,19 +117,26 @@ void EntityRenderManager::createWindowSizeDependentResources()
 	
 	for (int i = 0; i < 2; ++i)
 	{
-		auto target = std::make_unique<TextureRenderTarget>();
-		target->initialize(d3dDevice, width, height);
+		auto target = std::make_unique<TextureRenderTarget>(width, height);
+		target->load(d3dDevice);
 		m_pass1RenderTargets.push_back(move(target));
 	}
+
+	m_deferredLightMaterial->setColor0Texture(m_pass1RenderTargets.at(0));
+	m_deferredLightMaterial->setColor1Texture(m_pass1RenderTargets.at(1));
 }
 
 void EntityRenderManager::destroyDeviceDependentResources()
 {
-	m_rasterizerState.Reset();
+	m_pass1RasterizerState.Reset();
+	m_pass2RasterizerState.Reset();
 
-	m_screenSpaceQuad.rendererData.reset();
 	m_pass1RenderTargets.clear();
-	
+
+	m_pass1ScreenSpaceQuad.rendererData.reset();
+	m_pass2ScreenSpaceQuad.rendererData.reset();
+
+	m_deferredLightMaterial.reset();	
 	m_fatalError = false;
 }
 
@@ -117,8 +148,8 @@ void EntityRenderManager::render()
 
 	if (!m_fatalError)
 	{
-		m_deviceResources.PIXBeginEvent(L"clearGBuffer");
-		clearGBuffer();
+		m_deviceResources.PIXBeginEvent(L"setupPass1");
+		setupPass1();
 		m_deviceResources.PIXEndEvent();
 
 		m_deviceResources.PIXBeginEvent(L"renderEntities");
@@ -126,9 +157,16 @@ void EntityRenderManager::render()
 		m_deviceResources.PIXEndEvent();
 	}
 
-	m_deviceResources.PIXBeginEvent(L"clearFinalBuffer");
-	clearFinalBuffer();
+	m_deviceResources.PIXBeginEvent(L"setupPass2");
+	setupPass2();
 	m_deviceResources.PIXEndEvent();
+
+	if (!m_fatalError)
+	{
+		m_deviceResources.PIXBeginEvent(L"renderLights");
+		renderLights();
+		m_deviceResources.PIXEndEvent();
+	}
 }
 
 void EntityRenderManager::renderEntities()
@@ -175,7 +213,7 @@ void EntityRenderManager::renderEntities()
 				vertexAttributes.clear();
 				material->getVertexAttributes(vertexAttributes);
 
-				std::unique_ptr<RendererData> rendererDataPtr = CreateRendererData(*meshData, vertexAttributes);
+				std::unique_ptr<RendererData> rendererDataPtr = createRendererData(*meshData, vertexAttributes);
 				rendererData = rendererDataPtr.get();
 				renderable->SetRendererData(rendererDataPtr);
 			}
@@ -187,6 +225,23 @@ void EntityRenderManager::renderEntities()
 			renderable->SetVisible(false);
 			LOG(WARNING) << "Failed to render mesh on entity with ID " << entity->GetId() << ".\n" << e.what();
 		}
+	}
+}
+
+void EntityRenderManager::renderLights()
+{
+	const auto identity = XMMatrixIdentity();
+	BufferArraySet bufferArraySet;
+
+	try
+	{
+		drawRendererData(identity, identity, identity, m_pass2ScreenSpaceQuad.rendererData.get(), m_pass2ScreenSpaceQuad.material.get(), bufferArraySet);
+		m_deferredLightMaterial->unbind(m_deviceResources);
+	}
+	catch (std::runtime_error &e)
+	{
+		m_fatalError = true;
+		LOG(WARNING) << "Failed to clear G Buffer.\n" << e.what();
 	}
 }
 
@@ -244,7 +299,7 @@ void EntityRenderManager::drawRendererData(const DirectX::XMMATRIX &viewMatrix, 
 	}
 }
 
-std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const MeshData &meshData, const std::vector<VertexAttribute> &vertexAttributes) const
+std::unique_ptr<RendererData> EntityRenderManager::createRendererData(const MeshData &meshData, const std::vector<VertexAttribute> &vertexAttributes) const
 {
 	auto rendererData = std::make_unique<RendererData>();
 	rendererData->m_topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -254,7 +309,7 @@ std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const Mesh
 		rendererData->m_indexCount = meshData.m_indexBufferAccessor->m_count;
 
 		rendererData->m_indexBufferAccessor = std::make_unique<D3DBufferAccessor>(
-			CreateBufferFromData(*meshData.m_indexBufferAccessor->m_buffer, D3D11_BIND_INDEX_BUFFER),
+			createBufferFromData(*meshData.m_indexBufferAccessor->m_buffer, D3D11_BIND_INDEX_BUFFER),
 			meshData.m_indexBufferAccessor->m_stride,
 			meshData.m_indexBufferAccessor->m_offset);
 		rendererData->m_indexFormat = meshData.m_indexBufferAccessor->m_format;
@@ -279,7 +334,7 @@ std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const Mesh
 
 		const auto &meshAccessor = vabaPos->second;
 		auto d3dAccessor = std::make_unique<D3DBufferAccessor>(
-			CreateBufferFromData(*meshAccessor->m_buffer, D3D11_BIND_VERTEX_BUFFER),
+			createBufferFromData(*meshAccessor->m_buffer, D3D11_BIND_VERTEX_BUFFER),
 			meshAccessor->m_stride, 
 			meshAccessor->m_offset);
 
@@ -289,28 +344,31 @@ std::unique_ptr<RendererData> EntityRenderManager::CreateRendererData(const Mesh
 	return rendererData;
 }
 
-void EntityRenderManager::initScreenSpaceQuad()
+EntityRenderManager::Renderable EntityRenderManager::initScreenSpaceQuad(std::shared_ptr<Material> material) const
 {
-	if (m_screenSpaceQuad.meshData == nullptr)
-		m_screenSpaceQuad.meshData = m_primitiveMeshDataFactory->createQuad(Rect(-1.f, -1.f, 2.0f, 2.0f));
+	Renderable renderable;
+	if (renderable.meshData == nullptr)
+		renderable.meshData = m_primitiveMeshDataFactory->createQuad(Rect(-1.f, -1.f, 2.0f, 2.0f));
 
-	if (m_screenSpaceQuad.material == nullptr)
-		m_screenSpaceQuad.material = std::make_shared<ClearGBufferMaterial>();
+	if (renderable.material == nullptr)
+		renderable.material = material;
 
-	if (m_screenSpaceQuad.rendererData == nullptr) 
+	if (renderable.rendererData == nullptr) 
 	{
 		std::vector<VertexAttribute> vertexAttributes;
-		m_screenSpaceQuad.material->getVertexAttributes(vertexAttributes);
-		m_screenSpaceQuad.rendererData = CreateRendererData(*m_screenSpaceQuad.meshData, vertexAttributes);
+		renderable.material->getVertexAttributes(vertexAttributes);
+		renderable.rendererData = createRendererData(*renderable.meshData, vertexAttributes);
 	}
+
+	return renderable;
 }
 
-void EntityRenderManager::clearGBuffer()
+void EntityRenderManager::setupPass1()
 {
 	// Clear the views.
 	auto context = m_deviceResources.GetD3DDeviceContext();
 
-	const auto depthStencil = m_deviceResources.GetDepthStencilView();
+	const auto depthStencil = nullptr;// m_deviceResources.GetDepthStencilView();
 
 	assert(m_pass1RenderTargets.size() == 2);
 	ID3D11RenderTargetView *renderTargets[2] = {
@@ -318,16 +376,18 @@ void EntityRenderManager::clearGBuffer()
 		m_pass1RenderTargets[1]->getRenderTargetView(),
 	};
 
-	context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	context->RSSetState(m_pass1RasterizerState.Get());
+	context->OMSetDepthStencilState(m_pass1DepthStencilState.Get(), 0);
 	context->OMSetRenderTargets(2, renderTargets, depthStencil);
-
-	if (m_screenSpaceQuad.rendererData && m_screenSpaceQuad.material) {
+	
+	// Clear the rendered textures (ignoring depth)
+	if (m_pass1ScreenSpaceQuad.rendererData && m_pass1ScreenSpaceQuad.material) {
 		const auto identity = XMMatrixIdentity();
 		BufferArraySet bufferArraySet;
 
 		try
 		{
-			drawRendererData(identity, identity, identity, m_screenSpaceQuad.rendererData.get(), m_screenSpaceQuad.material.get(), bufferArraySet);
+			drawRendererData(identity, identity, identity, m_pass1ScreenSpaceQuad.rendererData.get(), m_pass1ScreenSpaceQuad.material.get(), bufferArraySet);
 		}
 		catch (std::runtime_error &e)
 		{
@@ -336,10 +396,11 @@ void EntityRenderManager::clearGBuffer()
 		}
 	}
 
-	context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	// Clear the depth buffer
+	//context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
-void EntityRenderManager::clearFinalBuffer()
+void EntityRenderManager::setupPass2()
 {
 	// Clear the views.
 	auto context = m_deviceResources.GetD3DDeviceContext();
@@ -349,10 +410,13 @@ void EntityRenderManager::clearFinalBuffer()
 
 	context->ClearRenderTargetView(finalColorRenderTarget, Colors::BlanchedAlmond);
 	context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	context->OMSetDepthStencilState(m_pass2DepthStencilState.Get(), 0);
+	context->RSSetState(m_pass2RasterizerState.Get());
 	context->OMSetRenderTargets(1, &finalColorRenderTarget, depthStencil);
 }
 
-std::shared_ptr<D3DBuffer> EntityRenderManager::CreateBufferFromData(const MeshBuffer &buffer, UINT bindFlags) const
+std::shared_ptr<D3DBuffer> EntityRenderManager::createBufferFromData(const MeshBuffer &buffer, UINT bindFlags) const
 {
 	// Create the vertex buffer.
 	auto d3dBuffer = std::make_shared<D3DBuffer>();
@@ -378,7 +442,7 @@ std::shared_ptr<D3DBuffer> EntityRenderManager::CreateBufferFromData(const MeshB
 	return d3dBuffer;
 }
 
-std::unique_ptr<Material> EntityRenderManager::LoadMaterial(const std::string &materialName) const
+std::unique_ptr<Material> EntityRenderManager::loadMaterial(const std::string &materialName) const
 {
 	return m_materialRepository->instantiate(materialName);
 }

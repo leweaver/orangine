@@ -4,14 +4,14 @@
 using namespace OE;
 using namespace DirectX;
 
-TextureRenderTarget::TextureRenderTarget()
-	: m_renderTargetTexture(nullptr)
+TextureRenderTarget::TextureRenderTarget(uint32_t width, uint32_t height)
+	: Texture(width, height)
+	, m_renderTargetTexture(nullptr)
 	, m_renderTargetView(nullptr)
-    , m_shaderResourceView(nullptr)
 {
 }
 
-void TextureRenderTarget::initialize(ID3D11Device *d3dDevice, int width, int height)
+bool TextureRenderTarget::load(ID3D11Device *d3dDevice)
 {
 	D3D11_TEXTURE2D_DESC textureDesc;
 	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
@@ -21,8 +21,8 @@ void TextureRenderTarget::initialize(ID3D11Device *d3dDevice, int width, int hei
 	ZeroMemory(&textureDesc, sizeof(textureDesc));
 
 	// Setup the render target texture description.
-	textureDesc.Width = width;
-	textureDesc.Height = height;
+	textureDesc.Width = m_width;
+	textureDesc.Height = m_height;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
 	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -51,11 +51,14 @@ void TextureRenderTarget::initialize(ID3D11Device *d3dDevice, int width, int hei
 
 	// Create the shader resource view.
 	DX::ThrowIfFailed(d3dDevice->CreateShaderResourceView(m_renderTargetTexture.Get(), &shaderResourceViewDesc, m_shaderResourceView.ReleaseAndGetAddressOf()));
+
+	return true;
 }
 
-void TextureRenderTarget::shutdown()
+void TextureRenderTarget::unload()
 {
+	Texture::unload();
+
 	m_renderTargetTexture.Reset();
 	m_renderTargetView.Reset();
-	m_shaderResourceView.Reset();
 }

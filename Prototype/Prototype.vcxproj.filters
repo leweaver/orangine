@@ -116,6 +116,9 @@
     <ClInclude Include="TextureRenderTarget.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="DeferredLightMaterial.h">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -190,6 +193,9 @@
     <ClCompile Include="TextureRenderTarget.cpp">
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="DeferredLightMaterial.cpp">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -228,6 +234,12 @@
       <Filter>Assets\shaders</Filter>
     </FxCompile>
     <FxCompile Include="data\shaders\clear_gbuffer_PS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\deferred_light_PS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\deferred_light_VS.hlsl">
       <Filter>Assets\shaders</Filter>
     </FxCompile>
   </ItemGroup>

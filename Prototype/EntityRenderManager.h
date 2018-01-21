@@ -7,6 +7,8 @@
 #include "MaterialRepository.h"
 #include "Game.h"
 #include "PrimitiveMeshDataFactory.h"
+#include "DeferredLightMaterial.h"
+#include <memory>
 
 namespace OE {
 	class Scene;
@@ -38,12 +40,19 @@ namespace OE {
 
 		std::unique_ptr<PrimitiveMeshDataFactory> m_primitiveMeshDataFactory;
 
-		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerState;
-		
-		std::vector<std::unique_ptr<TextureRenderTarget>> m_pass1RenderTargets;
-		
-		Renderable m_screenSpaceQuad;
 		bool m_fatalError;
+
+		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_pass1RasterizerState;
+		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_pass2RasterizerState;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_pass1DepthStencilState;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_pass2DepthStencilState;
+
+		std::vector<std::shared_ptr<TextureRenderTarget>> m_pass1RenderTargets;
+		
+		Renderable m_pass1ScreenSpaceQuad;
+		Renderable m_pass2ScreenSpaceQuad;
+
+		std::shared_ptr<DeferredLightMaterial> m_deferredLightMaterial;
 
 	public:
 		EntityRenderManager(Scene& scene, const std::shared_ptr<MaterialRepository> &materialRepository, DX::DeviceResources &deviceResources);
@@ -58,26 +67,28 @@ namespace OE {
 		void destroyDeviceDependentResources();
 
 		void render();
-		void drawRendererData(const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix, 
-							  const DirectX::XMMATRIX &worldTransform,
-		                      const RendererData *rendererData, Material* material,
-							  BufferArraySet &bufferArraySet);
 
 	protected:
 		void renderEntities();
+		void renderLights();
 
 	private:
 
-		void clearGBuffer();
-		void clearFinalBuffer();
+		void setupPass1();
+		void setupPass2();
 
-		std::unique_ptr<Material> LoadMaterial(const std::string &materialName) const;
+		std::unique_ptr<Material> loadMaterial(const std::string &materialName) const;
 
-		std::shared_ptr<D3DBuffer> CreateBufferFromData(const MeshBuffer &buffer, UINT bindFlags) const;
-		std::unique_ptr<RendererData> CreateRendererData(const MeshData &meshData, const std::vector<VertexAttribute> &vertexAttributes) const;
+		std::shared_ptr<D3DBuffer> createBufferFromData(const MeshBuffer &buffer, UINT bindFlags) const;
+		std::unique_ptr<RendererData> createRendererData(const MeshData &meshData, const std::vector<VertexAttribute> &vertexAttributes) const;
+
+		void drawRendererData(const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix,
+			const DirectX::XMMATRIX &worldTransform,
+			const RendererData *rendererData, Material* material,
+			BufferArraySet &bufferArraySet);
 
 		// renders a full screen quad that sets our output buffers to decent default values.
-
-		void initScreenSpaceQuad();
+		// Takes ownership of the passed in material
+		Renderable initScreenSpaceQuad(std::shared_ptr<Material> material) const;
 	};
 }

@@ -12,9 +12,16 @@ namespace OE {
 	class Scene;
 	class Material;
 	class EntityFilter;
+	class TextureRenderTarget;
 
 	class EntityRenderManager : public ManagerBase
 	{
+		struct BufferArraySet {
+			std::vector<ID3D11Buffer*> bufferArray;
+			std::vector<UINT> strideArray;
+			std::vector<UINT> offsetArray;
+		};
+
 		struct Renderable
 		{
 			Renderable();
@@ -23,15 +30,20 @@ namespace OE {
 			std::unique_ptr<RendererData> rendererData;
 		};
 
-		DX::DeviceResources m_deviceResources;
+		DX::DeviceResources &m_deviceResources;
 
 		std::shared_ptr<EntityFilter> m_renderableEntities;
 		std::shared_ptr<EntityFilter> m_lightEntities;
 		std::shared_ptr<MaterialRepository> m_materialRepository;
 
 		std::unique_ptr<PrimitiveMeshDataFactory> m_primitiveMeshDataFactory;
+
+		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerState;
+		
+		std::vector<std::unique_ptr<TextureRenderTarget>> m_pass1RenderTargets;
 		
 		Renderable m_screenSpaceQuad;
+		bool m_fatalError;
 
 	public:
 		EntityRenderManager(Scene& scene, const std::shared_ptr<MaterialRepository> &materialRepository, DX::DeviceResources &deviceResources);
@@ -45,12 +57,19 @@ namespace OE {
 		void createWindowSizeDependentResources();
 		void destroyDeviceDependentResources();
 
-		void clearGBuffer();
 		void render();
+		void drawRendererData(const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix, 
+							  const DirectX::XMMATRIX &worldTransform,
+		                      const RendererData *rendererData, Material* material,
+							  BufferArraySet &bufferArraySet);
+
+	protected:
+		void renderEntities();
 
 	private:
 
-		ID3D11RasterizerState *m_rasterizerState;
+		void clearGBuffer();
+		void clearFinalBuffer();
 
 		std::unique_ptr<Material> LoadMaterial(const std::string &materialName) const;
 

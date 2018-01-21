@@ -3,24 +3,18 @@
 //--------------------------------------------------------------------------------------
 struct PS_INPUT
 {
-	float4 vColor       : COLOR0;
-	float3 vNormal      : NORMAL0;
-	float3 vWorldNormal : NORMAL1;
-	float4 vTangent     : TANGENT;
-	float2 vTexCoord0   : TEXCOORD0;
 };
 
 struct PS_OUTPUT
 {
-	float4 Color        : COLOR0;
-	float4 Normal       : COLOR1;
-	float4 Depth        : COLOR2;
+	float4 Color        : SV_Target0;
+	float4 Normal       : SV_Target1;
 };
 
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-PS_OUTPUT PSMain(PS_INPUT input) : SV_TARGET
+PS_OUTPUT PSMain(PS_INPUT input)
 {
 	PS_OUTPUT output;    
 	output.Color = 0.0f;
@@ -33,7 +27,7 @@ PS_OUTPUT PSMain(PS_INPUT input) : SV_TARGET
 	output.Normal.a = 0.0f;
 
 	//max depth
-	output.Depth = 1.0f;
+	//output.Depth = 1.0f;
 
 	return output;
 }

@@ -212,6 +212,7 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
     <ClInclude Include="TestComponent.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureImpl.h" />
+    <ClInclude Include="TextureRenderTarget.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -246,6 +247,7 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="TestComponent.cpp" />
     <ClCompile Include="TextureImpl.cpp" />
+    <ClCompile Include="TextureRenderTarget.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>

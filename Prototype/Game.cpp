@@ -17,6 +17,7 @@ using namespace OE;
 using Microsoft::WRL::ComPtr;
 
 Game::Game()
+	: m_fatalError(false)
 {
     m_deviceResources = std::make_unique<DX::DeviceResources>();
     m_deviceResources->RegisterDeviceNotify(this);
@@ -114,24 +115,12 @@ void Game::Render()
     {
         return;
     }
-
-    Clear();
-
-    m_deviceResources->PIXBeginEvent(L"Render");
-
+	
     // TODO: Add your rendering code here.
 	m_scene->GetEntityRenderManger().render();
-
-    m_deviceResources->PIXEndEvent();
-
+	
     // Show the new frame.
     m_deviceResources->Present();
-}
-
-// Helper method to clear the back buffers.
-void Game::Clear()
-{
-	m_scene->GetEntityRenderManger().clearGBuffer();
 }
 #pragma endregion
 
@@ -188,13 +177,28 @@ void Game::GetDefaultSize(int& width, int& height) const
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
-	m_scene->GetEntityRenderManger().createDeviceDependentResources();
+	try {
+		m_scene->GetEntityRenderManger().createDeviceDependentResources();
+	}
+	catch (std::runtime_error &e)
+	{
+		LOG(FATAL) << "Failed to create device dependent resources: " << e.what();
+		m_fatalError = true;
+	}
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
-	m_scene->GetEntityRenderManger().createWindowSizeDependentResources();
+	try
+	{
+		m_scene->GetEntityRenderManger().createWindowSizeDependentResources();
+	}
+	catch (std::runtime_error &e)
+	{
+		LOG(FATAL) << "Failed to create window size dependent resources: " << e.what();
+		m_fatalError = true;
+	}
 }
 
 void Game::OnDeviceLost()

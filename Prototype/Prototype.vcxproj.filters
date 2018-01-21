@@ -113,6 +113,9 @@
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="PrimitiveMeshDataFactory.h" />
+    <ClInclude Include="TextureRenderTarget.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -184,6 +187,9 @@
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="PrimitiveMeshDataFactory.cpp" />
+    <ClCompile Include="TextureRenderTarget.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

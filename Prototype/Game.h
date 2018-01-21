@@ -23,6 +23,9 @@ public:
     void Initialize(HWND window, int width, int height);
 	void InitRasterizer();
 
+	// Signal that the game can no longer run and should exit.
+	bool hasFatalError() const { return m_fatalError; };
+
     // Basic game loop
     void Tick();
 
@@ -46,8 +49,6 @@ private:
     void Update(DX::StepTimer const& timer);
     void Render();
 
-    void Clear();
-
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
 
@@ -61,4 +62,6 @@ private:
 
 	// Services
 	std::unique_ptr<OE::Scene>              m_scene;
+	
+	bool									m_fatalError;
 };

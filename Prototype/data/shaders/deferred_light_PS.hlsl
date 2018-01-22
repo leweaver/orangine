@@ -20,7 +20,7 @@ struct PS_INPUT
 // rgb: Diffuse           
 // a:   Specular intensity
 Texture2D color0Texture : register(t0);
-SamplerState color0Sampler : register(s1);
+SamplerState color0Sampler : register(s0);
 
 // rgb: World normals     
 // a:   Specular power
@@ -32,7 +32,10 @@ SamplerState color1Sampler : register(s1);
 Texture2D depthTexture : register(t2);
 SamplerState depthSampler : register(s2);
 
+// Forward declarations
 float3 VSPositionFromDepth(float2 vTexCoord);
+float3 PointLight(float3 lightPosition, float3 lightColor, float lightIntensity, float3 pixelPosition, float3 surfaceNormal_n);
+float3 DirLight(float3 lightDirection, float3 lightColor, float lightIntensity, float3 surfaceNormal_n);
 
 //--------------------------------------------------------------------------------------
 // Pixel Shader
@@ -43,9 +46,27 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	float4 color1 = color1Texture.Sample(color1Sampler, input.vTexCoord0);
 	float  depth  = depthTexture.Sample(depthSampler,   input.vTexCoord0).r;
 
-	float3 vsPosition = VSPositionFromDepth(input.vTexCoord0);
+	float3 vsPosition = VSPositionFromDepth(input.vTexCoord0);	
+	float3 intensity = 0;
 
-	return float4(vsPosition, 1);
+	intensity += PointLight(float3(-3.0f, -1.5f, 4.5f), float3(1, 0, 0), 6, vsPosition, color1.xyz);
+	intensity += DirLight(normalize(float3(0, -1, -1)), float3(0, 1, 0), 1, color1.xyz);
+	intensity += DirLight(normalize(float3(0, +1, -1)), float3(0, 0, 1), 1, color1.xyz);
+
+	return float4(color0.rgb * intensity, 1);
+}
+
+float3 PointLight(float3 lightPosition, float3 lightColor, float lightIntensity, float3 pixelPosition, float3 surfaceNormal_n)
+{
+	float3 posDifference = pixelPosition - lightPosition;
+	lightIntensity = lightIntensity / length(posDifference);
+	float3 lightDirection_n = normalize(posDifference);
+	return lightIntensity * lightColor * dot(lightDirection_n, surfaceNormal_n) / 3.14159;
+}
+
+float3 DirLight(float3 lightDirection, float3 lightColor, float lightIntensity, float3 surfaceNormal_n)
+{
+	return lightIntensity * lightColor * dot(lightDirection, surfaceNormal_n) / 3.14159;
 }
 
 float3 VSPositionFromDepth(float2 vTexCoord)

@@ -27,14 +27,21 @@ namespace OE
 		void getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const override;
 
 	protected:
+
+		struct DeferredLightConstants
+		{
+			DirectX::XMMATRIX invProjection;
+		} m_constants;
+
 		UINT inputSlot(VertexAttribute attribute) override;
 
 		ShaderCompileSettings vertexShaderSettings() const override;
 		ShaderCompileSettings pixelShaderSettings() const override;
 
-		bool createConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer) override;
-		void updateConstantBuffer(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix,
+		bool createPSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer) override;
+		void updatePSConstantBuffer(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix,
 			const DirectX::XMMATRIX &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer) override;
+
 		void setContextSamplers(const DX::DeviceResources &deviceResources) override;
 		void unsetContextSamplers(const DX::DeviceResources &deviceResources) override;
 	};

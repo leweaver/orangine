@@ -14,7 +14,8 @@ namespace OE {
 		ID3D11VertexShader *m_vertexShader;
 		ID3D11PixelShader  *m_pixelShader;
 		ID3D11InputLayout  *m_inputLayout;
-		ID3D11Buffer       *m_constantBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> m_vsConstantBuffer;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> m_psConstantBuffer;
 		bool m_errorState;
 
 	public:
@@ -53,11 +54,15 @@ namespace OE {
 		bool createVertexShader(ID3D11Device *device);
 		bool createPixelShader(ID3D11Device *device);
 		
-		virtual bool createConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer) = 0;
-		virtual void updateConstantBuffer(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix,
-			const DirectX::XMMATRIX &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer) = 0;
+		virtual bool createVSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer) { return true; }
+		virtual void updateVSConstantBuffer(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix,
+			const DirectX::XMMATRIX &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer) {};
 
-		virtual void setContextSamplers(const DX::DeviceResources &deviceResources) = 0;
+		virtual bool createPSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer) { return true; }
+		virtual void updatePSConstantBuffer(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix,
+			const DirectX::XMMATRIX &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer) {};
+
+		virtual void setContextSamplers(const DX::DeviceResources &deviceResources) {}
 		virtual void unsetContextSamplers(const DX::DeviceResources &deviceResources) {}
 
 		bool ensureSamplerState(const DX::DeviceResources &deviceResources, Texture &texture, ID3D11SamplerState **d3D11SamplerState);

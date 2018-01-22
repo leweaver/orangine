@@ -57,7 +57,7 @@ Material::ShaderCompileSettings PBRMaterial::pixelShaderSettings() const
 	return settings;
 }
 
-bool PBRMaterial::createConstantBuffer(ID3D11Device* device, ID3D11Buffer *&buffer)
+bool PBRMaterial::createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer *&buffer)
 {
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -82,7 +82,7 @@ bool PBRMaterial::createConstantBuffer(ID3D11Device* device, ID3D11Buffer *&buff
 	return true;
 }
 
-void PBRMaterial::updateConstantBuffer(const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer)
+void PBRMaterial::updateVSConstantBuffer(const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer)
 {
 	// Convert to LH, for DirectX.
 	m_constants.viewProjection = XMMatrixTranspose(XMMatrixMultiply(viewMatrix, projMatrix));

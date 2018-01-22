@@ -19,7 +19,7 @@ Material::Material()
 	: m_vertexShader(nullptr)
 	, m_pixelShader(nullptr)
 	, m_inputLayout(nullptr)
-	, m_constantBuffer(nullptr)
+	, m_vsConstantBuffer(nullptr)
 	, m_errorState(false)
 {
 }
@@ -49,11 +49,8 @@ void Material::release()
 		m_pixelShader = nullptr;
 	}
 
-	if (m_constantBuffer)
-	{
-		m_constantBuffer->Release();
-		m_constantBuffer = nullptr;
-	}
+	m_vsConstantBuffer.Reset();
+	m_psConstantBuffer.Reset();
 }
 
 void Material::getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const {
@@ -112,21 +109,8 @@ bool Material::createVertexShader(ID3D11Device* device)
 {
 	HRESULT hr;
 	Microsoft::WRL::ComPtr<ID3DBlob> errorMsgs;
-	Microsoft::WRL::ComPtr<ID3D10Blob> vertexShaderBytecode;
+	ID3DBlob* vertexShaderBytecode;
 	auto settings = vertexShaderSettings();
-	hr = D3DCompileFromFile(settings.filename.c_str(), 
-	                        nullptr, nullptr, 
-	                        settings.entryPoint.c_str(), 
-	                        "vs_4_0", 
-	                        0, 0, 
-	                        vertexShaderBytecode.ReleaseAndGetAddressOf(), 
-							errorMsgs.ReleaseAndGetAddressOf());
-
-	if (!SUCCEEDED(hr)) {
-		LOG(WARNING) << createShaderError(hr, errorMsgs.Get(), settings);
-		release();
-		return false;
-	}
 
 	std::vector<VertexAttribute> attributes;
 	getVertexAttributes(attributes);
@@ -138,18 +122,36 @@ bool Material::createVertexShader(ID3D11Device* device)
 		const auto semanticName = VertexAttributeMeta::semanticName(attr);
 		LOG(INFO) << semanticName << " to slot " << inputSlot(attr);
 		inputElementDesc.push_back(
-			{ 
-				semanticName, 
-				VertexAttributeMeta::semanticIndex(attr), 
-				format(attr), 
+			{
+				semanticName,
+				VertexAttributeMeta::semanticIndex(attr),
+				format(attr),
 				inputSlot(attr),
-				D3D11_APPEND_ALIGNED_ELEMENT, 
-				D3D11_INPUT_PER_VERTEX_DATA, 
-				0 
+				D3D11_APPEND_ALIGNED_ELEMENT,
+				D3D11_INPUT_PER_VERTEX_DATA,
+				0
 			}
 		);
 	}
+	
+	UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
+#if defined( DEBUG ) || defined( _DEBUG )
+	flags |= D3DCOMPILE_DEBUG;
+#endif
 
+	hr = D3DCompileFromFile(settings.filename.c_str(), 
+	                        nullptr, nullptr, 
+	                        settings.entryPoint.c_str(), 
+	                        "vs_5_0", 
+							flags, 0,
+	                        &vertexShaderBytecode, 
+							errorMsgs.ReleaseAndGetAddressOf());
+
+	if (!SUCCEEDED(hr)) {
+		LOG(WARNING) << createShaderError(hr, errorMsgs.Get(), settings);
+		release();
+		return false;
+	}
 	hr = device->CreateInputLayout(inputElementDesc.data(), static_cast<UINT>(inputElementDesc.size()), 
 	                          vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), 
 	                          &m_inputLayout);
@@ -175,15 +177,22 @@ bool Material::createPixelShader(ID3D11Device* device)
 {
 	HRESULT hr;
 	Microsoft::WRL::ComPtr<ID3DBlob> errorMsgs;
-	Microsoft::WRL::ComPtr<ID3DBlob> pixelShaderBytecode;
+	ID3DBlob* pixelShaderBytecode;
+
+	UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
+#if defined( DEBUG ) || defined( _DEBUG )
+	flags |= D3DCOMPILE_DEBUG;
+#endif
+
 
 	auto settings = pixelShaderSettings();
 	hr = D3DCompileFromFile(settings.filename.c_str(),
-	                        nullptr, nullptr,
-	                        settings.entryPoint.c_str(),
-	                        "ps_4_0",
-	                        0, 0,
-	                        pixelShaderBytecode.ReleaseAndGetAddressOf(), errorMsgs.ReleaseAndGetAddressOf());
+		nullptr, nullptr,
+		settings.entryPoint.c_str(),
+		"ps_5_0",
+		flags, 0,
+		&pixelShaderBytecode, 
+		errorMsgs.ReleaseAndGetAddressOf());
 	if (!SUCCEEDED(hr)) {
 		LOG(WARNING) << createShaderError(hr, errorMsgs.Get(), settings);
 		release();
@@ -215,27 +224,34 @@ bool Material::render(const RendererData &rendererData, const XMMATRIX &worldMat
 			if (!createVertexShader(device)) 
 				return false;
 
-			createConstantBuffer(device, m_constantBuffer);
+			createVSConstantBuffer(device, *m_vsConstantBuffer.ReleaseAndGetAddressOf());
 		}
 
 		if (!m_pixelShader) {
 			if (!createPixelShader(device)) 
 				return false;
+			
+			createPSConstantBuffer(device, *m_psConstantBuffer.ReleaseAndGetAddressOf());
 		}
 	}
 	m_errorState = false;
-
-	// Update constant buffers
-	if (m_constantBuffer != nullptr) {
-		updateConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, m_constantBuffer);
-		context->VSSetConstantBuffers(0, 1, &m_constantBuffer);
-	}
 
 	// We have a valid shader
 	context->IASetInputLayout(m_inputLayout);
 	context->VSSetShader(m_vertexShader, nullptr, 0);
 	context->PSSetShader(m_pixelShader, nullptr, 0);
 
+	// Update constant buffers
+	if (m_vsConstantBuffer != nullptr) {
+		updateVSConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, m_vsConstantBuffer.Get());
+		context->VSSetConstantBuffers(0, 1, m_vsConstantBuffer.GetAddressOf());
+	}
+	if (m_psConstantBuffer != nullptr) {
+		updatePSConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, m_psConstantBuffer.Get());
+		context->PSSetConstantBuffers(0, 1, m_psConstantBuffer.GetAddressOf());
+	}
+
+	// Set texture samples
 	setContextSamplers(deviceResources);
 
 	return true;

@@ -29,18 +29,3 @@ Material::ShaderCompileSettings ClearGBufferMaterial::pixelShaderSettings() cons
 	settings.filename = L"data/shaders/clear_gbuffer_PS.hlsl"s;
 	return settings;
 }
-
-bool ClearGBufferMaterial::createConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer)
-{
-	return true;
-}
-
-void ClearGBufferMaterial::updateConstantBuffer(const DirectX::XMMATRIX &worldMatrix,
-	const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix, ID3D11DeviceContext *context,
-	ID3D11Buffer *buffer)
-{
-}
-
-void ClearGBufferMaterial::setContextSamplers(const DX::DeviceResources &deviceResources)
-{
-}

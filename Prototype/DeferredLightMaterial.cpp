@@ -1,9 +1,11 @@
 ﻿#include "pch.h"
 #include "DeferredLightMaterial.h"
 #include "TextureRenderTarget.h"
+#include "Constants.h"
 
 using namespace OE;
 using namespace std::literals;
+using namespace DirectX;
 
 void DeferredLightMaterial::getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const
 {
@@ -31,15 +33,39 @@ Material::ShaderCompileSettings DeferredLightMaterial::pixelShaderSettings() con
 	return settings;
 }
 
-bool DeferredLightMaterial::createConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer)
+bool DeferredLightMaterial::createPSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer)
 {
+	D3D11_BUFFER_DESC bufferDesc;
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.ByteWidth = sizeof(DeferredLightConstants);
+	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bufferDesc.CPUAccessFlags = 0;
+	bufferDesc.MiscFlags = 0;
+
+	m_constants.invProjection = Math::MAT4_IDENTITY;
+
+	D3D11_SUBRESOURCE_DATA initData;
+	initData.pSysMem = &m_constants;
+	initData.SysMemPitch = 0;
+	initData.SysMemSlicePitch = 0;
+
+	device->CreateBuffer(&bufferDesc, &initData, &buffer);
+
+	std::string name("DeferredLightMaterial Constant Buffer");
+	buffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
+
 	return true;
 }
 
-void DeferredLightMaterial::updateConstantBuffer(const DirectX::XMMATRIX &worldMatrix,
+void DeferredLightMaterial::updatePSConstantBuffer(const DirectX::XMMATRIX &worldMatrix,
 	const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix, ID3D11DeviceContext *context,
 	ID3D11Buffer *buffer)
 {
+	// Convert to LH, for DirectX.
+	XMVECTOR determinant;
+	m_constants.invProjection = XMMatrixTranspose(XMMatrixInverse(&determinant, projMatrix));
+
+	context->UpdateSubresource(buffer, 0, nullptr, &m_constants, 0, 0);	
 }
 
 void DeferredLightMaterial::setContextSamplers(const DX::DeviceResources &deviceResources)

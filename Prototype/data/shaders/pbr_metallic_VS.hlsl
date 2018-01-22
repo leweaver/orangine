@@ -3,7 +3,7 @@
 // Globals
 //--------------------------------------------------------------------------------------
 
-cbuffer cbPerObject : register(b0)
+cbuffer constants : register(b0)
 {
 	matrix        g_mViewProjection       : packoffset(c0);
 	matrix        g_mWorld                : packoffset(c4);

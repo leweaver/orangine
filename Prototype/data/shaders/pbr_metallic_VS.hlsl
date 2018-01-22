@@ -39,6 +39,7 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	VS_OUTPUT Output;
 	matrix mWorldViewProjection = mul(g_mWorld, g_mViewProjection);
 	Output.vPosition = mul(Input.vPosition, mWorldViewProjection);
+	Output.vPosition.z *= Output.vPosition.w;
 	Output.vNormal = Input.vNormal;
 	Output.vWorldNormal = mul(Input.vNormal, g_mWorld);
 	Output.vTangent = Input.vTangent;

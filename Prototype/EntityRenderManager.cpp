@@ -15,6 +15,7 @@
 #include "TextureRenderTarget.h"
 #include "RenderableComponent.h"
 #include "DeferredLightMaterial.h"
+#include "TextureImpl.h"
 
 using namespace OE;
 using namespace DirectX;
@@ -70,6 +71,9 @@ void EntityRenderManager::Shutdown()
 
 	m_pass1ScreenSpaceQuad = Renderable();
 	m_pass2ScreenSpaceQuad = Renderable();
+	
+	m_depthTexture.reset();
+	m_pass1RenderTargets.clear();
 }
 
 void EntityRenderManager::createDeviceDependentResources()
@@ -125,8 +129,13 @@ void EntityRenderManager::createWindowSizeDependentResources()
 		m_pass1RenderTargets.push_back(move(target));
 	}
 
+	// Create a depth texture resource
+	m_depthTexture = std::make_unique<DepthTexture>(m_deviceResources);
+
+	// Assign textures to the deferred light material
 	m_deferredLightMaterial->setColor0Texture(m_pass1RenderTargets.at(0));
 	m_deferredLightMaterial->setColor1Texture(m_pass1RenderTargets.at(1));
+	m_deferredLightMaterial->setDepthTexture(m_depthTexture);
 
 	// Set the viewport.
 	auto viewport = m_deviceResources.GetScreenViewport();
@@ -137,11 +146,12 @@ void EntityRenderManager::destroyDeviceDependentResources()
 {
 	m_rasterizerStateDepthDisabled.Reset();
 	m_rasterizerStateDepthEnabled.Reset();
-
-	m_pass1RenderTargets.clear();
-
+	
 	m_pass1ScreenSpaceQuad.rendererData.reset();
 	m_pass2ScreenSpaceQuad.rendererData.reset();
+
+	m_depthTexture.reset();
+	m_pass1RenderTargets.clear();
 
 	m_deferredLightMaterial.reset();	
 	m_fatalError = false;
@@ -178,11 +188,20 @@ void EntityRenderManager::renderEntities()
 	const DirectX::XMMATRIX &viewMatrix = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(5.0f, 3.0f, -10.0f, 0.0f), Math::VEC_ZERO, Math::VEC_UP);
 	const auto viewport = m_deviceResources.GetScreenViewport();
 	const float aspectRatio = viewport.Width / viewport.Height;
-	const auto projMatrix = DirectX::XMMatrixPerspectiveFovRH(
+
+	const float farPlane = 20.0f;
+	auto projMatrix = DirectX::XMMatrixPerspectiveFovRH(
 		DirectX::XMConvertToRadians(45.0f),
 		aspectRatio,
 		0.01f,
-		10000.0f);
+		farPlane);
+
+	// https://www.mvps.org/directx/articles/linear_z/linearz.htm
+	XMFLOAT4X4 projMatrix4x4;
+	XMStoreFloat4x4(&projMatrix4x4, projMatrix);
+	projMatrix4x4._33 /= farPlane;
+	projMatrix4x4._43 /= farPlane;
+	projMatrix = XMLoadFloat4x4(&projMatrix4x4);
 
 	// Arrays defined outside of the loop so that their memory is re-used.
 	BufferArraySet bufferArraySet;
@@ -419,7 +438,7 @@ void EntityRenderManager::setupRenderLights()
 	// Clear the views.
 	auto context = m_deviceResources.GetD3DDeviceContext();
 
-	const auto depthStencil = m_deviceResources.GetDepthStencilView();
+	const auto depthStencil = nullptr;//m_deviceResources.GetDepthStencilView();
 	const auto finalColorRenderTarget = m_deviceResources.GetRenderTargetView();
 	
 	setDepthEnabled(false);

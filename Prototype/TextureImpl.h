@@ -2,6 +2,7 @@
 
 #include "Texture.h"
 #include "DirectXTex.h"
+#include "DeviceResources.h"
 
 namespace OE {
 	class TextureBase : public Texture
@@ -50,5 +51,15 @@ namespace OE {
 		}
 
 		bool load(ID3D11Device *device) override;
+	};
+
+	class DepthTexture : public Texture
+	{
+		const DX::DeviceResources &m_deviceResources;
+
+	public:
+		DepthTexture(const DX::DeviceResources &deviceResources);
+		bool load(ID3D11Device *device) override;
+		
 	};
 }

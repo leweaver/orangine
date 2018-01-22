@@ -19,7 +19,7 @@ using Microsoft::WRL::ComPtr;
 Game::Game()
 	: m_fatalError(false)
 {
-    m_deviceResources = std::make_unique<DX::DeviceResources>();
+    m_deviceResources = std::make_unique<DX::DeviceResources>(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_R24G8_TYPELESS);
     m_deviceResources->RegisterDeviceNotify(this);
 }
 

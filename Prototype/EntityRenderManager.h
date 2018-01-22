@@ -52,6 +52,7 @@ namespace OE {
 		Renderable m_pass1ScreenSpaceQuad;
 		Renderable m_pass2ScreenSpaceQuad;
 
+		std::shared_ptr<Texture> m_depthTexture;
 		std::shared_ptr<DeferredLightMaterial> m_deferredLightMaterial;
 
 	public:

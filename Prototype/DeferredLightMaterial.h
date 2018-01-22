@@ -7,33 +7,22 @@ namespace OE
 
 	class DeferredLightMaterial : public Material
 	{
-		std::shared_ptr<TextureRenderTarget> m_color0Texture;
-		std::shared_ptr<TextureRenderTarget> m_color1Texture;
+		std::shared_ptr<Texture> m_color0Texture;
+		std::shared_ptr<Texture> m_color1Texture;
+		std::shared_ptr<Texture> m_depthTexture;
 
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> m_color0SamplerState;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> m_color1SamplerState;
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> m_depthSamplerState;
 
 	public:
 
-		const std::shared_ptr<TextureRenderTarget> & getColor0Texture() const
-		{
-			return m_color0Texture;
-		}
-
-		void setColor0Texture(const std::shared_ptr<TextureRenderTarget> &textureRenderTarget)
-		{
-			m_color0Texture = textureRenderTarget;
-		}
-
-		const std::shared_ptr<TextureRenderTarget> & getColor1Texture() const
-		{
-			return m_color1Texture;
-		}
-
-		void setColor1Texture(const std::shared_ptr<TextureRenderTarget> &textureRenderTarget)
-		{
-			m_color1Texture = textureRenderTarget;
-		}
+		const std::shared_ptr<Texture> & getColor0Texture() const { return m_color0Texture; }
+		void setColor0Texture(const std::shared_ptr<Texture> &texture) { m_color0Texture = texture; }
+		const std::shared_ptr<Texture> & getColor1Texture() const { return m_color1Texture; }
+		void setColor1Texture(const std::shared_ptr<Texture> &texture) { m_color1Texture = texture; }
+		const std::shared_ptr<Texture> & getDepthTexture() const { return m_depthTexture; }
+		void setDepthTexture(const std::shared_ptr<Texture> &texture) { m_depthTexture = texture; }
 
 		void getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const override;
 

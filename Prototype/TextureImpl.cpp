@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "TextureImpl.h"
+#include "DeviceResources.h"
 
 using namespace OE;
 
@@ -83,4 +84,22 @@ bool FileTexture::load(ID3D11Device *device)
 	}
 
 	return !isError;
+}
+
+DepthTexture::DepthTexture(const DX::DeviceResources &deviceResources)
+	: Texture(0, 0)
+	, m_deviceResources(deviceResources)
+{
+}
+
+bool DepthTexture::load(ID3D11Device *device)
+{
+	D3D11_SHADER_RESOURCE_VIEW_DESC sr_desc;
+	sr_desc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	sr_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	sr_desc.Texture2D.MostDetailedMip = 0;
+	sr_desc.Texture2D.MipLevels = -1;
+
+	auto depthStencilTexture = m_deviceResources.GetDepthStencil();
+	return SUCCEEDED(device->CreateShaderResourceView(depthStencilTexture, &sr_desc, m_shaderResourceView.ReleaseAndGetAddressOf()));
 }

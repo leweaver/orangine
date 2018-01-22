@@ -39,7 +39,7 @@ namespace
 DeviceResources::DeviceResources(DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthBufferFormat, UINT backBufferCount, D3D_FEATURE_LEVEL minFeatureLevel, unsigned int flags) :
     m_screenViewport{},
     m_backBufferFormat(backBufferFormat),
-    m_depthBufferFormat(depthBufferFormat),
+	m_depthBufferFormat(depthBufferFormat),
     m_backBufferCount(backBufferCount),
     m_d3dMinFeatureLevel(minFeatureLevel),
     m_window(nullptr),
@@ -318,6 +318,9 @@ void DeviceResources::CreateWindowSizeDependentResources()
             1, // Use a single mipmap level.
             D3D11_BIND_DEPTH_STENCIL
             );
+		// BEGIN LEWIS
+		depthStencilDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+		// END LEWIS
 
         ThrowIfFailed(m_d3dDevice->CreateTexture2D(
             &depthStencilDesc,
@@ -326,6 +329,10 @@ void DeviceResources::CreateWindowSizeDependentResources()
             ));
 
         CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
+		// BEGIN LEWIS
+		depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		// END LEWIS
+
         ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(
             m_depthStencil.Get(),
             &depthStencilViewDesc,

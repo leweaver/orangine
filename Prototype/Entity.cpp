@@ -122,3 +122,11 @@ void Entity::OnComponentAdded(Component& component)
 {
 	m_scene.OnComponentAdded(*this, component);
 }
+
+Entity &EntityRef::Get() const
+{
+	const auto ptr = scene.GetSceneGraphManager().GetEntityPtrById(id);
+	if (!ptr)
+		throw std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(id) + ")");
+	return *ptr.get();
+}

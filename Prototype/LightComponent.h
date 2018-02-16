@@ -4,8 +4,10 @@
 #include "SimpleTypes.h"
 
 namespace OE {
-	class LightComponent
+	class LightComponent : public Component
 	{
+		DECLARE_COMPONENT_TYPE;
+
 		Color m_color{};
 		float m_intensity;
 

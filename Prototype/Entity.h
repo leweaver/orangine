@@ -28,10 +28,13 @@ namespace OE {
 	 */
 	__declspec(align(16)) class Entity
 	{
+	public:
+		typedef unsigned int ID_TYPE;
+
+	private:
 		friend class EntityRepository;
 		friend class SceneGraphManager;
 
-		typedef unsigned int ID_TYPE;
 		typedef std::vector<std::shared_ptr<Entity>> EntityPtrVec;
 		typedef std::map<ID_TYPE, std::shared_ptr<Entity>> EntityPtrMap;
 
@@ -57,6 +60,8 @@ namespace OE {
 
 		explicit Entity(Scene& scene, std::string name, ID_TYPE id)
 			: m_worldTransform(Math::MAT4_IDENTITY)
+			, m_worldRotation(Math::VEC_ZERO)
+			, m_worldScale(Math::VEC_ZERO)
 			, m_localRotation(Math::QUAT_IDENTITY)
 			, m_localPosition(Math::VEC_ZERO)
 			, m_localScale(Math::VEC_ONE)
@@ -215,5 +220,28 @@ namespace OE {
 
 		return *component;
 	}
+
+	struct EntityRef
+	{
+		Scene &scene;
+		Entity::ID_TYPE id;
+
+		EntityRef(Entity &entity)
+			: scene(entity.GetScene())
+			, id(entity.GetId())
+		{}
+
+		EntityRef(Scene &scene, Entity::ID_TYPE id)
+			: scene(scene),
+			  id(id)
+		{}
+
+		Entity &Get() const;
+
+		Entity &operator *() const
+		{
+			return Get();
+		}
+	};
 }
 

@@ -105,7 +105,7 @@ void SceneGraphManager::AddEntityToScene(const std::shared_ptr<Entity>& entityPt
 	m_scene.OnEntityAdded(*entityPtr.get());
 }
 
-void SceneGraphManager::Destroy(const Entity::ID_TYPE& entityId)
+void SceneGraphManager::Destroy(Entity::ID_TYPE entityId)
 {
 	auto entityPtr = m_entityRepository->GetEntityPtrById(entityId);
 	if (entityPtr != nullptr) {
@@ -121,7 +121,7 @@ void SceneGraphManager::Destroy(const Entity::ID_TYPE& entityId)
 	}
 }
 
-std::shared_ptr<Entity> SceneGraphManager::GetEntityPtrById(const Entity::ID_TYPE id) const
+std::shared_ptr<Entity> SceneGraphManager::GetEntityPtrById(Entity::ID_TYPE id) const
 {
 	return m_entityRepository->GetEntityPtrById(id);
 }

@@ -119,6 +119,9 @@
     <ClInclude Include="DeferredLightMaterial.h">
       <Filter>Systems\Renderer\Materials</Filter>
     </ClInclude>
+    <ClInclude Include="CameraComponent.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -195,6 +198,9 @@
     </ClCompile>
     <ClCompile Include="DeferredLightMaterial.cpp">
       <Filter>Systems\Renderer\Materials</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraComponent.cpp">
+      <Filter>Systems\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -10,16 +10,16 @@ namespace OE {
 	{
 	public:
 
-		using container = typename std::set<std::shared_ptr<Entity>>;
-		using iterator = typename container::iterator;
-		using const_iterator = typename container::const_iterator;
+		using container = std::set<std::shared_ptr<Entity>>;
+		using iterator = container::iterator;
+		using const_iterator = container::const_iterator;
 
 	protected:
 		container m_entities;
 
 	public:
-		EntityFilter() {}
-		virtual ~EntityFilter() {}
+		EntityFilter() = default;
+		virtual ~EntityFilter() = default;
 
 		iterator begin() { return m_entities.begin(); }
 		iterator end() { return m_entities.end(); }

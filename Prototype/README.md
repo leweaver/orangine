@@ -35,10 +35,13 @@ Do use when referencing manager classes in header files
 ## Pointers vs References
 Use reference wherever you can, pointers wherever you must. Avoid pointers until you can't.
 
-Prefer references on Public facing API; pointers typically appear in the implementation.
-
-When passing in a parameter that may not have a value, consider passing in a std::optional<T &>.
-
+heap objects & method signatures:
+	parameters should be 
+		references when used, but not stored.
+		smart/unique pointers if stored.
+	return values should be
+		reference if a unique object instance.
+		smart pointers if a shared object,
 
 ## 
 classes, enums: MyClassName

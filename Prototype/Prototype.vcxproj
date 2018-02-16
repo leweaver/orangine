@@ -182,6 +182,7 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
   <ItemGroup>
     <ClInclude Include="AssetManager.h" />
     <ClInclude Include="Bound.h" />
+    <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="ClearGBufferMaterial.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="Constants.h" />
@@ -219,6 +220,7 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
   <ItemGroup>
     <ClCompile Include="AssetManager.cpp" />
     <ClCompile Include="Bound.cpp" />
+    <ClCompile Include="CameraComponent.cpp" />
     <ClCompile Include="ClearGBufferMaterial.cpp" />
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="DeferredLightMaterial.cpp" />

@@ -2,27 +2,46 @@
 #include "Entity.h"
 #include "SceneGraphManager.h"
 #include "Scene.h"
-#include "Constants.h"
 
 using namespace OE;
 using namespace DirectX;
+using namespace SimpleMath;
+
+Entity::Entity(Scene &scene, const std::string &name, ID_TYPE id)
+	: m_worldTransform(Matrix::Identity)
+	, m_worldRotation(Quaternion::Identity)
+	, m_worldScale(Vector3::One)
+	, m_localRotation(Quaternion::Identity)
+	, m_localPosition(Vector3::Zero)
+	, m_localScale(Vector3::One)
+	, m_id(id)
+	, m_name(name)
+	, m_state(EntityState::UNINITIALIZED)
+	, m_active(true)
+	, m_parent(nullptr)
+	, m_scene(scene)
+{
+}
 
 void Entity::ComputeWorldTransform()
 {
 	if (HasParent())
 	{
-		m_worldScale = XMVectorMultiply(m_parent->m_worldScale, m_localScale);
-		m_worldRotation = XMQuaternionMultiply(m_localRotation, m_parent->Rotation());
+		m_worldScale = m_parent->m_worldScale * m_localScale;
+		m_worldRotation = m_localRotation * m_parent->WorldRotation();
+
+		// TODO: From XMMatrixTransformation ?
 		m_worldTransform = XMMatrixTransformation(
-			Math::VEC_ZERO, Math::QUAT_IDENTITY, m_worldScale,
-			Math::VEC_ZERO, m_worldRotation,
+			Vector4::Zero, Quaternion::Identity, m_worldScale,
+			Vector4::Zero, m_worldRotation,
 			XMVector3Transform(m_localPosition, m_parent->m_worldTransform));
 	}
 	else
 	{
+		// TODO: From XMMatrixTransformation ?
 		m_worldTransform = XMMatrixTransformation(
-			Math::VEC_ZERO, Math::QUAT_IDENTITY, m_localScale,
-			Math::VEC_ZERO, m_localRotation,
+			Vector4::Zero, Quaternion::Identity, m_localScale,
+			Vector4::Zero, m_localRotation,
 			m_localPosition);
 		m_worldRotation = m_localRotation;
 		m_worldScale = m_localScale;
@@ -50,14 +69,16 @@ Component& Entity::GetComponent(size_t index) const
 void Entity::LookAt(const Entity& other)
 {
 	// Generate a world transform matrix
-	const auto laMat = XMMatrixLookAtRH(Position(), other.Position(), Math::VEC_UP);
-
-	m_localRotation = XMQuaternionRotationMatrix(laMat);
 	if (HasParent())
 	{
 		const auto worldInv = XMMatrixInverse(nullptr, m_worldTransform);
 		const auto worldRotInv = XMQuaternionRotationMatrix(worldInv);
 		m_localRotation = XMQuaternionMultiply(worldRotInv, m_localRotation);		
+	}
+	else
+	{
+		const auto laMat = XMMatrixLookAtRH(Position(), other.Position(), Vector3::Up);
+		m_localRotation = XMQuaternionRotationMatrix(laMat);
 	}
 }
 
@@ -102,20 +123,19 @@ void Entity::RemoveParent()
 	m_parent = nullptr;
 }
 
-XMVECTOR Entity::Position() const
+Vector3 Entity::WorldPosition() const
 {
-	return XMVector4Transform(m_localPosition, m_worldTransform);
+	return Vector3::Transform(m_localPosition, m_worldTransform);
 }
 
-const XMVECTOR& Entity::Scale() const
+const Vector3 &Entity::WorldScale() const
 {
 	return m_worldScale;
 }
 
-XMVECTOR Entity::Rotation() const
+const Quaternion &Entity::WorldRotation() const
 {
 	return m_worldRotation;
-	//return XMQuaternionRotationMatrix(m_worldTransform);
 }
 
 void Entity::OnComponentAdded(Component& component)

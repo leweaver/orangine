@@ -12,6 +12,7 @@
 extern void ExitGame();
 
 using namespace DirectX;
+using namespace SimpleMath;
 using namespace OE;
 
 using Microsoft::WRL::ComPtr;
@@ -58,11 +59,11 @@ void Game::Initialize(HWND window, int width, int height)
 
 		SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
 		Entity& root1 = entityManager.Instantiate("Root 1");
+		root1.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
+
 		Entity& child1 = entityManager.Instantiate("Child 1", root1);
 		Entity& child2 = entityManager.Instantiate("Child 2", root1);
 		Entity& child3 = entityManager.Instantiate("Child 3", root1);
-
-		root1.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
 
 		AddCubeToEntity(child1, XMVectorSet(0.5f, 0.0f, 0.0f, 0.0f),  XMVectorSet(2, 1, 1, 1), XMVectorSet(4, 0, 0, 1));
 		AddCubeToEntity(child2, XMVectorSet(0.0f, 0.5f, 0.0f, 0.0f), XMVectorSet(1, 2, 1, 1), XMVectorSet(0, 0, 0, 1));
@@ -76,12 +77,12 @@ void Game::Initialize(HWND window, int width, int height)
 	CreateWindowSizeDependentResources();
 }
 
-void Game::AddCubeToEntity(Entity& entity, FXMVECTOR animationSpeed, FXMVECTOR localScale, FXMVECTOR localPosition) const
+void Game::AddCubeToEntity(Entity& entity, Vector3 animationSpeed, Vector3 localScale, Vector3 localPosition) const
 {
 	entity.AddComponent<TestComponent>().SetSpeed(animationSpeed);
 
-	entity.SetLocalScale(localScale);
-	entity.SetLocalPosition(localPosition);
+	entity.SetScale(localScale);
+	entity.SetPosition(localPosition);
 	
 	m_scene->LoadEntities("data/meshes/Cube/Cube.gltf", entity);
 }
@@ -180,7 +181,7 @@ void Game::CreateDeviceDependentResources()
 	try {
 		m_scene->GetEntityRenderManger().createDeviceDependentResources();
 	}
-	catch (std::runtime_error &e)
+	catch (std::exception &e)
 	{
 		LOG(FATAL) << "Failed to create device dependent resources: " << e.what();
 		m_fatalError = true;
@@ -194,7 +195,7 @@ void Game::CreateWindowSizeDependentResources()
 	{
 		m_scene->GetEntityRenderManger().createWindowSizeDependentResources();
 	}
-	catch (std::runtime_error &e)
+	catch (std::exception &e)
 	{
 		LOG(FATAL) << "Failed to create window size dependent resources: " << e.what();
 		m_fatalError = true;

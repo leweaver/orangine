@@ -24,27 +24,22 @@ EntityScriptingManager::~EntityScriptingManager()
 
 void EntityScriptingManager::Initialize()
 {
-	std::set<Component::ComponentType> filter;
-	filter.insert(TestComponent::Type());
-	m_scriptableEntityFilter = m_scene.GetSceneGraphManager().GetEntityFilter(filter);
+	m_scriptableEntityFilter = m_scene.GetSceneGraphManager().GetEntityFilter({ TestComponent::Type() });
 }
 
 void EntityScriptingManager::Tick() {
 	
-	double elapsedTime = m_scene.GetElapsedTime();
+	const double elapsedTime = m_scene.GetElapsedTime();
 	for (auto iter = m_scriptableEntityFilter->begin(); iter != m_scriptableEntityFilter->end(); ++iter) {
 		Entity &entity = **iter;
 		TestComponent *component = entity.GetFirstComponentOfType<TestComponent>();
 
-		const XMVECTOR &speed = component->GetSpeed();
+		const auto &speed = component->GetSpeed();
 
-		float animTimeRoll = static_cast<float>(std::fmod(elapsedTime * XMVectorGetX(speed) * XM_2PI, XM_2PI));
-		float animTimePitch = static_cast<float>(std::fmod(elapsedTime * XMVectorGetY(speed) * XM_2PI, XM_2PI));
-		float animTimeYaw = static_cast<float>(std::fmod(elapsedTime * XMVectorGetZ(speed) * XM_2PI, XM_2PI));
+		const float animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.x * XM_2PI, XM_2PI));
+		const float animTimePitch = static_cast<float>(fmod(elapsedTime * speed.y * XM_2PI, XM_2PI));
+		const float animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.z * XM_2PI, XM_2PI));
 
-		entity.SetLocalRotation(DirectX::XMQuaternionRotationRollPitchYaw(
-			animTimeRoll,
-			animTimePitch,
-			animTimeYaw));
+		entity.SetRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));
 	}
 }

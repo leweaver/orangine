@@ -5,13 +5,15 @@ using namespace OE;
 using namespace DirectX;
 
 TextureRenderTarget::TextureRenderTarget(uint32_t width, uint32_t height)
-	: Texture(width, height)
+	: Texture()
+	, m_width(width)
+	, m_height(height)
 	, m_renderTargetTexture(nullptr)
 	, m_renderTargetView(nullptr)
 {
 }
 
-bool TextureRenderTarget::load(ID3D11Device *d3dDevice)
+void TextureRenderTarget::load(ID3D11Device *d3dDevice)
 {
 	D3D11_TEXTURE2D_DESC textureDesc;
 	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
@@ -33,7 +35,8 @@ bool TextureRenderTarget::load(ID3D11Device *d3dDevice)
 	textureDesc.MiscFlags = 0;
 
 	// Create the render target texture.
-	DX::ThrowIfFailed(d3dDevice->CreateTexture2D(&textureDesc, nullptr, m_renderTargetTexture.ReleaseAndGetAddressOf()));
+	ThrowIfFailed(d3dDevice->CreateTexture2D(&textureDesc, nullptr, m_renderTargetTexture.ReleaseAndGetAddressOf()),
+		"Creating RenderTarget texture2D");
 
 	// Setup the description of the render target view.
 	renderTargetViewDesc.Format = textureDesc.Format;
@@ -41,7 +44,8 @@ bool TextureRenderTarget::load(ID3D11Device *d3dDevice)
 	renderTargetViewDesc.Texture2D.MipSlice = 0;
 
 	// Create the render target view.
-	DX::ThrowIfFailed(d3dDevice->CreateRenderTargetView(m_renderTargetTexture.Get(), &renderTargetViewDesc, m_renderTargetView.ReleaseAndGetAddressOf()));
+	ThrowIfFailed(d3dDevice->CreateRenderTargetView(m_renderTargetTexture.Get(), &renderTargetViewDesc, m_renderTargetView.ReleaseAndGetAddressOf()),
+		"Creating RenderTarget renderTargetView");
 
 	// Setup the description of the shader resource view.
 	shaderResourceViewDesc.Format = textureDesc.Format;
@@ -50,9 +54,8 @@ bool TextureRenderTarget::load(ID3D11Device *d3dDevice)
 	shaderResourceViewDesc.Texture2D.MipLevels = 1;
 
 	// Create the shader resource view.
-	DX::ThrowIfFailed(d3dDevice->CreateShaderResourceView(m_renderTargetTexture.Get(), &shaderResourceViewDesc, m_shaderResourceView.ReleaseAndGetAddressOf()));
-
-	return true;
+	ThrowIfFailed(d3dDevice->CreateShaderResourceView(m_renderTargetTexture.Get(), &shaderResourceViewDesc, m_shaderResourceView.ReleaseAndGetAddressOf()), 
+		"Creating RenderTarget shaderResourceView");
 }
 
 void TextureRenderTarget::unload()

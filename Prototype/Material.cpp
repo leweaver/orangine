@@ -6,12 +6,12 @@
 #include <sstream>
 
 #include <comdef.h>
-#include "Constants.h"
 #include "RendererData.h"
 #include "Texture.h"
 
 using namespace OE;
 using namespace DirectX;
+using namespace SimpleMath;
 using namespace std::literals;
 
 
@@ -210,7 +210,7 @@ bool Material::createPixelShader(ID3D11Device* device)
 	return true;
 }
 
-bool Material::render(const RendererData &rendererData, const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix, const DX::DeviceResources &deviceResources)
+bool Material::render(const RendererData &rendererData, const Matrix &worldMatrix, const Matrix &viewMatrix, const Matrix &projMatrix, const DX::DeviceResources &deviceResources)
 {
 	if (m_errorState)
 		return false;
@@ -287,7 +287,22 @@ std::string Material::createShaderError(HRESULT hr, ID3D10Blob* errorMessage, co
 bool Material::ensureSamplerState(const DX::DeviceResources &deviceResources, Texture &texture, ID3D11SamplerState **d3D11SamplerState)
 {
 	const auto device = deviceResources.GetD3DDevice();
-	if (texture.isValid() || texture.load(device))
+
+	// TODO: Replace this method with that from PBRMaterial
+	if (!texture.isValid())
+	{
+		try
+		{
+			texture.load(device);
+		}
+		catch (std::exception &e)
+		{
+			LOG(WARNING) << "Material: Failed to load texture: "s + e.what();
+			return false;
+		}
+	}
+
+	if (texture.isValid())
 	{
 		if (!*d3D11SamplerState) {
 			D3D11_SAMPLER_DESC samplerDesc;
@@ -307,7 +322,7 @@ bool Material::ensureSamplerState(const DX::DeviceResources &deviceResources, Te
 			samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 			// Create the texture sampler state.
-			DX::ThrowIfFailed(device->CreateSamplerState(&samplerDesc, d3D11SamplerState));
+			ThrowIfFailed(device->CreateSamplerState(&samplerDesc, d3D11SamplerState));
 		}
 	}
 

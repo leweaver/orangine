@@ -1,11 +1,11 @@
 ﻿#include "pch.h"
 #include "DeferredLightMaterial.h"
 #include "TextureRenderTarget.h"
-#include "Constants.h"
 
 using namespace OE;
 using namespace std::literals;
 using namespace DirectX;
+using namespace SimpleMath;
 
 void DeferredLightMaterial::getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const
 {
@@ -42,7 +42,7 @@ bool DeferredLightMaterial::createPSConstantBuffer(ID3D11Device *device, ID3D11B
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = 0;
 
-	m_constants.invProjection = Math::MAT4_IDENTITY;
+	m_constants.invProjection = Matrix::Identity;
 
 	D3D11_SUBRESOURCE_DATA initData;
 	initData.pSysMem = &m_constants;
@@ -57,8 +57,10 @@ bool DeferredLightMaterial::createPSConstantBuffer(ID3D11Device *device, ID3D11B
 	return true;
 }
 
-void DeferredLightMaterial::updatePSConstantBuffer(const DirectX::XMMATRIX &worldMatrix,
-	const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix, ID3D11DeviceContext *context,
+void DeferredLightMaterial::updatePSConstantBuffer(const Matrix &worldMatrix,
+	const Matrix &viewMatrix, 
+	const Matrix &projMatrix, 
+	ID3D11DeviceContext *context,
 	ID3D11Buffer *buffer)
 {
 	// Convert to LH, for DirectX.

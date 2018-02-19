@@ -73,6 +73,23 @@ std::wstring OE::to_wstring(const HRESULT hr)
 	return err.ErrorMessage();
 }
 
+com_exception::com_exception(HRESULT hr, const std::string &what)
+	: result(hr)
+{
+	char s_str[64] = {};
+	sprintf_s(s_str, "Failure with HRESULT of %08X", static_cast<unsigned int>(result));
+	m_what = std::string(s_str);
+	if (!what.empty())
+	{
+		m_what += " (" + what + ")";
+	}
+}
+
+com_exception::com_exception(HRESULT hr, const char *what)
+	: com_exception(hr, std::string(what))
+{
+}
+
 std::string OE::to_string(const HRESULT hr)
 {
 	_com_error err(hr);

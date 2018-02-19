@@ -19,6 +19,7 @@
 
 using namespace OE;
 using namespace DirectX;
+using namespace SimpleMath;
 using namespace std::literals;
 
 EntityRenderManager::Renderable::Renderable()
@@ -84,22 +85,26 @@ void EntityRenderManager::createDeviceDependentResources()
 	D3D11_RASTERIZER_DESC rasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
 	rasterizerDesc.FrontCounterClockwise = true;
 	rasterizerDesc.DepthClipEnable = false;
-	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, m_rasterizerStateDepthDisabled.ReleaseAndGetAddressOf()));
+	ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, m_rasterizerStateDepthDisabled.ReleaseAndGetAddressOf()),
+		"Create rasterizerStateDepthDisabled");
 
 	// Render using a right handed coordinate system
 	rasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
 	rasterizerDesc.FrontCounterClockwise = true;
-	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, m_rasterizerStateDepthEnabled.ReleaseAndGetAddressOf()));
+	ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, m_rasterizerStateDepthEnabled.ReleaseAndGetAddressOf()),
+		"Create rasterizerStateDepthEnabled");
 
 	// Depth buffer settings
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
 	depthStencilDesc.DepthEnable = false;
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
-	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, m_depthStencilStateDepthDisabled.ReleaseAndGetAddressOf()));
+	ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, m_depthStencilStateDepthDisabled.ReleaseAndGetAddressOf()),
+		"Create depthStencilStateDepthDisabled");
 
 	depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
-	DX::ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, m_depthStencilStateDepthEnabled.ReleaseAndGetAddressOf()));
+	ThrowIfFailed(m_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, m_depthStencilStateDepthEnabled.ReleaseAndGetAddressOf()),
+		"Create depthStencilStateDepthEnabled");
 
 	// Initial settings
 	setDepthEnabled(false);
@@ -185,7 +190,8 @@ void EntityRenderManager::render()
 void EntityRenderManager::renderEntities()
 {	
 	// Hard Coded Camera
-	const DirectX::XMMATRIX &viewMatrix = DirectX::XMMatrixLookAtRH(DirectX::XMVectorSet(5.0f, 3.0f, -10.0f, 0.0f), Math::VEC_ZERO, Math::VEC_UP);
+	const auto viewMatrix = Matrix::CreateLookAt(Vector3(5.0f, 3.0f, -10.0f), Vector3::Zero, Vector3::Up);
+
 	const auto viewport = m_deviceResources.GetScreenViewport();
 	const float aspectRatio = viewport.Width / viewport.Height;
 
@@ -280,9 +286,11 @@ void EntityRenderManager::setDepthEnabled(bool enabled)
 	}
 }
 
-void EntityRenderManager::drawRendererData(const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix,
-	const DirectX::XMMATRIX &worldTransform,
-	const RendererData *rendererData, Material* material,
+void EntityRenderManager::drawRendererData(const Matrix &viewMatrix, 
+	const Matrix &projMatrix,
+	const Matrix &worldTransform,
+	const RendererData *rendererData, 
+	Material* material,
 	BufferArraySet &bufferArraySet)
 {
 	const auto deviceContext = m_deviceResources.GetD3DDeviceContext();
@@ -383,7 +391,7 @@ EntityRenderManager::Renderable EntityRenderManager::initScreenSpaceQuad(std::sh
 {
 	Renderable renderable;
 	if (renderable.meshData == nullptr)
-		renderable.meshData = m_primitiveMeshDataFactory->createQuad(Rect(-1.f, -1.f, 2.0f, 2.0f));
+		renderable.meshData = m_primitiveMeshDataFactory->createQuad(Vector2(2.0f, 2.0f), Vector3(-1.f, -1.f, 0.f));
 
 	if (renderable.material == nullptr)
 		renderable.material = material;

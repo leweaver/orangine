@@ -92,13 +92,13 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;WindowsApp.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTex\DirectXTex\Bin\Windows10\$(PlatformTarget)\$(ConfigurationName)\DirectXTex.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;WindowsApp.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.pdb $(OutputPath) 
@@ -114,13 +114,13 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;WindowsApp.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTex\DirectXTex\Bin\Windows10\$(PlatformTarget)\$(ConfigurationName)\DirectXTex.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;windowscodecs.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;WindowsApp.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;windowscodecs.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.pdb $(OutputPath) 
@@ -139,14 +139,14 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTex\DirectXTex\Bin\Windows10\$(PlatformTarget)\$(ConfigurationName)\DirectXTex.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.pdb $(OutputPath) 
@@ -164,14 +164,14 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTex\DirectXTex\Bin\Windows10\$(PlatformTarget)\$(ConfigurationName)\DirectXTex.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;windowscodecs.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;windowscodecs.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.pdb $(OutputPath) 
@@ -185,7 +185,6 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
     <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="ClearGBufferMaterial.h" />
     <ClInclude Include="Component.h" />
-    <ClInclude Include="Constants.h" />
     <ClInclude Include="DeferredLightMaterial.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="Entity.h" />

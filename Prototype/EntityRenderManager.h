@@ -84,9 +84,11 @@ namespace OE {
 		std::shared_ptr<D3DBuffer> createBufferFromData(const MeshBuffer &buffer, UINT bindFlags) const;
 		std::unique_ptr<RendererData> createRendererData(const MeshData &meshData, const std::vector<VertexAttribute> &vertexAttributes) const;
 
-		void drawRendererData(const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix,
-			const DirectX::XMMATRIX &worldTransform,
-			const RendererData *rendererData, Material* material,
+		void drawRendererData(const DirectX::SimpleMath::Matrix &viewMatrix, 
+			const DirectX::SimpleMath::Matrix &projMatrix,
+			const DirectX::SimpleMath::Matrix &worldTransform,
+			const RendererData *rendererData, 
+			Material* material,
 			BufferArraySet &bufferArraySet);
 
 		// renders a full screen quad that sets our output buffers to decent default values.

@@ -30,7 +30,10 @@ namespace OE {
 		void release();
 
 		// Binds material textures on to the GPU
-		bool render(const RendererData &rendererData, const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix, const DirectX::XMMATRIX &projMatrix, const DX::DeviceResources& deviceResources);
+		bool render(const RendererData &rendererData, const DirectX::SimpleMath::Matrix &worldMatrix, 
+			const DirectX::SimpleMath::Matrix &viewMatrix, 
+			const DirectX::SimpleMath::Matrix &projMatrix, 
+			const DX::DeviceResources& deviceResources);
 
 		// Unbinds textures
 		void unbind(const DX::DeviceResources& deviceResources);
@@ -55,12 +58,18 @@ namespace OE {
 		bool createPixelShader(ID3D11Device *device);
 		
 		virtual bool createVSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer) { return true; }
-		virtual void updateVSConstantBuffer(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix,
-			const DirectX::XMMATRIX &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer) {};
+		virtual void updateVSConstantBuffer(const DirectX::SimpleMath::Matrix &worldMatrix, 
+			const DirectX::SimpleMath::Matrix &viewMatrix,
+			const DirectX::SimpleMath::Matrix &projMatrix, 
+			ID3D11DeviceContext *context, 
+			ID3D11Buffer *buffer) {};
 
 		virtual bool createPSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer) { return true; }
-		virtual void updatePSConstantBuffer(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix,
-			const DirectX::XMMATRIX &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer) {};
+		virtual void updatePSConstantBuffer(const DirectX::SimpleMath::Matrix &worldMatrix, 
+			const DirectX::SimpleMath::Matrix &viewMatrix,
+			const DirectX::SimpleMath::Matrix &projMatrix, 
+			ID3D11DeviceContext *context, 
+			ID3D11Buffer *buffer) {};
 
 		virtual void setContextSamplers(const DX::DeviceResources &deviceResources) {}
 		virtual void unsetContextSamplers(const DX::DeviceResources &deviceResources) {}

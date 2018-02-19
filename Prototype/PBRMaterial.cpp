@@ -1,6 +1,5 @@
 ﻿#include "pch.h"
 #include "PBRMaterial.h"
-#include "Constants.h"
 
 using namespace OE;
 using namespace DirectX;
@@ -66,8 +65,8 @@ bool PBRMaterial::createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer *&bu
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = 0;
 
-	m_constants.viewProjection = Math::MAT4_IDENTITY;
-	m_constants.world = Math::MAT4_IDENTITY;
+	m_constants.viewProjection = SimpleMath::Matrix::Identity;
+	m_constants.world = SimpleMath::Matrix::Identity;
 
 	D3D11_SUBRESOURCE_DATA initData;
 	initData.pSysMem = &m_constants;
@@ -82,12 +81,16 @@ bool PBRMaterial::createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer *&bu
 	return true;
 }
 
-void PBRMaterial::updateVSConstantBuffer(const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer)
+void PBRMaterial::updateVSConstantBuffer(const SimpleMath::Matrix &worldMatrix, 
+	const SimpleMath::Matrix &viewMatrix, 
+	const SimpleMath::Matrix &projMatrix, 
+	ID3D11DeviceContext *context, 
+	ID3D11Buffer *buffer)
 {
 	// Convert to LH, for DirectX.
 	m_constants.viewProjection = XMMatrixTranspose(XMMatrixMultiply(viewMatrix, projMatrix));
 	m_constants.world = XMMatrixTranspose(worldMatrix);
-	XMStoreFloat4(&m_constants.baseColor, m_baseColor);
+	m_constants.baseColor = m_baseColor;
 
 	context->UpdateSubresource(buffer, 0, nullptr, &m_constants, 0, 0);
 }
@@ -96,9 +99,26 @@ void PBRMaterial::setContextSamplers(const DX::DeviceResources &deviceResources)
 {
 	auto device = deviceResources.GetD3DDevice();
 	auto context = deviceResources.GetD3DDeviceContext();
+
+	// TODO: Refactor into a re-usable method to load a texture into a field.
+	// is this a duplicate of Material::ensureSamplerState ?
 	if (m_baseColorTexture != nullptr)
 	{
-		if (m_baseColorTexture->isValid() || m_baseColorTexture->load(device))
+		if (!m_baseColorTexture->isValid())
+		{
+			try
+			{
+				m_baseColorTexture->load(device);
+			}
+			catch (std::exception &e)
+			{
+				LOG(WARNING) << "PBRMaterial: Failed to load baseColorTexture: "s + e.what();
+
+				// TODO: Set to error texture?
+				m_baseColorTexture = nullptr;
+			}
+		}
+		if (m_baseColorTexture && m_baseColorTexture->isValid())
 		{
 			HRESULT hr = S_OK;
 			if (!m_sampleState) {
@@ -129,6 +149,13 @@ void PBRMaterial::setContextSamplers(const DX::DeviceResources &deviceResources)
 				// Set shader texture resource in the pixel shader.
 				context->PSSetShaderResources(0, 1, &shaderResourceView);
 				context->PSSetSamplers(0, 1, &m_sampleState);
+			}
+			else
+			{
+				LOG(WARNING) << "PBRMaterial: Failed to create baseColorTexture sampler state with error code: "s + to_string(hr);
+
+				// TODO: Set to error texture?
+				m_baseColorTexture = nullptr;
 			}
 		}
 	}

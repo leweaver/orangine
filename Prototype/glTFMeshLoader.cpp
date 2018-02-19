@@ -131,7 +131,7 @@ shared_ptr<OE::Texture> try_create_texture(const LoaderData &loaderData, const t
 	{
 		const auto filename = utf8_decode(loaderData.baseDir + "\\" + gltfImage.uri);
 
-		return make_shared<OE::FileTexture>(filename, true);
+		return make_shared<OE::FileTexture>(filename);
 		/*
 		Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
 		HRESULT hr = loaderData.imagingFactory->CreateDecoderFromFilename(
@@ -210,7 +210,7 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 		if (paramPos != gltfMaterial.values.end()) {
 			const auto &param = paramPos->second;
 			if (param.number_array.size() == 4) {
-				const auto color = DirectX::XMVectorSet(
+				const auto color = DirectX::SimpleMath::Color(
 					static_cast<float>(param.number_array[0]),
 					static_cast<float>(param.number_array[1]),
 					static_cast<float>(param.number_array[2]),

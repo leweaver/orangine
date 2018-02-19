@@ -1,7 +1,5 @@
 #pragma once
 
-#include "SimpleTypes.h"
-
 namespace OE {
 	class MeshData;
 
@@ -11,7 +9,7 @@ namespace OE {
 		PrimitiveMeshDataFactory();
 		~PrimitiveMeshDataFactory();
 
-		std::shared_ptr<MeshData> createQuad(float width, float height) const;
-		std::shared_ptr<MeshData> createQuad(const Rect &rect) const;
+		std::shared_ptr<MeshData> createQuad(const DirectX::SimpleMath::Vector2 &size) const;
+		std::shared_ptr<MeshData> createQuad(const DirectX::SimpleMath::Vector2 &size, const DirectX::SimpleMath::Vector3 &positionOffset) const;
 	};
 }

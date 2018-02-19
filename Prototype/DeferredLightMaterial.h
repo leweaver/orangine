@@ -39,8 +39,8 @@ namespace OE
 		ShaderCompileSettings pixelShaderSettings() const override;
 
 		bool createPSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer) override;
-		void updatePSConstantBuffer(const DirectX::XMMATRIX &worldMatrix, const DirectX::XMMATRIX &viewMatrix,
-			const DirectX::XMMATRIX &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer) override;
+		void updatePSConstantBuffer(const DirectX::SimpleMath::Matrix &worldMatrix, const DirectX::SimpleMath::Matrix &viewMatrix,
+			const DirectX::SimpleMath::Matrix &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer) override;
 
 		void setContextSamplers(const DX::DeviceResources &deviceResources) override;
 		void unsetContextSamplers(const DX::DeviceResources &deviceResources) override;

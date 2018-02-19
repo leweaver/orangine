@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "Component.h"
-#include "Constants.h"
 
 namespace OE {
 	class Entity;
@@ -11,15 +10,15 @@ namespace OE {
 		DECLARE_COMPONENT_TYPE;
 
 		std::string m_testString;
-		DirectX::XMVECTOR m_speed;
+		DirectX::SimpleMath::Vector3 m_speed;
 
 	public:
 		TestComponent()
-			: m_speed(Math::VEC_ZERO)
+			: m_speed(DirectX::SimpleMath::Vector3::Zero)
 		{			
 		}
 
-		void SetSpeed(const DirectX::FXMVECTOR &speed) { m_speed = speed; }
-		const DirectX::XMVECTOR &GetSpeed() const { return m_speed; }
+		void SetSpeed(const DirectX::SimpleMath::Vector3 &speed) { m_speed = speed; }
+		const DirectX::SimpleMath::Vector3 &GetSpeed() const { return m_speed; }
 	};
 }

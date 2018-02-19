@@ -47,7 +47,7 @@ public:
 	 */
 	void Destroy(Entity::ID_TYPE entity);
 
-	bool GetEntityById(Entity::ID_TYPE id, EntityRef &ref) const;
+	std::shared_ptr<Entity> GetEntityPtrById(Entity::ID_TYPE id) const;
 	std::shared_ptr<EntityFilter> GetEntityFilter(const ComponentTypeSet &componentTypes);
 
 	void HandleEntityAdd(const Entity &entity);
@@ -63,7 +63,6 @@ private:
 	void InitializeEntity(const std::shared_ptr<Entity> &entityPtr) const;
 	void AddEntityToScene(const std::shared_ptr<Entity> &entityPtr) const;
 
-	std::shared_ptr<Entity> GetEntityPtrById(Entity::ID_TYPE id) const;
 	std::shared_ptr<Entity> RemoveFromRoot(std::shared_ptr<Entity> entity);
 	void AddToRoot(std::shared_ptr<Entity> entity);
 

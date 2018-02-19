@@ -7,7 +7,7 @@
 namespace OE {
 	class PBRMaterial : public Material
 	{
-		DirectX::XMVECTOR m_baseColor;
+		DirectX::SimpleMath::Color m_baseColor;
 
 		std::shared_ptr<Texture> m_baseColorTexture;
 		std::shared_ptr<Texture> m_metallicRoughnessTexture;
@@ -21,15 +21,14 @@ namespace OE {
 		PBRMaterial();
 		virtual ~PBRMaterial();
 
-		DirectX::XMVECTOR getBaseColor() const 
+		DirectX::SimpleMath::Color getBaseColor() const 
 		{
 			return m_baseColor;
 		}
-		void setBaseColor(const DirectX::FXMVECTOR& color)
+		void setBaseColor(const DirectX::SimpleMath::Color &color)
 		{
 			m_baseColor = color;
 		}
-
 
 		const std::shared_ptr<Texture> &getBaseColorTexture() const
 		{
@@ -98,8 +97,11 @@ namespace OE {
 		ShaderCompileSettings pixelShaderSettings() const override;
 
 		bool createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer *&buffer) override;
-		void updateVSConstantBuffer(const DirectX::XMMATRIX& worldMatrix, const DirectX::XMMATRIX& viewMatrix,
-			const DirectX::XMMATRIX& projMatrix, ID3D11DeviceContext* context, ID3D11Buffer *buffer) override;
+		void updateVSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix, 
+			const DirectX::SimpleMath::Matrix& viewMatrix,
+			const DirectX::SimpleMath::Matrix& projMatrix,
+			ID3D11DeviceContext* context, 
+			ID3D11Buffer *buffer) override;
 
 		void setContextSamplers(const DX::DeviceResources &deviceResources) override;
 		void unsetContextSamplers(const DX::DeviceResources &deviceResources) override;

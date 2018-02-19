@@ -4,6 +4,7 @@
 #include "DirectXTexP.h"
 
 using namespace OE;
+using namespace DirectX::SimpleMath;
 
 struct Vertex
 {
@@ -18,25 +19,26 @@ PrimitiveMeshDataFactory::~PrimitiveMeshDataFactory()
 {
 }
 
-std::shared_ptr<MeshData> PrimitiveMeshDataFactory::createQuad(float width, float height) const
+std::shared_ptr<MeshData> PrimitiveMeshDataFactory::createQuad(const Vector2 &size) const
 {
-	const float halfWidth = width * 0.5f;
-	const float halfHeight = height * 0.5f;
-	return createQuad(Rect(-halfWidth, -halfHeight, halfWidth, halfHeight));
+	return createQuad(size, Vector3(-size.x * 0.5f, -size.y * 0.5f, 0.0f));
 }
 
-std::shared_ptr<MeshData> PrimitiveMeshDataFactory::createQuad(const Rect &rect) const
+std::shared_ptr<MeshData> PrimitiveMeshDataFactory::createQuad(const Vector2 &size, const Vector3 &positionOffset) const
 {
 	auto md = std::make_shared<MeshData>();
 
 	{
-		float right = rect.left + rect.width,
-			top = rect.bottom + rect.height;
+		const float 
+			top    = positionOffset.y + size.y,
+			right  = positionOffset.x + size.x,
+			bottom = positionOffset.y - size.y,
+			left   = positionOffset.x - size.x;
 		const std::vector<Vertex> vertices = {
-			{ rect.left, top,         0 },
-			{ right,     top,         0 },
-			{ rect.left, rect.bottom, 0 },
-			{ right,     rect.bottom, 0 }
+			{ left,  top,    positionOffset.z },
+			{ right, top,    positionOffset.z },
+			{ left,  bottom, positionOffset.z },
+			{ right, bottom, positionOffset.z }
 		};
 
 		size_t srcSize = sizeof(Vertex) * vertices.size();

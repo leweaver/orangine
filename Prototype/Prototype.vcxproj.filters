@@ -40,7 +40,6 @@
       <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
     <ClInclude Include="Bound.h" />
-    <ClInclude Include="Constants.h" />
     <ClInclude Include="Component.h">
       <Filter>Systems\SceneGraph</Filter>
     </ClInclude>

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <string>
+#include <string>
 
 namespace OE {
 	// Convert a wide Unicode string to an UTF8 string
@@ -19,4 +20,60 @@ namespace OE {
 
 	std::string to_string(HRESULT hr);
 	std::wstring to_wstring(HRESULT hr);
+
+	// Helper class for COM exceptions
+	class com_exception : public std::exception
+	{
+		std::string m_what;
+	public:
+		com_exception(HRESULT hr) : com_exception(hr, nullptr) {}
+		com_exception(HRESULT hr, const std::string &what);
+		com_exception(HRESULT hr, const char *what);
+
+		const char* what() const override
+		{
+			return m_what.c_str();
+		}
+
+	private:
+		HRESULT result;
+	};
+
+	// Helper utility converts D3D API failures into exceptions.
+	inline void ThrowIfFailed(HRESULT hr)
+	{
+		if (FAILED(hr))
+		{
+			throw com_exception(hr);
+		}
+	}
+
+	// Helper utility converts D3D API failures into exceptions.
+	inline void ThrowIfFailed(HRESULT hr, const char *what)
+	{
+		if (FAILED(hr))
+		{
+			throw com_exception(hr, what);
+		}
+	}
+
+	// Helper utility converts D3D API failures into exceptions.
+	inline void ThrowIfFailed(HRESULT hr, const std::string &what)
+	{
+		if (FAILED(hr))
+		{
+			throw com_exception(hr, what);
+		}
+	}
+}
+
+namespace DX
+{
+	inline void ThrowIfFailed(HRESULT hr)
+	{
+		if (FAILED(hr))
+		{
+			throw OE::com_exception(hr);
+		}
+	}
 }

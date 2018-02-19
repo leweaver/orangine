@@ -92,7 +92,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -114,7 +114,7 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -139,7 +139,7 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -164,7 +164,7 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc;$(SolutionDir)thirdparty\DirectXTex\DirectXTex</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

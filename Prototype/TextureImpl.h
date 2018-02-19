@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "Texture.h"
-#include "DirectXTex.h"
 #include "DeviceResources.h"
 
 namespace OE {

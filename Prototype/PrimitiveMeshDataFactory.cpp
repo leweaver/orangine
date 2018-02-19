@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "PrimitiveMeshDataFactory.h"
 #include "MeshData.h"
-#include "DirectXTexP.h"
 
 using namespace OE;
 using namespace DirectX::SimpleMath;

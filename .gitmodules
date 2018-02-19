@@ -10,3 +10,6 @@
 [submodule "thirdparty/g3log"]
 	path = thirdparty/g3log
 	url = git@github.com:KjellKod/g3log.git
+[submodule "thirdparty/DirectXTK"]
+	path = thirdparty/DirectXTK
+	url = git@github.com:Microsoft/DirectXTK.git

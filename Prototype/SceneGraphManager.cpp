@@ -52,18 +52,18 @@ void SceneGraphManager::Tick()
 	}
 }
 
-Entity& SceneGraphManager::Instantiate(const std::string &name)
+std::shared_ptr<Entity> SceneGraphManager::Instantiate(const std::string &name)
 {
 	return Instantiate(name, nullptr);
 }
 
-Entity& SceneGraphManager::Instantiate(const std::string &name, Entity &parentEntity)
+std::shared_ptr<Entity> SceneGraphManager::Instantiate(const std::string &name, Entity &parentEntity)
 {
 	auto entity = m_entityRepository->GetEntityPtrById(parentEntity.GetId());
 	return Instantiate(name, entity.get());
 }
 
-Entity& SceneGraphManager::Instantiate(const std::string &name, Entity *parentEntity)
+std::shared_ptr<Entity> SceneGraphManager::Instantiate(const std::string &name, Entity *parentEntity)
 {
 	const auto entityPtr = m_entityRepository->Instantiate(name);
 	m_rootEntities.push_back(entityPtr);
@@ -76,7 +76,7 @@ Entity& SceneGraphManager::Instantiate(const std::string &name, Entity *parentEn
 
 	AddEntityToScene(entityPtr);
 
-	return *entityPtr;
+	return entityPtr;
 }
 
 void SceneGraphManager::InitializeEntity(const std::shared_ptr<Entity>& entityPtr) const

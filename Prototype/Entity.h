@@ -100,6 +100,7 @@ namespace OE {
 
 		/* Math Functions */
 		void LookAt(const Entity& other);
+		void LookAt(const DirectX::SimpleMath::Vector3 &position);
 
 		/**
 		 * returns a nullptr if no component of given type was found.
@@ -110,7 +111,12 @@ namespace OE {
 		template<typename TComponent>
 		TComponent &AddComponent();
 		
-		const DirectX::SimpleMath::Matrix &GetWorldTransform() const
+		/*
+		 * Returns the world transform matrix (T*R*S).
+		 * If this Entity has no parent, this equals the local transform matrix).
+		 * Otherwise, this is localTransform * parentTransform.
+		 */ 
+		const DirectX::SimpleMath::Matrix &WorldTransform() const
 		{
 			return m_worldTransform;
 		}

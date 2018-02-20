@@ -39,8 +39,8 @@ public:
 	void Tick() override;
 	void Shutdown() override {}
 
-	Entity& Instantiate(const std::string &name);
-	Entity& Instantiate(const std::string &name, Entity& parentEntity);
+	std::shared_ptr<Entity> Instantiate(const std::string &name);
+	std::shared_ptr<Entity> Instantiate(const std::string &name, Entity& parentEntity);
 
 	/**
 	 * Will do nothing if no entity exists with the given ID.
@@ -59,7 +59,7 @@ public:
 private:
 
 	// Entity Lifecycle
-	Entity& Instantiate(const std::string &name, Entity *parentEntity);
+	std::shared_ptr<Entity> Instantiate(const std::string &name, Entity *parentEntity);
 	void InitializeEntity(const std::shared_ptr<Entity> &entityPtr) const;
 	void AddEntityToScene(const std::shared_ptr<Entity> &entityPtr) const;
 

@@ -28,23 +28,25 @@ void Entity::ComputeWorldTransform()
 	if (HasParent())
 	{
 		m_worldScale = m_parent->m_worldScale * m_localScale;
-		m_worldRotation = m_localRotation * m_parent->WorldRotation();
+		m_worldRotation = Quaternion::Concatenate(m_parent->WorldRotation(), m_localRotation);
+		const auto worldPosition = Vector3::Transform(m_localPosition, m_parent->m_worldTransform);
 
-		// TODO: From XMMatrixTransformation ?
-		m_worldTransform = XMMatrixTransformation(
-			Vector4::Zero, Quaternion::Identity, m_worldScale,
-			Vector4::Zero, m_worldRotation,
-			XMVector3Transform(m_localPosition, m_parent->m_worldTransform));
+		const auto localT = XMMatrixTranslationFromVector(worldPosition);
+		const auto localR = XMMatrixRotationQuaternion(m_worldRotation);
+		const auto localS = XMMatrixScalingFromVector(m_worldScale);
+
+		// TODO: Something is WRONG HERE... Need to be different to work!?
+		m_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT);		
 	}
 	else
 	{
-		// TODO: From XMMatrixTransformation ?
-		m_worldTransform = XMMatrixTransformation(
-			Vector4::Zero, Quaternion::Identity, m_localScale,
-			Vector4::Zero, m_localRotation,
-			m_localPosition);
 		m_worldRotation = m_localRotation;
 		m_worldScale = m_localScale;
+
+		const auto localT = XMMatrixTranslationFromVector(m_localPosition);
+		const auto localR = XMMatrixRotationQuaternion(m_worldRotation);
+		const auto localS = XMMatrixScalingFromVector(m_worldScale);
+		m_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localT, localR), localS);
 	}
 }
 
@@ -68,16 +70,22 @@ Component& Entity::GetComponent(size_t index) const
 
 void Entity::LookAt(const Entity& other)
 {
+	LookAt(other.Position());
+}
+
+void Entity::LookAt(const Vector3 &position)
+{
 	// Generate a world transform matrix
-	if (HasParent())
+	if (false && HasParent())
 	{
+		// TODO: This is clearly broken, as it doesn't take into account the target position!
 		const auto worldInv = XMMatrixInverse(nullptr, m_worldTransform);
 		const auto worldRotInv = XMQuaternionRotationMatrix(worldInv);
-		m_localRotation = XMQuaternionMultiply(worldRotInv, m_localRotation);		
+		m_localRotation = XMQuaternionMultiply(worldRotInv, m_localRotation);
 	}
 	else
 	{
-		const auto laMat = XMMatrixLookAtRH(Position(), other.Position(), Vector3::Up);
+		const auto laMat = XMMatrixLookAtRH(Position(), position, Vector3::Up);
 		m_localRotation = XMQuaternionRotationMatrix(laMat);
 	}
 }
@@ -125,7 +133,10 @@ void Entity::RemoveParent()
 
 Vector3 Entity::WorldPosition() const
 {
-	return Vector3::Transform(m_localPosition, m_worldTransform);
+	if (m_parent)
+		return Vector3::Transform(m_localPosition, m_parent->WorldTransform());
+	else
+		return m_localPosition;
 }
 
 const Vector3 &Entity::WorldScale() const

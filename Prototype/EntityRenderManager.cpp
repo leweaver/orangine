@@ -5,7 +5,6 @@
 #include "Material.h"
 #include "Entity.h"
 #include "EntityFilter.h"
-#include "Component.h"
 #include "Scene.h"
 
 #include <set>
@@ -16,11 +15,14 @@
 #include "RenderableComponent.h"
 #include "DeferredLightMaterial.h"
 #include "TextureImpl.h"
+#include "CameraComponent.h"
 
 using namespace OE;
 using namespace DirectX;
 using namespace SimpleMath;
 using namespace std::literals;
+
+const EntityRenderManager::CameraData EntityRenderManager::CameraData::Identity = { Matrix::Identity, Matrix::Identity };
 
 EntityRenderManager::Renderable::Renderable()
 	: meshData(nullptr)
@@ -47,19 +49,59 @@ EntityRenderManager::~EntityRenderManager()
 
 void EntityRenderManager::Initialize()
 {
-	std::set<Component::ComponentType> requiredTypes;
-	requiredTypes.insert(RenderableComponent::Type());
-	m_renderableEntities = m_scene.GetSceneGraphManager().GetEntityFilter(requiredTypes);
-
-	requiredTypes.clear();
-	requiredTypes.insert(DirectionalLightComponent::Type());
-	m_lightEntities = m_scene.GetSceneGraphManager().GetEntityFilter(requiredTypes);
+	m_renderableEntities = m_scene.GetSceneGraphManager().GetEntityFilter({ RenderableComponent::Type() });
+	m_lightEntities = m_scene.GetSceneGraphManager().GetEntityFilter({ DirectionalLightComponent::Type() });
 
 	m_primitiveMeshDataFactory = std::make_unique<PrimitiveMeshDataFactory>();
 }
 
-void EntityRenderManager::Tick() {
-	// Update camera etc.
+void EntityRenderManager::Tick() 
+{
+	const auto viewport = m_deviceResources.GetScreenViewport();
+	const float aspectRatio = viewport.Width / viewport.Height;
+	float invFarPlane;
+
+	const std::shared_ptr<Entity> cameraEntity = m_scene.MainCamera();
+	if (cameraEntity)
+	{
+		CameraComponent* component = cameraEntity->GetFirstComponentOfType<CameraComponent>();
+		assert(!!component);
+
+		auto projMatrix = Matrix::CreatePerspectiveFieldOfView(
+			component->Fov(), 
+			aspectRatio,
+			component->NearPlane(), 
+			component->FarPlane());
+
+		if (component->FarPlane() == 0.0f)
+			invFarPlane = 0.0f;
+		else
+			invFarPlane = 1.0f / component->FarPlane();
+
+		auto pos = cameraEntity->WorldPosition();
+		auto direction = Vector3::Transform(Vector3::Forward, cameraEntity->WorldRotation());
+		m_cameraData = {
+			cameraEntity->WorldTransform(),
+			projMatrix
+		};
+
+		m_cameraData.viewMatrix._41 *= -1.0f;
+		m_cameraData.viewMatrix._42 *= -1.0f;
+		m_cameraData.viewMatrix._43 *= -1.0f;
+	}
+	else
+	{
+		// Create a default camera
+		constexpr float defaultFarPlane = 20.0f;
+		m_cameraData = {
+			Matrix::Identity,
+			Matrix::CreatePerspectiveFieldOfView(XMConvertToRadians(60.0f), aspectRatio, 0.1f, defaultFarPlane)
+		};
+		invFarPlane = 1.0f / defaultFarPlane;
+	}
+
+	m_cameraData.projectionMatrix._33 *= invFarPlane;
+	m_cameraData.projectionMatrix._43 *= invFarPlane;
 }
 
 void EntityRenderManager::Shutdown()
@@ -188,27 +230,7 @@ void EntityRenderManager::render()
 }
 
 void EntityRenderManager::renderEntities()
-{	
-	// Hard Coded Camera
-	const auto viewMatrix = Matrix::CreateLookAt(Vector3(5.0f, 3.0f, -10.0f), Vector3::Zero, Vector3::Up);
-
-	const auto viewport = m_deviceResources.GetScreenViewport();
-	const float aspectRatio = viewport.Width / viewport.Height;
-
-	const float farPlane = 20.0f;
-	auto projMatrix = DirectX::XMMatrixPerspectiveFovRH(
-		DirectX::XMConvertToRadians(45.0f),
-		aspectRatio,
-		0.01f,
-		farPlane);
-
-	// https://www.mvps.org/directx/articles/linear_z/linearz.htm
-	XMFLOAT4X4 projMatrix4x4;
-	XMStoreFloat4x4(&projMatrix4x4, projMatrix);
-	projMatrix4x4._33 /= farPlane;
-	projMatrix4x4._43 /= farPlane;
-	projMatrix = XMLoadFloat4x4(&projMatrix4x4);
-
+{
 	// Arrays defined outside of the loop so that their memory is re-used.
 	BufferArraySet bufferArraySet;
 
@@ -244,7 +266,7 @@ void EntityRenderManager::renderEntities()
 				renderable->SetRendererData(rendererDataPtr);
 			}
 
-			drawRendererData(viewMatrix, projMatrix, entity->GetWorldTransform(), rendererData, material, bufferArraySet);
+			drawRendererData(m_cameraData, entity->WorldTransform(), rendererData, material, bufferArraySet);
 		} 
 		catch (std::runtime_error &e)
 		{
@@ -261,7 +283,7 @@ void EntityRenderManager::renderLights()
 
 	try
 	{
-		drawRendererData(identity, identity, identity, m_pass2ScreenSpaceQuad.rendererData.get(), m_pass2ScreenSpaceQuad.material.get(), bufferArraySet);
+		drawRendererData(CameraData::Identity, identity, m_pass2ScreenSpaceQuad.rendererData.get(), m_pass2ScreenSpaceQuad.material.get(), bufferArraySet);
 		m_deferredLightMaterial->unbind(m_deviceResources);
 	}
 	catch (std::runtime_error &e)
@@ -286,8 +308,8 @@ void EntityRenderManager::setDepthEnabled(bool enabled)
 	}
 }
 
-void EntityRenderManager::drawRendererData(const Matrix &viewMatrix, 
-	const Matrix &projMatrix,
+void EntityRenderManager::drawRendererData(
+	const CameraData &cameraData,
 	const Matrix &worldTransform,
 	const RendererData *rendererData, 
 	Material* material,
@@ -329,12 +351,12 @@ void EntityRenderManager::drawRendererData(const Matrix &viewMatrix,
 			const auto indexAccessor = rendererData->m_indexBufferAccessor.get();
 			deviceContext->IASetIndexBuffer(indexAccessor->m_buffer->m_d3dBuffer, rendererData->m_indexFormat, indexAccessor->m_offset);
 
-			if (material->render(*rendererData, worldTransform, viewMatrix, projMatrix, m_deviceResources))
+			if (material->render(*rendererData, worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, m_deviceResources))
 				deviceContext->DrawIndexed(rendererData->m_indexCount, 0, 0);
 		}
 		else
 		{
-			material->render(*rendererData, worldTransform, viewMatrix, projMatrix, m_deviceResources);
+			material->render(*rendererData, worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, m_deviceResources);
 
 			// Render the triangles.
 			deviceContext->Draw(rendererData->m_vertexCount, rendererData->m_vertexCount);
@@ -429,7 +451,7 @@ void EntityRenderManager::setupRenderEntities()
 
 		try
 		{
-			drawRendererData(identity, identity, identity, m_pass1ScreenSpaceQuad.rendererData.get(), m_pass1ScreenSpaceQuad.material.get(), bufferArraySet);
+			drawRendererData(CameraData::Identity, identity, m_pass1ScreenSpaceQuad.rendererData.get(), m_pass1ScreenSpaceQuad.material.get(), bufferArraySet);
 		}
 		catch (std::runtime_error &e)
 		{

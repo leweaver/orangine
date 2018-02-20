@@ -21,6 +21,8 @@ namespace OE {
 		EntityFilter() = default;
 		virtual ~EntityFilter() = default;
 
+		bool empty() const { return m_entities.empty(); }
+
 		iterator begin() { return m_entities.begin(); }
 		iterator end() { return m_entities.end(); }
 

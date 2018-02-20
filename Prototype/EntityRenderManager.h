@@ -32,6 +32,14 @@ namespace OE {
 			std::unique_ptr<RendererData> rendererData;
 		};
 
+		struct CameraData
+		{
+			DirectX::SimpleMath::Matrix viewMatrix;
+			DirectX::SimpleMath::Matrix projectionMatrix;
+
+			static const CameraData Identity;
+		};
+
 		DX::DeviceResources &m_deviceResources;
 
 		std::shared_ptr<EntityFilter> m_renderableEntities;
@@ -49,6 +57,7 @@ namespace OE {
 
 		std::vector<std::shared_ptr<TextureRenderTarget>> m_pass1RenderTargets;
 		
+		CameraData m_cameraData;
 		Renderable m_pass1ScreenSpaceQuad;
 		Renderable m_pass2ScreenSpaceQuad;
 
@@ -84,8 +93,8 @@ namespace OE {
 		std::shared_ptr<D3DBuffer> createBufferFromData(const MeshBuffer &buffer, UINT bindFlags) const;
 		std::unique_ptr<RendererData> createRendererData(const MeshData &meshData, const std::vector<VertexAttribute> &vertexAttributes) const;
 
-		void drawRendererData(const DirectX::SimpleMath::Matrix &viewMatrix, 
-			const DirectX::SimpleMath::Matrix &projMatrix,
+		void drawRendererData(
+			const CameraData &cameraData,
 			const DirectX::SimpleMath::Matrix &worldTransform,
 			const RendererData *rendererData, 
 			Material* material,

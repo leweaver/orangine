@@ -8,6 +8,7 @@
 #include "EntityScriptingManager.h"
 #include "AssetManager.h"
 #include "glTFMeshLoader.h"
+#include "CameraComponent.h"
 
 using namespace OE;
 
@@ -114,4 +115,17 @@ void Scene::OnEntityAdded(Entity& entity) const
 void Scene::OnEntityRemoved(Entity& entity) const
 {
 	m_sceneGraphManager->HandleEntityRemove(entity);
+}
+
+void Scene::SetMainCamera(const std::shared_ptr<Entity> &cameraEntity)
+{	
+	if (cameraEntity) {
+		const auto cameras = cameraEntity->GetComponentsOfType<CameraComponent>();
+		if (cameras.empty())
+			throw std::invalid_argument("Given entity must have exactly one CameraComponent");
+
+		m_mainCamera = cameraEntity;
+	}
+	else
+		m_mainCamera = nullptr;
 }

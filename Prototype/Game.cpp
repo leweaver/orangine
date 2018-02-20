@@ -8,6 +8,7 @@
 #include "Scene.h"
 #include "TestComponent.h"
 #include "EntityRenderManager.h"
+#include "CameraComponent.h"
 
 extern void ExitGame();
 
@@ -58,16 +59,33 @@ void Game::Initialize(HWND window, int width, int height)
 		*/
 
 		SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
-		Entity& root1 = entityManager.Instantiate("Root 1");
-		root1.AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
+		const auto &root1 = entityManager.Instantiate("Root 1");
+		//root1->AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
 
-		Entity& child1 = entityManager.Instantiate("Child 1", root1);
-		Entity& child2 = entityManager.Instantiate("Child 2", root1);
-		Entity& child3 = entityManager.Instantiate("Child 3", root1);
+		const auto &child1 = entityManager.Instantiate("Child 1", *root1);
+		const auto &child2 = entityManager.Instantiate("Child 2", *root1);
+		const auto &child3 = entityManager.Instantiate("Child 3", *root1);
 
-		AddCubeToEntity(child1, XMVectorSet(0.5f, 0.0f, 0.0f, 0.0f),  XMVectorSet(2, 1, 1, 1), XMVectorSet(4, 0, 0, 1));
-		AddCubeToEntity(child2, XMVectorSet(0.0f, 0.5f, 0.0f, 0.0f), XMVectorSet(1, 2, 1, 1), XMVectorSet(0, 0, 0, 1));
-		AddCubeToEntity(child3, XMVectorSet(0.0f, 0.0f, 0.5f, 0.0f), XMVectorSet(1, 1, 2, 1), XMVectorSet(-4, 0, 0, 1));
+		AddCubeToEntity(*child1, XMVectorSet(0.5f, 0.0f, 0.0f, 0.0f),  XMVectorSet(2, 1, 1, 1), XMVectorSet(4, 0, 0, 1));
+		AddCubeToEntity(*child2, XMVectorSet(0.0f, 0.5f, 0.0f, 0.0f), XMVectorSet(1, 2, 1, 1), XMVectorSet(0, 0, 0, 1));
+		AddCubeToEntity(*child3, XMVectorSet(0.0f, 0.0f, 0.5f, 0.0f), XMVectorSet(1, 1, 2, 1), XMVectorSet(-4, 0, 0, 1));
+		
+		// Create the camera
+		{
+			//auto cameraDolly = entityManager.Instantiate("CameraDolly");
+			//cameraDolly->AddComponent<TestComponent>().SetSpeed({0.0f, 0.0f, 0.0f});
+
+			auto camera = entityManager.Instantiate("Camera"/*, *cameraDolly*/);
+			camera->SetPosition(Vector3(10.0f, 0.0f, -10.0f));
+			camera->LookAt(Vector3::Zero);
+
+			auto &component = camera->AddComponent<CameraComponent>();
+			component.SetFov(XMConvertToRadians(60.0f));
+			component.SetFarPlane(20.0f);
+			component.SetNearPlane(0.1f);
+
+			m_scene->SetMainCamera(camera);
+		}
 	}
 
 	m_deviceResources->CreateDeviceResources();

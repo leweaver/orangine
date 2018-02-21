@@ -31,8 +31,8 @@ std::shared_ptr<MeshData> PrimitiveMeshDataFactory::createQuad(const Vector2 &si
 		const float 
 			top    = positionOffset.y + size.y,
 			right  = positionOffset.x + size.x,
-			bottom = positionOffset.y - size.y,
-			left   = positionOffset.x - size.x;
+			bottom = positionOffset.y,
+			left   = positionOffset.x;
 		const std::vector<Vertex> vertices = {
 			{ left,  top,    positionOffset.z },
 			{ right, top,    positionOffset.z },

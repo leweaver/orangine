@@ -136,7 +136,7 @@ bool Material::createVertexShader(ID3D11Device* device)
 	
 	UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
 #if defined( DEBUG ) || defined( _DEBUG )
-	flags |= D3DCOMPILE_DEBUG;
+	flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_PREFER_FLOW_CONTROL;
 #endif
 
 	hr = D3DCompileFromFile(settings.filename.c_str(), 
@@ -181,7 +181,7 @@ bool Material::createPixelShader(ID3D11Device* device)
 
 	UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
 #if defined( DEBUG ) || defined( _DEBUG )
-	flags |= D3DCOMPILE_DEBUG;
+	flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_PREFER_FLOW_CONTROL;
 #endif
 
 

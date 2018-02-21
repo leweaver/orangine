@@ -43,6 +43,54 @@ Game::~Game()
 	*/
 }
 
+void Game::CreateSceneCubeSatellite()
+{
+	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
+	const auto &root1 = entityManager.Instantiate("Root 1");
+	//root1->AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
+
+	const auto &child1 = entityManager.Instantiate("Child 1", *root1);
+	const auto &child2 = entityManager.Instantiate("Child 2", *root1);
+	const auto &child3 = entityManager.Instantiate("Child 3", *root1);
+
+	AddCubeToEntity(*child1, {0.5f, 0.0f, 0.0f}, {2, 1, 1}, { 4, 0, 0});
+	AddCubeToEntity(*child2, {0.0f, 0.5f, 0.0f}, {1, 2, 1}, { 0, 0, 0});
+	AddCubeToEntity(*child3, {0.0f, 0.0f, 0.5f}, {1, 1, 2}, {-4, 0, 0});
+		
+	// Create the camera
+	{
+		//auto cameraDolly = entityManager.Instantiate("CameraDolly");
+		//cameraDolly->AddComponent<TestComponent>().SetSpeed({0.0f, 0.0f, 0.0f});
+
+		auto camera = entityManager.Instantiate("Camera"/*, *cameraDolly*/);
+		camera->SetPosition(Vector3(10.0f, 0.0f, -10.0f));
+		camera->LookAt(Vector3::Zero);
+
+		auto &component = camera->AddComponent<CameraComponent>();
+		component.SetFov(XMConvertToRadians(60.0f));
+		component.SetFarPlane(20.0f);
+		component.SetNearPlane(0.1f);
+
+		m_scene->SetMainCamera(camera);
+	}
+}
+
+void Game::CreateSceneLeverArm()
+{
+	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
+	const auto &root1 = entityManager.Instantiate("Root 1");
+
+	const auto &child1 = entityManager.Instantiate("Child 1", *root1);
+	const auto &child2 = entityManager.Instantiate("Child 2", *child1);
+	const auto &child3 = entityManager.Instantiate("Child 3", *child2);
+
+	AddCubeToEntity(*child1, { 0, 0, 0.1f }, { 0.5f, 0.5f, 1.0f }, { 0, 0, 0 });
+	AddCubeToEntity(*child2, { 0, 0.25, 0 }, { 1.0f, 2.0f, 0.5f }, { 2, 0, 0 });
+	AddCubeToEntity(*child3, { 0.5f, 0, 0 }, { 2.0f, 0.50f, 1.0f }, { 0, 2, 0});
+
+	child2->SetRotation(Quaternion::CreateFromYawPitchRoll(0.0f, 0.0f, XMConvertToRadians(45.0f)));
+}
+
 // Initialize the Direct3D resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
@@ -58,34 +106,11 @@ void Game::Initialize(HWND window, int width, int height)
 		m_timer.SetTargetElapsedSeconds(1.0 / 60);
 		*/
 
-		SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
-		const auto &root1 = entityManager.Instantiate("Root 1");
-		//root1->AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
 
-		const auto &child1 = entityManager.Instantiate("Child 1", *root1);
-		const auto &child2 = entityManager.Instantiate("Child 2", *root1);
-		const auto &child3 = entityManager.Instantiate("Child 3", *root1);
+		//CreateSceneCubeSatellite();
 
-		AddCubeToEntity(*child1, XMVectorSet(0.5f, 0.0f, 0.0f, 0.0f),  XMVectorSet(2, 1, 1, 1), XMVectorSet(4, 0, 0, 1));
-		AddCubeToEntity(*child2, XMVectorSet(0.0f, 0.5f, 0.0f, 0.0f), XMVectorSet(1, 2, 1, 1), XMVectorSet(0, 0, 0, 1));
-		AddCubeToEntity(*child3, XMVectorSet(0.0f, 0.0f, 0.5f, 0.0f), XMVectorSet(1, 1, 2, 1), XMVectorSet(-4, 0, 0, 1));
-		
-		// Create the camera
-		{
-			//auto cameraDolly = entityManager.Instantiate("CameraDolly");
-			//cameraDolly->AddComponent<TestComponent>().SetSpeed({0.0f, 0.0f, 0.0f});
 
-			auto camera = entityManager.Instantiate("Camera"/*, *cameraDolly*/);
-			camera->SetPosition(Vector3(10.0f, 0.0f, -10.0f));
-			camera->LookAt(Vector3::Zero);
-
-			auto &component = camera->AddComponent<CameraComponent>();
-			component.SetFov(XMConvertToRadians(60.0f));
-			component.SetFarPlane(20.0f);
-			component.SetNearPlane(0.1f);
-
-			m_scene->SetMainCamera(camera);
-		}
+		CreateSceneLeverArm();
 	}
 
 	m_deviceResources->CreateDeviceResources();

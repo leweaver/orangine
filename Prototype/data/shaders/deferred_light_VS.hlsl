@@ -19,6 +19,6 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 {
 	VS_OUTPUT Output;
 	Output.vPosition  = float4(Input.vPosition, 1);
-	Output.vTexCoord0 = float2(Input.vPosition.xy * .5 + .5);
+	Output.vTexCoord0 = float2(Input.vPosition.xy * .5 + .5) * float2(1, -1);
 	return Output;
 }

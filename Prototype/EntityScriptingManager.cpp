@@ -36,9 +36,9 @@ void EntityScriptingManager::Tick() {
 
 		const auto &speed = component->GetSpeed();
 
-		const float animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.x * XM_2PI, XM_2PI));
-		const float animTimePitch = static_cast<float>(fmod(elapsedTime * speed.y * XM_2PI, XM_2PI));
-		const float animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.z * XM_2PI, XM_2PI));
+		const float animTimePitch = static_cast<float>(fmod(elapsedTime * speed.x * XM_2PI, XM_2PI));
+		const float animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.y * XM_2PI, XM_2PI));
+		const float animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.z * XM_2PI, XM_2PI));
 
 		entity.SetRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));
 	}

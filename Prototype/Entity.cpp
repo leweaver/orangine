@@ -29,14 +29,14 @@ void Entity::ComputeWorldTransform()
 	{
 		m_worldScale = m_parent->m_worldScale * m_localScale;
 		m_worldRotation = Quaternion::Concatenate(m_parent->WorldRotation(), m_localRotation);
+
 		const auto worldPosition = Vector3::Transform(m_localPosition, m_parent->m_worldTransform);
 
-		const auto localT = XMMatrixTranslationFromVector(worldPosition);
-		const auto localR = XMMatrixRotationQuaternion(m_worldRotation);
-		const auto localS = XMMatrixScalingFromVector(m_worldScale);
-
-		// TODO: Something is WRONG HERE... Need to be different to work!?
-		m_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT);		
+		const auto worldT = XMMatrixTranslationFromVector(worldPosition);
+		const auto worldR = XMMatrixRotationQuaternion(m_worldRotation);
+		const auto worldS = XMMatrixScalingFromVector(m_worldScale);
+		
+		m_worldTransform = XMMatrixMultiply(XMMatrixMultiply(worldS, worldR), worldT);
 	}
 	else
 	{
@@ -46,7 +46,7 @@ void Entity::ComputeWorldTransform()
 		const auto localT = XMMatrixTranslationFromVector(m_localPosition);
 		const auto localR = XMMatrixRotationQuaternion(m_worldRotation);
 		const auto localS = XMMatrixScalingFromVector(m_worldScale);
-		m_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localT, localR), localS);
+		m_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT);
 	}
 }
 

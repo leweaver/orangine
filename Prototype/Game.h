@@ -19,7 +19,10 @@ public:
     Game();
 	~Game();
 
-    // Initialization and management
+	void CreateSceneLeverArm();
+	void CreateSceneCubeSatellite();
+
+	// Initialization and management
     void Initialize(HWND window, int width, int height);
 	void InitRasterizer();
 

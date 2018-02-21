@@ -49,10 +49,17 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	float3 vsPosition = VSPositionFromDepth(input.vTexCoord0);	
 	float3 intensity = 0;
 
-	intensity += PointLight(float3(-3.0f, -1.5f, 4.5f), float3(1, 0, 0), 6, vsPosition, color1.xyz);
-	intensity += DirLight(normalize(float3(0, -1, -1)), float3(0, 1, 0), 1, color1.xyz);
-	intensity += DirLight(normalize(float3(0, +1, -1)), float3(0, 0, 1), 1, color1.xyz);
+	//intensity += PointLight(float3(0.0f, 0.0f, 10.0f), float3(1, 1, 1), 10, vsPosition, color1.xyz);
+	
+	intensity += DirLight(normalize(float3(0, 0, -1)), float3(0, 0, 1), 1, color1.xyz);
+	intensity += DirLight(normalize(float3(0, 0, 1)), float3(0, 1, 1), 1, color1.xyz);
 
+	intensity += DirLight(normalize(float3(1, 0, 0)), float3(0, 1, 1), 1, color1.xyz);
+	intensity += DirLight(normalize(float3(-1, 0, 0)), float3(1, 0, 0), 1, color1.xyz);
+
+	intensity += DirLight(normalize(float3(0, 1, 0)), float3(0, 1, 1), 1, color1.xyz);
+	intensity += DirLight(normalize(float3(0, -1, 0)), float3(0, 1, 0), 1, color1.xyz);
+	
 	return float4(color0.rgb * intensity, 1);
 }
 
@@ -61,12 +68,12 @@ float3 PointLight(float3 lightPosition, float3 lightColor, float lightIntensity,
 	float3 posDifference = pixelPosition - lightPosition;
 	lightIntensity = lightIntensity / length(posDifference);
 	float3 lightDirection_n = normalize(posDifference);
-	return lightIntensity * lightColor * dot(lightDirection_n, surfaceNormal_n) / 3.14159;
+	return max(0, lightIntensity * lightColor * -dot(lightDirection_n, surfaceNormal_n) / 3.14159);
 }
 
 float3 DirLight(float3 lightDirection, float3 lightColor, float lightIntensity, float3 surfaceNormal_n)
 {
-	return lightIntensity * lightColor * dot(lightDirection, surfaceNormal_n) / 3.14159;
+	return max(0, lightIntensity * lightColor * -dot(lightDirection, surfaceNormal_n) / 3.14159);
 }
 
 float3 VSPositionFromDepth(float2 vTexCoord)

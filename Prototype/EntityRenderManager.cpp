@@ -22,7 +22,11 @@ using namespace DirectX;
 using namespace SimpleMath;
 using namespace std::literals;
 
-const EntityRenderManager::CameraData EntityRenderManager::CameraData::Identity = { Matrix::Identity, Matrix::Identity };
+// Static initialization order means we can't use Matrix::Identity here.
+const EntityRenderManager::CameraData EntityRenderManager::CameraData::Identity = { 
+	{ 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f },
+	{ 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f }
+};
 
 EntityRenderManager::Renderable::Renderable()
 	: meshData(nullptr)
@@ -92,9 +96,9 @@ void EntityRenderManager::Tick()
 	else
 	{
 		// Create a default camera
-		constexpr float defaultFarPlane = 20.0f;
+		constexpr float defaultFarPlane = 30.0f;
 		m_cameraData = {
-			Matrix::Identity,
+			Matrix::CreateLookAt({ 0.0f, 0.0f, 10.0f }, Vector3::Zero, Vector3::Up),
 			Matrix::CreatePerspectiveFieldOfView(XMConvertToRadians(60.0f), aspectRatio, 0.1f, defaultFarPlane)
 		};
 		invFarPlane = 1.0f / defaultFarPlane;
@@ -283,7 +287,7 @@ void EntityRenderManager::renderLights()
 
 	try
 	{
-		drawRendererData(CameraData::Identity, identity, m_pass2ScreenSpaceQuad.rendererData.get(), m_pass2ScreenSpaceQuad.material.get(), bufferArraySet);
+		drawRendererData(m_cameraData, identity, m_pass2ScreenSpaceQuad.rendererData.get(), m_pass2ScreenSpaceQuad.material.get(), bufferArraySet);
 		m_deferredLightMaterial->unbind(m_deviceResources);
 	}
 	catch (std::runtime_error &e)

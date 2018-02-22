@@ -21,6 +21,7 @@ public:
 
 	void CreateSceneLeverArm();
 	void CreateSceneCubeSatellite();
+	void CreateCamera();
 
 	// Initialization and management
     void Initialize(HWND window, int width, int height);

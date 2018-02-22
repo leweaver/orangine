@@ -82,16 +82,14 @@ void EntityRenderManager::Tick()
 		else
 			invFarPlane = 1.0f / component->FarPlane();
 
-		auto pos = cameraEntity->WorldPosition();
-		auto direction = Vector3::Transform(Vector3::Forward, cameraEntity->WorldRotation());
+		const auto pos = cameraEntity->WorldPosition();
+		const auto direction = Vector3::Transform(Vector3::Forward, cameraEntity->WorldRotation());
+
+		auto viewMatrix = Matrix::CreateLookAt(pos, pos + direction, Vector3::Up);
 		m_cameraData = {
-			cameraEntity->WorldTransform(),
+			viewMatrix,
 			projMatrix
 		};
-
-		m_cameraData.viewMatrix._41 *= -1.0f;
-		m_cameraData.viewMatrix._42 *= -1.0f;
-		m_cameraData.viewMatrix._43 *= -1.0f;
 	}
 	else
 	{

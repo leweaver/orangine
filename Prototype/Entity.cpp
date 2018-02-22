@@ -75,18 +75,44 @@ void Entity::LookAt(const Entity& other)
 
 void Entity::LookAt(const Vector3 &position)
 {
+	const auto worldPosition = WorldPosition();
+	if ((worldPosition - position).LengthSquared() == 0)
+		return;
+
+	// This seems to produce Left Handed results.??
+	//const auto laMat = Matrix::CreateLookAt(worldPosition, position, Vector3::Up);
+
+	auto from = worldPosition, to = position;
+	Vector3 forward = (worldPosition - position);
+	forward.Normalize();
+	Vector3 right;
+	Vector3::Up.Cross(forward, right);
+	Vector3 up;
+	forward.Cross(right, up);
+
+	Matrix camToWorld;
+	camToWorld._11 = right.x;
+	camToWorld._12 = right.y;
+	camToWorld._13 = right.z;
+	camToWorld._21 = up.x;
+	camToWorld._22 = up.y;
+	camToWorld._23 = up.z;
+	camToWorld._31 = forward.x;
+	camToWorld._32 = forward.y;
+	camToWorld._33 = forward.z;
+
+	//camToWorld._41 = worldPosition.x;
+	//camToWorld._42 = worldPosition.y;
+	//camToWorld._43 = worldPosition.z;
+
+	m_localRotation = Quaternion::CreateFromRotationMatrix(camToWorld);
+
 	// Generate a world transform matrix
-	if (false && HasParent())
+	if (HasParent())
 	{
-		// TODO: This is clearly broken, as it doesn't take into account the target position!
-		const auto worldInv = XMMatrixInverse(nullptr, m_worldTransform);
-		const auto worldRotInv = XMQuaternionRotationMatrix(worldInv);
-		m_localRotation = XMQuaternionMultiply(worldRotInv, m_localRotation);
-	}
-	else
-	{
-		const auto laMat = XMMatrixLookAtRH(Position(), position, Vector3::Up);
-		m_localRotation = XMQuaternionRotationMatrix(laMat);
+		Quaternion parentRotationInv;
+		m_parent->WorldRotation().Inverse(parentRotationInv);
+		m_localRotation = Quaternion::Concatenate(m_localRotation, parentRotationInv);
 	}
 }
 
@@ -133,10 +159,7 @@ void Entity::RemoveParent()
 
 Vector3 Entity::WorldPosition() const
 {
-	if (m_parent)
-		return Vector3::Transform(m_localPosition, m_parent->WorldTransform());
-	else
-		return m_localPosition;
+	return m_worldTransform.Translation();
 }
 
 const Vector3 &Entity::WorldScale() const

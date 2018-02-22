@@ -56,23 +56,27 @@ void Game::CreateSceneCubeSatellite()
 	AddCubeToEntity(*child1, {0.5f, 0.0f, 0.0f}, {2, 1, 1}, { 4, 0, 0});
 	AddCubeToEntity(*child2, {0.0f, 0.5f, 0.0f}, {1, 2, 1}, { 0, 0, 0});
 	AddCubeToEntity(*child3, {0.0f, 0.0f, 0.5f}, {1, 1, 2}, {-4, 0, 0});
-		
-	// Create the camera
-	{
-		//auto cameraDolly = entityManager.Instantiate("CameraDolly");
-		//cameraDolly->AddComponent<TestComponent>().SetSpeed({0.0f, 0.0f, 0.0f});
+}
 
-		auto camera = entityManager.Instantiate("Camera"/*, *cameraDolly*/);
-		camera->SetPosition(Vector3(10.0f, 0.0f, -10.0f));
-		camera->LookAt(Vector3::Zero);
+void Game::CreateCamera()
+{
+	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
+	auto cameraDolly = entityManager.Instantiate("CameraDolly");
+	cameraDolly->SetPosition(Vector3(0.0f, 0.0f, 10.0f));
+	cameraDolly->AddComponent<TestComponent>().SetSpeed({0.0f, 0.0f, 0.1f});
 
-		auto &component = camera->AddComponent<CameraComponent>();
-		component.SetFov(XMConvertToRadians(60.0f));
-		component.SetFarPlane(20.0f);
-		component.SetNearPlane(0.1f);
+	auto camera = entityManager.Instantiate("Camera", *cameraDolly);
+	camera->SetPosition(Vector3(0.0f, -4.0f, 0.0f));
+	
+	cameraDolly->Update();
+	camera->LookAt(Vector3::Zero);
 
-		m_scene->SetMainCamera(camera);
-	}
+	auto &component = camera->AddComponent<CameraComponent>();
+	component.SetFov(XMConvertToRadians(60.0f));
+	component.SetFarPlane(30.0f);
+	component.SetNearPlane(0.1f);
+
+	m_scene->SetMainCamera(camera);
 }
 
 void Game::CreateSceneLeverArm()
@@ -111,6 +115,8 @@ void Game::Initialize(HWND window, int width, int height)
 
 
 		CreateSceneLeverArm();
+
+		CreateCamera();
 	}
 
 	m_deviceResources->CreateDeviceResources();
@@ -122,7 +128,7 @@ void Game::Initialize(HWND window, int width, int height)
 
 void Game::AddCubeToEntity(Entity& entity, Vector3 animationSpeed, Vector3 localScale, Vector3 localPosition) const
 {
-	entity.AddComponent<TestComponent>().SetSpeed(animationSpeed);
+	//entity.AddComponent<TestComponent>().SetSpeed(animationSpeed);
 
 	entity.SetScale(localScale);
 	entity.SetPosition(localPosition);

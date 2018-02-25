@@ -100,7 +100,7 @@ namespace OE {
 
 		/* Math Functions */
 		void LookAt(const Entity& other);
-		void LookAt(const DirectX::SimpleMath::Vector3 &position);
+		void LookAt(DirectX::SimpleMath::Vector3 position, const DirectX::SimpleMath::Vector3 &worldUp);
 
 		/**
 		 * returns a nullptr if no component of given type was found.

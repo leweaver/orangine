@@ -61,20 +61,21 @@ void Game::CreateSceneCubeSatellite()
 void Game::CreateCamera()
 {
 	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
-	auto cameraDolly = entityManager.Instantiate("CameraDolly");
-	cameraDolly->SetPosition(Vector3(0.0f, 0.0f, 10.0f));
-	cameraDolly->AddComponent<TestComponent>().SetSpeed({0.0f, 0.0f, 0.1f});
 
-	auto camera = entityManager.Instantiate("Camera", *cameraDolly);
-	camera->SetPosition(Vector3(0.0f, -4.0f, 0.0f));
+	auto cameraDollyAnchor = entityManager.Instantiate("CameraDollyAnchor");
+	cameraDollyAnchor->AddComponent<TestComponent>().SetSpeed({0.0f, 0.1f, 0.0f});
 	
-	cameraDolly->Update();
-	camera->LookAt(Vector3::Zero);
+	auto camera = entityManager.Instantiate("Camera", *cameraDollyAnchor);
+	camera->SetPosition(Vector3(0.0f, 0.0f, 3.0f));
+	
+	cameraDollyAnchor->Update();
 
 	auto &component = camera->AddComponent<CameraComponent>();
 	component.SetFov(XMConvertToRadians(60.0f));
 	component.SetFarPlane(30.0f);
 	component.SetNearPlane(0.1f);
+
+	camera->LookAt({ 5, 0, 5 }, Vector3::Up);
 
 	m_scene->SetMainCamera(camera);
 }
@@ -83,6 +84,7 @@ void Game::CreateSceneLeverArm()
 {
 	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
 	const auto &root1 = entityManager.Instantiate("Root 1");
+	root1->SetPosition({ 5, 0, 5 });
 
 	const auto &child1 = entityManager.Instantiate("Child 1", *root1);
 	const auto &child2 = entityManager.Instantiate("Child 2", *child1);
@@ -91,8 +93,6 @@ void Game::CreateSceneLeverArm()
 	AddCubeToEntity(*child1, { 0, 0, 0.1f }, { 0.5f, 0.5f, 1.0f }, { 0, 0, 0 });
 	AddCubeToEntity(*child2, { 0, 0.25, 0 }, { 1.0f, 2.0f, 0.5f }, { 2, 0, 0 });
 	AddCubeToEntity(*child3, { 0.5f, 0, 0 }, { 2.0f, 0.50f, 1.0f }, { 0, 2, 0});
-
-	child2->SetRotation(Quaternion::CreateFromYawPitchRoll(0.0f, 0.0f, XMConvertToRadians(45.0f)));
 }
 
 // Initialize the Direct3D resources required to run.
@@ -128,7 +128,7 @@ void Game::Initialize(HWND window, int width, int height)
 
 void Game::AddCubeToEntity(Entity& entity, Vector3 animationSpeed, Vector3 localScale, Vector3 localPosition) const
 {
-	//entity.AddComponent<TestComponent>().SetSpeed(animationSpeed);
+	entity.AddComponent<TestComponent>().SetSpeed(animationSpeed);
 
 	entity.SetScale(localScale);
 	entity.SetPosition(localPosition);

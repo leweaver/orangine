@@ -68,6 +68,8 @@ void EntityRenderManager::Tick()
 	const std::shared_ptr<Entity> cameraEntity = m_scene.MainCamera();
 	if (cameraEntity)
 	{
+		// TODO: Replace this with a 'scriptable' component on the camera
+		cameraEntity->LookAt({ 5, 0, 5 }, Vector3::Up);
 		CameraComponent* component = cameraEntity->GetFirstComponentOfType<CameraComponent>();
 		assert(!!component);
 
@@ -82,10 +84,13 @@ void EntityRenderManager::Tick()
 		else
 			invFarPlane = 1.0f / component->FarPlane();
 
-		const auto pos = cameraEntity->WorldPosition();
-		const auto direction = Vector3::Transform(Vector3::Forward, cameraEntity->WorldRotation());
+		// Construct camera axis vectors, to create a view matrix using lookAt.
+		const auto wt = cameraEntity->WorldTransform();
+		const auto pos = wt.Translation();
+		const auto forward = Vector3::TransformNormal(Vector3::Forward, wt);
+		const auto up = Vector3::TransformNormal(Vector3::Up, wt);
 
-		auto viewMatrix = Matrix::CreateLookAt(pos, pos + direction, Vector3::Up);
+		auto viewMatrix = Matrix::CreateLookAt(pos, pos + forward, up);
 		m_cameraData = {
 			viewMatrix,
 			projMatrix

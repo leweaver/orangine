@@ -70,25 +70,33 @@ Component& Entity::GetComponent(size_t index) const
 
 void Entity::LookAt(const Entity& other)
 {
-	LookAt(other.Position());
+	LookAt(other.Position(), Vector3::Up);
 }
 
-void Entity::LookAt(const Vector3 &position)
+void Entity::LookAt(Vector3 position, const Vector3 &worldUp)
 {
-	const auto worldPosition = WorldPosition();
-	if ((worldPosition - position).LengthSquared() == 0)
+	if (HasParent()) {
+		const auto parentWorldInv = m_parent->m_worldTransform.Invert();
+		position = Vector3::Transform(position, parentWorldInv);
+	}
+		
+	Vector3 forward = position - m_localPosition;
+	if (forward.LengthSquared() == 0)
 		return;
 
-	// This seems to produce Left Handed results.??
-	//const auto laMat = Matrix::CreateLookAt(worldPosition, position, Vector3::Up);
+	// The DirectX LookAt function creates a view matrix; we want to create a transform
+	// to rotate this object towards a target. So, we need to create the matrix manually.
+	// (This also gives us the benefit of skipping the translation calculations; since they
+	// are not used)
 
-	auto from = worldPosition, to = position;
-	Vector3 forward = (worldPosition - position);
 	forward.Normalize();
+	
 	Vector3 right;
-	Vector3::Up.Cross(forward, right);
+	forward.Cross(worldUp, right);
+	right.Normalize();
+
 	Vector3 up;
-	forward.Cross(right, up);
+	right.Cross(forward, up);
 
 	Matrix camToWorld;
 	camToWorld._11 = right.x;
@@ -97,23 +105,13 @@ void Entity::LookAt(const Vector3 &position)
 	camToWorld._21 = up.x;
 	camToWorld._22 = up.y;
 	camToWorld._23 = up.z;
-	camToWorld._31 = forward.x;
-	camToWorld._32 = forward.y;
-	camToWorld._33 = forward.z;
-
-	//camToWorld._41 = worldPosition.x;
-	//camToWorld._42 = worldPosition.y;
-	//camToWorld._43 = worldPosition.z;
+	camToWorld._31 = -forward.x;
+	camToWorld._32 = -forward.y;
+	camToWorld._33 = -forward.z;
 
 	m_localRotation = Quaternion::CreateFromRotationMatrix(camToWorld);
 
-	// Generate a world transform matrix
-	if (HasParent())
-	{
-		Quaternion parentRotationInv;
-		m_parent->WorldRotation().Inverse(parentRotationInv);
-		m_localRotation = Quaternion::Concatenate(m_localRotation, parentRotationInv);
-	}
+	ComputeWorldTransform();
 }
 
 void Entity::SetActive(bool bActive)

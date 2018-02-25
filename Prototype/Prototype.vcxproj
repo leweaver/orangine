@@ -319,6 +319,9 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="NatvisFile.natvis" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

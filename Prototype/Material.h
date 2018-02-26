@@ -16,6 +16,7 @@ namespace OE {
 		ID3D11InputLayout  *m_inputLayout;
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_vsConstantBuffer;
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_psConstantBuffer;
+		Microsoft::WRL::ComPtr<ID3D11BlendState> m_blendState;
 		bool m_errorState;
 
 	public:
@@ -63,6 +64,7 @@ namespace OE {
 			const DirectX::SimpleMath::Matrix &projMatrix, 
 			ID3D11DeviceContext *context, 
 			ID3D11Buffer *buffer) {};
+		virtual void createBlendState(ID3D11Device *device, ID3D11BlendState *&blendState);
 
 		virtual bool createPSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer) { return true; }
 		virtual void updatePSConstantBuffer(const DirectX::SimpleMath::Matrix &worldMatrix, 

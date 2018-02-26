@@ -109,8 +109,8 @@ void Game::CreateLights()
 		}
 	};
 
-	createDirLight({0, 0, -1}, {0, 0, 1}, 1);
-	createDirLight({0, 0, 1}, {0, 1, 1}, 1);
+	createDirLight({0, 0, -1}, {0, 1, 1}, 1);
+	createDirLight({0, 0, 1}, {0, 0, 1}, 1);
 
 	createDirLight({1, 0, 0}, {0, 1, 1}, 1);
 	createDirLight({-1, 0, 0}, {1, 0, 0}, 1);

@@ -209,6 +209,11 @@ bool Material::createPixelShader(ID3D11Device* device)
 
 	return true;
 }
+void Material::createBlendState(ID3D11Device *device, ID3D11BlendState *&blendState)
+{
+	D3D11_BLEND_DESC blendStateDesc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
+	device->CreateBlendState(&blendStateDesc, &blendState);
+}
 
 bool Material::render(const RendererData &rendererData, const Matrix &worldMatrix, const Matrix &viewMatrix, const Matrix &projMatrix, const DX::DeviceResources &deviceResources)
 {
@@ -233,6 +238,11 @@ bool Material::render(const RendererData &rendererData, const Matrix &worldMatri
 			
 			createPSConstantBuffer(device, *m_psConstantBuffer.ReleaseAndGetAddressOf());
 		}
+
+		if (!m_blendState)
+		{
+			createBlendState(device, *m_blendState.ReleaseAndGetAddressOf());
+		}
 	}
 	m_errorState = false;
 
@@ -253,6 +263,11 @@ bool Material::render(const RendererData &rendererData, const Matrix &worldMatri
 
 	// Set texture samples
 	setContextSamplers(deviceResources);
+
+	// set blend state
+	const float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	const UINT sampleMask = 0xffffffff;
+	context->OMSetBlendState(m_blendState.Get(), blendFactor, sampleMask);
 
 	return true;
 }

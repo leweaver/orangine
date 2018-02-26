@@ -25,12 +25,16 @@ namespace OE
 		void setDepthTexture(const std::shared_ptr<Texture> &texture) { m_depthTexture = texture; }
 
 		void getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const override;
+		
+		void SetupDirectionalLight(const DirectX::SimpleMath::Vector3 &lightDirection, const DirectX::SimpleMath::Color &color, float getIntensity);
 
 	protected:
 
 		struct DeferredLightConstants
 		{
 			DirectX::XMMATRIX invProjection;
+			DirectX::XMFLOAT4 direction;
+			DirectX::XMFLOAT4 intensifiedColor;
 		} m_constants;
 
 		UINT inputSlot(VertexAttribute attribute) override;
@@ -41,6 +45,7 @@ namespace OE
 		bool createPSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer) override;
 		void updatePSConstantBuffer(const DirectX::SimpleMath::Matrix &worldMatrix, const DirectX::SimpleMath::Matrix &viewMatrix,
 			const DirectX::SimpleMath::Matrix &projMatrix, ID3D11DeviceContext *context, ID3D11Buffer *buffer) override;
+		void createBlendState(ID3D11Device *device, ID3D11BlendState *&blendState) override;
 
 		void setContextSamplers(const DX::DeviceResources &deviceResources) override;
 		void unsetContextSamplers(const DX::DeviceResources &deviceResources) override;

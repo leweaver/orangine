@@ -6,6 +6,8 @@
 cbuffer constants : register(b0)
 {
 	matrix        g_mMatInvProjection     : packoffset(c0);
+	float3        g_lightDirection        : packoffset(c4);
+	float3        g_lightIntensifiedColor : packoffset(c5);
 };
 
 //--------------------------------------------------------------------------------------
@@ -48,18 +50,9 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 
 	float3 vsPosition = VSPositionFromDepth(input.vTexCoord0);	
 	float3 intensity = 0;
+		
+	intensity += DirLight(g_lightDirection.xyz, g_lightIntensifiedColor.rgb, 1, color1.xyz);
 
-	//intensity += PointLight(float3(0.0f, 0.0f, 10.0f), float3(1, 1, 1), 10, vsPosition, color1.xyz);
-	
-	intensity += DirLight(normalize(float3(0, 0, -1)), float3(0, 0, 1), 1, color1.xyz);
-	intensity += DirLight(normalize(float3(0, 0, 1)), float3(0, 1, 1), 1, color1.xyz);
-
-	intensity += DirLight(normalize(float3(1, 0, 0)), float3(0, 1, 1), 1, color1.xyz);
-	intensity += DirLight(normalize(float3(-1, 0, 0)), float3(1, 0, 0), 1, color1.xyz);
-
-	intensity += DirLight(normalize(float3(0, 1, 0)), float3(0, 1, 1), 1, color1.xyz);
-	intensity += DirLight(normalize(float3(0, -1, 0)), float3(0, 1, 0), 1, color1.xyz);
-	
 	return float4(color0.rgb * intensity, 1);
 }
 

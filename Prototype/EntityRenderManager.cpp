@@ -293,13 +293,23 @@ void EntityRenderManager::renderLights()
 
 	try
 	{
-		drawRendererData(m_cameraData, identity, m_pass2ScreenSpaceQuad.rendererData.get(), m_pass2ScreenSpaceQuad.material.get(), bufferArraySet);
+		for (auto eIter = m_lightEntities->begin(); eIter != m_lightEntities->end(); ++eIter)
+		{
+			const auto lightEntity = *eIter;
+			const auto component = lightEntity->GetFirstComponentOfType<DirectionalLightComponent>();
+			
+			auto lightDirection = Vector3::Transform(Vector3::Forward, lightEntity->WorldRotation());
+
+			m_deferredLightMaterial->SetupDirectionalLight(lightDirection, component->getColor(), component->getIntensity());
+			drawRendererData(m_cameraData, identity, m_pass2ScreenSpaceQuad.rendererData.get(), m_deferredLightMaterial.get(), bufferArraySet);
+		}
+
 		m_deferredLightMaterial->unbind(m_deviceResources);
 	}
 	catch (std::runtime_error &e)
 	{
 		m_fatalError = true;
-		LOG(WARNING) << "Failed to clear G Buffer.\n" << e.what();
+		LOG(WARNING) << "Failed to render lights.\n" << e.what();
 	}
 }
 
@@ -477,12 +487,13 @@ void EntityRenderManager::setupRenderLights()
 {
 	// Clear the views.
 	auto context = m_deviceResources.GetD3DDeviceContext();
+	
+	context->ClearRenderTargetView(m_deviceResources.GetRenderTargetView(), Colors::Black);
 
-	const auto depthStencil = nullptr;//m_deviceResources.GetDepthStencilView();
 	const auto finalColorRenderTarget = m_deviceResources.GetRenderTargetView();
 	
 	setDepthEnabled(false);
-	context->OMSetRenderTargets(1, &finalColorRenderTarget, depthStencil);
+	context->OMSetRenderTargets(1, &finalColorRenderTarget, nullptr);
 }
 
 std::shared_ptr<D3DBuffer> EntityRenderManager::createBufferFromData(const MeshBuffer &buffer, UINT bindFlags) const

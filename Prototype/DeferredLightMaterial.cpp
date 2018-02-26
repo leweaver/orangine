@@ -33,6 +33,15 @@ Material::ShaderCompileSettings DeferredLightMaterial::pixelShaderSettings() con
 	return settings;
 }
 
+void DeferredLightMaterial::SetupDirectionalLight(const Vector3 &lightDirection, const Color &color, float intensity)
+{
+	XMStoreFloat4(&m_constants.direction, XMVectorSet(lightDirection.x, lightDirection.y, lightDirection.z, 0.0f));
+
+	XMVECTOR intensifiedColor = color;
+	intensifiedColor = XMVectorScale(intensifiedColor, intensity);
+	XMStoreFloat4(&m_constants.intensifiedColor, intensifiedColor);
+}
+
 bool DeferredLightMaterial::createPSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer)
 {
 	D3D11_BUFFER_DESC bufferDesc;
@@ -68,6 +77,19 @@ void DeferredLightMaterial::updatePSConstantBuffer(const Matrix &worldMatrix,
 	m_constants.invProjection = XMMatrixTranspose(XMMatrixInverse(&determinant, projMatrix));
 
 	context->UpdateSubresource(buffer, 0, nullptr, &m_constants, 0, 0);	
+}
+
+void DeferredLightMaterial::createBlendState(ID3D11Device *device, ID3D11BlendState *&blendState)
+{
+	// additive blend
+	D3D11_BLEND_DESC blendStateDesc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
+	blendStateDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+	blendStateDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+
+	blendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	blendStateDesc.RenderTarget[0].BlendEnable = true;
+	blendStateDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	device->CreateBlendState(&blendStateDesc, &blendState);
 }
 
 void DeferredLightMaterial::setContextSamplers(const DX::DeviceResources &deviceResources)

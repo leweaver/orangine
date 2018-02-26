@@ -54,7 +54,10 @@ EntityRenderManager::~EntityRenderManager()
 void EntityRenderManager::Initialize()
 {
 	m_renderableEntities = m_scene.GetSceneGraphManager().GetEntityFilter({ RenderableComponent::Type() });
-	m_lightEntities = m_scene.GetSceneGraphManager().GetEntityFilter({ DirectionalLightComponent::Type() });
+	m_lightEntities = m_scene.GetSceneGraphManager().GetEntityFilter({ 
+		DirectionalLightComponent::Type(),
+		PointLightComponent::Type()
+	}, EntityFilterMode::ANY);
 
 	m_primitiveMeshDataFactory = std::make_unique<PrimitiveMeshDataFactory>();
 }

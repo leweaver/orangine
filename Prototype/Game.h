@@ -21,6 +21,7 @@ public:
 
 	void CreateSceneLeverArm();
 	void CreateSceneCubeSatellite();
+	void CreateLights();
 	void CreateCamera();
 
 	// Initialization and management

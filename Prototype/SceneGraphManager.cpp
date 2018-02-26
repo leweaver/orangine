@@ -145,14 +145,18 @@ void SceneGraphManager::AddToRoot(std::shared_ptr<Entity> entityPtr)
 	m_rootEntities.push_back(entityPtr);
 }
 
-std::shared_ptr<EntityFilter> SceneGraphManager::GetEntityFilter(const ComponentTypeSet &componentTypes) {
+std::shared_ptr<EntityFilter> SceneGraphManager::GetEntityFilter(const ComponentTypeSet &componentTypes, EntityFilterMode mode) {
 	// Does an entity filter exist with all of the given component types?
 	for (auto efIter = m_entityFilters.begin(); efIter != m_entityFilters.end(); ++efIter) {
-		if (std::equal(componentTypes.begin(), componentTypes.end(), (*efIter)->m_componentTypes.begin()))
+		const auto &ef = *efIter;
+		if (ef->m_mode != mode)
+			continue;
+
+		if (std::equal(componentTypes.begin(), componentTypes.end(), ef->m_componentTypes.begin()))
 			return *efIter;
 	}
 
-	auto filter = std::make_shared<EntityFilterImpl>(componentTypes.begin(), componentTypes.end());
+	auto filter = std::make_shared<EntityFilterImpl>(componentTypes.begin(), componentTypes.end(), mode);
 
 	m_entityFilters.push_back(filter);
 	return filter;
@@ -219,7 +223,8 @@ void SceneGraphManager::HandleEntitiesLoaded(const std::vector<std::shared_ptr<E
 	}
 }
 
-SceneGraphManager::EntityFilterImpl::EntityFilterImpl(const ComponentTypeSet::const_iterator &begin, const ComponentTypeSet::const_iterator &end)
+SceneGraphManager::EntityFilterImpl::EntityFilterImpl(const ComponentTypeSet::const_iterator &begin, const ComponentTypeSet::const_iterator &end, EntityFilterMode mode)
+	: m_mode(mode)
 {
 	m_componentTypes = std::set<Component::ComponentType>(begin, end);
 }
@@ -230,25 +235,41 @@ void SceneGraphManager::EntityFilterImpl::HandleEntityAdd(const std::shared_ptr<
 	// Add it to the filter if all of the components we look for is present.
 	const size_t componentCount = entity->GetComponentCount();
 
-	// An entity can contain multiple instances of a single component type.
-	ComponentTypeSet foundComponents;
-	for (size_t i = 0; i < componentCount; i++) {
-		const Component &component = entity->GetComponent(i);
+	if (m_mode == EntityFilterMode::ALL) {
+		// An entity can contain multiple instances of a single component type.
+		ComponentTypeSet foundComponents;
+		for (size_t i = 0; i < componentCount; i++) {
+			const Component &component = entity->GetComponent(i);
 
-		auto pos = m_componentTypes.find(component.GetType());
-		if (pos == m_componentTypes.end())
-			continue;
+			auto pos = m_componentTypes.find(component.GetType());
+			if (pos == m_componentTypes.end())
+				continue;
 
-		foundComponents.insert(component.GetType());
+			foundComponents.insert(component.GetType());
+		}
+
+		if (foundComponents.size() == m_componentTypes.size())
+			m_entities.insert(entity);
 	}
+	else
+	{
+		assert(m_mode == EntityFilterMode::ANY);
+		for (size_t i = 0; i < componentCount; i++) {
+			const Component &component = entity->GetComponent(i);
 
-	if (foundComponents.size() == m_componentTypes.size())
-		m_entities.insert(entity);
+			auto pos = m_componentTypes.find(component.GetType());
+			if (pos != m_componentTypes.end())
+			{
+				m_entities.insert(entity);
+				return;
+			}
+		}		
+	}
 }
 
 void SceneGraphManager::EntityFilterImpl::HandleEntityRemove(const std::shared_ptr<Entity> &entity)
 {
-	// Remove it from the filter if any one of the components we look for is present.
+	// Remove it from the filter if any one of the components we look for is present (early exit).
 	const size_t componentCount = entity->GetComponentCount();
 	for (size_t i = 0; i < componentCount; i++) {
 		const Component &component = entity->GetComponent(i);

@@ -9,6 +9,13 @@
 #include <set>
 
 namespace OE {
+	
+enum class EntityFilterMode
+{
+	ALL,
+	ANY
+};
+
 
 class SceneGraphManager : public ManagerBase
 {
@@ -48,7 +55,7 @@ public:
 	void Destroy(Entity::ID_TYPE entity);
 
 	std::shared_ptr<Entity> GetEntityPtrById(Entity::ID_TYPE id) const;
-	std::shared_ptr<EntityFilter> GetEntityFilter(const ComponentTypeSet &componentTypes);
+	std::shared_ptr<EntityFilter> GetEntityFilter(const ComponentTypeSet &componentTypes, EntityFilterMode mode = EntityFilterMode::ALL);
 
 	void HandleEntityAdd(const Entity &entity);
 	void HandleEntityRemove(const Entity &entity);
@@ -68,9 +75,10 @@ private:
 
 	class EntityFilterImpl : public EntityFilter {
 	public:
-		std::set<Component::ComponentType> m_componentTypes; 
-		
-		EntityFilterImpl(const ComponentTypeSet::const_iterator &begin, const ComponentTypeSet::const_iterator &end);
+		std::set<Component::ComponentType> m_componentTypes;
+		EntityFilterMode m_mode;
+
+		EntityFilterImpl(const ComponentTypeSet::const_iterator &begin, const ComponentTypeSet::const_iterator &end, EntityFilterMode mode);
 
 		void HandleEntityAdd(const std::shared_ptr<Entity> &entity);
 		void HandleEntityRemove(const std::shared_ptr<Entity> &entity);

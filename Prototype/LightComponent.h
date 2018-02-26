@@ -5,8 +5,6 @@
 namespace OE {
 	class LightComponent : public Component
 	{
-		DECLARE_COMPONENT_TYPE;
-
 		DirectX::SimpleMath::Color m_color{};
 		float m_intensity;
 
@@ -39,7 +37,12 @@ namespace OE {
 		}
 	};
 
-	class DirectionalLightComponent : public Component
+	class DirectionalLightComponent : public LightComponent
+	{
+		DECLARE_COMPONENT_TYPE;
+	};
+
+	class PointLightComponent : public LightComponent
 	{
 		DECLARE_COMPONENT_TYPE;
 	};

@@ -9,6 +9,7 @@
 #include "TestComponent.h"
 #include "EntityRenderManager.h"
 #include "CameraComponent.h"
+#include "LightComponent.h"
 
 extern void ExitGame();
 
@@ -80,6 +81,44 @@ void Game::CreateCamera()
 	m_scene->SetMainCamera(camera);
 }
 
+void Game::CreateLights()
+{
+	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
+	int lightCount = 0;
+	auto createDirLight = [&entityManager, &lightCount](const Vector3 &normal, const Color &color, float intensity)
+	{
+		auto lightEntity = entityManager.Instantiate("Directional Light " + to_string(++lightCount));
+		auto &component = lightEntity->AddComponent<DirectionalLightComponent>();
+		component.setColor(color);
+		component.setIntensity(intensity);
+		
+		if (normal != Vector3::Forward)
+		{
+			Vector3 axis;
+			if (normal == Vector3::Backward)
+				axis = Vector3::Up;
+			else
+			{
+				axis = Vector3::Forward.Cross(normal);
+				axis.Normalize();
+			}
+
+			assert(normal.LengthSquared() != 0);
+			float angle = acos(Vector3::Forward.Dot(normal) / normal.Length());
+			lightEntity->SetRotation(Quaternion::CreateFromAxisAngle(axis, angle));
+		}
+	};
+
+	createDirLight({0, 0, -1}, {0, 0, 1}, 1);
+	createDirLight({0, 0, 1}, {0, 1, 1}, 1);
+
+	createDirLight({1, 0, 0}, {0, 1, 1}, 1);
+	createDirLight({-1, 0, 0}, {1, 0, 0}, 1);
+
+	createDirLight({0, 1, 0}, {0, 1, 1}, 1);
+	createDirLight({0, -1, 0}, {0, 1, 0}, 1);
+}
+
 void Game::CreateSceneLeverArm()
 {
 	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
@@ -117,6 +156,7 @@ void Game::Initialize(HWND window, int width, int height)
 		CreateSceneLeverArm();
 
 		CreateCamera();
+		CreateLights();
 	}
 
 	m_deviceResources->CreateDeviceResources();

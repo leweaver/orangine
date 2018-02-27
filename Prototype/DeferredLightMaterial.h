@@ -25,16 +25,27 @@ namespace OE
 		void setDepthTexture(const std::shared_ptr<Texture> &texture) { m_depthTexture = texture; }
 
 		void getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const override;
-		
+
+		void SetupPointLight(const DirectX::SimpleMath::Vector3 &lightPosition, const DirectX::SimpleMath::Color &color, float getIntensity);
 		void SetupDirectionalLight(const DirectX::SimpleMath::Vector3 &lightDirection, const DirectX::SimpleMath::Color &color, float getIntensity);
 
 	protected:
 
+		enum class DeferredLightType : int32_t
+		{
+			Directional,
+			Point
+		};
+
 		struct DeferredLightConstants
 		{
 			DirectX::XMMATRIX invProjection;
-			DirectX::XMFLOAT4 direction;
-			DirectX::XMFLOAT4 intensifiedColor;
+			union {
+				DirectX::XMFLOAT3 direction;
+				DirectX::XMFLOAT3 position;
+			};
+			DeferredLightType lightType;
+			DirectX::XMFLOAT3 intensifiedColor;
 		} m_constants;
 
 		UINT inputSlot(VertexAttribute attribute) override;

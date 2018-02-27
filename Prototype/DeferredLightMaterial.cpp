@@ -35,11 +35,22 @@ Material::ShaderCompileSettings DeferredLightMaterial::pixelShaderSettings() con
 
 void DeferredLightMaterial::SetupDirectionalLight(const Vector3 &lightDirection, const Color &color, float intensity)
 {
-	XMStoreFloat4(&m_constants.direction, XMVectorSet(lightDirection.x, lightDirection.y, lightDirection.z, 0.0f));
+	m_constants.lightType = DeferredLightType::Directional;
+	XMStoreFloat3(&m_constants.direction, XMVectorSet(lightDirection.x, lightDirection.y, lightDirection.z, 0.0f));
 
 	XMVECTOR intensifiedColor = color;
 	intensifiedColor = XMVectorScale(intensifiedColor, intensity);
-	XMStoreFloat4(&m_constants.intensifiedColor, intensifiedColor);
+	XMStoreFloat3(&m_constants.intensifiedColor, intensifiedColor);
+}
+
+void DeferredLightMaterial::SetupPointLight(const Vector3 &lightPosition, const Color &color, float intensity)
+{
+	m_constants.lightType = DeferredLightType::Point;
+	XMStoreFloat3(&m_constants.position, XMVectorSet(lightPosition.x, lightPosition.y, lightPosition.z, 0.0f));
+
+	XMVECTOR intensifiedColor = color;
+	intensifiedColor = XMVectorScale(intensifiedColor, intensity);
+	XMStoreFloat3(&m_constants.intensifiedColor, intensifiedColor);
 }
 
 bool DeferredLightMaterial::createPSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer)

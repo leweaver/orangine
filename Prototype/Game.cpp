@@ -108,7 +108,16 @@ void Game::CreateLights()
 			lightEntity->SetRotation(Quaternion::CreateFromAxisAngle(axis, angle));
 		}
 	};
+	auto createPointLight = [&entityManager, &lightCount](const Vector3 &position, const Color &color, float intensity)
+	{
+		auto lightEntity = entityManager.Instantiate("Point Light " + to_string(++lightCount));
+		auto &component = lightEntity->AddComponent<PointLightComponent>();
+		component.setColor(color);
+		component.setIntensity(intensity);
+		lightEntity->SetPosition(position);
+	};
 
+	lightCount = 0;
 	createDirLight({0, 0, -1}, {0, 1, 1}, 1);
 	createDirLight({0, 0, 1}, {0, 0, 1}, 1);
 
@@ -117,6 +126,9 @@ void Game::CreateLights()
 
 	createDirLight({0, 1, 0}, {0, 1, 1}, 1);
 	createDirLight({0, -1, 0}, {0, 1, 0}, 1);
+
+	lightCount = 0;
+	createPointLight({ 3, 0, 3 }, { 1, 1, 1 }, 1);
 }
 
 void Game::CreateSceneLeverArm()

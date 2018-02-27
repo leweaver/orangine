@@ -93,12 +93,13 @@ namespace OE {
 		std::shared_ptr<D3DBuffer> createBufferFromData(const MeshBuffer &buffer, UINT bindFlags) const;
 		std::unique_ptr<RendererData> createRendererData(const MeshData &meshData, const std::vector<VertexAttribute> &vertexAttributes) const;
 
+		void loadRendererDataToDeviceContext(const RendererData *rendererData, BufferArraySet &bufferArraySet) const;
 		void drawRendererData(
 			const CameraData &cameraData,
 			const DirectX::SimpleMath::Matrix &worldTransform,
 			const RendererData *rendererData, 
 			Material* material,
-			BufferArraySet &bufferArraySet);
+			BufferArraySet &bufferArraySet) const;
 
 		// renders a full screen quad that sets our output buffers to decent default values.
 		// Takes ownership of the passed in material

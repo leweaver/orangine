@@ -293,17 +293,37 @@ void EntityRenderManager::renderLights()
 
 	try
 	{
+		const auto rendererData = m_pass2ScreenSpaceQuad.rendererData.get();
+		if (!rendererData || !rendererData->m_vertexCount)
+			return;
+
+		loadRendererDataToDeviceContext(rendererData, bufferArraySet);
 		for (auto eIter = m_lightEntities->begin(); eIter != m_lightEntities->end(); ++eIter)
 		{
 			const auto lightEntity = *eIter;
-			const auto component = lightEntity->GetFirstComponentOfType<DirectionalLightComponent>();
+			bool foundLight = false;
 			
-			auto lightDirection = Vector3::Transform(Vector3::Forward, lightEntity->WorldRotation());
+			const auto directionalLight = lightEntity->GetFirstComponentOfType<DirectionalLightComponent>();
+			if (directionalLight)
+			{
+				const auto lightDirection = Vector3::Transform(Vector3::Forward, lightEntity->WorldRotation());
+				m_deferredLightMaterial->SetupDirectionalLight(lightDirection, directionalLight->getColor(), directionalLight->getIntensity());
+				foundLight = true;
+			}
+			
+			const auto pointLight = lightEntity->GetFirstComponentOfType<PointLightComponent>();
+			if (pointLight)
+			{
+				m_deferredLightMaterial->SetupDirectionalLight(lightEntity->WorldPosition(), pointLight->getColor(), pointLight->getIntensity());
+				foundLight = true;
+			}
 
-			m_deferredLightMaterial->SetupDirectionalLight(lightDirection, component->getColor(), component->getIntensity());
-			drawRendererData(m_cameraData, identity, m_pass2ScreenSpaceQuad.rendererData.get(), m_deferredLightMaterial.get(), bufferArraySet);
+			if (foundLight)
+			{
+				if (m_deferredLightMaterial->render(*rendererData, identity, m_cameraData.viewMatrix, m_cameraData.projectionMatrix, m_deviceResources))
+					m_deviceResources.GetD3DDeviceContext()->DrawIndexed(rendererData->m_indexCount, 0, 0);
+			}
 		}
-
 		m_deferredLightMaterial->unbind(m_deviceResources);
 	}
 	catch (std::runtime_error &e)
@@ -328,12 +348,7 @@ void EntityRenderManager::setDepthEnabled(bool enabled)
 	}
 }
 
-void EntityRenderManager::drawRendererData(
-	const CameraData &cameraData,
-	const Matrix &worldTransform,
-	const RendererData *rendererData, 
-	Material* material,
-	BufferArraySet &bufferArraySet)
+void EntityRenderManager::loadRendererDataToDeviceContext(const RendererData *rendererData, BufferArraySet &bufferArraySet) const
 {
 	const auto deviceContext = m_deviceResources.GetD3DDeviceContext();
 
@@ -370,19 +385,37 @@ void EntityRenderManager::drawRendererData(
 			// Set the index buffer to active in the input assembler so it can be rendered.
 			const auto indexAccessor = rendererData->m_indexBufferAccessor.get();
 			deviceContext->IASetIndexBuffer(indexAccessor->m_buffer->m_d3dBuffer, rendererData->m_indexFormat, indexAccessor->m_offset);
-
-			if (material->render(*rendererData, worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, m_deviceResources))
-				deviceContext->DrawIndexed(rendererData->m_indexCount, 0, 0);
-		}
-		else
-		{
-			material->render(*rendererData, worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, m_deviceResources);
-
-			// Render the triangles.
-			deviceContext->Draw(rendererData->m_vertexCount, rendererData->m_vertexCount);
 		}
 	}
 }
+
+void EntityRenderManager::drawRendererData(
+	const CameraData &cameraData,
+	const Matrix &worldTransform,
+	const RendererData *rendererData, 
+	Material* material,
+	BufferArraySet &bufferArraySet) const
+{
+	if (rendererData->m_vertexBuffers.empty())
+		return;
+
+	const auto deviceContext = m_deviceResources.GetD3DDeviceContext();
+	loadRendererDataToDeviceContext(rendererData, bufferArraySet);
+
+	if (rendererData->m_indexBufferAccessor != nullptr)
+	{
+		if (material->render(*rendererData, worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, m_deviceResources))
+			deviceContext->DrawIndexed(rendererData->m_indexCount, 0, 0);
+	}
+	else
+	{
+		material->render(*rendererData, worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, m_deviceResources);
+
+		// Render the triangles.
+		deviceContext->Draw(rendererData->m_vertexCount, rendererData->m_vertexCount);
+	}
+}
+
 
 std::unique_ptr<RendererData> EntityRenderManager::createRendererData(const MeshData &meshData, const std::vector<VertexAttribute> &vertexAttributes) const
 {

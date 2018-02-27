@@ -5,9 +5,12 @@
 
 cbuffer constants : register(b0)
 {
-	matrix        g_mMatInvProjection     : packoffset(c0);
-	float3        g_lightDirection        : packoffset(c4);
-	float3        g_lightIntensifiedColor : packoffset(c5);
+	matrix        g_mMatInvProjection;
+	// --
+	float3        g_lightPosition;
+	int			  g_lightType;
+	// --
+	float3        g_lightIntensifiedColor;
 };
 
 //--------------------------------------------------------------------------------------
@@ -50,8 +53,11 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 
 	float3 vsPosition = VSPositionFromDepth(input.vTexCoord0);	
 	float3 intensity = 0;
-		
-	intensity += DirLight(g_lightDirection.xyz, g_lightIntensifiedColor.rgb, 1, color1.xyz);
+	
+	if (g_lightType == 1)
+		intensity += PointLight(g_lightPosition.xyz, g_lightIntensifiedColor.rgb, 1, vsPosition, color1.xyz);
+	else
+		intensity += DirLight(g_lightPosition.xyz, g_lightIntensifiedColor.rgb, 1, color1.xyz);
 
 	return float4(color0.rgb * intensity, 1);
 }

@@ -2,30 +2,51 @@
 #include "Entity.h"
 #include "SceneGraphManager.h"
 #include "Scene.h"
-#include "Constants.h"
 
 using namespace OE;
 using namespace DirectX;
+using namespace SimpleMath;
+
+Entity::Entity(Scene &scene, const std::string &name, ID_TYPE id)
+	: m_worldTransform(Matrix::Identity)
+	, m_worldRotation(Quaternion::Identity)
+	, m_worldScale(Vector3::One)
+	, m_localRotation(Quaternion::Identity)
+	, m_localPosition(Vector3::Zero)
+	, m_localScale(Vector3::One)
+	, m_id(id)
+	, m_name(name)
+	, m_state(EntityState::UNINITIALIZED)
+	, m_active(true)
+	, m_parent(nullptr)
+	, m_scene(scene)
+{
+}
 
 void Entity::ComputeWorldTransform()
 {
 	if (HasParent())
 	{
-		m_worldScale = XMVectorMultiply(m_parent->m_worldScale, m_localScale);
-		m_worldRotation = XMQuaternionMultiply(m_localRotation, m_parent->Rotation());
-		m_worldTransform = XMMatrixTransformation(
-			Math::VEC_ZERO, Math::QUAT_IDENTITY, m_worldScale,
-			Math::VEC_ZERO, m_worldRotation,
-			XMVector3Transform(m_localPosition, m_parent->m_worldTransform));
+		m_worldScale = m_parent->m_worldScale * m_localScale;
+		m_worldRotation = Quaternion::Concatenate(m_parent->WorldRotation(), m_localRotation);
+
+		const auto worldPosition = Vector3::Transform(m_localPosition, m_parent->m_worldTransform);
+
+		const auto worldT = XMMatrixTranslationFromVector(worldPosition);
+		const auto worldR = XMMatrixRotationQuaternion(m_worldRotation);
+		const auto worldS = XMMatrixScalingFromVector(m_worldScale);
+		
+		m_worldTransform = XMMatrixMultiply(XMMatrixMultiply(worldS, worldR), worldT);
 	}
 	else
 	{
-		m_worldTransform = XMMatrixTransformation(
-			Math::VEC_ZERO, Math::QUAT_IDENTITY, m_localScale,
-			Math::VEC_ZERO, m_localRotation,
-			m_localPosition);
 		m_worldRotation = m_localRotation;
 		m_worldScale = m_localScale;
+
+		const auto localT = XMMatrixTranslationFromVector(m_localPosition);
+		const auto localR = XMMatrixRotationQuaternion(m_worldRotation);
+		const auto localS = XMMatrixScalingFromVector(m_worldScale);
+		m_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT);
 	}
 }
 
@@ -49,16 +70,48 @@ Component& Entity::GetComponent(size_t index) const
 
 void Entity::LookAt(const Entity& other)
 {
-	// Generate a world transform matrix
-	const auto laMat = XMMatrixLookAtRH(Position(), other.Position(), Math::VEC_UP);
+	LookAt(other.Position(), Vector3::Up);
+}
 
-	m_localRotation = XMQuaternionRotationMatrix(laMat);
-	if (HasParent())
-	{
-		const auto worldInv = XMMatrixInverse(nullptr, m_worldTransform);
-		const auto worldRotInv = XMQuaternionRotationMatrix(worldInv);
-		m_localRotation = XMQuaternionMultiply(worldRotInv, m_localRotation);		
+void Entity::LookAt(Vector3 position, const Vector3 &worldUp)
+{
+	if (HasParent()) {
+		const auto parentWorldInv = m_parent->m_worldTransform.Invert();
+		position = Vector3::Transform(position, parentWorldInv);
 	}
+		
+	Vector3 forward = position - m_localPosition;
+	if (forward.LengthSquared() == 0)
+		return;
+
+	// The DirectX LookAt function creates a view matrix; we want to create a transform
+	// to rotate this object towards a target. So, we need to create the matrix manually.
+	// (This also gives us the benefit of skipping the translation calculations; since they
+	// are not used)
+
+	forward.Normalize();
+	
+	Vector3 right;
+	forward.Cross(worldUp, right);
+	right.Normalize();
+
+	Vector3 up;
+	right.Cross(forward, up);
+
+	Matrix camToWorld;
+	camToWorld._11 = right.x;
+	camToWorld._12 = right.y;
+	camToWorld._13 = right.z;
+	camToWorld._21 = up.x;
+	camToWorld._22 = up.y;
+	camToWorld._23 = up.z;
+	camToWorld._31 = -forward.x;
+	camToWorld._32 = -forward.y;
+	camToWorld._33 = -forward.z;
+
+	m_localRotation = Quaternion::CreateFromRotationMatrix(camToWorld);
+
+	ComputeWorldTransform();
 }
 
 void Entity::SetActive(bool bActive)
@@ -102,23 +155,30 @@ void Entity::RemoveParent()
 	m_parent = nullptr;
 }
 
-XMVECTOR Entity::Position() const
+Vector3 Entity::WorldPosition() const
 {
-	return XMVector4Transform(m_localPosition, m_worldTransform);
+	return m_worldTransform.Translation();
 }
 
-const XMVECTOR& Entity::Scale() const
+const Vector3 &Entity::WorldScale() const
 {
 	return m_worldScale;
 }
 
-XMVECTOR Entity::Rotation() const
+const Quaternion &Entity::WorldRotation() const
 {
 	return m_worldRotation;
-	//return XMQuaternionRotationMatrix(m_worldTransform);
 }
 
 void Entity::OnComponentAdded(Component& component)
 {
 	m_scene.OnComponentAdded(*this, component);
+}
+
+Entity &EntityRef::Get() const
+{
+	const auto ptr = scene.GetSceneGraphManager().GetEntityPtrById(id);
+	if (!ptr)
+		throw std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(id) + ")");
+	return *ptr.get();
 }

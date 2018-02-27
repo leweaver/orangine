@@ -9,6 +9,9 @@ namespace OE {
 		/**
 		 * Will return a new Error Material if the given material doesn't exist.
 		 */
-		std::unique_ptr<Material> Instantiate(const std::string &materialName) const;
+		std::unique_ptr<Material> instantiate(const std::string &materialName) const;
+
+		template <typename TMaterial>
+		std::unique_ptr<TMaterial> instantiate() const;
 	};
 }

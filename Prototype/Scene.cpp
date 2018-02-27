@@ -8,10 +8,11 @@
 #include "EntityScriptingManager.h"
 #include "AssetManager.h"
 #include "glTFMeshLoader.h"
+#include "CameraComponent.h"
 
 using namespace OE;
 
-Scene::Scene()
+Scene::Scene(DX::DeviceResources &deviceResources)
 {
 	// Mesh loaders
 	AddMeshLoader<glTFMeshLoader>();
@@ -22,7 +23,7 @@ Scene::Scene()
 
 	// Services / Managers
 	m_sceneGraphManager = std::make_unique<SceneGraphManager>(*this, m_entityRepository);
-	m_entityRenderManager = std::make_unique<EntityRenderManager>(*this, m_materialRepository);
+	m_entityRenderManager = std::make_unique<EntityRenderManager>(*this, m_materialRepository, deviceResources);
 	m_entityScriptinigManager = std::make_unique<EntityScriptingManager>(*this);
 	m_assetManager = std::make_unique<AssetManager>(*this);
 
@@ -81,6 +82,21 @@ void Scene::Tick(DX::StepTimer const& timer)
 	m_entityScriptinigManager->Tick();
 }
 
+void Scene::Shutdown()
+{
+	m_entityRenderManager->Shutdown();
+	m_entityScriptinigManager->Shutdown();
+	m_sceneGraphManager->Shutdown();
+	
+	m_assetManager.reset();
+	m_entityScriptinigManager.reset();
+	m_entityRenderManager.reset();
+	m_sceneGraphManager.reset();
+	
+	m_entityRepository.reset();
+	m_materialRepository.reset();
+}
+
 void Scene::OnComponentAdded(Entity& entity, Component& component) const
 {
 	m_sceneGraphManager->HandleEntityComponentAdd(entity, component);
@@ -99,4 +115,17 @@ void Scene::OnEntityAdded(Entity& entity) const
 void Scene::OnEntityRemoved(Entity& entity) const
 {
 	m_sceneGraphManager->HandleEntityRemove(entity);
+}
+
+void Scene::SetMainCamera(const std::shared_ptr<Entity> &cameraEntity)
+{	
+	if (cameraEntity) {
+		const auto cameras = cameraEntity->GetComponentsOfType<CameraComponent>();
+		if (cameras.empty())
+			throw std::invalid_argument("Given entity must have exactly one CameraComponent");
+
+		m_mainCamera = cameraEntity;
+	}
+	else
+		m_mainCamera = nullptr;
 }

@@ -15,5 +15,6 @@ namespace OE {
 		
 		void Initialize() override;
 		void Tick() override;
+		void Shutdown() override {}
 	};
 }

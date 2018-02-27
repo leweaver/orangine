@@ -24,12 +24,14 @@ namespace OE {
 
 		std::map<std::string, std::shared_ptr<EntityGraphLoader>> m_entityGraphLoaders;
 
+		std::shared_ptr<Entity> m_mainCamera;
+
 		// Values as of the last call to Tick.
 		double m_deltaTime = 0;
 		double m_elapsedTime = 0;
 
 	public:
-		Scene();
+		Scene(DX::DeviceResources &deviceResources);
 		~Scene();
 
 		SceneGraphManager &GetSceneGraphManager() const { return *m_sceneGraphManager; }
@@ -38,6 +40,7 @@ namespace OE {
 		AssetManager &GetAssetManager() const { return *m_assetManager; }
 
 		void Tick(DX::StepTimer const& timer);
+		void Shutdown();
 
 		/** Total time since game start, in seconds. */
 		const double& GetElapsedTime() const { return m_elapsedTime; }
@@ -72,6 +75,9 @@ namespace OE {
 			}
 			return ml;
 		}
+
+		std::shared_ptr<Entity> MainCamera() const { return m_mainCamera; };
+		void SetMainCamera(const std::shared_ptr<Entity> &camera);
 
 	private:
 		void LoadEntities(const std::string& filename, Entity *parentEntity);

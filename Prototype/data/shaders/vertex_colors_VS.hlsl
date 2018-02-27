@@ -5,8 +5,9 @@
 
 cbuffer cbPerObject : register(b0)
 {
-	matrix        g_mViewProjection    : packoffset(c0);
+	matrix        g_mViewProjection       : packoffset(c0);
 	matrix        g_mWorld                : packoffset(c4);
+
 };
 
 //--------------------------------------------------------------------------------------
@@ -16,6 +17,7 @@ struct VS_INPUT
 {
 	float4 vPosition    : POSITION;
 	float4 vColor       : COLOR0;
+
 };
 
 struct VS_OUTPUT

@@ -136,6 +136,12 @@
       {
          "name" : "Cube",
          "pbrMetallicRoughness" : {
+            "baseColorFactor": [
+                0.8,
+                0,
+                0.8,
+                0.5
+            ],
             "baseColorTexture" : {
                "index" : 0
             },

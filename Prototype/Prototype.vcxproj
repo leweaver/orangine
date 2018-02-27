@@ -92,14 +92,19 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>lib/tinygltf</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;WindowsApp.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.pdb $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)
+echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -109,14 +114,19 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <AdditionalIncludeDirectories>lib/tinygltf</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;WindowsApp.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;windowscodecs.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.pdb $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)
+echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -129,14 +139,20 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.pdb $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)
+echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -148,31 +164,40 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\tinygltf;$(SolutionDir)thirdparty\DirectXTK\Inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;uuid.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;odbc32.lib;odbccp32.lib;windowscodecs.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.pdb $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)
+echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AssetManager.h" />
     <ClInclude Include="Bound.h" />
+    <ClInclude Include="CameraComponent.h" />
+    <ClInclude Include="ClearGBufferMaterial.h" />
     <ClInclude Include="Component.h" />
-    <ClInclude Include="Constants.h" />
+    <ClInclude Include="DeferredLightMaterial.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="EntityRepository.h" />
     <ClInclude Include="EntityFilter.h" />
     <ClInclude Include="glTFMeshLoader.h" />
-    <ClInclude Include="lib\tinygltf\json.hpp" />
-    <ClInclude Include="lib\tinygltf\stb_image.h" />
-    <ClInclude Include="lib\tinygltf\tiny_gltf.h" />
+    <ClInclude Include="LightComponent.h" />
     <ClInclude Include="MaterialRepository.h" />
+    <ClInclude Include="MeshData.h" />
     <ClInclude Include="MeshDataComponent.h" />
     <ClInclude Include="EntityGraphLoader.h" />
+    <ClInclude Include="PBRMaterial.h" />
+    <ClInclude Include="PrimitiveMeshDataFactory.h" />
     <ClInclude Include="SceneGraphManager.h" />
     <ClInclude Include="ManagerBase.h" />
     <ClInclude Include="EntityRenderManager.h" />
@@ -186,17 +211,28 @@
     <ClInclude Include="SimpleTypes.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="TestComponent.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureImpl.h" />
+    <ClInclude Include="TextureRenderTarget.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssetManager.cpp" />
     <ClCompile Include="Bound.cpp" />
+    <ClCompile Include="CameraComponent.cpp" />
+    <ClCompile Include="ClearGBufferMaterial.cpp" />
     <ClCompile Include="Component.cpp" />
+    <ClCompile Include="DeferredLightMaterial.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="EntityRepository.cpp" />
     <ClCompile Include="glTFMeshLoader.cpp" />
+    <ClCompile Include="LightComponent.cpp" />
     <ClCompile Include="MaterialRepository.cpp" />
+    <ClCompile Include="MeshData.cpp" />
     <ClCompile Include="MeshDataComponent.cpp" />
+    <ClCompile Include="PBRMaterial.cpp" />
+    <ClCompile Include="PrimitiveMeshDataFactory.cpp" />
     <ClCompile Include="SceneGraphManager.cpp" />
     <ClCompile Include="EntityRenderManager.cpp" />
     <ClCompile Include="EntityScriptingManager.cpp" />
@@ -213,6 +249,9 @@
     <ClCompile Include="RendererData.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="TestComponent.cpp" />
+    <ClCompile Include="TextureImpl.cpp" />
+    <ClCompile Include="TextureRenderTarget.cpp" />
+    <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -231,18 +270,57 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="data\shaders\clear_gbuffer_PS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="data\shaders\clear_gbuffer_VS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="data\shaders\deferred_light_PS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="data\shaders\deferred_light_VS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="data\shaders\pbr_metallic_PS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="data\shaders\pbr_metallic_VS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="data\shaders\vertex_colors_PS.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">PSMain</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PSMain</EntryPointName>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="data\shaders\vertex_colors_VS.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">VSMain</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VSMain</EntryPointName>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="NatvisFile.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

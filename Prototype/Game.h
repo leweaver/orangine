@@ -17,9 +17,19 @@ class Game : public DX::IDeviceNotify
 public:
 
     Game();
-	
-    // Initialization and management
+	~Game();
+
+	void CreateSceneLeverArm();
+	void CreateSceneCubeSatellite();
+	void CreateLights();
+	void CreateCamera();
+
+	// Initialization and management
     void Initialize(HWND window, int width, int height);
+	void InitRasterizer();
+
+	// Signal that the game can no longer run and should exit.
+	bool hasFatalError() const { return m_fatalError; };
 
     // Basic game loop
     void Tick();
@@ -44,12 +54,10 @@ private:
     void Update(DX::StepTimer const& timer);
     void Render();
 
-    void Clear();
-
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
 
-	void AddCubeToEntity(OE::Entity& entity, DirectX::FXMVECTOR animationSpeed, DirectX::FXMVECTOR localScale, DirectX::FXMVECTOR localPosition) const;
+	void AddCubeToEntity(OE::Entity& entity, DirectX::SimpleMath::Vector3 animationSpeed, DirectX::SimpleMath::Vector3 localScale, DirectX::SimpleMath::Vector3 localPosition) const;
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
@@ -58,5 +66,7 @@ private:
     DX::StepTimer                           m_timer;
 
 	// Services
-	std::unique_ptr<OE::Scene>      m_scene;
+	std::unique_ptr<OE::Scene>              m_scene;
+	
+	bool									m_fatalError;
 };

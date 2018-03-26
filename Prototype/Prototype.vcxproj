@@ -192,6 +192,7 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
     <ClInclude Include="EntityFilter.h" />
     <ClInclude Include="glTFMeshLoader.h" />
     <ClInclude Include="LightComponent.h" />
+    <ClInclude Include="LogFileSink.h" />
     <ClInclude Include="MaterialRepository.h" />
     <ClInclude Include="MeshData.h" />
     <ClInclude Include="MeshDataComponent.h" />
@@ -228,6 +229,7 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
     <ClCompile Include="EntityRepository.cpp" />
     <ClCompile Include="glTFMeshLoader.cpp" />
     <ClCompile Include="LightComponent.cpp" />
+    <ClCompile Include="LogFileSink.cpp" />
     <ClCompile Include="MaterialRepository.cpp" />
     <ClCompile Include="MeshData.cpp" />
     <ClCompile Include="MeshDataComponent.cpp" />

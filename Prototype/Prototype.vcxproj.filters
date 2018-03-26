@@ -121,6 +121,9 @@
     <ClInclude Include="CameraComponent.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="LogFileSink.h">
+      <Filter>Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -200,6 +203,9 @@
     </ClCompile>
     <ClCompile Include="CameraComponent.cpp">
       <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="LogFileSink.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

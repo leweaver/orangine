@@ -6,6 +6,7 @@
 #include "Game.h"
 
 #include <g3log/logworker.hpp>
+#include "LogFileSink.h"
 
 using namespace DirectX;
 
@@ -46,7 +47,11 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			logFileName = execName;
 		execName = OE::str_replace_all(execName, "\\", "/");
 	}
-	auto logFileSinkHandle = logWorker->addDefaultLogger(logFileName, path_to_log_file, "game");
+
+	// Create a sink with a non-timebased filename
+	auto sink = std::make_unique<OE::LogFileSink>(logFileName, path_to_log_file, "game", false);
+	sink->fileInit();
+	auto logFileSinkHandle = logWorker->addSink(move(sink), &OE::LogFileSink::fileWrite);
 
 	g3::initializeLogging(logWorker.get());
 

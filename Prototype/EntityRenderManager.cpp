@@ -72,7 +72,7 @@ void EntityRenderManager::Tick()
 	if (cameraEntity)
 	{
 		// TODO: Replace this with a 'scriptable' component on the camera
-		cameraEntity->LookAt({ 5, 0, 5 }, Vector3::Up);
+		//cameraEntity->LookAt({ 5, 0, 5 }, Vector3::Up);
 		CameraComponent* component = cameraEntity->GetFirstComponentOfType<CameraComponent>();
 		assert(!!component);
 
@@ -314,7 +314,7 @@ void EntityRenderManager::renderLights()
 			const auto pointLight = lightEntity->GetFirstComponentOfType<PointLightComponent>();
 			if (pointLight)
 			{
-				m_deferredLightMaterial->SetupDirectionalLight(lightEntity->WorldPosition(), pointLight->getColor(), pointLight->getIntensity());
+				m_deferredLightMaterial->SetupPointLight(lightEntity->WorldPosition(), pointLight->getColor(), pointLight->getIntensity());
 				foundLight = true;
 			}
 

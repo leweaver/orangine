@@ -9,13 +9,23 @@ namespace OE {
 	{
 		DirectX::SimpleMath::Color m_baseColor;
 
-		std::shared_ptr<Texture> m_baseColorTexture;
-		std::shared_ptr<Texture> m_metallicRoughnessTexture;
-		std::shared_ptr<Texture> m_normalTexture;
-		std::shared_ptr<Texture> m_occlusionTexture;
-		std::shared_ptr<Texture> m_emissiveTexture;
+		enum TextureType
+		{
+			BaseColor,
+			MetallicRoughness,
+			Normal,
+			Occlusion,
+			Emissive,
 
-		ID3D11SamplerState* m_sampleState;
+			NumTextureTypes
+		};
+
+		std::shared_ptr<Texture> m_textures[NumTextureTypes];
+
+		// Compiled state
+		unsigned int m_boundTextureCount;
+		ID3D11SamplerState *m_samplerStates[NumTextureTypes];
+		ID3D11ShaderResourceView *m_shaderResourceViews[NumTextureTypes];
 
 	public:
 		PBRMaterial();
@@ -32,64 +42,84 @@ namespace OE {
 
 		const std::shared_ptr<Texture> &getBaseColorTexture() const
 		{
-			return m_baseColorTexture;
+			return m_textures[BaseColor];
 		}
 
 		void setBaseColorTexture(const std::shared_ptr<Texture> &baseColorTexture)
 		{
-			m_baseColorTexture = baseColorTexture;
+			if (m_textures[BaseColor] != baseColorTexture) {
+				m_textures[BaseColor] = baseColorTexture;
+				markRequiresRecomplie();
+			}
 		}
 
 		const std::shared_ptr<Texture> &getMetallicRoughnessTexture() const
 		{
-			return m_metallicRoughnessTexture;
+			return m_textures[MetallicRoughness];
 		}
 
 		void setMetallicRoughnessTexture(const std::shared_ptr<Texture> &metallicRoughnessTexture)
 		{
-			m_metallicRoughnessTexture = metallicRoughnessTexture;
+			if (m_textures[MetallicRoughness] != metallicRoughnessTexture) {
+				m_textures[MetallicRoughness] = metallicRoughnessTexture;
+				markRequiresRecomplie();
+			}
 		}
 
 		const std::shared_ptr<Texture> &getNormalTexture() const
 		{
-			return m_normalTexture;
+			return m_textures[Normal];
 		}
 
 		void setNormalTexture(const std::shared_ptr<Texture> &normalTexture)
 		{
-			m_normalTexture = normalTexture;
+			if (m_textures[Normal] != normalTexture) {
+				m_textures[Normal] = normalTexture;
+				markRequiresRecomplie();
+			}
 		}
 
 		const std::shared_ptr<Texture> &getOcclusionTexture() const
 		{
-			return m_occlusionTexture;
+			return m_textures[Occlusion];
 		}
 
 		void setOcclusionTexture(const std::shared_ptr<Texture> &occlusionTexture)
 		{
-			m_occlusionTexture = occlusionTexture;
+			if (m_textures[Occlusion] != occlusionTexture) {
+				m_textures[Occlusion] = occlusionTexture;
+				markRequiresRecomplie();
+			}
 		}
 
 		const std::shared_ptr<Texture> &getEmissiveTexture() const
 		{
-			return m_emissiveTexture;
+			return m_textures[Emissive];
 		}
 
 		void setEmissiveTexture(const std::shared_ptr<Texture> &emissiveTexture)
 		{
-			m_emissiveTexture = emissiveTexture;
+			if (m_textures[Emissive] != emissiveTexture) {
+				m_textures[Emissive] = emissiveTexture;
+				markRequiresRecomplie();
+			}
 		}
 
 		void getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const override;
 
 	protected:
 		
-		struct PBRConstants
+		struct PBRConstantsVS
 		{
-			DirectX::XMMATRIX viewProjection;
+			DirectX::XMMATRIX worldViewProjection;
+			DirectX::XMMATRIX world;
+			DirectX::XMMATRIX worldInvTranspose;
+		} m_constantsVS{};
+		struct PBRConstantsPS
+		{
 			DirectX::XMMATRIX world;
 			DirectX::XMFLOAT4 baseColor;
-		} m_constants;
+		} m_constantsPS{};
 
 		UINT inputSlot(VertexAttribute attribute) override;
 
@@ -102,6 +132,16 @@ namespace OE {
 			const DirectX::SimpleMath::Matrix& projMatrix,
 			ID3D11DeviceContext* context, 
 			ID3D11Buffer *buffer) override;
+
+		bool createPSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer) override;
+		void updatePSConstantBuffer(const DirectX::SimpleMath::Matrix &worldMatrix,
+			const DirectX::SimpleMath::Matrix &viewMatrix,
+			const DirectX::SimpleMath::Matrix &projMatrix,
+			ID3D11DeviceContext *context,
+			ID3D11Buffer *buffer) override;
+
+		void createShaderResources(const DX::DeviceResources &deviceResources);
+		void releaseBindings();
 
 		void setContextSamplers(const DX::DeviceResources &deviceResources) override;
 		void unsetContextSamplers(const DX::DeviceResources &deviceResources) override;

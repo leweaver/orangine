@@ -39,40 +39,53 @@ SamplerState depthSampler : register(s2);
 
 // Forward declarations
 float3 VSPositionFromDepth(float2 vTexCoord);
-float3 PointLight(float3 lightPosition, float3 lightColor, float lightIntensity, float3 pixelPosition, float3 surfaceNormal_n);
-float3 DirLight(float3 lightDirection, float3 lightColor, float lightIntensity, float3 surfaceNormal_n);
+float3 PointLight(float3 lightPosition, float3 lightIntensifiedColor, float3 pixelPosition, float3 surfaceNormal_n);
+float3 DirLight(float3 lightDirection, float3 lightIntensifiedColor, float3 surfaceNormal_n);
 
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
 float4 PSMain(PS_INPUT input) : SV_TARGET
 {
+	// Inputs
 	float4 color0 = color0Texture.Sample(color0Sampler, input.vTexCoord0);
 	float4 color1 = color1Texture.Sample(color1Sampler, input.vTexCoord0);
 	float  depth  = depthTexture.Sample(depthSampler,   input.vTexCoord0).r;
 
+	// Decoded inputs
 	float3 vsPosition = VSPositionFromDepth(input.vTexCoord0);	
-	float3 intensity = 0;
-	
-	if (g_lightType == 1)
-		intensity += PointLight(g_lightPosition.xyz, g_lightIntensifiedColor.rgb, 1, vsPosition, color1.xyz);
-	else
-		intensity += DirLight(g_lightPosition.xyz, g_lightIntensifiedColor.rgb, 1, color1.xyz);
+	float3 worldNormal = color1.xyz * 2 - 1;
 
+	// Lighting
+	float3 intensity = 0;	
+	if (g_lightType == 1)
+		intensity += PointLight(g_lightPosition.xyz, g_lightIntensifiedColor.rgb, vsPosition, worldNormal);
+	else
+		intensity += DirLight(g_lightPosition.xyz, g_lightIntensifiedColor.rgb, worldNormal);
+
+#ifdef DEBUG_LIGHTING_ONLY
+	return float4(intensity * 100, 1);
+#elif DEBUG_NO_LIGHTING
+	return float4(color0.rgb, 1);
+#elif DEBUG_DISPLAY_NORMALS
+	return float4(color1.xyz * 0.5 + 0.5, 1);
+#else
 	return float4(color0.rgb * intensity, 1);
+#endif
+
 }
 
-float3 PointLight(float3 lightPosition, float3 lightColor, float lightIntensity, float3 pixelPosition, float3 surfaceNormal_n)
+float3 PointLight(float3 lightPosition, float3 lightIntensifiedColor, float3 pixelPosition, float3 surfaceNormal_n)
 {
 	float3 posDifference = pixelPosition - lightPosition;
-	lightIntensity = lightIntensity / length(posDifference);
+	lightIntensifiedColor = lightIntensifiedColor / length(posDifference);
 	float3 lightDirection_n = normalize(posDifference);
-	return max(0, lightIntensity * lightColor * -dot(lightDirection_n, surfaceNormal_n) / 3.14159);
+	return max(0, lightIntensifiedColor * -dot(lightDirection_n, surfaceNormal_n) / 3.14159);
 }
 
-float3 DirLight(float3 lightDirection, float3 lightColor, float lightIntensity, float3 surfaceNormal_n)
+float3 DirLight(float3 lightDirection, float3 lightIntensifiedColor, float3 surfaceNormal_n)
 {
-	return max(0, lightIntensity * lightColor * -dot(lightDirection, surfaceNormal_n) / 3.14159);
+	return max(0, lightIntensifiedColor * -dot(lightDirection, surfaceNormal_n) / 3.14159);
 }
 
 float3 VSPositionFromDepth(float2 vTexCoord)

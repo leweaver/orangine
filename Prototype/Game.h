@@ -21,8 +21,9 @@ public:
 
 	void CreateSceneLeverArm();
 	void CreateSceneCubeSatellite();
+	void CreateSceneAvocado(bool animate);
 	void CreateLights();
-	void CreateCamera();
+	void CreateCamera(bool animate);
 
 	// Initialization and management
     void Initialize(HWND window, int width, int height);

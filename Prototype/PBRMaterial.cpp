@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "PBRMaterial.h"
+#include <minwinbase.h>
 
 using namespace OE;
 using namespace DirectX;
@@ -7,15 +8,16 @@ using namespace std::literals;
 
 PBRMaterial::PBRMaterial()
 	: m_baseColor(XMVectorSet(0.f, 0.f, 0.f, 0.f))
-	, m_sampleState(nullptr)
+	, m_boundTextureCount(0)
 {
+	ZeroMemory(m_textures, sizeof(m_textures));
+	ZeroMemory(m_shaderResourceViews, sizeof(m_shaderResourceViews));
+	ZeroMemory(m_samplerStates, sizeof(m_samplerStates));
 }
 
 PBRMaterial::~PBRMaterial()
 {
-	if (m_sampleState)
-		m_sampleState->Release();
-	m_sampleState = nullptr;
+	releaseBindings();
 }
 
 void PBRMaterial::getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const {
@@ -53,6 +55,14 @@ Material::ShaderCompileSettings PBRMaterial::pixelShaderSettings() const
 {
 	ShaderCompileSettings settings = Material::pixelShaderSettings();
 	settings.filename = L"data/shaders/pbr_metallic_PS.hlsl"s;
+	
+	if (m_textures[BaseColor])
+		settings.defines["MAP_BASECOLOR"] = "1";
+	if (m_textures[MetallicRoughness])
+		settings.defines["MAP_METALLIC_ROUGHNESS"] = "1";
+	if (m_textures[Normal])
+		settings.defines["MAP_NORMAL"] = "1";
+
 	return settings;
 }
 
@@ -60,16 +70,16 @@ bool PBRMaterial::createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer *&bu
 {
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.ByteWidth = sizeof(PBRConstants);
+	bufferDesc.ByteWidth = sizeof(PBRConstantsVS);
 	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = 0;
 
-	m_constants.viewProjection = SimpleMath::Matrix::Identity;
-	m_constants.world = SimpleMath::Matrix::Identity;
+	m_constantsVS.worldViewProjection = SimpleMath::Matrix::Identity;
+	m_constantsVS.world = SimpleMath::Matrix::Identity;
 
 	D3D11_SUBRESOURCE_DATA initData;
-	initData.pSysMem = &m_constants;
+	initData.pSysMem = &m_constantsVS;
 	initData.SysMemPitch = 0;
 	initData.SysMemSlicePitch = 0;
 
@@ -88,77 +98,152 @@ void PBRMaterial::updateVSConstantBuffer(const SimpleMath::Matrix &worldMatrix,
 	ID3D11Buffer *buffer)
 {
 	// Convert to LH, for DirectX.
-	m_constants.viewProjection = XMMatrixTranspose(XMMatrixMultiply(viewMatrix, projMatrix));
-	m_constants.world = XMMatrixTranspose(worldMatrix);
-	m_constants.baseColor = m_baseColor;
+	m_constantsVS.worldViewProjection = XMMatrixMultiplyTranspose(worldMatrix, XMMatrixMultiply(viewMatrix, projMatrix));
 
-	context->UpdateSubresource(buffer, 0, nullptr, &m_constants, 0, 0);
+	m_constantsVS.world = XMMatrixTranspose(worldMatrix);
+	m_constantsVS.worldInvTranspose = XMMatrixInverse(nullptr, worldMatrix);
+
+	context->UpdateSubresource(buffer, 0, nullptr, &m_constantsVS, 0, 0);
+}
+
+bool PBRMaterial::createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer *&buffer)
+{
+	D3D11_BUFFER_DESC bufferDesc;
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.ByteWidth = sizeof(PBRConstantsPS);
+	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bufferDesc.CPUAccessFlags = 0;
+	bufferDesc.MiscFlags = 0;
+
+	m_constantsPS.world = SimpleMath::Matrix::Identity;
+	m_constantsPS.baseColor = SimpleMath::Color(Colors::White);
+
+	D3D11_SUBRESOURCE_DATA initData;
+	initData.pSysMem = &m_constantsPS;
+	initData.SysMemPitch = 0;
+	initData.SysMemSlicePitch = 0;
+
+	device->CreateBuffer(&bufferDesc, &initData, &buffer);
+
+	std::string name("PBRMaterial Constant Buffer");
+	buffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
+
+	return true;
+}
+
+void PBRMaterial::updatePSConstantBuffer(const SimpleMath::Matrix &worldMatrix,
+	const SimpleMath::Matrix &viewMatrix,
+	const SimpleMath::Matrix &projMatrix,
+	ID3D11DeviceContext *context,
+	ID3D11Buffer *buffer)
+{
+	// Convert to LH, for DirectX.
+	m_constantsPS.world = XMMatrixTranspose(worldMatrix);
+	m_constantsPS.baseColor = m_baseColor;
+
+	context->UpdateSubresource(buffer, 0, nullptr, &m_constantsPS, 0, 0);
+}
+
+void PBRMaterial::createShaderResources(const DX::DeviceResources &deviceResources)
+{
+	auto device = deviceResources.GetD3DDevice();
+
+	assert(sizeof(m_shaderResourceViews) == (sizeof(ID3D11SamplerState*) * NumTextureTypes));
+
+	// Release any previous samplerState and shaderResourceView objects
+	releaseBindings();
+	
+	for (int t = 0; t < NumTextureTypes; ++t)
+	{
+		// Only initialize if a texture has been bound to this slot.
+		const auto &texture = m_textures[t];
+		if (texture == nullptr)
+			continue;
+
+		if (!texture->isValid())
+		{
+			try
+			{
+				texture->load(device);
+			}
+			catch (std::exception &e)
+			{
+				LOG(WARNING) << "PBRMaterial: Failed to load texture (type " + to_string(t) + "): "s + e.what();
+			}
+
+			if (!texture->isValid()) {
+				// TODO: Set to error texture?
+				m_textures[t] = nullptr;
+				continue;
+			}
+		}
+
+		// Set sampler state
+		D3D11_SAMPLER_DESC samplerDesc;
+
+		// TODO: Use values from glTF?
+		// Create a texture sampler state description.
+		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.MipLODBias = 0.0f;
+		samplerDesc.MaxAnisotropy = 1;
+		samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+		samplerDesc.BorderColor[0] = 0;
+		samplerDesc.BorderColor[1] = 0;
+		samplerDesc.BorderColor[2] = 0;
+		samplerDesc.BorderColor[3] = 0;
+		samplerDesc.MinLOD = 0;
+		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+		// Create the texture sampler state.
+		HRESULT hr = device->CreateSamplerState(&samplerDesc, &m_samplerStates[t]);
+		if (SUCCEEDED(hr))
+		{
+			m_samplerStates[t]->AddRef();
+
+			m_shaderResourceViews[t] = texture->getShaderResourceView();
+			assert(m_shaderResourceViews[t]);
+
+			m_shaderResourceViews[t]->AddRef();
+			m_boundTextureCount++;
+		}
+		else
+		{
+			LOG(WARNING) << "PBRMaterial: Failed to create baseColorTexture sampler state with error code: "s + to_string(hr);
+
+			// TODO: Set to error texture?
+			m_textures[t] = nullptr;
+		}
+	}
+}
+
+void PBRMaterial::releaseBindings()
+{
+	for (unsigned int i = 0; i < NumTextureTypes; ++i)
+	{
+		if (m_shaderResourceViews[i]) {
+			m_shaderResourceViews[i]->Release();
+			m_shaderResourceViews[i] = nullptr;
+		}
+
+		if (m_samplerStates[i]) {
+			m_samplerStates[i]->Release();
+			m_samplerStates[i] = nullptr;
+		}
+	}
+
+	m_boundTextureCount = 0;
 }
 
 void PBRMaterial::setContextSamplers(const DX::DeviceResources &deviceResources)
 {
-	auto device = deviceResources.GetD3DDevice();
 	auto context = deviceResources.GetD3DDeviceContext();
-
-	// TODO: Refactor into a re-usable method to load a texture into a field.
-	// is this a duplicate of Material::ensureSamplerState ?
-	if (m_baseColorTexture != nullptr)
-	{
-		if (!m_baseColorTexture->isValid())
-		{
-			try
-			{
-				m_baseColorTexture->load(device);
-			}
-			catch (std::exception &e)
-			{
-				LOG(WARNING) << "PBRMaterial: Failed to load baseColorTexture: "s + e.what();
-
-				// TODO: Set to error texture?
-				m_baseColorTexture = nullptr;
-			}
-		}
-		if (m_baseColorTexture && m_baseColorTexture->isValid())
-		{
-			HRESULT hr = S_OK;
-			if (!m_sampleState) {
-				D3D11_SAMPLER_DESC samplerDesc;
-				// Create a texture sampler state description.
-				samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-				samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-				samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-				samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-				samplerDesc.MipLODBias = 0.0f;
-				samplerDesc.MaxAnisotropy = 1;
-				samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-				samplerDesc.BorderColor[0] = 0;
-				samplerDesc.BorderColor[1] = 0;
-				samplerDesc.BorderColor[2] = 0;
-				samplerDesc.BorderColor[3] = 0;
-				samplerDesc.MinLOD = 0;
-				samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-				// Create the texture sampler state.
-				hr = device->CreateSamplerState(&samplerDesc, &m_sampleState);
-			}
-
-			if (SUCCEEDED(hr))
-			{
-				const auto shaderResourceView = m_baseColorTexture->getShaderResourceView();
-				
-				// Set shader texture resource in the pixel shader.
-				context->PSSetShaderResources(0, 1, &shaderResourceView);
-				context->PSSetSamplers(0, 1, &m_sampleState);
-			}
-			else
-			{
-				LOG(WARNING) << "PBRMaterial: Failed to create baseColorTexture sampler state with error code: "s + to_string(hr);
-
-				// TODO: Set to error texture?
-				m_baseColorTexture = nullptr;
-			}
-		}
-	}
+	
+	// Set shader texture resources in the pixel shader.
+	context->PSSetShaderResources(0, m_boundTextureCount, m_shaderResourceViews);
+	context->PSSetSamplers(0, m_boundTextureCount, m_samplerStates);
 }
 
 void PBRMaterial::unsetContextSamplers(const DX::DeviceResources &deviceResources)
@@ -166,8 +251,11 @@ void PBRMaterial::unsetContextSamplers(const DX::DeviceResources &deviceResource
 	auto context = deviceResources.GetD3DDeviceContext();
 
 	ID3D11ShaderResourceView *shaderResourceViews[] = { nullptr };
-	context->PSSetShaderResources(0, 1, shaderResourceViews);
-
 	ID3D11SamplerState *samplerStates[] = { nullptr };
-	context->PSSetSamplers(0, 1, samplerStates);
+
+	// TODO: Is it faster to statically allocate an array of size NumTextures?
+	for (unsigned int i = 0; i < m_boundTextureCount; ++i) {
+		context->PSSetShaderResources(i, 1, shaderResourceViews);
+		context->PSSetSamplers(i, 1, samplerStates);
+	}
 }

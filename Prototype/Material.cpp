@@ -21,6 +21,7 @@ Material::Material()
 	, m_inputLayout(nullptr)
 	, m_vsConstantBuffer(nullptr)
 	, m_errorState(false)
+	, m_requiresRecompile(true)
 {
 }
 
@@ -49,6 +50,7 @@ void Material::release()
 		m_pixelShader = nullptr;
 	}
 
+	m_blendState.Reset();
 	m_vsConstantBuffer.Reset();
 	m_psConstantBuffer.Reset();
 }
@@ -89,7 +91,7 @@ Material::ShaderCompileSettings Material::vertexShaderSettings() const
 	{
 		L"data/shaders/vertex_colors_VS.hlsl"s,
 		"VSMain"s,
-		std::set<std::string>(),
+		std::map<std::string, std::string>(),
 		std::set<std::string>()
 	};
 }
@@ -100,7 +102,7 @@ Material::ShaderCompileSettings Material::pixelShaderSettings() const
 	{
 		L"data/shaders/vertex_colors_PS.hlsl"s,
 		"PSMain"s,
-		std::set<std::string>(),
+		std::map<std::string, std::string>(),
 		std::set<std::string>()
 	};
 }
@@ -186,8 +188,19 @@ bool Material::createPixelShader(ID3D11Device* device)
 
 
 	auto settings = pixelShaderSettings();
+
+	std::vector<D3D_SHADER_MACRO> defines;
+	for (const auto &define : settings.defines)
+	{
+		defines.push_back({
+			define.first.c_str(),
+			define.second.c_str()
+			});
+	}
+	defines.push_back({ nullptr, nullptr });
+
 	hr = D3DCompileFromFile(settings.filename.c_str(),
-		nullptr, nullptr,
+		defines.data(), nullptr,
 		settings.entryPoint.c_str(),
 		"ps_5_0",
 		flags, 0,
@@ -217,34 +230,33 @@ void Material::createBlendState(ID3D11Device *device, ID3D11BlendState *&blendSt
 
 bool Material::render(const RendererData &rendererData, const Matrix &worldMatrix, const Matrix &viewMatrix, const Matrix &projMatrix, const DX::DeviceResources &deviceResources)
 {
-	if (m_errorState)
-		return false;
-
 	const auto device = deviceResources.GetD3DDevice();
 	auto context = deviceResources.GetD3DDeviceContext();
-	
-	m_errorState = true;
-	{
-		if (!m_vertexShader) {
-			if (!createVertexShader(device)) 
+
+	if (m_requiresRecompile) {
+		m_requiresRecompile = false;
+		release();
+
+		m_errorState = true;
+		{
+			createShaderResources(deviceResources);
+			
+			if (!createVertexShader(device))
 				return false;
 
 			createVSConstantBuffer(device, *m_vsConstantBuffer.ReleaseAndGetAddressOf());
-		}
 
-		if (!m_pixelShader) {
-			if (!createPixelShader(device)) 
+			if (!createPixelShader(device))
 				return false;
-			
-			createPSConstantBuffer(device, *m_psConstantBuffer.ReleaseAndGetAddressOf());
-		}
 
-		if (!m_blendState)
-		{
+			createPSConstantBuffer(device, *m_psConstantBuffer.ReleaseAndGetAddressOf());
 			createBlendState(device, *m_blendState.ReleaseAndGetAddressOf());
 		}
+		m_errorState = false;
 	}
-	m_errorState = false;
+
+	if (m_errorState)
+		return false;
 
 	// We have a valid shader
 	context->IASetInputLayout(m_inputLayout);

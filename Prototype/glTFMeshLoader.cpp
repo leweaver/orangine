@@ -108,23 +108,46 @@ vector<shared_ptr<Entity>> glTFMeshLoader::LoadFile(const string& filename, Enti
 
 shared_ptr<OE::Texture> try_create_texture(const LoaderData &loaderData, const tinygltf::Material &gltfMaterial, const std::string &textureName)
 {
-	const auto paramPos = gltfMaterial.values.find(textureName);
-	if (paramPos == gltfMaterial.values.end())
-		return nullptr;
+	int gltfTextureIndex = -1;
 
-	const auto &param = paramPos->second;
-	const auto indexPos = param.json_double_value.find("index");
-	if (indexPos == param.json_double_value.end())
-		throw runtime_error("missing property 'index' from " + textureName);
+	// Look for PBR textures in 'values'
+	auto paramPos = gltfMaterial.values.find(textureName);
+	if (paramPos != gltfMaterial.values.end()) {
+		const auto &param = paramPos->second;
+		const auto indexPos = param.json_double_value.find("index");
+		if (indexPos == param.json_double_value.end())
+			throw runtime_error("missing property 'index' from " + textureName);
 
-	const auto gltfTextureIndex = static_cast<int>(indexPos->second);
+		gltfTextureIndex = static_cast<int>(indexPos->second);
+	}
+	else
+	{
+		paramPos = gltfMaterial.additionalValues.find(textureName);
+		if (paramPos == gltfMaterial.additionalValues.end())
+			return nullptr;
+
+		const auto &param = paramPos->second;
+		const auto indexPos = param.json_double_value.find("index");
+		if (indexPos == param.json_double_value.end())
+			throw runtime_error("missing property 'index' from " + textureName);
+
+		gltfTextureIndex = static_cast<int>(indexPos->second);
+	}
+
 	assert(loaderData.model.textures.size() < INT_MAX);
 	if (gltfTextureIndex < 0 || gltfTextureIndex >= static_cast<int>(loaderData.model.textures.size()))
 		throw runtime_error("invalid texture index '"+to_string(gltfTextureIndex)+"' for " + textureName);
 
 	const auto &gltfTexture = loaderData.model.textures.at(gltfTextureIndex);
-	// TODO: Read the sampler for sampling details and store on our texture
-	const auto &gltfSampler = loaderData.model.samplers.at(gltfTexture.sampler);
+	if (gltfTexture.sampler >= 0) {
+		// TODO: Read the sampler for sampling details and store on our texture
+		const auto &gltfSampler = loaderData.model.samplers.at(gltfTexture.sampler);
+	} 
+	else
+	{
+		// todo: create default sampler 
+	}
+
 	const auto &gltfImage = loaderData.model.images.at(gltfTexture.source);
 
 	if (!gltfImage.uri.empty())
@@ -223,10 +246,12 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 		}
 	}
 
-	// base color texture
-	{
-		material->setBaseColorTexture(try_create_texture(loaderData, gltfMaterial, "baseColorTexture"));
-	}
+	// PBR Textures
+	material->setBaseColorTexture(try_create_texture(loaderData, gltfMaterial, "baseColorTexture"));
+	material->setMetallicRoughnessTexture(try_create_texture(loaderData, gltfMaterial, "metallicRoughnessTexture"));
+
+	// Material Textures
+	material->setNormalTexture(try_create_texture(loaderData, gltfMaterial, "normalTexture"));
 
 	// TODO: Other material parameters; roughness etc
 	return material;
@@ -445,30 +470,32 @@ unique_ptr<MeshIndexBufferAccessor> read_index_buffer(const Model& model,
 		throw runtime_error("Index buffer must be scalar");
 
 	DXGI_FORMAT format;
+	size_t sourceElementSize;
 	switch (accessor.componentType) {
 	case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
 		format = DXGI_FORMAT_R16_UINT;
+		sourceElementSize = sizeof(uint16_t);
 		break;
 	case TINYGLTF_COMPONENT_TYPE_SHORT:
 		format = DXGI_FORMAT_R16_SINT;
+		sourceElementSize = sizeof(int16_t);
 		break;
 	case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
 		format = DXGI_FORMAT_R32_UINT;
+		sourceElementSize = sizeof(uint32_t);
 		break;
 	case TINYGLTF_COMPONENT_TYPE_INT:
 		format = DXGI_FORMAT_R32_SINT;
+		sourceElementSize = sizeof(int32_t);
 		break;
 	default:
 		throw runtime_error("Unknown index buffer format: " + to_string(accessor.componentType));
 	}
 
-	const size_t elementSize = sizeof(UINT);
-	const size_t byteWidth = elementSize * accessor.count;
-	if (byteWidth < bufferView.byteLength)
-		throw runtime_error("required byteWidth (" + to_string(byteWidth) + ") is larger than bufferView byteLength (" + to_string(bufferView.byteLength));
+	assert(sourceElementSize * accessor.count == bufferView.byteLength);
 	
 	// Copy the data.
-	const size_t stride = bufferView.byteStride == 0 ? elementSize : bufferView.byteStride;	
+	const size_t sourceStride = bufferView.byteStride == 0 ? sourceElementSize : bufferView.byteStride;
 
 	// Have we already created an identical buffer? If so, re-use it.
 	shared_ptr<MeshBuffer> meshBuffer;
@@ -480,16 +507,16 @@ unique_ptr<MeshIndexBufferAccessor> read_index_buffer(const Model& model,
 	{
 		// Copy the data.
 		meshBuffer = create_buffer(
-			static_cast<uint32_t>(elementSize), 
+			static_cast<uint32_t>(sourceElementSize),
 			static_cast<uint32_t>(accessor.count), 
 			buffer.data, 
-			static_cast<uint32_t>(stride), 
+			static_cast<uint32_t>(sourceStride),
 			static_cast<uint32_t>(bufferView.byteOffset));
 
 		loaderData.accessorIdxToMeshVertexBuffers[accessorIndex] = meshBuffer;
 	}
 	
-	return make_unique<MeshIndexBufferAccessor>(meshBuffer, format, static_cast<UINT>(accessor.count), static_cast<UINT>(elementSize), 0);
+	return make_unique<MeshIndexBufferAccessor>(meshBuffer, format, static_cast<UINT>(accessor.count), static_cast<UINT>(sourceElementSize), 0);
 }
 
 shared_ptr<MeshBuffer> create_buffer_s(size_t elementSize, size_t elementCount, const vector<uint8_t> &sourceData, size_t sourceStride, size_t sourceOffset) 

@@ -18,6 +18,7 @@ namespace OE {
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_psConstantBuffer;
 		Microsoft::WRL::ComPtr<ID3D11BlendState> m_blendState;
 		bool m_errorState;
+		bool m_requiresRecompile;
 
 	public:
 		Material();
@@ -44,7 +45,7 @@ namespace OE {
 		{
 			std::wstring filename;
 			std::string entryPoint;
-			std::set<std::string> defines;
+			std::map<std::string, std::string> defines;
 			std::set<std::string> includes;
 		};
 
@@ -52,7 +53,12 @@ namespace OE {
 		
 		virtual DXGI_FORMAT format(VertexAttribute attribute);
 		virtual UINT inputSlot(VertexAttribute attribute);
+
+		void markRequiresRecomplie() { m_requiresRecompile = true; }
 		
+		/*
+		 * Initialization
+		 */ 
 		virtual ShaderCompileSettings vertexShaderSettings() const;
 		virtual ShaderCompileSettings pixelShaderSettings() const;
 		bool createVertexShader(ID3D11Device *device);
@@ -73,6 +79,13 @@ namespace OE {
 			ID3D11DeviceContext *context, 
 			ID3D11Buffer *buffer) {};
 
+		// This method is the entry point for generating the shader. It will determine the constant layout, 
+		// create the shader resource view & sampler arrays.
+		virtual void createShaderResources(const DX::DeviceResources &deviceResources) {};
+
+		/* 
+		 * Per Frame
+		 */ 
 		virtual void setContextSamplers(const DX::DeviceResources &deviceResources) {}
 		virtual void unsetContextSamplers(const DX::DeviceResources &deviceResources) {}
 

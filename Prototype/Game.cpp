@@ -59,15 +59,29 @@ void Game::CreateSceneCubeSatellite()
 	AddCubeToEntity(*child3, {0.0f, 0.0f, 0.5f}, {1, 1, 2}, {-4, 0, 0});
 }
 
-void Game::CreateCamera()
+void Game::CreateSceneAvocado(bool animate)
+{
+	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
+	const auto &root1 = entityManager.Instantiate("Root");
+	root1->SetPosition({ 0, -2.5, 0 });
+	root1->SetScale({ 80, 80, 80 });
+
+	if (animate)
+		root1->AddComponent<TestComponent>().SetSpeed({ 0.0f, 0.1f, 0.0f });
+
+	m_scene->LoadEntities("data/meshes/Avocado/Avocado.gltf", *root1);
+}
+
+void Game::CreateCamera(bool animate)
 {
 	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
 
 	auto cameraDollyAnchor = entityManager.Instantiate("CameraDollyAnchor");
-	cameraDollyAnchor->AddComponent<TestComponent>().SetSpeed({0.0f, 0.1f, 0.0f});
+	if (animate)
+		cameraDollyAnchor->AddComponent<TestComponent>().SetSpeed({0.0f, 0.1f, 0.0f});
 	
 	auto camera = entityManager.Instantiate("Camera", *cameraDollyAnchor);
-	camera->SetPosition(Vector3(0.0f, 0.0f, 3.0f));
+	camera->SetPosition(Vector3(0.0f, 0.0f, 5));
 	
 	cameraDollyAnchor->Update();
 
@@ -76,7 +90,7 @@ void Game::CreateCamera()
 	component.SetFarPlane(30.0f);
 	component.SetNearPlane(0.1f);
 
-	camera->LookAt({ 5, 0, 5 }, Vector3::Up);
+	camera->LookAt({ 0, 0, 0 }, Vector3::Up);
 
 	m_scene->SetMainCamera(camera);
 }
@@ -91,7 +105,7 @@ void Game::CreateLights()
 		auto &component = lightEntity->AddComponent<DirectionalLightComponent>();
 		component.setColor(color);
 		component.setIntensity(intensity);
-		
+
 		if (normal != Vector3::Forward)
 		{
 			Vector3 axis;
@@ -115,20 +129,33 @@ void Game::CreateLights()
 		component.setColor(color);
 		component.setIntensity(intensity);
 		lightEntity->SetPosition(position);
+		return lightEntity;
 	};
 
-	lightCount = 0;
-	createDirLight({0, 0, -1}, {0, 1, 1}, 1);
-	createDirLight({0, 0, 1}, {0, 0, 1}, 1);
+	/*
+	{
+		lightCount = 0;
+		createDirLight({ 0, 0, -1 }, { 0, 1, 1 }, 1);
+		createDirLight({ 0, 0, 1 }, { 0, 0, 1 }, 1);
 
-	createDirLight({1, 0, 0}, {0, 1, 1}, 1);
-	createDirLight({-1, 0, 0}, {1, 0, 0}, 1);
+		createDirLight({ 1, 0, 0 }, { 0, 1, 1 }, 1);
+		createDirLight({ -1, 0, 0 }, { 1, 0, 0 }, 1);
 
-	createDirLight({0, 1, 0}, {0, 1, 1}, 1);
-	createDirLight({0, -1, 0}, {0, 1, 0}, 1);
+		createDirLight({ 0, 1, 0 }, { 0, 1, 1 }, 1);
+		createDirLight({ 0, -1, 0 }, { 0, 1, 0 }, 1);
 
-	lightCount = 0;
-	createPointLight({ 3, 0, 3 }, { 1, 1, 1 }, 1);
+		lightCount = 0;
+		createPointLight({ 3, 0, 3 }, { 1, 1, 1 }, 1);
+	}
+	*/
+	{
+		const auto &lightRoot = entityManager.Instantiate("Light Root");
+		lightRoot->SetPosition({ 0, 0, 0 });
+		//lightRoot->AddComponent<TestComponent>().SetSpeed({ 0.0f, 0.1f, 0.0f });
+				
+		std::shared_ptr<Entity> light1 = createPointLight({ 5, 0, 5 }, { 1, 1, 1 }, 20);
+		light1->SetParent(*lightRoot);
+	}
 }
 
 void Game::CreateSceneLeverArm()
@@ -153,6 +180,7 @@ void Game::Initialize(HWND window, int width, int height)
 
     m_deviceResources->SetWindow(window, width, height);
 
+	try
 	{
 		// TODO: Change the timer settings if you want something other than the default variable timestep mode.
 		// e.g. for 60 FPS fixed timestep update logic, call:
@@ -163,12 +191,14 @@ void Game::Initialize(HWND window, int width, int height)
 
 
 		//CreateSceneCubeSatellite();
-
-
-		CreateSceneLeverArm();
-
-		CreateCamera();
+		//CreateSceneLeverArm();
+		CreateSceneAvocado(true);
+		CreateCamera(false);
 		CreateLights();
+	}
+	catch (const std::exception &e)
+	{
+		LOG(FATAL) << "Failed to load scene: " << e.what();
 	}
 
 	m_deviceResources->CreateDeviceResources();

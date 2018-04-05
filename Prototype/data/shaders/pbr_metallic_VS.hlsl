@@ -5,9 +5,9 @@
 
 cbuffer constants : register(b0)
 {
-	matrix        g_mViewProjection       : packoffset(c0);
+	matrix        g_mWorldViewProjection  : packoffset(c0);
 	matrix        g_mWorld                : packoffset(c4);
-	float4        g_baseColor             : packoffset(c8);
+	matrix        g_mWorldInvTranspose    : packoffset(c8);
 };
 
 //--------------------------------------------------------------------------------------
@@ -23,10 +23,10 @@ struct VS_INPUT
 
 struct VS_OUTPUT
 {
-	float4 vColor       : COLOR0;
 	float3 vNormal      : NORMAL0;
 	float3 vWorldNormal : NORMAL1;
-	float4 vTangent     : TANGENT;
+	float4 vTangent     : TANGENT0;
+	float3 vWorldTangent: TANGENT1;
 	float2 vTexCoord0   : TEXCOORD0;
 	float4 vPosition    : SV_POSITION;
 };
@@ -37,15 +37,29 @@ struct VS_OUTPUT
 VS_OUTPUT VSMain(VS_INPUT Input)
 {
 	VS_OUTPUT Output;
-	matrix mWorldViewProjection = mul(g_mWorld, g_mViewProjection);
-	Output.vPosition = mul(Input.vPosition, mWorldViewProjection);
+	Output.vPosition = mul(Input.vPosition, g_mWorldViewProjection);
 	Output.vPosition.z *= Output.vPosition.w;
-	Output.vNormal = Input.vNormal;
-	Output.vWorldNormal = mul(Input.vNormal, g_mWorld);
-	Output.vTangent = Input.vTangent;
-	Output.vTexCoord0 = Input.vTexCoord0;
-	Output.vColor = g_baseColor;
+	/*
+	// Remove any scaling from the world matrix by normalizing each column
+	float3 A = normalize(float3(g_mWorld._11, g_mWorld._12, g_mWorld._13));
+	float3 B = normalize(float3(g_mWorld._21, g_mWorld._22, g_mWorld._23));
+	float3 C = normalize(float3(g_mWorld._31, g_mWorld._32, g_mWorld._33));
+	float3x3 worldRot = {
+		A[0], B[0], C[0],
+		A[1], B[1], C[1],
+		A[2], B[2], C[2],
+	};
+	*/
 
+	Output.vNormal = Input.vNormal;
+	Output.vTangent = Input.vTangent;
+
+	// Normalize as the world matrix may have scaling applied.
+	// TODO: does this work with non uniform scaling, or do we need to remove scaling from the matrix?
+	Output.vWorldNormal = normalize(mul(Input.vNormal, g_mWorldInvTranspose));
+	Output.vWorldTangent = normalize(mul(Input.vTangent.xyz, g_mWorld));
+
+	Output.vTexCoord0 = Input.vTexCoord0;
 
 	return Output;
 }

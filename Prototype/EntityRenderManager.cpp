@@ -95,6 +95,7 @@ void EntityRenderManager::Tick()
 
 		auto viewMatrix = Matrix::CreateLookAt(pos, pos + forward, up);
 		m_cameraData = {
+			wt,
 			viewMatrix,
 			projMatrix
 		};
@@ -104,6 +105,7 @@ void EntityRenderManager::Tick()
 		// Create a default camera
 		constexpr float defaultFarPlane = 30.0f;
 		m_cameraData = {
+			Matrix::Identity,
 			Matrix::CreateLookAt({ 0.0f, 0.0f, 10.0f }, Vector3::Zero, Vector3::Up),
 			Matrix::CreatePerspectiveFieldOfView(XMConvertToRadians(60.0f), aspectRatio, 0.1f, defaultFarPlane)
 		};
@@ -320,7 +322,7 @@ void EntityRenderManager::renderLights()
 
 			if (foundLight)
 			{
-				if (m_deferredLightMaterial->render(*rendererData, identity, m_cameraData.viewMatrix, m_cameraData.projectionMatrix, m_deviceResources))
+				if (m_deferredLightMaterial->render(*rendererData, m_cameraData.worldMatrix, m_cameraData.viewMatrix, m_cameraData.projectionMatrix, m_deviceResources))
 					m_deviceResources.GetD3DDeviceContext()->DrawIndexed(rendererData->m_indexCount, 0, 0);
 			}
 		}

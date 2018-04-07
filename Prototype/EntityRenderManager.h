@@ -34,6 +34,7 @@ namespace OE {
 
 		struct CameraData
 		{
+			DirectX::SimpleMath::Matrix worldMatrix;
 			DirectX::SimpleMath::Matrix viewMatrix;
 			DirectX::SimpleMath::Matrix projectionMatrix;
 

@@ -30,7 +30,7 @@ Material::ShaderCompileSettings DeferredLightMaterial::pixelShaderSettings() con
 {
 	ShaderCompileSettings settings = Material::pixelShaderSettings();
 	settings.filename = L"data/shaders/deferred_light_PS.hlsl"s;
-	settings.defines["DEBUG_DISPLAY_METALLIC_ROUGHNESS"] = "1";
+	//settings.defines["DEBUG_DISPLAY_METALLIC_ROUGHNESS"] = "1";
 	//settings.defines["DEBUG_LIGHTING_ONLY"] = "1";
 	//settings.defines["DEBUG_NO_LIGHTING"] = "1";
 	//settings.defines["DEBUG_DISPLAY_NORMALS"] = "1";

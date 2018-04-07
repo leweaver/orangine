@@ -1,3 +1,4 @@
+#include "inc\lighting.hlsl"
 
 //--------------------------------------------------------------------------------------
 // Globals
@@ -9,6 +10,8 @@ cbuffer constants : register(b0)
 	// --
 	float3        g_lightPosition;
 	int			  g_lightType;
+	// --
+	float4        g_eyePosition;
 	// --
 	float3        g_lightIntensifiedColor;
 };
@@ -39,8 +42,7 @@ SamplerState depthSampler : register(s2);
 
 // Forward declarations
 float3 VSPositionFromDepth(float2 vTexCoord);
-float3 PointLight(float3 lightPosition, float3 lightIntensifiedColor, float3 pixelPosition, float3 surfaceNormal_n);
-float3 DirLight(float3 lightDirection, float3 lightIntensifiedColor, float3 surfaceNormal_n);
+float3 PointLightVector(float3 lightPosition, float3 lightIntensifiedColor, float3 pixelPosition, float3 surfaceNormal_n);
 
 //--------------------------------------------------------------------------------------
 // Pixel Shader
@@ -53,39 +55,48 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	float  depth  = depthTexture.Sample(depthSampler,   input.vTexCoord0).r;
 
 	// Decoded inputs
-	float3 vsPosition = VSPositionFromDepth(input.vTexCoord0);	
+	float3 vsPosition = VSPositionFromDepth(input.vTexCoord0);
 	float3 worldNormal = color1.xyz * 2 - 1;
-
-	// Lighting
-	float3 intensity = 0;	
-	if (g_lightType == 1)
-		intensity += PointLight(g_lightPosition.xyz, g_lightIntensifiedColor.rgb, vsPosition, worldNormal);
-	else
-		intensity += DirLight(g_lightPosition.xyz, g_lightIntensifiedColor.rgb, worldNormal);
+	float metallic = color0.w;
+	float roughness = color1.w;
 
 #ifdef DEBUG_LIGHTING_ONLY
-	return float4(intensity * 100, 1);
-#elif DEBUG_NO_LIGHTING
+	float3 baseColor = float3(1, 1, 1);
+#else
+	float3 baseColor = color0.rgb;
+#endif
+
+	// Lighting Parameters
+	float3 eyeVectorW = normalize(g_eyePosition.xyz - vsPosition);
+	float3 lightVector;
+	float3 lightIntensifiedColor = g_lightIntensifiedColor.rgb;
+	if (g_lightType == 1)
+	{
+		float3 posDifference = vsPosition - g_lightPosition.xyz;
+		lightIntensifiedColor = lightIntensifiedColor / length(posDifference);
+		lightVector = normalize(posDifference);
+	}
+	else
+	{
+		lightVector = g_lightPosition.xyz;
+	}
+
+	// Final lighting calculations
+	float3 finalColor = BRDF(metallic, roughness, baseColor,
+		eyeVectorW, lightVector, worldNormal);
+
+	//float3 intensity = max(0, lightIntensifiedColor * -dot(lightVector, worldNormal) / 3.14159);
+
+#ifdef DEBUG_NO_LIGHTING
 	return float4(color0.rgb, 1);
+#elif DEBUG_DISPLAY_METALLIC_ROUGHNESS
+	return float4(metallic, roughness, 0, 1);
 #elif DEBUG_DISPLAY_NORMALS
 	return float4(color1.xyz * 0.5 + 0.5, 1);
 #else
-	return float4(color0.rgb * intensity, 1);
+	return float4(finalColor, 1);
 #endif
 
-}
-
-float3 PointLight(float3 lightPosition, float3 lightIntensifiedColor, float3 pixelPosition, float3 surfaceNormal_n)
-{
-	float3 posDifference = pixelPosition - lightPosition;
-	lightIntensifiedColor = lightIntensifiedColor / length(posDifference);
-	float3 lightDirection_n = normalize(posDifference);
-	return max(0, lightIntensifiedColor * -dot(lightDirection_n, surfaceNormal_n) / 3.14159);
-}
-
-float3 DirLight(float3 lightDirection, float3 lightIntensifiedColor, float3 surfaceNormal_n)
-{
-	return max(0, lightIntensifiedColor * -dot(lightDirection, surfaceNormal_n) / 3.14159);
 }
 
 float3 VSPositionFromDepth(float2 vTexCoord)

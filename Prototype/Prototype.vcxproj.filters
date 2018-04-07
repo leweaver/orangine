@@ -26,6 +26,9 @@
     <Filter Include="Systems\Renderer\Materials">
       <UniqueIdentifier>{93383671-ad64-448f-9e94-7d1a56a37cb7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Assets\shaders\inc">
+      <UniqueIdentifier>{4af0fe66-d1d3-4436-af4d-54fbfcc4f374}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -123,6 +126,9 @@
     </ClInclude>
     <ClInclude Include="LogFileSink.h">
       <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="data\shaders\inc\lighting.hlsl">
+      <Filter>Assets\shaders\inc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

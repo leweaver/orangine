@@ -6,6 +6,7 @@ cbuffer constants : register(b0)
 {
 	matrix        g_mWorld                : packoffset(c0);
 	float4        g_baseColor             : packoffset(c4);
+	float4        g_metallicRoughness     : packoffset(c5); // metallic, roughness
 };
 
 //--------------------------------------------------------------------------------------
@@ -22,8 +23,8 @@ struct PS_INPUT
 
 struct PS_OUTPUT
 {
-	float4  Color  : SV_Target0; // xyz: Diffuse          w: Specular intensity
-	float4  Color1 : SV_Target1; // xyz: World normals    w: Specular power
+	float4  Color  : SV_Target0; // xyz: Diffuse          w: metallic
+	float4  Color1 : SV_Target1; // xyz: World normals    w: roughness
 };
 
 
@@ -43,7 +44,9 @@ Texture2D normalTexture;
 SamplerState normalSampler;
 #endif
 
+//--------------------------------------------------------------------------------------
 // Forward Declarations
+//--------------------------------------------------------------------------------------
 float3 NormalSampleToWorldNormal(float3 sampleT, float3 normalW, float3 tangentW, float tangentHandedness);
 
 //--------------------------------------------------------------------------------------
@@ -60,7 +63,9 @@ PS_OUTPUT PSMain(PS_INPUT input)
 #endif
 
 #ifdef MAP_METALLIC_ROUGHNESS
-	float3 metallicRoughness = metallicRoughnessTexture.Sample(metallicRoughnessSampler, input.vTexCoord0).xyz;
+	float2 metallicRoughness = metallicRoughnessTexture.Sample(metallicRoughnessSampler, input.vTexCoord0).xy;
+#else
+	float2 metallicRoughness = g_metallicRoughness.xy;
 #endif
 	
 #ifdef MAP_NORMAL
@@ -68,15 +73,12 @@ PS_OUTPUT PSMain(PS_INPUT input)
 #else
 	float3 worldNormal = input.vWorldNormal.xyz;
 #endif
-	float specularIntensity = 1.0;
-	float specularPower = 1.0 + (metallicRoughness.x * 0.0);
 
-	output.Color = float4(baseColor, specularIntensity);
-	output.Color1 = float4(worldNormal * 0.5 + 0.5, specularPower);
+	output.Color = float4(baseColor, metallicRoughness.x);
+	output.Color1 = float4(worldNormal * 0.5 + 0.5, metallicRoughness.y);
 
 	return output;
 }
-
 
 float3 NormalSampleToWorldNormal(float3 sampleT, float3 normalW, float3 tangentW, float tangentHandedness) 
 {

@@ -185,6 +185,12 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
     <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="ClearGBufferMaterial.h" />
     <ClInclude Include="Component.h" />
+    <ClInclude Include="data\shaders\inc\lighting.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="DeferredLightMaterial.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="Entity.h" />

@@ -8,6 +8,8 @@ using namespace std::literals;
 
 PBRMaterial::PBRMaterial()
 	: m_baseColor(XMVectorSet(0.f, 0.f, 0.f, 0.f))
+	, m_metallic(1.0)
+	, m_roughness(0.0)
 	, m_boundTextureCount(0)
 {
 	ZeroMemory(m_textures, sizeof(m_textures));
@@ -117,6 +119,7 @@ bool PBRMaterial::createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer *&bu
 
 	m_constantsPS.world = SimpleMath::Matrix::Identity;
 	m_constantsPS.baseColor = SimpleMath::Color(Colors::White);
+	m_constantsPS.metallicRoughness = SimpleMath::Vector4::Zero;
 
 	D3D11_SUBRESOURCE_DATA initData;
 	initData.pSysMem = &m_constantsPS;
@@ -140,6 +143,7 @@ void PBRMaterial::updatePSConstantBuffer(const SimpleMath::Matrix &worldMatrix,
 	// Convert to LH, for DirectX.
 	m_constantsPS.world = XMMatrixTranspose(worldMatrix);
 	m_constantsPS.baseColor = m_baseColor;
+	m_constantsPS.metallicRoughness = SimpleMath::Vector4(m_metallic, m_roughness, 0.0, 0.0);
 
 	context->UpdateSubresource(buffer, 0, nullptr, &m_constantsPS, 0, 0);
 }

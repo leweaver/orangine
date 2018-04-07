@@ -45,6 +45,7 @@ namespace OE
 				DirectX::XMFLOAT3 position;
 			};
 			DeferredLightType lightType;
+			DirectX::XMFLOAT4 eyePosition;
 			DirectX::XMFLOAT3 intensifiedColor;
 		} m_constants;
 

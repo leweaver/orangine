@@ -30,6 +30,7 @@ Material::ShaderCompileSettings DeferredLightMaterial::pixelShaderSettings() con
 {
 	ShaderCompileSettings settings = Material::pixelShaderSettings();
 	settings.filename = L"data/shaders/deferred_light_PS.hlsl"s;
+	settings.defines["DEBUG_DISPLAY_METALLIC_ROUGHNESS"] = "1";
 	//settings.defines["DEBUG_LIGHTING_ONLY"] = "1";
 	//settings.defines["DEBUG_NO_LIGHTING"] = "1";
 	//settings.defines["DEBUG_DISPLAY_NORMALS"] = "1";
@@ -89,6 +90,7 @@ void DeferredLightMaterial::updatePSConstantBuffer(const Matrix &worldMatrix,
 	// Convert to LH, for DirectX.
 	XMVECTOR determinant;
 	m_constants.invProjection = XMMatrixTranspose(XMMatrixInverse(&determinant, projMatrix));
+	m_constants.eyePosition = Vector4(worldMatrix._41, worldMatrix._42, worldMatrix._43, 0.0);
 
 	context->UpdateSubresource(buffer, 0, nullptr, &m_constants, 0, 0);	
 }

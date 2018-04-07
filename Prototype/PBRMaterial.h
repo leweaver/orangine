@@ -8,6 +8,8 @@ namespace OE {
 	class PBRMaterial : public Material
 	{
 		DirectX::SimpleMath::Color m_baseColor;
+		float m_metallic;
+		float m_roughness;
 
 		enum TextureType
 		{
@@ -119,6 +121,7 @@ namespace OE {
 		{
 			DirectX::XMMATRIX world;
 			DirectX::XMFLOAT4 baseColor;
+			DirectX::XMFLOAT4 metallicRoughness; // metallic, roughness
 		} m_constantsPS{};
 
 		UINT inputSlot(VertexAttribute attribute) override;

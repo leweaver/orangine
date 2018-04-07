@@ -142,7 +142,8 @@ bool Material::createVertexShader(ID3D11Device* device)
 #endif
 
 	hr = D3DCompileFromFile(settings.filename.c_str(), 
-	                        nullptr, nullptr, 
+	                        nullptr, 
+							D3D_COMPILE_STANDARD_FILE_INCLUDE,
 	                        settings.entryPoint.c_str(), 
 	                        "vs_5_0", 
 							flags, 0,
@@ -200,7 +201,8 @@ bool Material::createPixelShader(ID3D11Device* device)
 	defines.push_back({ nullptr, nullptr });
 
 	hr = D3DCompileFromFile(settings.filename.c_str(),
-		defines.data(), nullptr,
+		defines.data(),
+		D3D_COMPILE_STANDARD_FILE_INCLUDE,
 		settings.entryPoint.c_str(),
 		"ps_5_0",
 		flags, 0,

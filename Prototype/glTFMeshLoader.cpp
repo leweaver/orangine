@@ -227,7 +227,7 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 	auto material = materialRepository.instantiate<PBRMaterial>();
 
 
-	// base color
+	// base color factor
 	{
 		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_BaseColorFactor);
 		if (paramPos != gltfMaterial.values.end()) {
@@ -242,8 +242,40 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 				material->setBaseColor(color);
 			}
 			else
-				throw runtime_error("Failed to parse glTF: expected material baseColorFactor to be an array of 4 numbers");
+				throw runtime_error("Failed to parse glTF: expected material "+ g_pbrPropertyName_BaseColorFactor+" to be an array of 4 numbers");
 		} 
+		else
+		{
+			material->setBaseColor(DirectX::SimpleMath::Color(DirectX::Colors::White));
+		}
+	}
+	// metallic factor
+	{
+		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_MetallicFactor);
+		if (paramPos != gltfMaterial.values.end()) {
+			const auto &param = paramPos->second;
+			if (param.number_array.size() == 1) {
+				material->setMetallicFactor(param.number_array[0]);
+			}
+			else
+				throw runtime_error("Failed to parse glTF: expected material "+ g_pbrPropertyName_MetallicFactor+" to be scalar");
+		}
+		else
+		{
+			material->setBaseColor(DirectX::SimpleMath::Color(DirectX::Colors::White));
+		}
+	}
+	// roughness factor
+	{
+		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_RoughnessFactor);
+		if (paramPos != gltfMaterial.values.end()) {
+			const auto &param = paramPos->second;
+			if (param.number_array.size() == 1) {
+				material->setRoughnessFactor(param.number_array[0]);
+			}
+			else
+				throw runtime_error("Failed to parse glTF: expected material "+ g_pbrPropertyName_RoughnessFactor+" to be scalar");
+		}
 		else
 		{
 			material->setBaseColor(DirectX::SimpleMath::Color(DirectX::Colors::White));

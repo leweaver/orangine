@@ -65,7 +65,8 @@ PS_OUTPUT PSMain(PS_INPUT input)
 #endif
 
 #ifdef MAP_METALLIC_ROUGHNESS
-	float2 metallicRoughness = metallicRoughnessTexture.Sample(metallicRoughnessSampler, input.vTexCoord0).xy;
+	float4 metallicRoughnessSample = metallicRoughnessTexture.Sample(metallicRoughnessSampler, input.vTexCoord0);
+	float2 metallicRoughness = float2(metallicRoughnessSample.b, metallicRoughnessSample.g) * g_metallicRoughness.xy;
 #else
 	float2 metallicRoughness = g_metallicRoughness.xy;
 #endif

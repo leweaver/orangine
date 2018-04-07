@@ -1,3 +1,5 @@
+#include "inc\utils.hlsl"
+
 //--------------------------------------------------------------------------------------
 // Globals
 //--------------------------------------------------------------------------------------
@@ -57,9 +59,9 @@ PS_OUTPUT PSMain(PS_INPUT input)
 	PS_OUTPUT output;
 		
 #ifdef MAP_BASECOLOR
-	float3 baseColor = baseColorTexture.Sample(baseColorSampler, input.vTexCoord0).xyz;
+	float3 baseColor = SRGBtoLINEAR(baseColorTexture.Sample(baseColorSampler, input.vTexCoord0).xyz) * g_baseColor;
 #else
-	float3 baseColor = float3(0, 0.5, 1.0);
+	float3 baseColor = g_baseColor;
 #endif
 
 #ifdef MAP_METALLIC_ROUGHNESS

@@ -243,6 +243,10 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 			}
 			else
 				throw runtime_error("Failed to parse glTF: expected material baseColorFactor to be an array of 4 numbers");
+		} 
+		else
+		{
+			material->setBaseColor(DirectX::SimpleMath::Color(DirectX::Colors::White));
 		}
 	}
 

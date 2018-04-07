@@ -259,6 +259,9 @@
     <FxCompile Include="data\shaders\deferred_light_VS.hlsl">
       <Filter>Assets\shaders</Filter>
     </FxCompile>
+    <FxCompile Include="data\shaders\inc\utils.hlsl">
+      <Filter>Assets\shaders\inc</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="NatvisFile.natvis" />

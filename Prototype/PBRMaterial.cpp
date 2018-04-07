@@ -7,7 +7,7 @@ using namespace DirectX;
 using namespace std::literals;
 
 PBRMaterial::PBRMaterial()
-	: m_baseColor(XMVectorSet(0.f, 0.f, 0.f, 0.f))
+	: m_baseColor(XMVectorSet(1.f, 1.f, 1.f, 1.f))
 	, m_metallic(1.0)
 	, m_roughness(0.0)
 	, m_boundTextureCount(0)

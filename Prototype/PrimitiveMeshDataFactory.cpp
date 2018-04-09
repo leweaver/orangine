@@ -72,3 +72,22 @@ std::shared_ptr<MeshData> PrimitiveMeshDataFactory::createQuad(const Vector2 &si
 
 	return md;
 }
+
+std::unique_ptr<MeshVertexBufferAccessor> PrimitiveMeshDataFactory::generateNormalBuffer(
+	const MeshIndexBufferAccessor &indexBufferAccessor, const MeshVertexBufferAccessor &vertexBufferAccessor) const
+{
+	if (indexBufferAccessor.m_count % 3 != 0)
+		throw std::logic_error("Expected index buffer to have a count that is a multiple of 3.");
+	
+	// Iterate over each triangle, creating a flat normal.
+	indexBufferAccessor.m_buffer->m_data
+	for (int idx = 0; idx < indexBufferAccessor.m_count; ++idx)
+	{
+		indexBufferAccessor
+	}
+}
+
+std::unique_ptr<MeshVertexBufferAccessor> PrimitiveMeshDataFactory::generateTangentBuffer(
+	const MeshIndexBufferAccessor &indexBufferAccessor, const MeshVertexBufferAccessor &vertexBufferAccessor) const
+{
+}

@@ -22,6 +22,7 @@ public:
 	void CreateSceneLeverArm();
 	void CreateSceneCubeSatellite();
 	void CreateSceneAvocado(bool animate);
+	void CreateSceneMetalRoughSpheres(bool animate);
 	void CreateLights();
 	void CreateCamera(bool animate);
 

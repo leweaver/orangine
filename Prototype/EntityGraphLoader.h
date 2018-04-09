@@ -10,6 +10,7 @@ namespace DX
 
 namespace OE
 {
+	class PrimitiveMeshDataFactory;
 	class Entity;
 	class EntityRepository;
 	class MaterialRepository;
@@ -25,6 +26,6 @@ namespace OE
 		 * Returns a vector of root entities, that may have children. These entities will have been initialized such that they point to a scene,  
 		 * but they will not have been added to that scene yet.
 		 */
-		virtual std::vector<std::shared_ptr<Entity>> LoadFile(const std::string &path, EntityRepository &entityFactory, MaterialRepository &materialRepository) const = 0;
+		virtual std::vector<std::shared_ptr<Entity>> LoadFile(const std::string &path, EntityRepository &entityFactory, MaterialRepository &materialRepository, PrimitiveMeshDataFactory &meshDataFactory) const = 0;
 	};
 }

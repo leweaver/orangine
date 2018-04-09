@@ -72,6 +72,19 @@ void Game::CreateSceneAvocado(bool animate)
 	m_scene->LoadEntities("data/meshes/Avocado/Avocado.gltf", *root1);
 }
 
+void Game::CreateSceneMetalRoughSpheres(bool animate)
+{
+	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
+	const auto &root1 = entityManager.Instantiate("Root");
+	root1->SetPosition({ 0, 0, -10 });
+	root1->SetScale({ 1, 1, 1 });
+
+	if (animate)
+		root1->AddComponent<TestComponent>().SetSpeed({ 0.0f, 0.1f, 0.0f });
+
+	m_scene->LoadEntities("data/meshes/MetalRoughSpheres/MetalRoughSpheres.gltf", *root1);
+}
+
 void Game::CreateCamera(bool animate)
 {
 	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
@@ -132,7 +145,6 @@ void Game::CreateLights()
 		return lightEntity;
 	};
 
-	/*
 	{
 		lightCount = 0;
 		createDirLight({ 0, 0, -1 }, { 0, 1, 1 }, 1);
@@ -147,7 +159,7 @@ void Game::CreateLights()
 		lightCount = 0;
 		createPointLight({ 3, 0, 3 }, { 1, 1, 1 }, 1);
 	}
-	*/
+
 	{
 		const auto &lightRoot = entityManager.Instantiate("Light Root");
 		lightRoot->SetPosition({ 0, 0, 0 });
@@ -193,6 +205,8 @@ void Game::Initialize(HWND window, int width, int height)
 		//CreateSceneCubeSatellite();
 		//CreateSceneLeverArm();
 		CreateSceneAvocado(true);
+		//CreateSceneMetalRoughSpheres(false);
+
 		CreateCamera(false);
 		CreateLights();
 	}

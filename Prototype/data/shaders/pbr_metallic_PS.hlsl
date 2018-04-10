@@ -73,8 +73,6 @@ PS_OUTPUT PSMain(PS_INPUT input)
 	
 #ifdef MAP_NORMAL
 	float3 worldNormal = NormalSampleToWorldNormal(normalTexture.Sample(normalSampler, input.vTexCoord0).rgb, input.vWorldNormal, input.vWorldTangent, input.vTangent.w);
-	worldNormal *= 0.01;
-	worldNormal = input.vWorldNormal.xyz;
 #else
 	float3 worldNormal = input.vWorldNormal.xyz;
 #endif

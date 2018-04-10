@@ -145,6 +145,7 @@ void Game::CreateLights()
 		return lightEntity;
 	};
 
+	if (true)
 	{
 		lightCount = 0;
 		createDirLight({ 0, 0, -1 }, { 0, 1, 1 }, 1);

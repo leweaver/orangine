@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "MeshData.h"
+ #include <utility>
 
 using namespace OE;
 
@@ -84,14 +85,13 @@ MeshBuffer::MeshBuffer(size_t size)
 
 MeshBuffer::~MeshBuffer()
 {
-	if (m_data != nullptr)
-		delete[] m_data;
+	delete[] m_data;
 	m_data = nullptr;
 	m_dataSize = 0;
 }
 
-MeshBufferAccessor::MeshBufferAccessor(const std::shared_ptr<MeshBuffer> &buffer, uint32_t count, uint32_t stride, uint32_t offset)
-	: m_buffer(buffer)
+MeshBufferAccessor::MeshBufferAccessor(std::shared_ptr<MeshBuffer> buffer, uint32_t count, uint32_t stride, uint32_t offset)
+	: m_buffer(std::move(buffer))
 	, m_count(count)
 	, m_stride(stride)
 	, m_offset(offset)

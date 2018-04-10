@@ -21,6 +21,9 @@ Scene::Scene(DX::DeviceResources &deviceResources)
 	m_entityRepository = std::make_shared<EntityRepository>(*this);
 	m_materialRepository = std::make_shared<MaterialRepository>();
 
+	// Factories
+	m_primitiveMeshDataFactory = std::make_shared<PrimitiveMeshDataFactory>();
+
 	// Services / Managers
 	m_sceneGraphManager = std::make_unique<SceneGraphManager>(*this, m_entityRepository);
 	m_entityRenderManager = std::make_unique<EntityRenderManager>(*this, m_materialRepository, deviceResources);
@@ -61,7 +64,11 @@ void Scene::LoadEntities(const std::string& filename, Entity *parentEntity)
 	if (extPos == m_entityGraphLoaders.end())
 		throw std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension);
 
-	std::vector<std::shared_ptr<Entity>> newRootEntities = extPos->second->LoadFile(filename, *m_entityRepository.get(), *m_materialRepository.get());
+	std::vector<std::shared_ptr<Entity>> newRootEntities = extPos->second->LoadFile(
+		filename, 
+		*m_entityRepository, 
+		*m_materialRepository,
+		*m_primitiveMeshDataFactory);
 	
 	if (parentEntity)
 	{

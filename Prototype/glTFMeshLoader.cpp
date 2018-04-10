@@ -400,16 +400,36 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 
 				if (generateNormals)
 				{
-					meshData->m_vertexBufferAccessors[VertexAttribute::VA_NORMAL] = loaderData.meshDataFactory.generateNormalBuffer(
+					const size_t normalStride = sizeof(DirectX::SimpleMath::Vector3);
+					assert(VertexAttributeMeta::elementSize(VertexAttribute::VA_NORMAL) == normalStride);
+
+					auto normalBufferAccessor = make_unique<MeshVertexBufferAccessor>(
+						make_shared<MeshBuffer>(normalStride * vertexCount), VertexAttribute::VA_NORMAL, 
+						static_cast<UINT>(vertexCount), static_cast<UINT>(normalStride), 0);
+
+					loaderData.meshDataFactory.generateNormals(
 						*meshData->m_indexBufferAccessor, 
-						*meshData->m_vertexBufferAccessors[VertexAttribute::VA_POSITION]);
+						*meshData->m_vertexBufferAccessors[VertexAttribute::VA_POSITION],
+						*normalBufferAccessor);
+
+					meshData->m_vertexBufferAccessors[VertexAttribute::VA_NORMAL] = move(normalBufferAccessor);
 				}
 
 				if (generateTangents)
 				{
-					meshData->m_vertexBufferAccessors[VertexAttribute::VA_TANGENT] = loaderData.meshDataFactory.generateTangentBuffer(
+					const size_t tangentStride = sizeof(DirectX::SimpleMath::Vector4);
+					assert(VertexAttributeMeta::elementSize(VertexAttribute::VA_TANGENT) == tangentStride);
+
+					auto tangentBufferAccessor = make_unique<MeshVertexBufferAccessor>(
+						make_shared<MeshBuffer>(tangentStride * vertexCount), VertexAttribute::VA_TANGENT,
+						static_cast<UINT>(vertexCount), static_cast<UINT>(tangentStride), 0);
+
+					loaderData.meshDataFactory.generateTangents(
 						*meshData->m_indexBufferAccessor,
-						*meshData->m_vertexBufferAccessors[VertexAttribute::VA_POSITION]);
+						*meshData->m_vertexBufferAccessors[VertexAttribute::VA_POSITION],
+						*tangentBufferAccessor);
+
+					meshData->m_vertexBufferAccessors[VertexAttribute::VA_TANGENT] = move(tangentBufferAccessor);
 				}
 
 				// Add this component last, to make sure there wasn't an error loading!

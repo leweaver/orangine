@@ -45,7 +45,7 @@ namespace OE
 
 	struct MeshBufferAccessor
 	{
-		MeshBufferAccessor(const std::shared_ptr<MeshBuffer> &buffer, uint32_t count, uint32_t stride, uint32_t offset);
+		MeshBufferAccessor(std::shared_ptr<MeshBuffer> buffer, uint32_t count, uint32_t stride, uint32_t offset);
 		MeshBufferAccessor();
 		virtual ~MeshBufferAccessor();
 

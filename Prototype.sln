@@ -5,10 +5,20 @@ VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Prototype", "Prototype\Prototype.vcxproj", "{B4BF0B99-98A3-41FD-842A-CFF3E46B6702}"
 	ProjectSection(ProjectDependencies) = postProject
+		{43AD8B62-7F47-46C3-A1DC-1D0AE300712D} = {43AD8B62-7F47-46C3-A1DC-1D0AE300712D}
 		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E} = {E0B52AE7-E160-4D32-BF3F-910B785E5A8E}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DirectXTK_Desktop_2017_Win10", "thirdparty\DirectXTK\DirectXTK_Desktop_2017_Win10.vcxproj", "{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E9900BBA-53A1-48B6-B351-5CEBB07477DE}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Third Party", "Third Party", "{40B0B295-190F-4C87-A1AE-1E0232928972}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MikktSpace", "thirdparty\MikktSpace\MikktSpace.vcxproj", "{43AD8B62-7F47-46C3-A1DC-1D0AE300712D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -34,9 +44,21 @@ Global
 		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.Release|x64.Build.0 = Release|x64
 		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.Release|x86.ActiveCfg = Release|Win32
 		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E}.Release|x86.Build.0 = Release|Win32
+		{43AD8B62-7F47-46C3-A1DC-1D0AE300712D}.Debug|x64.ActiveCfg = Debug|x64
+		{43AD8B62-7F47-46C3-A1DC-1D0AE300712D}.Debug|x64.Build.0 = Debug|x64
+		{43AD8B62-7F47-46C3-A1DC-1D0AE300712D}.Debug|x86.ActiveCfg = Debug|Win32
+		{43AD8B62-7F47-46C3-A1DC-1D0AE300712D}.Debug|x86.Build.0 = Debug|Win32
+		{43AD8B62-7F47-46C3-A1DC-1D0AE300712D}.Release|x64.ActiveCfg = Release|x64
+		{43AD8B62-7F47-46C3-A1DC-1D0AE300712D}.Release|x64.Build.0 = Release|x64
+		{43AD8B62-7F47-46C3-A1DC-1D0AE300712D}.Release|x86.ActiveCfg = Release|Win32
+		{43AD8B62-7F47-46C3-A1DC-1D0AE300712D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E0B52AE7-E160-4D32-BF3F-910B785E5A8E} = {40B0B295-190F-4C87-A1AE-1E0232928972}
+		{43AD8B62-7F47-46C3-A1DC-1D0AE300712D} = {40B0B295-190F-4C87-A1AE-1E0232928972}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DFAA4E64-4AA6-4E73-BF8E-DA5F937B63FF}

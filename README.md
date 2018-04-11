@@ -27,6 +27,12 @@ We need to create the appropriate visual studio projects, using CMake.
 .\create-thirdparty-projects.bat
 ```
 
+# Renderer 
+## Normals and Tangents
+Normals are expected to be in tangent space. Further, the tangents on meshes must be generated using the MikkiT algorithm.
+
+Tangents in art assets must be generated using the MikkiT algorithm (see [Simulation of Wrinkled Surfaces Revisited by Morten S. Mikkelsen](http://image.diku.dk/projects/media/morten.mikkelsen.08.pdf).)
+
 # Coding Style Guide
 ## Forward Declarations
 Don't use for model classes in 'Manager' class header files (ie, for the things that the manager class managers)

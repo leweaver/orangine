@@ -23,6 +23,9 @@ namespace OE {
 			const MeshVertexBufferAccessor &positionBufferAccessor,
 			MeshVertexBufferAccessor &normalBufferAccessor) const;
 
+		/*
+		 * Generates tangents, in MikktSpace
+		 */
 		void generateTangents(const MeshIndexBufferAccessor &indexBufferAccessor, 
 			const MeshVertexBufferAccessor &positionBufferAccessor,
 			MeshVertexBufferAccessor &tangentBufferAccessor) const;

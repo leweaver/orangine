@@ -232,7 +232,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="data\meshes\Cube\Cube.gltf" />
-    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="data\shaders\vertex_colors_VS.hlsl">

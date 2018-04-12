@@ -23,6 +23,7 @@
     <ProjectGuid>{43AD8B62-7F47-46C3-A1DC-1D0AE300712D}</ProjectGuid>
     <RootNamespace>MikktSpace</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <ProjectName>MikkTSpace</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

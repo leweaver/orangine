@@ -26,8 +26,6 @@ namespace OE {
 		/*
 		 * Generates tangents, in MikktSpace
 		 */
-		void generateTangents(const MeshIndexBufferAccessor &indexBufferAccessor, 
-			const MeshVertexBufferAccessor &positionBufferAccessor,
-			MeshVertexBufferAccessor &tangentBufferAccessor) const;
+		void generateTangents(std::shared_ptr<MeshData> meshData) const;
 	};
 }

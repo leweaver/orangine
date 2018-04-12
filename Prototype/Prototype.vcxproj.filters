@@ -130,6 +130,9 @@
     <ClInclude Include="data\shaders\inc\lighting.hlsl">
       <Filter>Assets\shaders\inc</Filter>
     </ClInclude>
+    <ClInclude Include="MikkTSpaceTriangleMeshInterface.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -212,6 +215,9 @@
     </ClCompile>
     <ClCompile Include="LogFileSink.cpp">
       <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="MikkTSpaceTriangleMeshInterface.cpp">
+      <Filter>Systems\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

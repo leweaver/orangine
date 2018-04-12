@@ -8,6 +8,7 @@ std::string VA_POSITION_STR("VA_POSITION");
 std::string VA_COLOR_STR("VA_COLOR");
 std::string VA_NORMAL_STR("VA_NORMAL");
 std::string VA_TANGENT_STR("VA_TANGENT");
+std::string VA_BITANGENT_STR("VA_BITANGENT");
 std::string VA_TEXCOORD_0_STR("VA_TEXCOORD_0");
 std::string VA_INVALID_STR("VA_INVALID");
 
@@ -16,12 +17,13 @@ std::vector<const char *> g_va_semantic_names = {
 	"COLOR",
 	"NORMAL",
 	"TANGENT",
+	"BITANGENT",
 	"TEXCOORD",
 	""
 };
 
 std::vector<uint32_t> g_va_semantic_indices = {
-	0, 0, 0, 0, 0, 0
+	0, 0, 0, 0, 0, 0, 0
 };
 
 uint32_t MeshData::getVertexCount() const
@@ -38,6 +40,7 @@ const std::string &VertexAttributeMeta::str(VertexAttribute attribute)
 		case VertexAttribute::VA_COLOR: return VA_COLOR_STR;
 		case VertexAttribute::VA_NORMAL: return VA_NORMAL_STR;
 		case VertexAttribute::VA_TANGENT: return VA_TANGENT_STR;
+		case VertexAttribute::VA_BITANGENT: return VA_BITANGENT_STR;
 		case VertexAttribute::VA_TEXCOORD_0: return VA_TEXCOORD_0_STR;
 
 		case VertexAttribute::VA_INVALID:
@@ -59,6 +62,7 @@ size_t VertexAttributeMeta::elementSize(VertexAttribute attribute)
 		return sizeof(float) * 3;
 
 	case VertexAttribute::VA_TANGENT:
+	case VertexAttribute::VA_BITANGENT:
 		return sizeof(float) * 4;
 
 	default:
@@ -117,16 +121,8 @@ MeshVertexBufferAccessor::MeshVertexBufferAccessor(const std::shared_ptr<MeshBuf
 {
 }
 
-MeshVertexBufferAccessor::~MeshVertexBufferAccessor()
-{
-}
-
 MeshIndexBufferAccessor::MeshIndexBufferAccessor(const std::shared_ptr<MeshBuffer> &buffer, DXGI_FORMAT format, uint32_t count, uint32_t stride, uint32_t offset)
 	: MeshBufferAccessor(buffer, count, stride, offset)
 	, m_format(format)
-{
-}
-
-MeshIndexBufferAccessor::~MeshIndexBufferAccessor()
 {
 }

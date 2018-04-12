@@ -12,9 +12,15 @@ namespace OE
 		VA_COLOR,
 		VA_NORMAL,
 		VA_TANGENT,
+		VA_BITANGENT,
 		VA_TEXCOORD_0,
 
 		VA_INVALID
+	};
+
+	enum class MeshIndexType : std::int8_t
+	{
+		TRIANGLES
 	};
 
 	class MeshData
@@ -25,6 +31,7 @@ namespace OE
 		uint32_t getVertexCount() const;
 
 		std::unique_ptr<MeshIndexBufferAccessor> m_indexBufferAccessor;
+		MeshIndexType m_meshIndexType = MeshIndexType::TRIANGLES;
 	};
 
 	struct VertexAttributeMeta {
@@ -58,7 +65,7 @@ namespace OE
 	struct MeshVertexBufferAccessor : MeshBufferAccessor
 	{
 		MeshVertexBufferAccessor(const std::shared_ptr<MeshBuffer> &buffer, VertexAttribute attribute, uint32_t count, uint32_t stride, uint32_t offset);
-		virtual ~MeshVertexBufferAccessor();
+		virtual ~MeshVertexBufferAccessor() = default;
 
 		VertexAttribute m_attribute;
 	};
@@ -67,7 +74,7 @@ namespace OE
 	struct MeshIndexBufferAccessor : MeshBufferAccessor
 	{
 		MeshIndexBufferAccessor(const std::shared_ptr<MeshBuffer> &buffer, DXGI_FORMAT format, uint32_t count, uint32_t stride, uint32_t offset);
-		virtual ~MeshIndexBufferAccessor();
+		virtual ~MeshIndexBufferAccessor() = default;
 
 		DXGI_FORMAT m_format;
 	};

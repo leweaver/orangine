@@ -258,7 +258,7 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 		if (paramPos != gltfMaterial.values.end()) {
 			const auto &param = paramPos->second;
 			if (param.number_array.size() == 1) {
-				material->setMetallicFactor(param.number_array[0]);
+				material->setMetallicFactor(static_cast<float>(param.number_array[0]));
 			}
 			else
 				throw runtime_error("Failed to parse glTF: expected material "+ g_pbrPropertyName_MetallicFactor+" to be scalar");
@@ -274,7 +274,7 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 		if (paramPos != gltfMaterial.values.end()) {
 			const auto &param = paramPos->second;
 			if (param.number_array.size() == 1) {
-				material->setRoughnessFactor(param.number_array[0]);
+				material->setRoughnessFactor(static_cast<float>(param.number_array[0]));
 			}
 			else
 				throw runtime_error("Failed to parse glTF: expected material "+ g_pbrPropertyName_RoughnessFactor+" to be scalar");
@@ -350,7 +350,8 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 				// TODO: We could consider interleaving things in a single buffer? Not sure if there is a benefit?
 
 				bool generateNormals = false,
-					generateTangents = false;
+					generateTangents = false,
+					generateBitangents = false;
 				for (const auto &requiredAttr : materialAttributes) {
 					const auto &mappingPos = g_gltfMappingToAttributeMap.find(requiredAttr);
 					if (mappingPos == g_gltfMappingToAttributeMap.end()) {
@@ -359,32 +360,22 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 					
 					const string &gltfAttributeName = mappingPos->second;
 					const auto &primAttrPos = prim.attributes.find(gltfAttributeName);
-					if (primAttrPos == prim.attributes.end() || requiredAttr == VertexAttribute::VA_NORMAL) {
-						// TODO: Fill in this stream with generated values?
-						// if (normal) { generate normals }
-						// if (tangent) { generate tangents }
-						LOG(INFO) << "Generating missing " << gltfAttributeName;
-						const size_t stride = VertexAttributeMeta::elementSize(requiredAttr);
-						auto buffer = make_shared<MeshBuffer>(stride * vertexCount);
-						//memset(buffer->m_data, 0, buffer->m_dataSize);
-
-						if (requiredAttr == VertexAttribute::VA_TANGENT)
-						{
-							generateTangents = true;
-						}
-						else if (requiredAttr == VertexAttribute::VA_NORMAL)
-						{
+					if (primAttrPos == prim.attributes.end()) {
+						// We only support generation of normals, tangents, bitangent
+						if (requiredAttr == VertexAttribute::VA_NORMAL)
 							generateNormals = true;
-						}
+						else if (requiredAttr == VertexAttribute::VA_TANGENT)
+							generateTangents = true; 
+						else if (requiredAttr == VertexAttribute::VA_BITANGENT)
+							generateBitangents = true;
 						else
-						{
 							throw logic_error("glTF Mesh does not have required attribute: " + gltfAttributeName);
-						}
 
-						// TODO: Consider logging a warning that we defaulted values here.
-						//throw logic_error("glTF Mesh does not have required attribute: " + gltfAttributeName);
-						auto accessor = make_unique<MeshVertexBufferAccessor>(buffer, requiredAttr, vertexCount, static_cast<UINT>(stride), 0);
-						meshData->m_vertexBufferAccessors[requiredAttr] = move(accessor);
+						// Create the missing accessor
+						const size_t elementStride = VertexAttributeMeta::elementSize(requiredAttr);
+						meshData->m_vertexBufferAccessors[requiredAttr] = make_unique<MeshVertexBufferAccessor>(
+							make_shared<MeshBuffer>(elementStride * vertexCount), requiredAttr,
+							static_cast<uint32_t>(vertexCount), static_cast<uint32_t>(elementStride), 0);
 					}
 					else {
 						try {
@@ -400,37 +391,14 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 
 				if (generateNormals)
 				{
-					const size_t normalStride = sizeof(DirectX::SimpleMath::Vector3);
-					assert(VertexAttributeMeta::elementSize(VertexAttribute::VA_NORMAL) == normalStride);
-
-					auto normalBufferAccessor = make_unique<MeshVertexBufferAccessor>(
-						make_shared<MeshBuffer>(normalStride * vertexCount), VertexAttribute::VA_NORMAL, 
-						static_cast<UINT>(vertexCount), static_cast<UINT>(normalStride), 0);
-
 					loaderData.meshDataFactory.generateNormals(
 						*meshData->m_indexBufferAccessor, 
 						*meshData->m_vertexBufferAccessors[VertexAttribute::VA_POSITION],
-						*normalBufferAccessor);
-
-					meshData->m_vertexBufferAccessors[VertexAttribute::VA_NORMAL] = move(normalBufferAccessor);
+						*meshData->m_vertexBufferAccessors[VertexAttribute::VA_NORMAL]);
 				}
 
-				if (generateTangents)
-				{
-					const size_t tangentStride = sizeof(DirectX::SimpleMath::Vector4);
-					assert(VertexAttributeMeta::elementSize(VertexAttribute::VA_TANGENT) == tangentStride);
-
-					auto tangentBufferAccessor = make_unique<MeshVertexBufferAccessor>(
-						make_shared<MeshBuffer>(tangentStride * vertexCount), VertexAttribute::VA_TANGENT,
-						static_cast<UINT>(vertexCount), static_cast<UINT>(tangentStride), 0);
-
-					loaderData.meshDataFactory.generateTangents(
-						*meshData->m_indexBufferAccessor,
-						*meshData->m_vertexBufferAccessors[VertexAttribute::VA_POSITION],
-						*tangentBufferAccessor);
-
-					meshData->m_vertexBufferAccessors[VertexAttribute::VA_TANGENT] = move(tangentBufferAccessor);
-				}
+				if (generateTangents || generateBitangents)
+					loaderData.meshDataFactory.generateTangents(meshData);
 
 				// Add this component last, to make sure there wasn't an error loading!
 				auto &renderableComponent = primitiveEntity->AddComponent<RenderableComponent>();

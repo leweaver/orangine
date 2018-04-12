@@ -2,6 +2,7 @@
 #include "PrimitiveMeshDataFactory.h"
 #include "MeshData.h"
 #include "SimpleMath.h"
+#include "MikkTSpaceTriangleMeshInterface.h"
 
 using namespace OE;
 using namespace DirectX::SimpleMath;
@@ -150,9 +151,13 @@ void PrimitiveMeshDataFactory::generateNormals(
 	}
 }
 
-void PrimitiveMeshDataFactory::generateTangents(const MeshIndexBufferAccessor &indexBufferAccessor, 
-	const MeshVertexBufferAccessor &positionBufferAccessor, 
-	MeshVertexBufferAccessor &tangentBufferAccessor) const
+void PrimitiveMeshDataFactory::generateTangents(std::shared_ptr<MeshData> meshData) const
 {
-	throw std::runtime_error("Not implemented");
+	MikkTSpaceTriangleMeshInterface generator(meshData);
+	SMikkTSpaceContext context;
+
+	context.m_pUserData = generator.getUserData();
+	context.m_pInterface = generator.getInterface();
+	if (!genTangSpaceDefault(&context))
+		LOG(WARNING) << "Failed to generate tangents!";
 }

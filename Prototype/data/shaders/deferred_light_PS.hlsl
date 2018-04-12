@@ -94,7 +94,7 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 #elif DEBUG_DISPLAY_METALLIC_ROUGHNESS
 	return float4(metallic, roughness, 0, 1);
 #elif DEBUG_DISPLAY_NORMALS
-	return float4(color1.xyz * 0.5 + 0.5, 1);
+	return float4((color0.rgb * 0.001) + worldNormal * 0.5 + 0.5, 1);
 #else
 	return float4(finalColor, 1);
 #endif

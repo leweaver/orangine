@@ -13,6 +13,7 @@
 #include "MaterialRepository.h"
 #include "PBRMaterial.h"
 #include "TextureImpl.h"
+#include "PrimitiveMeshDataFactory.h"
 
 using namespace std;
 using namespace tinygltf;
@@ -28,15 +29,17 @@ map<VertexAttribute, string> g_gltfMappingToAttributeMap = {
 
 struct LoaderData
 {
-	LoaderData(Model &model, const string &baseDir, IWICImagingFactory *imagingFactory) 
+	LoaderData(Model &model, const string &baseDir, IWICImagingFactory *imagingFactory, PrimitiveMeshDataFactory &meshDataFactory)
 		: model(model)
 		, baseDir(baseDir)
 		, imagingFactory(imagingFactory)
+		, meshDataFactory(meshDataFactory)
 	{}
 
 	Model &model;
 	string baseDir;
 	IWICImagingFactory* imagingFactory;
+	PrimitiveMeshDataFactory &meshDataFactory;
 	map<size_t, shared_ptr<MeshBuffer>> accessorIdxToMeshVertexBuffers;
 };
 
@@ -71,7 +74,7 @@ void glTFMeshLoader::GetSupportedFileExtensions(vector<string> &extensions) cons
 	extensions.emplace_back("gltf");
 }
 
-vector<shared_ptr<Entity>> glTFMeshLoader::LoadFile(const string& filename, EntityRepository &entityRepository, MaterialRepository &materialRepository) const
+vector<shared_ptr<Entity>> glTFMeshLoader::LoadFile(const string& filename, EntityRepository &entityRepository, MaterialRepository &materialRepository, PrimitiveMeshDataFactory &meshDataFactory) const
 {
 	vector<shared_ptr<Entity>> entities;
 	Model model;
@@ -95,7 +98,7 @@ vector<shared_ptr<Entity>> glTFMeshLoader::LoadFile(const string& filename, Enti
 	string baseDir = tinygltf::GetBaseDir(filename);
 	if (baseDir.empty())
 		baseDir = ".";
-	LoaderData loaderData(model, baseDir, m_imagingFactory.Get());
+	LoaderData loaderData(model, baseDir, m_imagingFactory.Get(), meshDataFactory);
 	
 	for (int nodeIdx : scene.nodes) 
 	{
@@ -227,7 +230,7 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 	auto material = materialRepository.instantiate<PBRMaterial>();
 
 
-	// base color
+	// base color factor
 	{
 		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_BaseColorFactor);
 		if (paramPos != gltfMaterial.values.end()) {
@@ -242,7 +245,43 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 				material->setBaseColor(color);
 			}
 			else
-				throw runtime_error("Failed to parse glTF: expected material baseColorFactor to be an array of 4 numbers");
+				throw runtime_error("Failed to parse glTF: expected material "+ g_pbrPropertyName_BaseColorFactor+" to be an array of 4 numbers");
+		} 
+		else
+		{
+			material->setBaseColor(DirectX::SimpleMath::Color(DirectX::Colors::White));
+		}
+	}
+	// metallic factor
+	{
+		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_MetallicFactor);
+		if (paramPos != gltfMaterial.values.end()) {
+			const auto &param = paramPos->second;
+			if (param.number_array.size() == 1) {
+				material->setMetallicFactor(static_cast<float>(param.number_array[0]));
+			}
+			else
+				throw runtime_error("Failed to parse glTF: expected material "+ g_pbrPropertyName_MetallicFactor+" to be scalar");
+		}
+		else
+		{
+			material->setBaseColor(DirectX::SimpleMath::Color(DirectX::Colors::White));
+		}
+	}
+	// roughness factor
+	{
+		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_RoughnessFactor);
+		if (paramPos != gltfMaterial.values.end()) {
+			const auto &param = paramPos->second;
+			if (param.number_array.size() == 1) {
+				material->setRoughnessFactor(static_cast<float>(param.number_array[0]));
+			}
+			else
+				throw runtime_error("Failed to parse glTF: expected material "+ g_pbrPropertyName_RoughnessFactor+" to be scalar");
+		}
+		else
+		{
+			material->setBaseColor(DirectX::SimpleMath::Color(DirectX::Colors::White));
 		}
 	}
 
@@ -263,9 +302,10 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 
 	if (node.mesh > -1) {
 		const Mesh &mesh = loaderData.model.meshes.at(node.mesh);
-		auto numPrims = mesh.primitives.size();
-		for (size_t primIdx = 0; primIdx < numPrims; ++primIdx)
+		const auto primitiveCount = mesh.primitives.size();
+		for (size_t primIdx = 0; primIdx < primitiveCount; ++primIdx)
 		{
+			LOG(INFO) << "Creating entity for glTF node '" << node.name << "'";
 			shared_ptr<Entity> primitiveEntity = entityRepository.Instantiate(node.name + " primitive " + to_string(primIdx));
 			primitiveEntity->SetParent(*rootEntity.get());
 			MeshDataComponent &meshDataComponent = primitiveEntity->AddComponent<MeshDataComponent>();
@@ -309,6 +349,9 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 
 				// TODO: We could consider interleaving things in a single buffer? Not sure if there is a benefit?
 
+				bool generateNormals = false,
+					generateTangents = false,
+					generateBitangents = false;
 				for (const auto &requiredAttr : materialAttributes) {
 					const auto &mappingPos = g_gltfMappingToAttributeMap.find(requiredAttr);
 					if (mappingPos == g_gltfMappingToAttributeMap.end()) {
@@ -318,17 +361,21 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 					const string &gltfAttributeName = mappingPos->second;
 					const auto &primAttrPos = prim.attributes.find(gltfAttributeName);
 					if (primAttrPos == prim.attributes.end()) {
-						// TODO: Fill in this stream with generated values?
-						// if (normal) { generate normals }
-						// if (tangent) { generate tangents }
-						const size_t stride = VertexAttributeMeta::elementSize(requiredAttr);
-						auto buffer = make_shared<MeshBuffer>(stride * vertexCount);
-						memset(buffer->m_data, 0, buffer->m_dataSize);
+						// We only support generation of normals, tangents, bitangent
+						if (requiredAttr == VertexAttribute::VA_NORMAL)
+							generateNormals = true;
+						else if (requiredAttr == VertexAttribute::VA_TANGENT)
+							generateTangents = true; 
+						else if (requiredAttr == VertexAttribute::VA_BITANGENT)
+							generateBitangents = true;
+						else
+							throw logic_error("glTF Mesh does not have required attribute: " + gltfAttributeName);
 
-						// TODO: Consider logging a warning that we defaulted values here.
-						//throw logic_error("glTF Mesh does not have required attribute: " + gltfAttributeName);
-						auto accessor = make_unique<MeshVertexBufferAccessor>(buffer, requiredAttr, vertexCount, static_cast<UINT>(stride), 0);
-						meshData->m_vertexBufferAccessors[requiredAttr] = move(accessor);
+						// Create the missing accessor
+						const size_t elementStride = VertexAttributeMeta::elementSize(requiredAttr);
+						meshData->m_vertexBufferAccessors[requiredAttr] = make_unique<MeshVertexBufferAccessor>(
+							make_shared<MeshBuffer>(elementStride * vertexCount), requiredAttr,
+							static_cast<uint32_t>(vertexCount), static_cast<uint32_t>(elementStride), 0);
 					}
 					else {
 						try {
@@ -341,6 +388,17 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 						}
 					}
 				}
+
+				if (generateNormals)
+				{
+					loaderData.meshDataFactory.generateNormals(
+						*meshData->m_indexBufferAccessor, 
+						*meshData->m_vertexBufferAccessors[VertexAttribute::VA_POSITION],
+						*meshData->m_vertexBufferAccessors[VertexAttribute::VA_NORMAL]);
+				}
+
+				if (generateTangents || generateBitangents)
+					loaderData.meshDataFactory.generateTangents(meshData);
 
 				// Add this component last, to make sure there wasn't an error loading!
 				auto &renderableComponent = primitiveEntity->AddComponent<RenderableComponent>();
@@ -376,6 +434,9 @@ unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
 		throw domain_error("bufferView[" + to_string(accessor.bufferView) + "] out of range.");
 	const auto &bufferView = model.bufferViews.at(accessor.bufferView);
 
+	if (bufferView.target != 0 && bufferView.target != TINYGLTF_TARGET_ARRAY_BUFFER)
+		throw runtime_error("Index bufferView must have type ARRAY_BUFFER (" + to_string(TINYGLTF_TARGET_ARRAY_BUFFER) + ")");
+
 	if (bufferView.buffer >= static_cast<int>(model.buffers.size()))
 		throw domain_error("buffer[" + to_string(bufferView.buffer) + "] out of range.");
 	const auto &buffer = model.buffers.at(bufferView.buffer);
@@ -384,30 +445,32 @@ unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
 	const size_t expectedElementSize = VertexAttributeMeta::elementSize(vertexAttribute);
 
 	// Validate the elementSize and buffer size
-	size_t elementSize;
+	size_t sourceElementSize;
 	if (accessor.type == TINYGLTF_TYPE_SCALAR)
-		elementSize = sizeof(unsigned int);
+		sourceElementSize = sizeof(unsigned int);
 	else if (accessor.type == TINYGLTF_TYPE_VEC2)
-		elementSize = sizeof(float) * 2;
+		sourceElementSize = sizeof(float) * 2;
 	else if (accessor.type == TINYGLTF_TYPE_VEC3)
-		elementSize = sizeof(float) * 3;
+		sourceElementSize = sizeof(float) * 3;
 	else if (accessor.type == TINYGLTF_TYPE_VEC4)
-		elementSize = sizeof(float) * 4;
+		sourceElementSize = sizeof(float) * 4;
 	else
 		throw runtime_error("Unknown accessor type: " + to_string(accessor.type));
 
-	const size_t byteWidth = elementSize * accessor.count;
-	if (byteWidth < bufferView.byteLength)
-		throw runtime_error("required byteWidth (" + to_string(byteWidth) + ") is larger than bufferView byteLength (" + to_string(bufferView.byteLength));
-	if (expectedElementSize != elementSize)
+	if (expectedElementSize != sourceElementSize)
 	{
 		throw runtime_error("cannot process attribute " +
 			g_gltfMappingToAttributeMap[vertexAttribute] +
 			", element size must be " + to_string(expectedElementSize) +
-			" but was " + to_string(elementSize) + ".");
+			" but was " + to_string(sourceElementSize) + ".");
 	}
+	
+	// Determine the stride - if none is provided, default to sourceElementSize.
+	const size_t sourceStride = bufferView.byteStride == 0 ? sourceElementSize : bufferView.byteStride;
 
-	const size_t stride = bufferView.byteStride == 0 ? elementSize : bufferView.byteStride;
+	// does the data range defined by the accessor fit into the bufferView?
+	if (accessor.byteOffset + accessor.count * sourceStride > bufferView.byteLength)
+		throw runtime_error("Accessor " + to_string(accessorIndex) + " exceeds maximum size of bufferView " + to_string(accessor.bufferView));
 	
 	// Have we already created an identical buffer? If so, re-use it.
 	shared_ptr<MeshBuffer> meshBuffer;
@@ -419,7 +482,7 @@ unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
 	{
 		// Copy the data.
 		LOG(INFO) << "Reading vertex buffer data: " << g_gltfMappingToAttributeMap[vertexAttribute];
-		meshBuffer = create_buffer_s(elementSize, accessor.count, buffer.data, stride, bufferView.byteOffset);
+		meshBuffer = create_buffer_s(sourceElementSize, accessor.count, buffer.data, sourceStride, bufferView.byteOffset);
 		loaderData.accessorIdxToMeshVertexBuffers[accessorIndex] = meshBuffer;
 		/*
 		 // Output stream data to the log
@@ -447,7 +510,7 @@ unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
 		*/
 	}
 
-	return make_unique<MeshVertexBufferAccessor>(meshBuffer, vertexAttribute, static_cast<UINT>(accessor.count), static_cast<UINT>(elementSize), 0);
+	return make_unique<MeshVertexBufferAccessor>(meshBuffer, vertexAttribute, static_cast<UINT>(accessor.count), static_cast<UINT>(sourceElementSize), 0);
 }
 
 unique_ptr<MeshIndexBufferAccessor> read_index_buffer(const Model& model,
@@ -465,6 +528,9 @@ unique_ptr<MeshIndexBufferAccessor> read_index_buffer(const Model& model,
 	if (bufferView.buffer >= static_cast<int>(model.buffers.size()))
 		throw domain_error("buffer[" + to_string(bufferView.buffer) + "] out of range.");
 	const auto &buffer = model.buffers.at(bufferView.buffer);
+
+	if (bufferView.target != 0 && bufferView.target != TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER)
+		throw runtime_error("Index bufferView must have type ELEMENT_ARRAY_BUFFER (" + to_string(TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER) + ")");
 	
 	if (accessor.type != TINYGLTF_TYPE_SCALAR)
 		throw runtime_error("Index buffer must be scalar");
@@ -491,11 +557,13 @@ unique_ptr<MeshIndexBufferAccessor> read_index_buffer(const Model& model,
 	default:
 		throw runtime_error("Unknown index buffer format: " + to_string(accessor.componentType));
 	}
-
-	assert(sourceElementSize * accessor.count == bufferView.byteLength);
 	
-	// Copy the data.
+	// Determine the stride - if none is provided, default to sourceElementSize.
 	const size_t sourceStride = bufferView.byteStride == 0 ? sourceElementSize : bufferView.byteStride;
+
+	// does the data range defined by the accessor fit into the bufferView?
+	if (accessor.byteOffset + accessor.count * sourceStride > bufferView.byteLength)
+		throw runtime_error("Accessor " + to_string(accessorIndex) + " exceeds maximum size of bufferView " + to_string(accessor.bufferView));
 
 	// Have we already created an identical buffer? If so, re-use it.
 	shared_ptr<MeshBuffer> meshBuffer;

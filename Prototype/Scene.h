@@ -17,11 +17,13 @@ namespace OE {
 		std::shared_ptr<EntityRepository> m_entityRepository;
 		std::shared_ptr<MaterialRepository> m_materialRepository;
 
+		std::shared_ptr<PrimitiveMeshDataFactory> m_primitiveMeshDataFactory;
+
 		std::unique_ptr<SceneGraphManager> m_sceneGraphManager;
 		std::unique_ptr<EntityRenderManager> m_entityRenderManager;
 		std::unique_ptr<EntityScriptingManager> m_entityScriptinigManager;
 		std::unique_ptr<AssetManager> m_assetManager;
-
+		
 		std::map<std::string, std::shared_ptr<EntityGraphLoader>> m_entityGraphLoaders;
 
 		std::shared_ptr<Entity> m_mainCamera;

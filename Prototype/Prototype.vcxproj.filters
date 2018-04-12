@@ -130,6 +130,9 @@
     <ClInclude Include="data\shaders\inc\lighting.hlsl">
       <Filter>Assets\shaders\inc</Filter>
     </ClInclude>
+    <ClInclude Include="MikkTSpaceTriangleMeshInterface.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -213,6 +216,9 @@
     <ClCompile Include="LogFileSink.cpp">
       <Filter>Common</Filter>
     </ClCompile>
+    <ClCompile Include="MikkTSpaceTriangleMeshInterface.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -232,7 +238,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="data\meshes\Cube\Cube.gltf" />
-    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="data\shaders\vertex_colors_VS.hlsl">
@@ -258,6 +263,9 @@
     </FxCompile>
     <FxCompile Include="data\shaders\deferred_light_VS.hlsl">
       <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\inc\utils.hlsl">
+      <Filter>Assets\shaders\inc</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

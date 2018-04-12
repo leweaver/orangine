@@ -7,9 +7,9 @@ using namespace DirectX;
 using namespace std::literals;
 
 PBRMaterial::PBRMaterial()
-	: m_baseColor(XMVectorSet(0.f, 0.f, 0.f, 0.f))
+	: m_baseColor(SimpleMath::Vector4::One)
 	, m_metallic(1.0)
-	, m_roughness(0.0)
+	, m_roughness(1.0)
 	, m_boundTextureCount(0)
 {
 	ZeroMemory(m_textures, sizeof(m_textures));
@@ -119,7 +119,7 @@ bool PBRMaterial::createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer *&bu
 
 	m_constantsPS.world = SimpleMath::Matrix::Identity;
 	m_constantsPS.baseColor = SimpleMath::Color(Colors::White);
-	m_constantsPS.metallicRoughness = SimpleMath::Vector4::Zero;
+	m_constantsPS.metallicRoughness = SimpleMath::Vector4::One;
 
 	D3D11_SUBRESOURCE_DATA initData;
 	initData.pSysMem = &m_constantsPS;

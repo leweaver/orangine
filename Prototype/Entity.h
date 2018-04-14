@@ -90,7 +90,9 @@ namespace OE {
 		 */
 		void ComputeWorldTransform();
 
-		const ID_TYPE& GetId() const { return m_id; }
+		const ID_TYPE& getId() const { return m_id; }
+		const std::string &getName() const { return m_name; }
+
 		size_t GetComponentCount() const { return m_components.size(); }
 
 		Component& GetComponent(size_t index) const;
@@ -216,7 +218,7 @@ namespace OE {
 
 		EntityRef(Entity &entity)
 			: scene(entity.GetScene())
-			, id(entity.GetId())
+			, id(entity.getId())
 		{}
 
 		EntityRef(Scene &scene, Entity::ID_TYPE id)

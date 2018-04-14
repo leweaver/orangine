@@ -76,7 +76,7 @@ void Game::CreateSceneMetalRoughSpheres(bool animate)
 {
 	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
 	const auto &root1 = entityManager.Instantiate("Root");
-	root1->SetPosition({ 0, 0, -10 });
+	//root1->SetPosition({ 0, 0, -10 });
 	root1->SetScale({ 1, 1, 1 });
 
 	if (animate)
@@ -94,13 +94,13 @@ void Game::CreateCamera(bool animate)
 		cameraDollyAnchor->AddComponent<TestComponent>().SetSpeed({0.0f, 0.1f, 0.0f});
 	
 	auto camera = entityManager.Instantiate("Camera", *cameraDollyAnchor);
-	camera->SetPosition(Vector3(0.0f, 0.0f, 5));
+	camera->SetPosition(Vector3(10.0f, 0.0f, 15));
 	
 	cameraDollyAnchor->Update();
 
 	auto &component = camera->AddComponent<CameraComponent>();
 	component.SetFov(XMConvertToRadians(60.0f));
-	component.SetFarPlane(30.0f);
+	component.SetFarPlane(100.0f);
 	component.SetNearPlane(0.1f);
 
 	camera->LookAt({ 0, 0, 0 }, Vector3::Up);
@@ -205,8 +205,8 @@ void Game::Initialize(HWND window, int width, int height)
 
 		//CreateSceneCubeSatellite();
 		//CreateSceneLeverArm();
-		CreateSceneAvocado(true);
-		//CreateSceneMetalRoughSpheres(false);
+		//CreateSceneAvocado(true);
+		CreateSceneMetalRoughSpheres(true);
 
 		CreateCamera(false);
 		CreateLights();

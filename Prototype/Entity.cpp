@@ -128,7 +128,7 @@ void Entity::SetParent(Entity& newParent)
 	}
 
 	auto &entityManager = m_scene.GetSceneGraphManager();
-	const auto thisPtr = entityManager.GetEntityPtrById(GetId());
+	const auto thisPtr = entityManager.GetEntityPtrById(getId());
 	entityManager.RemoveFromRoot(thisPtr);
 
 	newParent.m_children.push_back(thisPtr);
@@ -143,14 +143,14 @@ void Entity::RemoveParent()
 	EntityPtrVec& children = m_parent->m_children;
 	for (auto it = children.begin(); it != children.end(); ++it) {
 		const auto child = (*it).get();
-		if (child->GetId() == GetId()) {
+		if (child->getId() == getId()) {
 			children.erase(it);
 			break;
 		}
 	}
 
 	auto &entityManager = m_scene.GetSceneGraphManager();
-	const auto thisPtr = entityManager.GetEntityPtrById(GetId());
+	const auto thisPtr = entityManager.GetEntityPtrById(getId());
 	entityManager.AddToRoot(thisPtr);
 	m_parent = nullptr;
 }

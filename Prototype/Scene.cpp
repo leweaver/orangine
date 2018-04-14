@@ -48,7 +48,7 @@ void Scene::LoadEntities(const std::string& filename)
 
 void Scene::LoadEntities(const std::string& filename, Entity &parentEntity)
 {
-	auto entity = m_entityRepository->GetEntityPtrById(parentEntity.GetId());
+	auto entity = m_entityRepository->GetEntityPtrById(parentEntity.getId());
 	return LoadEntities(filename, entity.get());
 }
 

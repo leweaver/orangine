@@ -122,7 +122,7 @@ bool Material::createVertexShader(ID3D11Device* device)
 	for (const auto &attr : attributes)
 	{
 		const auto semanticName = VertexAttributeMeta::semanticName(attr);
-		LOG(INFO) << semanticName << " to slot " << inputSlot(attr);
+		LOG(INFO) << "  " << semanticName << " to slot " << inputSlot(attr);
 		inputElementDesc.push_back(
 			{
 				semanticName,
@@ -236,6 +236,8 @@ bool Material::render(const RendererData &rendererData, const Matrix &worldMatri
 	auto context = deviceResources.GetD3DDeviceContext();
 
 	if (m_requiresRecompile) {
+		LOG(INFO) << "Recompiling shaders for material";
+
 		m_requiresRecompile = false;
 		release();
 

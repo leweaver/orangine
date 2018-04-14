@@ -59,7 +59,7 @@ std::shared_ptr<Entity> SceneGraphManager::Instantiate(const std::string &name)
 
 std::shared_ptr<Entity> SceneGraphManager::Instantiate(const std::string &name, Entity &parentEntity)
 {
-	auto entity = m_entityRepository->GetEntityPtrById(parentEntity.GetId());
+	auto entity = m_entityRepository->GetEntityPtrById(parentEntity.getId());
 	return Instantiate(name, entity.get());
 }
 
@@ -131,7 +131,7 @@ std::shared_ptr<Entity> SceneGraphManager::RemoveFromRoot(std::shared_ptr<Entity
 	// remove from root array
 	for (auto rootIter = m_rootEntities.begin(); rootIter != m_rootEntities.end(); ++rootIter) {
 		const auto rootEntity = (*rootIter);
-		if (rootEntity != nullptr && rootEntity->GetId() == entityPtr->GetId()) {
+		if (rootEntity != nullptr && rootEntity->getId() == entityPtr->getId()) {
 			m_rootEntities.erase(rootIter);
 			break;
 		}
@@ -163,7 +163,7 @@ std::shared_ptr<EntityFilter> SceneGraphManager::GetEntityFilter(const Component
 }
 
 void SceneGraphManager::HandleEntityAdd(const Entity &entity) {
-	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.GetId());
+	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.getId());
 	if (entityPtr) {
 		for (auto filter : m_entityFilters)
 			filter->HandleEntityAdd(entityPtr);
@@ -171,7 +171,7 @@ void SceneGraphManager::HandleEntityAdd(const Entity &entity) {
 }
 
 void SceneGraphManager::HandleEntityRemove(const Entity &entity) {
-	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.GetId());
+	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.getId());
 	if (entityPtr) {
 		for (auto filter : m_entityFilters)
 			filter->HandleEntityRemove(entityPtr);
@@ -179,14 +179,14 @@ void SceneGraphManager::HandleEntityRemove(const Entity &entity) {
 }
 
 void SceneGraphManager::HandleEntityComponentAdd(const Entity &entity, const Component &componentType) {
-	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.GetId());
+	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.getId());
 	if (entityPtr) {
 		for (auto filter : m_entityFilters)
 			filter->HandleEntityComponentsUpdated(entityPtr);
 	}
 }
 void SceneGraphManager::HandleEntityComponentRemove(const Entity &entity, const Component &componentType) {
-	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.GetId());
+	const auto entityPtr = m_entityRepository->GetEntityPtrById(entity.getId());
 	if (entityPtr) {
 		for (auto filter : m_entityFilters) {
 			filter->HandleEntityComponentsUpdated(entityPtr);

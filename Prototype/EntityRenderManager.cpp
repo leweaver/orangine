@@ -262,6 +262,7 @@ void EntityRenderManager::renderEntities()
 
 			const RendererData *rendererData = renderable->GetRendererData().get();
 			if (rendererData == nullptr) {
+				
 				const auto meshDataComponent = entity->GetFirstComponentOfType<MeshDataComponent>();
 				if (meshDataComponent == nullptr || meshDataComponent->getMeshData() == nullptr)
 				{
@@ -269,6 +270,8 @@ void EntityRenderManager::renderEntities()
 					continue;
 				}
 				const auto &meshData = meshDataComponent->getMeshData();
+
+				LOG(INFO) << "Creating renderer data for entity " << entity->getName() << " (ID " << entity->getId() << ")";
 
 				vertexAttributes.clear();
 				material->getVertexAttributes(vertexAttributes);
@@ -283,7 +286,7 @@ void EntityRenderManager::renderEntities()
 		catch (std::runtime_error &e)
 		{
 			renderable->SetVisible(false);
-			LOG(WARNING) << "Failed to render mesh on entity with ID " << entity->GetId() << ".\n" << e.what();
+			LOG(WARNING) << "Failed to render mesh on entity " << entity->getName() << " (ID " << entity->getId() << "): " << e.what();
 		}
 	}
 }

@@ -28,6 +28,7 @@ namespace OE {
 		 * Populates the given array (assumed to be empty) with the vertex attributes that this material requires. Populated in-order.
 		 */
 		virtual void getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const;
+		bool requiresRecompile() const { return m_requiresRecompile; }
 
 		void release();
 

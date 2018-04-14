@@ -40,7 +40,7 @@ struct LoaderData
 	string baseDir;
 	IWICImagingFactory* imagingFactory;
 	PrimitiveMeshDataFactory &meshDataFactory;
-	map<size_t, shared_ptr<MeshBuffer>> accessorIdxToMeshVertexBuffers;
+	map<size_t, shared_ptr<MeshBuffer>> accessorIdxToMeshBuffers;
 };
 
 unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
@@ -296,17 +296,73 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 	return material;
 }
 
+void setEntityTransform(Entity & entity, const Node & node)
+{
+	if (node.matrix.size() == 16)
+	{
+		float elements[16];
+		for (auto i = 0; i < 16; ++i)
+			elements[i] = static_cast<float>(node.matrix[i]);
+		auto trs = DirectX::SimpleMath::Matrix(elements);
+
+		DirectX::SimpleMath::Vector3 scale;
+		DirectX::SimpleMath::Quaternion rotation;
+		DirectX::SimpleMath::Vector3 translation;
+		trs.Decompose(scale, rotation, translation);
+
+		entity.SetScale(scale);
+		entity.SetRotation(rotation);
+		entity.SetPosition(translation);
+	}
+	else
+	{
+		if (node.translation.size() == 3)
+		{
+			entity.SetPosition({
+					static_cast<float>(node.translation[0]),
+					static_cast<float>(node.translation[1]),
+					static_cast<float>(node.translation[2])
+				});
+		}
+		if (node.rotation.size() == 4)
+		{
+			entity.SetRotation({
+				static_cast<float>(node.rotation[0]),
+				static_cast<float>(node.rotation[1]),
+				static_cast<float>(node.rotation[2]),
+				static_cast<float>(node.rotation[3])
+				});
+		}
+		if (node.scale.size() == 3)
+		{
+			entity.SetScale({
+				static_cast<float>(node.scale[0]),
+				static_cast<float>(node.scale[1]),
+				static_cast<float>(node.scale[2])
+				});
+		}
+	}
+}
+
 shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepository, MaterialRepository &materialRepository, LoaderData &loaderData)
 {
 	shared_ptr<Entity> rootEntity = entityRepository.Instantiate(node.name);
 
+	LOG(INFO) << "Creating entity for glTF node '" << node.name << "'";
+
+	// Transform
+	setEntityTransform(*rootEntity, node);
+
+	// Create MeshData
 	if (node.mesh > -1) {
 		const Mesh &mesh = loaderData.model.meshes.at(node.mesh);
 		const auto primitiveCount = mesh.primitives.size();
 		for (size_t primIdx = 0; primIdx < primitiveCount; ++primIdx)
 		{
-			LOG(INFO) << "Creating entity for glTF node '" << node.name << "'";
-			shared_ptr<Entity> primitiveEntity = entityRepository.Instantiate(node.name + " primitive " + to_string(primIdx));
+			const string primitiveName = mesh.name + " primitive " + to_string(primIdx);
+			LOG(INFO) << "Creating entity for glTF mesh " << primitiveName;
+			shared_ptr<Entity> primitiveEntity = entityRepository.Instantiate(primitiveName);
+
 			primitiveEntity->SetParent(*rootEntity.get());
 			MeshDataComponent &meshDataComponent = primitiveEntity->AddComponent<MeshDataComponent>();
 			auto meshData = std::make_shared<MeshData>();
@@ -391,6 +447,7 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 
 				if (generateNormals)
 				{
+					LOG(WARNING) << "Generating missing normals";
 					loaderData.meshDataFactory.generateNormals(
 						*meshData->m_indexBufferAccessor, 
 						*meshData->m_vertexBufferAccessors[VertexAttribute::VA_POSITION],
@@ -398,7 +455,10 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 				}
 
 				if (generateTangents || generateBitangents)
+				{
+					LOG(WARNING) << "Generating missing Tangents and/or Bitangents";
 					loaderData.meshDataFactory.generateTangents(meshData);
+				}
 
 				// Add this component last, to make sure there wasn't an error loading!
 				auto &renderableComponent = primitiveEntity->AddComponent<RenderableComponent>();
@@ -471,19 +531,24 @@ unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
 	// does the data range defined by the accessor fit into the bufferView?
 	if (accessor.byteOffset + accessor.count * sourceStride > bufferView.byteLength)
 		throw runtime_error("Accessor " + to_string(accessorIndex) + " exceeds maximum size of bufferView " + to_string(accessor.bufferView));
-	
+
+	// does the data range defined by the accessor and bufferview fit into the buffer?
+	const size_t bufferOffset = bufferView.byteOffset + accessor.byteOffset;
+	if (bufferOffset + accessor.count * sourceStride > buffer.data.size())
+		throw runtime_error("BufferView " + to_string(accessor.bufferView) + " exceeds maximum size of buffer " + to_string(bufferView.buffer));
+		
 	// Have we already created an identical buffer? If so, re-use it.
 	shared_ptr<MeshBuffer> meshBuffer;
-	const auto pos = loaderData.accessorIdxToMeshVertexBuffers.find(accessorIndex);
+	const auto pos = loaderData.accessorIdxToMeshBuffers.find(accessorIndex);
 
-	if (pos != loaderData.accessorIdxToMeshVertexBuffers.end())
+	if (pos != loaderData.accessorIdxToMeshBuffers.end())
 		meshBuffer = pos->second;
 	else
 	{
 		// Copy the data.
 		LOG(INFO) << "Reading vertex buffer data: " << g_gltfMappingToAttributeMap[vertexAttribute];
-		meshBuffer = create_buffer_s(sourceElementSize, accessor.count, buffer.data, sourceStride, bufferView.byteOffset);
-		loaderData.accessorIdxToMeshVertexBuffers[accessorIndex] = meshBuffer;
+		meshBuffer = create_buffer_s(sourceElementSize, accessor.count, buffer.data, sourceStride, bufferOffset);
+		loaderData.accessorIdxToMeshBuffers[accessorIndex] = meshBuffer;
 		/*
 		 // Output stream data to the log
 		if (accessor.type == TINYGLTF_TYPE_VEC2)
@@ -509,6 +574,8 @@ unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
 		}
 		*/
 	}
+
+	LOG(INFO) << "Creating Vertex Buffer Accessor.   type: " << VertexAttributeMeta::semanticName(vertexAttribute) << "   count: " << accessor.count;
 
 	return make_unique<MeshVertexBufferAccessor>(meshBuffer, vertexAttribute, static_cast<UINT>(accessor.count), static_cast<UINT>(sourceElementSize), 0);
 }
@@ -565,25 +632,37 @@ unique_ptr<MeshIndexBufferAccessor> read_index_buffer(const Model& model,
 	if (accessor.byteOffset + accessor.count * sourceStride > bufferView.byteLength)
 		throw runtime_error("Accessor " + to_string(accessorIndex) + " exceeds maximum size of bufferView " + to_string(accessor.bufferView));
 
+	// does the data range defined by the accessor and bufferview fit into the buffer?
+	const size_t bufferOffset = bufferView.byteOffset + accessor.byteOffset;
+	if (bufferOffset + accessor.count * sourceStride > buffer.data.size())
+		throw runtime_error("BufferView " + to_string(accessor.bufferView) + " exceeds maximum size of buffer " + to_string(bufferView.buffer));
+
 	// Have we already created an identical buffer? If so, re-use it.
 	shared_ptr<MeshBuffer> meshBuffer;
-	const auto pos = loaderData.accessorIdxToMeshVertexBuffers.find(accessorIndex);
+	const auto pos = loaderData.accessorIdxToMeshBuffers.find(accessorIndex);
 
-	if (pos != loaderData.accessorIdxToMeshVertexBuffers.end())
+	if (pos != loaderData.accessorIdxToMeshBuffers.end())
+	{
+		LOG(INFO) << "Found existing MeshBuffer instance, re-using.";
 		meshBuffer = pos->second;
+	}
 	else
 	{
+		LOG(INFO) << "Creating new MeshBuffer instance.";
+
 		// Copy the data.
 		meshBuffer = create_buffer(
 			static_cast<uint32_t>(sourceElementSize),
 			static_cast<uint32_t>(accessor.count), 
 			buffer.data, 
 			static_cast<uint32_t>(sourceStride),
-			static_cast<uint32_t>(bufferView.byteOffset));
+			static_cast<uint32_t>(bufferOffset));
 
-		loaderData.accessorIdxToMeshVertexBuffers[accessorIndex] = meshBuffer;
+		loaderData.accessorIdxToMeshBuffers[accessorIndex] = meshBuffer;
 	}
 	
+	LOG(INFO) << "Creating Index Buffer Accessor.   DXGI format: " << format << "   count: " << accessor.count;
+
 	return make_unique<MeshIndexBufferAccessor>(meshBuffer, format, static_cast<UINT>(accessor.count), static_cast<UINT>(sourceElementSize), 0);
 }
 

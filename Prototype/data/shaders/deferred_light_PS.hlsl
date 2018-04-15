@@ -66,23 +66,23 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	float3 baseColor = color0.rgb;
 #endif
 
-	// Lighting Parameters
-	float3 eyeVectorW = normalize(vsPosition - g_eyePosition.xyz);
+	// Vector from surface point to camera
+	float3 eyeVectorW = normalize(g_eyePosition.xyz - vsPosition);
+
+	// Vector from surface point to light
 	float3 lightVector;
+
 	float3 lightIntensifiedColor = g_lightIntensifiedColor.rgb;
 	if (g_lightType == 1)
 	{
-		float3 posDifference = vsPosition - g_lightPosition.xyz;
+		float3 posDifference = g_lightPosition.xyz - vsPosition;
 		lightIntensifiedColor = lightIntensifiedColor / length(posDifference);
 		lightVector = normalize(posDifference);
 	}
 	else
 	{
-		lightVector = g_lightPosition.xyz;
+		lightVector = -g_lightPosition.xyz;
 	}
-
-	// TODO: I guess we should apply simlpy lighting to the base color first? 
-	//baseColor *= max(0, lightIntensifiedColor * -dot(lightVector, worldNormal) / 3.14159);
 
 	// Final lighting calculations
 	float3 finalColor = lightIntensifiedColor * BRDF(metallic, roughness, baseColor,

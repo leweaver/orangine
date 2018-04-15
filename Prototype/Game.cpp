@@ -148,26 +148,19 @@ void Game::CreateLights()
 	if (true)
 	{
 		lightCount = 0;
-		createDirLight({ 0, 0, -1 }, { 0, 1, 1 }, 1);
-		createDirLight({ 0, 0, 1 }, { 0, 0, 1 }, 1);
-
-		createDirLight({ 1, 0, 0 }, { 0, 1, 1 }, 1);
-		createDirLight({ -1, 0, 0 }, { 1, 0, 0 }, 1);
-
-		createDirLight({ 0, 1, 0 }, { 0, 1, 1 }, 1);
-		createDirLight({ 0, -1, 0 }, { 0, 1, 0 }, 1);
-
-		lightCount = 0;
-		createPointLight({ 3, 0, 3 }, { 1, 1, 1 }, 1);
+		createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 1);
+		createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75);
 	}
-
+	else
 	{
 		const auto &lightRoot = entityManager.Instantiate("Light Root");
 		lightRoot->SetPosition({ 0, 0, 0 });
 		//lightRoot->AddComponent<TestComponent>().SetSpeed({ 0.0f, 0.1f, 0.0f });
 				
-		std::shared_ptr<Entity> light1 = createPointLight({ 5, 0, 5 }, { 1, 1, 1 }, 20);
+		std::shared_ptr<Entity> light1 = createPointLight({ 10, 0, 10 }, { 1, 1, 1 }, 13);
 		light1->SetParent(*lightRoot);
+		std::shared_ptr<Entity> light2 = createPointLight({ 10, 5, -10 }, { 1, 0, 1 }, 20);
+		light2->SetParent(*lightRoot);
 	}
 }
 

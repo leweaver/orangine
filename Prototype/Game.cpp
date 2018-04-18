@@ -207,7 +207,9 @@ void Game::Initialize(HWND window, int width, int height)
 		//CreateSceneCubeSatellite();
 		//CreateSceneLeverArm();
 		//LoadGLTF("Avocado", true)->SetScale({ 120, 120, 120 });
-		LoadGLTF("FlightHelmet", true);
+		//LoadGLTF("FlightHelmet", true);
+		LoadGLTF("WaterBottle", true)->SetScale({ 80, 80, 80 });
+		
 		//CreateSceneMetalRoughSpheres(true);
 
 		CreateCamera(false);

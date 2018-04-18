@@ -345,6 +345,12 @@ void EntityRenderManager::renderLights()
 					m_deviceResources.GetD3DDeviceContext()->DrawIndexed(rendererData->m_indexCount, 0, 0);
 			}
 		}
+
+		// Finally, render emitted light sources
+		m_deferredLightMaterial->SetupEmitted();
+		if (m_deferredLightMaterial->render(*rendererData, m_cameraData.worldMatrix, m_cameraData.viewMatrix, m_cameraData.projectionMatrix, m_deviceResources))
+			m_deviceResources.GetD3DDeviceContext()->DrawIndexed(rendererData->m_indexCount, 0, 0);
+
 		m_deferredLightMaterial->unbind(m_deviceResources);
 	}
 	catch (std::runtime_error &e)

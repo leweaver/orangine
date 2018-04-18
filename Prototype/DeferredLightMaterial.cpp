@@ -67,6 +67,11 @@ void DeferredLightMaterial::SetupAmbientLight(const DirectX::SimpleMath::Color &
 	XMStoreFloat3(&m_constants.intensifiedColor, intensifiedColor);
 }
 
+void DeferredLightMaterial::SetupEmitted()
+{
+	m_constants.lightType = DeferredLightType::Emitted;
+}
+
 bool DeferredLightMaterial::createPSConstantBuffer(ID3D11Device *device, ID3D11Buffer *&buffer)
 {
 	D3D11_BUFFER_DESC bufferDesc;

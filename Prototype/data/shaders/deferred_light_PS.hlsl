@@ -28,6 +28,7 @@ struct PS_INPUT
 #define LIGHT_TYPE_DIRECTIONAL 0
 #define LIGHT_TYPE_POINT 1
 #define LIGHT_TYPE_AMBIENT 2
+#define LIGHT_TYPE_EMITTED 3
 
 // rgb: Diffuse           
 // a:   Specular intensity
@@ -88,6 +89,10 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	if (g_lightType == LIGHT_TYPE_AMBIENT)
 	{
 		finalColor = occlusion * lightIntensifiedColor * baseColor;
+	}
+	else if (g_lightType == LIGHT_TYPE_EMITTED)
+	{
+		finalColor = emissiveColor;
 	}
 	else 
 	{

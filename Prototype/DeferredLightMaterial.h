@@ -33,6 +33,7 @@ namespace OE
 		void SetupPointLight(const DirectX::SimpleMath::Vector3 &lightPosition, const DirectX::SimpleMath::Color &color, float getIntensity);
 		void SetupDirectionalLight(const DirectX::SimpleMath::Vector3 &lightDirection, const DirectX::SimpleMath::Color &color, float getIntensity);
 		void SetupAmbientLight(const DirectX::SimpleMath::Color &color, float getIntensity);
+		void SetupEmitted();
 
 	protected:
 
@@ -40,7 +41,8 @@ namespace OE
 		{
 			Directional,
 			Point,
-			Ambient
+			Ambient,
+			Emitted
 		};
 
 		struct DeferredLightConstants

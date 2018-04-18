@@ -162,13 +162,13 @@ void Game::CreateLights()
 
 	if (true)
 	{
-		//createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 1)->SetParent(*lightRoot);
-		//createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75)->SetParent(*lightRoot);
+		createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 1)->SetParent(*lightRoot);
+		createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75)->SetParent(*lightRoot);
 	}
 	else
 	{
-		//createPointLight({ 10, 0, 10 }, { 1, 1, 1 }, 13)->SetParent(*lightRoot);
-		//createPointLight({ 10, 5, -10 }, { 1, 0, 1 }, 20)->SetParent(*lightRoot);
+		createPointLight({ 10, 0, 10 }, { 1, 1, 1 }, 13)->SetParent(*lightRoot);
+		createPointLight({ 10, 5, -10 }, { 1, 0, 1 }, 20)->SetParent(*lightRoot);
 	}
 }
 

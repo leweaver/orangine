@@ -76,6 +76,7 @@ namespace OE {
 		void createDeviceDependentResources();
 		void createWindowSizeDependentResources();
 		void destroyDeviceDependentResources();
+		void destroyWindowSizeDependentResources();
 
 		void render();
 

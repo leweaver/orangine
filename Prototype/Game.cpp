@@ -308,9 +308,8 @@ void Game::OnWindowSizeChanged(int width, int height)
     if (!m_deviceResources->WindowSizeChanged(width, height))
         return;
 
+	m_scene->GetEntityRenderManger().destroyWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
-
-    // TODO: Game window is being resized.
 }
 
 // Properties
@@ -352,6 +351,7 @@ void Game::CreateWindowSizeDependentResources()
 
 void Game::OnDeviceLost()
 {
+	m_scene->GetEntityRenderManger().destroyWindowSizeDependentResources();
 	m_scene->GetEntityRenderManger().destroyDeviceDependentResources();
 }
 

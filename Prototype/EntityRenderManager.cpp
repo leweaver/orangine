@@ -210,12 +210,15 @@ void EntityRenderManager::destroyDeviceDependentResources()
 	
 	m_pass1ScreenSpaceQuad.rendererData.reset();
 	m_pass2ScreenSpaceQuad.rendererData.reset();
-
-	m_depthTexture.reset();
-	m_pass1RenderTargets.clear();
-
+	
 	m_deferredLightMaterial.reset();	
 	m_fatalError = false;
+}
+
+void OE::EntityRenderManager::destroyWindowSizeDependentResources()
+{
+	m_depthTexture.reset();
+	m_pass1RenderTargets.clear();
 }
 
 void EntityRenderManager::render()

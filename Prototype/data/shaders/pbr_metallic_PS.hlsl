@@ -6,9 +6,10 @@
 
 cbuffer constants : register(b0)
 {
-	matrix        g_mWorld                : packoffset(c0);
-	float4        g_baseColor             : packoffset(c4);
-	float4        g_metallicRoughness     : packoffset(c5); // metallic, roughness
+	matrix        g_mWorld             : packoffset(c0);
+	float4        g_baseColor          : packoffset(c4);
+	float4        g_metallicRoughness  : packoffset(c5); // metallic, roughness
+	float4        g_emissive           : packoffset(c6); // emissive color (RGB)
 };
 
 //--------------------------------------------------------------------------------------
@@ -25,10 +26,10 @@ struct PS_INPUT
 
 struct PS_OUTPUT
 {
-	float4  Color  : SV_Target0; // xyz: Diffuse          w: metallic
-	float4  Color1 : SV_Target1; // xyz: World normals    w: roughness
+	float4  Color  : SV_Target0; // rgb: Diffuse          a: metallic
+	float4  Color1 : SV_Target1; // rgb: World normals    a: roughness
+	float4  Color2 : SV_Target2; // rgb: Emissive         a: Occlusion
 };
-
 
 // Order of these samplers must match the enum order in PBRMaterial.h
 #ifdef MAP_BASECOLOR
@@ -44,6 +45,16 @@ SamplerState metallicRoughnessSampler;
 #ifdef MAP_NORMAL
 Texture2D normalTexture;
 SamplerState normalSampler;
+#endif
+
+#ifdef MAP_OCCLUSION
+Texture2D occlusionTexture;
+SamplerState occlusionSampler;
+#endif
+
+#ifdef MAP_EMISSIVE
+Texture2D emissiveTexture;
+SamplerState emissiveSampler;
 #endif
 
 //--------------------------------------------------------------------------------------
@@ -77,8 +88,27 @@ PS_OUTPUT PSMain(PS_INPUT input)
 	float3 worldNormal = input.vWorldNormal.xyz;
 #endif
 
-	output.Color = float4(baseColor, metallicRoughness.x);
+#ifdef MAP_EMISSIVE
+	float3 emissiveColor = emissiveTexture.Sample(emissiveSampler, input.vTexCoord0).rgb;
+#else
+	float3 emissiveColor = g_emissive.rgb;
+#endif
+
+#ifdef MAP_OCCLUSION
+	float occlusionFactor = occlusionTexture.Sample(occlusionSampler, input.vTexCoord0).r;
+#else
+	float occlusionFactor = 1;
+#endif
+
+	// Encoding:
+	// Diffuse, Metallic
+	output.Color =  float4(baseColor, metallicRoughness.x);
+
+	// World normal, Roughness
 	output.Color1 = float4(worldNormal * 0.5 + 0.5, metallicRoughness.y);
+
+	// Emissive, occlusion
+	output.Color2 = float4(emissiveColor.rgb, occlusionFactor);
 
 	return output;
 }

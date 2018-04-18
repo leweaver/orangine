@@ -56,7 +56,8 @@ void EntityRenderManager::Initialize()
 	m_renderableEntities = m_scene.GetSceneGraphManager().GetEntityFilter({ RenderableComponent::Type() });
 	m_lightEntities = m_scene.GetSceneGraphManager().GetEntityFilter({ 
 		DirectionalLightComponent::Type(),
-		PointLightComponent::Type()
+		PointLightComponent::Type(),
+		AmbientLightComponent::Type()
 	}, EntityFilterMode::ANY);
 
 	m_primitiveMeshDataFactory = std::make_unique<PrimitiveMeshDataFactory>();
@@ -173,7 +174,7 @@ void EntityRenderManager::createDeviceDependentResources()
 
 void EntityRenderManager::createWindowSizeDependentResources()
 {
-	assert(m_pass1RenderTargets.size() == 0);
+	assert(m_pass1RenderTargets.empty());
 	const auto d3dDevice = m_deviceResources.GetD3DDevice();
 
 	// Determine the render target size in pixels.
@@ -181,7 +182,7 @@ void EntityRenderManager::createWindowSizeDependentResources()
 	const UINT width = std::max<UINT>(outputSize.right - outputSize.left, 1);
 	const UINT height = std::max<UINT>(outputSize.bottom - outputSize.top, 1);
 	
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
 		auto target = std::make_unique<TextureRenderTarget>(width, height);
 		target->load(d3dDevice);
@@ -194,6 +195,7 @@ void EntityRenderManager::createWindowSizeDependentResources()
 	// Assign textures to the deferred light material
 	m_deferredLightMaterial->setColor0Texture(m_pass1RenderTargets.at(0));
 	m_deferredLightMaterial->setColor1Texture(m_pass1RenderTargets.at(1));
+	m_deferredLightMaterial->setColor2Texture(m_pass1RenderTargets.at(2));
 	m_deferredLightMaterial->setDepthTexture(m_depthTexture);
 
 	// Set the viewport.
@@ -260,6 +262,10 @@ void EntityRenderManager::renderEntities()
 			auto material = renderable->GetMaterial().get();
 			assert(material != nullptr);
 
+			// TODO: Support alpha in a second pass
+			if (material->getAlphaMode() != MaterialAlphaMode::OPAQUE)
+				continue;
+
 			const RendererData *rendererData = renderable->GetRendererData().get();
 			if (rendererData == nullptr) {
 				
@@ -320,6 +326,13 @@ void EntityRenderManager::renderLights()
 			if (pointLight)
 			{
 				m_deferredLightMaterial->SetupPointLight(lightEntity->WorldPosition(), pointLight->getColor(), pointLight->getIntensity());
+				foundLight = true;
+			}
+
+			const auto ambientLight = lightEntity->GetFirstComponentOfType<AmbientLightComponent>();
+			if (ambientLight)
+			{
+				m_deferredLightMaterial->SetupAmbientLight(ambientLight->getColor(), ambientLight->getIntensity());
 				foundLight = true;
 			}
 
@@ -414,10 +427,11 @@ void EntityRenderManager::drawRendererData(
 	}
 	else
 	{
-		material->render(*rendererData, worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, m_deviceResources);
-
-		// Render the triangles.
-		deviceContext->Draw(rendererData->m_vertexCount, rendererData->m_vertexCount);
+		if (material->render(*rendererData, worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, m_deviceResources))
+		{
+			// Render the triangles.
+			deviceContext->Draw(rendererData->m_vertexCount, rendererData->m_vertexCount);
+		}
 	}
 }
 
@@ -494,13 +508,15 @@ void EntityRenderManager::setupRenderEntities()
 	const auto depthStencil = m_deviceResources.GetDepthStencilView();
 	context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-	assert(m_pass1RenderTargets.size() == 2);
-	ID3D11RenderTargetView *renderTargets[2] = {
+	constexpr size_t numRenderTargets = 3;
+	assert(m_pass1RenderTargets.size() == numRenderTargets);
+	ID3D11RenderTargetView *renderTargets[] = {
 		m_pass1RenderTargets[0]->getRenderTargetView(),
 		m_pass1RenderTargets[1]->getRenderTargetView(),
+		m_pass1RenderTargets[2]->getRenderTargetView(),
 	};
 
-	context->OMSetRenderTargets(2, renderTargets, depthStencil);
+	context->OMSetRenderTargets(numRenderTargets, renderTargets, depthStencil);
 	
 	// Clear the rendered textures (ignoring depth)
 	if (m_pass1ScreenSpaceQuad.rendererData && m_pass1ScreenSpaceQuad.material) {

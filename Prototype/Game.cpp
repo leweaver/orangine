@@ -59,17 +59,17 @@ void Game::CreateSceneCubeSatellite()
 	AddCubeToEntity(*child3, {0.0f, 0.0f, 0.5f}, {1, 1, 2}, {-4, 0, 0});
 }
 
-void Game::CreateSceneAvocado(bool animate)
+std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 {
 	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
-	const auto &root1 = entityManager.Instantiate("Root");
-	root1->SetPosition({ 0, -2.5, 0 });
-	root1->SetScale({ 80, 80, 80 });
+	auto root = entityManager.Instantiate("Root");
 
 	if (animate)
-		root1->AddComponent<TestComponent>().SetSpeed({ 0.0f, 0.1f, 0.0f });
+		root->AddComponent<TestComponent>().SetSpeed({ 0.0f, 0.1f, 0.0f });
 
-	m_scene->LoadEntities("data/meshes/Avocado/Avocado.gltf", *root1);
+	m_scene->LoadEntities("data/meshes/" + gltfName + "/" + gltfName + ".gltf", *root);
+
+	return root;
 }
 
 void Game::CreateSceneMetalRoughSpheres(bool animate)
@@ -114,7 +114,7 @@ void Game::CreateLights()
 	int lightCount = 0;
 	auto createDirLight = [&entityManager, &lightCount](const Vector3 &normal, const Color &color, float intensity)
 	{
-		auto lightEntity = entityManager.Instantiate("Directional Light " + to_string(++lightCount));
+		auto lightEntity = entityManager.Instantiate("Directional Light " + std::to_string(++lightCount));
 		auto &component = lightEntity->AddComponent<DirectionalLightComponent>();
 		component.setColor(color);
 		component.setIntensity(intensity);
@@ -138,27 +138,37 @@ void Game::CreateLights()
 	};
 	auto createPointLight = [&entityManager, &lightCount](const Vector3 &position, const Color &color, float intensity)
 	{
-		auto lightEntity = entityManager.Instantiate("Point Light " + to_string(++lightCount));
+		auto lightEntity = entityManager.Instantiate("Point Light " + std::to_string(++lightCount));
 		auto &component = lightEntity->AddComponent<PointLightComponent>();
 		component.setColor(color);
 		component.setIntensity(intensity);
 		lightEntity->SetPosition(position);
 		return lightEntity;
 	};
+	auto createAmbientLight = [&entityManager, &lightCount](const Color &color, float intensity)
+	{
+		auto lightEntity = entityManager.Instantiate("Ambient Light " + std::to_string(++lightCount));
+		auto &component = lightEntity->AddComponent<AmbientLightComponent>();
+		component.setColor(color);
+		component.setIntensity(intensity);
+		return lightEntity;
+	};
 
 	const auto &lightRoot = entityManager.Instantiate("Light Root");
 	lightRoot->SetPosition({ 0, 0, 0 });
-	createDirLight({ 0, 0, -1 }, { 1, 1, 1 }, 0.35)->SetParent(*lightRoot);
+	//createDirLight({ 0.5, 0, -1 }, { 1, 1, 1 }, 0.35)->SetParent(*lightRoot);
+
+	createAmbientLight({ 1, 1, 1 }, 1)->SetParent(*lightRoot);
 
 	if (true)
 	{
-		createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 1)->SetParent(*lightRoot);
-		createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75)->SetParent(*lightRoot);
+		//createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 1)->SetParent(*lightRoot);
+		//createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75)->SetParent(*lightRoot);
 	}
 	else
 	{
-		createPointLight({ 10, 0, 10 }, { 1, 1, 1 }, 13)->SetParent(*lightRoot);
-		createPointLight({ 10, 5, -10 }, { 1, 0, 1 }, 20)->SetParent(*lightRoot);
+		//createPointLight({ 10, 0, 10 }, { 1, 1, 1 }, 13)->SetParent(*lightRoot);
+		//createPointLight({ 10, 5, -10 }, { 1, 0, 1 }, 20)->SetParent(*lightRoot);
 	}
 }
 
@@ -196,8 +206,9 @@ void Game::Initialize(HWND window, int width, int height)
 
 		//CreateSceneCubeSatellite();
 		//CreateSceneLeverArm();
-		//CreateSceneAvocado(true);
-		CreateSceneMetalRoughSpheres(true);
+		//LoadGLTF("Avocado", true)->SetScale({ 120, 120, 120 });
+		LoadGLTF("FlightHelmet", true);
+		//CreateSceneMetalRoughSpheres(true);
 
 		CreateCamera(false);
 		CreateLights();
@@ -306,8 +317,8 @@ void Game::OnWindowSizeChanged(int width, int height)
 void Game::GetDefaultSize(int& width, int& height) const
 {
     // TODO: Change to desired default window size (note minimum size is 320x200).
-    width = 800;
-    height = 600;
+    width = 1024 * 2;
+    height = 800 * 2;
 }
 #pragma endregion
 

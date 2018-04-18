@@ -60,7 +60,12 @@ string g_pbrPropertyName_BaseColorFactor = "baseColorFactor";
 string g_pbrPropertyName_BaseColorTexture = "baseColorTexture";
 string g_pbrPropertyName_MetallicFactor = "metallicFactor";
 string g_pbrPropertyName_RoughnessFactor = "roughnessFactor";
+string g_pbrPropertyName_EmissiveFactor = "emissiveFactor";
 string g_pbrPropertyName_MetallicRoughnessTexture = "metallicRoughnessTexture";
+
+string g_pbrPropertyValue_AlphaMode_Opaque = "OPAQUE";
+string g_pbrPropertyValue_AlphaMode_Mask = "MASK";
+string g_pbrPropertyValue_AlphaMode_Blend = "BLEND";
 
 glTFMeshLoader::glTFMeshLoader()
 {
@@ -228,8 +233,7 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 {
 	const tinygltf::Material &gltfMaterial = loaderData.model.materials.at(prim.material);
 	auto material = materialRepository.instantiate<PBRMaterial>();
-
-
+	
 	// base color factor
 	{
 		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_BaseColorFactor);
@@ -284,13 +288,59 @@ unique_ptr<OE::Material> create_material(const Primitive& prim, MaterialReposito
 			material->setBaseColor(DirectX::SimpleMath::Color(DirectX::Colors::White));
 		}
 	}
+	// emissive factor
+	{
+		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_EmissiveFactor);
+		if (paramPos != gltfMaterial.values.end()) {
+			const auto &param = paramPos->second;
+			if (param.number_array.size() == 3) {
+				const auto color = DirectX::SimpleMath::Color(
+					static_cast<float>(param.number_array[0]),
+					static_cast<float>(param.number_array[1]),
+					static_cast<float>(param.number_array[2]),
+					1.0f
+				);
+				material->setEmissiveFactor(color);
+			}
+			else
+				throw runtime_error("Failed to parse glTF: expected material " + g_pbrPropertyName_RoughnessFactor + " to be scalar");
+		}
+		else
+		{
+			material->setEmissiveFactor(DirectX::SimpleMath::Color(DirectX::Colors::Black));
+		}
+	}
 
 	// PBR Textures
 	material->setBaseColorTexture(try_create_texture(loaderData, gltfMaterial, "baseColorTexture"));
 	material->setMetallicRoughnessTexture(try_create_texture(loaderData, gltfMaterial, "metallicRoughnessTexture"));
+	material->setOcclusionTexture(try_create_texture(loaderData, gltfMaterial, "occlusionTexture"));
+	material->setEmissiveTexture(try_create_texture(loaderData, gltfMaterial, "emissiveTexture"));
 
 	// Material Textures
 	material->setNormalTexture(try_create_texture(loaderData, gltfMaterial, "normalTexture"));
+
+	// Alpha Mode
+	{
+		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_MetallicFactor);
+		if (paramPos != gltfMaterial.values.end()) {
+			const auto &param = paramPos->second;
+			if (param.number_array.size() == 1) {
+				if (param.string_value == g_pbrPropertyValue_AlphaMode_Mask)
+					material->setAlphaMode(MaterialAlphaMode::MASK);
+				else if (param.string_value == g_pbrPropertyValue_AlphaMode_Blend)
+					material->setAlphaMode(MaterialAlphaMode::BLEND);
+				else
+					material->setAlphaMode(MaterialAlphaMode::OPAQUE);
+			}
+			else
+				throw runtime_error("Failed to parse glTF: expected material " + g_pbrPropertyName_MetallicFactor + " to be scalar");
+		}
+		else
+		{
+			material->setAlphaMode(MaterialAlphaMode::OPAQUE);
+		}
+	}
 
 	// TODO: Other material parameters; roughness etc
 	return material;

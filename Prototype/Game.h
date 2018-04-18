@@ -10,6 +10,11 @@
 
 #include "Scene.h"
 
+namespace OE
+{
+	class Entity;
+}
+
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
 class Game : public DX::IDeviceNotify
@@ -21,7 +26,7 @@ public:
 
 	void CreateSceneLeverArm();
 	void CreateSceneCubeSatellite();
-	void CreateSceneAvocado(bool animate);
+	std::shared_ptr<OE::Entity> LoadGLTF(std::string gltfName, bool animate);
 	void CreateSceneMetalRoughSpheres(bool animate);
 	void CreateLights();
 	void CreateCamera(bool animate);

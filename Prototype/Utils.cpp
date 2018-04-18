@@ -67,7 +67,7 @@ std::string OE::str_replace_all(std::string str, const std::string &from, const 
 	return str;
 }
 
-std::wstring OE::to_wstring(const HRESULT hr)
+std::wstring OE::hr_to_wstring(const HRESULT hr)
 {
 	_com_error err(hr);
 	return err.ErrorMessage();
@@ -90,7 +90,7 @@ com_exception::com_exception(HRESULT hr, const char *what)
 {
 }
 
-std::string OE::to_string(const HRESULT hr)
+std::string OE::hr_to_string(const HRESULT hr)
 {
 	_com_error err(hr);
 	const auto errMsg = err.ErrorMessage();

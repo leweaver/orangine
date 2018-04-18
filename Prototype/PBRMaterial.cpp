@@ -10,6 +10,7 @@ PBRMaterial::PBRMaterial()
 	: m_baseColor(SimpleMath::Vector4::One)
 	, m_metallic(1.0)
 	, m_roughness(1.0)
+	, m_emissive(0, 0, 0)
 	, m_boundTextureCount(0)
 {
 	ZeroMemory(m_textures, sizeof(m_textures));
@@ -64,6 +65,10 @@ Material::ShaderCompileSettings PBRMaterial::pixelShaderSettings() const
 		settings.defines["MAP_METALLIC_ROUGHNESS"] = "1";
 	if (m_textures[Normal])
 		settings.defines["MAP_NORMAL"] = "1";
+	if (m_textures[Emissive])
+		settings.defines["MAP_EMISSIVE"] = "1";
+	if (m_textures[Occlusion])
+		settings.defines["MAP_OCCLUSION"] = "1";
 
 	return settings;
 }
@@ -144,6 +149,7 @@ void PBRMaterial::updatePSConstantBuffer(const SimpleMath::Matrix &worldMatrix,
 	m_constantsPS.world = XMMatrixTranspose(worldMatrix);
 	m_constantsPS.baseColor = m_baseColor;
 	m_constantsPS.metallicRoughness = SimpleMath::Vector4(m_metallic, m_roughness, 0.0, 0.0);
+	m_constantsPS.emissive = SimpleMath::Vector4(m_emissive.x, m_emissive.y, m_emissive.z, 0.0);
 
 	context->UpdateSubresource(buffer, 0, nullptr, &m_constantsPS, 0, 0);
 }
@@ -172,7 +178,7 @@ void PBRMaterial::createShaderResources(const DX::DeviceResources &deviceResourc
 			}
 			catch (std::exception &e)
 			{
-				LOG(WARNING) << "PBRMaterial: Failed to load texture (type " + to_string(t) + "): "s + e.what();
+				LOG(WARNING) << "PBRMaterial: Failed to load texture (type " + std::to_string(t) + "): "s + e.what();
 			}
 
 			if (!texture->isValid()) {
@@ -215,12 +221,14 @@ void PBRMaterial::createShaderResources(const DX::DeviceResources &deviceResourc
 		}
 		else
 		{
-			LOG(WARNING) << "PBRMaterial: Failed to create baseColorTexture sampler state with error code: "s + to_string(hr);
+			LOG(WARNING) << "PBRMaterial: Failed to create samplerState with error code: "s + hr_to_string(hr);
 
 			// TODO: Set to error texture?
 			m_textures[t] = nullptr;
 		}
 	}
+
+	LOG(INFO) << "Created PBRMaterial shader resources. Texture Count: " << std::to_string(m_boundTextureCount);
 }
 
 void PBRMaterial::releaseBindings()

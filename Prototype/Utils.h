@@ -18,8 +18,8 @@ namespace OE {
 
 	std::string str_replace_all(std::string str, const std::string& from, const std::string& to);
 
-	std::string to_string(HRESULT hr);
-	std::wstring to_wstring(HRESULT hr);
+	std::string hr_to_string(HRESULT hr);
+	std::wstring hr_to_wstring(HRESULT hr);
 
 	// Helper class for COM exceptions
 	class com_exception : public std::exception

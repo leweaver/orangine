@@ -112,8 +112,10 @@ void PrimitiveMeshDataFactory::generateNormals(
 			const uint16_t &i2 = *reinterpret_cast<const uint16_t*>(indexBufferStart + ++idx * indexBufferAccessor.m_stride);
 			++idx;
 
-			if (i0 > numVertices || i1 > numVertices || i2 > numVertices)
-				throw std::logic_error("IndexBuffer index near "+to_string(idx - 3) + " out of range of given vertexBuffer (numVertices=" + to_string(numVertices) + ")");
+			if (i0 > numVertices || i1 > numVertices || i2 > numVertices) {
+				throw std::logic_error("IndexBuffer index near " + std::to_string(idx - 3) +
+					" out of range of given vertexBuffer (numVertices=" + std::to_string(numVertices) + ")");
+			}
 
 			const Vector3 &p0 = *reinterpret_cast<const Vector3*>(positionBufferStart + i0 * positionBufferAccessor.m_stride);
 			const Vector3 &p1 = *reinterpret_cast<const Vector3*>(positionBufferStart + i1 * positionBufferAccessor.m_stride);

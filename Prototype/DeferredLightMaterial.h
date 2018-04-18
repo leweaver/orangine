@@ -9,10 +9,12 @@ namespace OE
 	{
 		std::shared_ptr<Texture> m_color0Texture;
 		std::shared_ptr<Texture> m_color1Texture;
+		std::shared_ptr<Texture> m_color2Texture;
 		std::shared_ptr<Texture> m_depthTexture;
 
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> m_color0SamplerState;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> m_color1SamplerState;
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> m_color2SamplerState;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> m_depthSamplerState;
 
 	public:
@@ -21,6 +23,8 @@ namespace OE
 		void setColor0Texture(const std::shared_ptr<Texture> &texture) { m_color0Texture = texture; }
 		const std::shared_ptr<Texture> & getColor1Texture() const { return m_color1Texture; }
 		void setColor1Texture(const std::shared_ptr<Texture> &texture) { m_color1Texture = texture; }
+		const std::shared_ptr<Texture> & getColor2Texture() const { return m_color2Texture; }
+		void setColor2Texture(const std::shared_ptr<Texture> &texture) { m_color2Texture = texture; }
 		const std::shared_ptr<Texture> & getDepthTexture() const { return m_depthTexture; }
 		void setDepthTexture(const std::shared_ptr<Texture> &texture) { m_depthTexture = texture; }
 
@@ -28,13 +32,15 @@ namespace OE
 
 		void SetupPointLight(const DirectX::SimpleMath::Vector3 &lightPosition, const DirectX::SimpleMath::Color &color, float getIntensity);
 		void SetupDirectionalLight(const DirectX::SimpleMath::Vector3 &lightDirection, const DirectX::SimpleMath::Color &color, float getIntensity);
+		void SetupAmbientLight(const DirectX::SimpleMath::Color &color, float getIntensity);
 
 	protected:
 
 		enum class DeferredLightType : int32_t
 		{
 			Directional,
-			Point
+			Point,
+			Ambient
 		};
 
 		struct DeferredLightConstants

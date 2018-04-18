@@ -46,4 +46,9 @@ namespace OE {
 	{
 		DECLARE_COMPONENT_TYPE;
 	};
+
+	class AmbientLightComponent : public LightComponent
+	{
+		DECLARE_COMPONENT_TYPE;
+	};
 }

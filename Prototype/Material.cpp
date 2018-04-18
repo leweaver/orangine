@@ -22,6 +22,7 @@ Material::Material()
 	, m_vsConstantBuffer(nullptr)
 	, m_errorState(false)
 	, m_requiresRecompile(true)
+	, m_alphaMode(MaterialAlphaMode::OPAQUE)
 {
 }
 
@@ -160,7 +161,7 @@ bool Material::createVertexShader(ID3D11Device* device)
 	                          &m_inputLayout);
 	if (!SUCCEEDED(hr))
 	{
-		LOG(WARNING) << "Failed to create vertex input layout: " << to_string(hr);
+		LOG(WARNING) << "Failed to create vertex input layout: " << std::to_string(hr);
 		release();
 		return false;
 	}
@@ -168,7 +169,7 @@ bool Material::createVertexShader(ID3D11Device* device)
 	hr = device->CreateVertexShader(vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), nullptr, &m_vertexShader);
 	if (!SUCCEEDED(hr))
 	{
-		LOG(WARNING) << "Failed to create vertex shader: " << to_string(hr);
+		LOG(WARNING) << "Failed to create vertex shader: " << std::to_string(hr);
 		release();
 		return false;
 	}
@@ -217,7 +218,7 @@ bool Material::createPixelShader(ID3D11Device* device)
 	hr = device->CreatePixelShader(pixelShaderBytecode->GetBufferPointer(), pixelShaderBytecode->GetBufferSize(), nullptr, &m_pixelShader);
 	if (!SUCCEEDED(hr))
 	{
-		LOG(WARNING) << "Failed to create vertex shader: " << to_string(hr);
+		LOG(WARNING) << "Failed to create vertex shader: " << std::to_string(hr);
 		release();
 		return false;
 	}

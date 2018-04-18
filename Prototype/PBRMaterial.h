@@ -3,6 +3,7 @@
 #include "MaterialRepository.h"
 #include "Texture.h"
 #include <memory>
+#include "SimpleMath.h"
 
 namespace OE {
 	class PBRMaterial : public Material
@@ -10,6 +11,7 @@ namespace OE {
 		DirectX::SimpleMath::Color m_baseColor;
 		float m_metallic;
 		float m_roughness;
+		DirectX::SimpleMath::Color m_emissive;
 
 		enum TextureType
 		{
@@ -97,6 +99,16 @@ namespace OE {
 			m_metallic = metallic;
 		}
 
+		const DirectX::SimpleMath::Color& getEmissiveFactor() const
+		{
+			return m_emissive;
+		}
+
+		void setEmissiveFactor(const DirectX::SimpleMath::Color& emissive)
+		{
+			m_emissive = emissive;
+		}
+
 		/*
 		 * The metallic-roughness texture. 
 		 * The metalness values are sampled from the B channel. The roughness values are sampled from the G channel. 
@@ -170,6 +182,7 @@ namespace OE {
 			DirectX::XMMATRIX world;
 			DirectX::XMFLOAT4 baseColor;
 			DirectX::XMFLOAT4 metallicRoughness; // metallic, roughness
+			DirectX::XMFLOAT4 emissive; // emissive color (RGB)
 		} m_constantsPS{};
 
 		UINT inputSlot(VertexAttribute attribute) override;

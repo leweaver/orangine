@@ -37,6 +37,16 @@ Material::ShaderCompileSettings DeferredLightMaterial::pixelShaderSettings() con
 	return settings;
 }
 
+void DeferredLightMaterial::SetupPointLight(const Vector3 &lightPosition, const Color &color, float intensity)
+{
+	m_constants.lightType = DeferredLightType::Point;
+	XMStoreFloat3(&m_constants.position, XMVectorSet(lightPosition.x, lightPosition.y, lightPosition.z, 0.0f));
+
+	XMVECTOR intensifiedColor = color;
+	intensifiedColor = XMVectorScale(intensifiedColor, intensity);
+	XMStoreFloat3(&m_constants.intensifiedColor, intensifiedColor);
+}
+
 void DeferredLightMaterial::SetupDirectionalLight(const Vector3 &lightDirection, const Color &color, float intensity)
 {
 	m_constants.lightType = DeferredLightType::Directional;
@@ -47,10 +57,10 @@ void DeferredLightMaterial::SetupDirectionalLight(const Vector3 &lightDirection,
 	XMStoreFloat3(&m_constants.intensifiedColor, intensifiedColor);
 }
 
-void DeferredLightMaterial::SetupPointLight(const Vector3 &lightPosition, const Color &color, float intensity)
+void DeferredLightMaterial::SetupAmbientLight(const DirectX::SimpleMath::Color & color, float intensity)
 {
-	m_constants.lightType = DeferredLightType::Point;
-	XMStoreFloat3(&m_constants.position, XMVectorSet(lightPosition.x, lightPosition.y, lightPosition.z, 0.0f));
+	m_constants.lightType = DeferredLightType::Ambient;
+	XMStoreFloat3(&m_constants.position, XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f));
 
 	XMVECTOR intensifiedColor = color;
 	intensifiedColor = XMVectorScale(intensifiedColor, intensity);
@@ -112,7 +122,7 @@ void DeferredLightMaterial::setContextSamplers(const DX::DeviceResources &device
 {
 	auto device = deviceResources.GetD3DDevice();
 	auto context = deviceResources.GetD3DDeviceContext();
-	if (!m_color0Texture || !m_color1Texture || !m_depthTexture)
+	if (!m_color0Texture || !m_color1Texture || !m_color2Texture || !m_depthTexture)
 		return;
 	
 	bool validSamplers = true;
@@ -122,25 +132,30 @@ void DeferredLightMaterial::setContextSamplers(const DX::DeviceResources &device
 	if (!m_color1SamplerState)
 		validSamplers &= ensureSamplerState(deviceResources, *m_color1Texture.get(), m_color1SamplerState.ReleaseAndGetAddressOf());
 
+	if (!m_color2SamplerState)
+		validSamplers &= ensureSamplerState(deviceResources, *m_color2Texture.get(), m_color2SamplerState.ReleaseAndGetAddressOf());
+
 	if (!m_depthSamplerState)
 		validSamplers &= ensureSamplerState(deviceResources, *m_depthTexture.get(), m_depthSamplerState.ReleaseAndGetAddressOf());
 
 	if (validSamplers)
 	{
-		ID3D11ShaderResourceView *shaderResourceViews[3] = {
+		ID3D11ShaderResourceView *shaderResourceViews[] = {
 			m_color0Texture->getShaderResourceView(),
 			m_color1Texture->getShaderResourceView(),
+			m_color2Texture->getShaderResourceView(),
 			m_depthTexture->getShaderResourceView()
 		};
 		// Set shader texture resource in the pixel shader.
-		context->PSSetShaderResources(0, 3, shaderResourceViews);
+		context->PSSetShaderResources(0, 4, shaderResourceViews);
 
-		ID3D11SamplerState *samplerStates[3] = {
+		ID3D11SamplerState *samplerStates[] = {
 			m_color0SamplerState.Get(),
 			m_color1SamplerState.Get(),
+			m_color2SamplerState.Get(),
 			m_depthSamplerState.Get(),
 		};
-		context->PSSetSamplers(0, 3, samplerStates);
+		context->PSSetSamplers(0, 4, samplerStates);
 	}
 }
 
@@ -148,9 +163,9 @@ void DeferredLightMaterial::unsetContextSamplers(const DX::DeviceResources &devi
 {
 	auto context = deviceResources.GetD3DDeviceContext();
 
-	ID3D11ShaderResourceView *shaderResourceViews[] = { nullptr, nullptr, nullptr };
-	context->PSSetShaderResources(0, 3, shaderResourceViews);
+	ID3D11ShaderResourceView *shaderResourceViews[] = { nullptr, nullptr, nullptr, nullptr };
+	context->PSSetShaderResources(0, 4, shaderResourceViews);
 
-	ID3D11SamplerState *samplerStates[] = { nullptr, nullptr, nullptr };
-	context->PSSetSamplers(0, 3, samplerStates);
+	ID3D11SamplerState *samplerStates[] = { nullptr, nullptr, nullptr, nullptr };
+	context->PSSetSamplers(0, 4, samplerStates);
 }

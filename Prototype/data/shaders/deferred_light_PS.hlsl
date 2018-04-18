@@ -25,6 +25,10 @@ struct PS_INPUT
 	float2 vTexCoord0   : TEXCOORD0;
 };
 
+#define LIGHT_TYPE_DIRECTIONAL 0
+#define LIGHT_TYPE_POINT 1
+#define LIGHT_TYPE_AMBIENT 2
+
 // rgb: Diffuse           
 // a:   Specular intensity
 Texture2D color0Texture : register(t0);
@@ -35,10 +39,15 @@ SamplerState color0Sampler : register(s0);
 Texture2D color1Texture : register(t1);
 SamplerState color1Sampler : register(s1);
 
+// rgb: Emissive color
+// a:   Occlusion
+Texture2D color2Texture : register(t2);
+SamplerState color2Sampler : register(s2);
+
 // r:   normalized depth    
 // g:   Stencil
-Texture2D depthTexture : register(t2);
-SamplerState depthSampler : register(s2);
+Texture2D depthTexture : register(t3);
+SamplerState depthSampler : register(s3);
 
 // Forward declarations
 float3 VSPositionFromDepth(float2 vTexCoord);
@@ -52,6 +61,7 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	// Inputs
 	float4 color0 = color0Texture.Sample(color0Sampler, input.vTexCoord0);
 	float4 color1 = color1Texture.Sample(color1Sampler, input.vTexCoord0);
+	float4 color2 = color2Texture.Sample(color2Sampler, input.vTexCoord0);
 	float  depth  = depthTexture.Sample(depthSampler,   input.vTexCoord0).r;
 
 	// Decoded inputs
@@ -59,6 +69,8 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	float3 worldNormal = color1.xyz * 2 - 1;
 	float metallic = color0.w;
 	float roughness = color1.w;
+	float3 emissiveColor = color2.rgb;
+	float occlusion = color2.a;
 
 #ifdef DEBUG_LIGHTING_ONLY
 	float3 baseColor = float3(1, 1, 1);
@@ -71,23 +83,29 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 
 	// Vector from surface point to light
 	float3 lightVector;
-
 	float3 lightIntensifiedColor = g_lightIntensifiedColor.rgb;
-	if (g_lightType == 1)
+	float3 finalColor;
+	if (g_lightType == LIGHT_TYPE_AMBIENT)
 	{
-		float3 posDifference = g_lightPosition.xyz - vsPosition;
-		lightIntensifiedColor = lightIntensifiedColor / length(posDifference);
-		lightVector = normalize(posDifference);
+		finalColor = occlusion * lightIntensifiedColor * baseColor;
 	}
-	else
+	else 
 	{
-		lightVector = -g_lightPosition.xyz;
+		if (g_lightType == LIGHT_TYPE_POINT)
+		{
+			float3 posDifference = g_lightPosition.xyz - vsPosition;
+			lightIntensifiedColor = lightIntensifiedColor / length(posDifference);
+			lightVector = normalize(posDifference);
+		}
+		else if (g_lightType == LIGHT_TYPE_DIRECTIONAL)
+		{
+			lightVector = -g_lightPosition.xyz;
+		}
+
+		// BRDF lighting calculations
+		finalColor = lightIntensifiedColor * BRDF(metallic, roughness, baseColor,
+			eyeVectorW, lightVector, worldNormal);
 	}
-
-	// Final lighting calculations
-	float3 finalColor = lightIntensifiedColor * BRDF(metallic, roughness, baseColor,
-		eyeVectorW, lightVector, worldNormal);
-
 
 #ifdef DEBUG_NO_LIGHTING
 	return float4(color0.rgb, 1);

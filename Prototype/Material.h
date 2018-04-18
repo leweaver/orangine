@@ -2,12 +2,20 @@
 #include "DeviceResources.h"
 #include "MeshDataComponent.h"
 
+#include "SimpleMath.h"
 #include <string>
 #include <set>
 
 namespace OE {
 	class RendererData;
 	class Texture;
+
+	enum class MaterialAlphaMode
+	{
+		OPAQUE,
+		MASK,
+		BLEND
+	};
 
 	class Material
 	{
@@ -19,6 +27,8 @@ namespace OE {
 		Microsoft::WRL::ComPtr<ID3D11BlendState> m_blendState;
 		bool m_errorState;
 		bool m_requiresRecompile;
+
+		MaterialAlphaMode m_alphaMode;
 
 	public:
 		Material();
@@ -40,6 +50,16 @@ namespace OE {
 
 		// Unbinds textures
 		void unbind(const DX::DeviceResources& deviceResources);
+
+		MaterialAlphaMode getAlphaMode() const
+		{
+			return m_alphaMode;
+		}
+
+		void setAlphaMode(MaterialAlphaMode mode)
+		{
+			m_alphaMode = mode;
+		}
 
 	protected:
 		struct ShaderCompileSettings

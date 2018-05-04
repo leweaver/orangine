@@ -12,6 +12,8 @@ PBRMaterial::PBRMaterial()
 	, m_roughness(1.0)
 	, m_emissive(0, 0, 0)
 	, m_boundTextureCount(0)
+	, m_samplerStates{}
+	, m_shaderResourceViews{}
 {
 	ZeroMemory(m_textures, sizeof(m_textures));
 	ZeroMemory(m_shaderResourceViews, sizeof(m_shaderResourceViews));
@@ -228,7 +230,7 @@ void PBRMaterial::createShaderResources(const DX::DeviceResources &deviceResourc
 		}
 	}
 
-	LOG(INFO) << "Created PBRMaterial shader resources. Texture Count: " << std::to_string(m_boundTextureCount);
+	LOG(G3LOG_DEBUG) << "Created PBRMaterial shader resources. Texture Count: " << std::to_string(m_boundTextureCount);
 }
 
 void PBRMaterial::releaseBindings()

@@ -398,7 +398,7 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 {
 	shared_ptr<Entity> rootEntity = entityRepository.Instantiate(node.name);
 
-	LOG(INFO) << "Creating entity for glTF node '" << node.name << "'";
+	LOG(G3LOG_DEBUG) << "Creating entity for glTF node '" << node.name << "'";
 
 	// Transform
 	setEntityTransform(*rootEntity, node);
@@ -410,7 +410,7 @@ shared_ptr<Entity> create_entity(const Node &node, EntityRepository &entityRepos
 		for (size_t primIdx = 0; primIdx < primitiveCount; ++primIdx)
 		{
 			const string primitiveName = mesh.name + " primitive " + to_string(primIdx);
-			LOG(INFO) << "Creating entity for glTF mesh " << primitiveName;
+			LOG(G3LOG_DEBUG) << "Creating entity for glTF mesh " << primitiveName;
 			shared_ptr<Entity> primitiveEntity = entityRepository.Instantiate(primitiveName);
 
 			primitiveEntity->SetParent(*rootEntity.get());
@@ -596,7 +596,7 @@ unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
 	else
 	{
 		// Copy the data.
-		LOG(INFO) << "Reading vertex buffer data: " << g_gltfMappingToAttributeMap[vertexAttribute];
+		LOG(G3LOG_DEBUG) << "Reading vertex buffer data: " << g_gltfMappingToAttributeMap[vertexAttribute];
 		meshBuffer = create_buffer_s(sourceElementSize, accessor.count, buffer.data, sourceStride, bufferOffset);
 		loaderData.accessorIdxToMeshBuffers[accessorIndex] = meshBuffer;
 		/*
@@ -606,7 +606,7 @@ unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
 			float *floatData = reinterpret_cast<float*>(meshBuffer->m_data);
 			for (size_t i = 0; i < accessor.count; i++)
 			{
-				LOG(INFO) << to_string(i) << ": " << floatData[0] << ", " << floatData[1];
+				LOG(G3LOG_DEBUG) << to_string(i) << ": " << floatData[0] << ", " << floatData[1];
 				floatData += 2;
 			}			
 		}
@@ -625,7 +625,7 @@ unique_ptr<MeshVertexBufferAccessor> read_vertex_buffer(const Model& model,
 		*/
 	}
 
-	LOG(INFO) << "Creating Vertex Buffer Accessor.   type: " << VertexAttributeMeta::semanticName(vertexAttribute) << "   count: " << accessor.count;
+	LOG(G3LOG_DEBUG) << "Creating Vertex Buffer Accessor.   type: " << VertexAttributeMeta::semanticName(vertexAttribute) << "   count: " << accessor.count;
 
 	return make_unique<MeshVertexBufferAccessor>(meshBuffer, vertexAttribute, static_cast<UINT>(accessor.count), static_cast<UINT>(sourceElementSize), 0);
 }
@@ -693,12 +693,12 @@ unique_ptr<MeshIndexBufferAccessor> read_index_buffer(const Model& model,
 
 	if (pos != loaderData.accessorIdxToMeshBuffers.end())
 	{
-		LOG(INFO) << "Found existing MeshBuffer instance, re-using.";
+		LOG(G3LOG_DEBUG) << "Found existing MeshBuffer instance, re-using.";
 		meshBuffer = pos->second;
 	}
 	else
 	{
-		LOG(INFO) << "Creating new MeshBuffer instance.";
+		LOG(G3LOG_DEBUG) << "Creating new MeshBuffer instance.";
 
 		// Copy the data.
 		meshBuffer = create_buffer(
@@ -711,7 +711,7 @@ unique_ptr<MeshIndexBufferAccessor> read_index_buffer(const Model& model,
 		loaderData.accessorIdxToMeshBuffers[accessorIndex] = meshBuffer;
 	}
 	
-	LOG(INFO) << "Creating Index Buffer Accessor.   DXGI format: " << format << "   count: " << accessor.count;
+	LOG(G3LOG_DEBUG) << "Creating Index Buffer Accessor.   DXGI format: " << format << "   count: " << accessor.count;
 
 	return make_unique<MeshIndexBufferAccessor>(meshBuffer, format, static_cast<UINT>(accessor.count), static_cast<UINT>(sourceElementSize), 0);
 }

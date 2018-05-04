@@ -32,6 +32,12 @@ namespace OE {
 
 	public:
 		Material();
+		
+		Material(const Material& other) = delete;
+		Material(Material&& other) = delete;
+		void operator=(const Material& other) = delete;
+		void operator=(Material&& other) = delete;
+
 		virtual ~Material();
 
 		/**

@@ -119,11 +119,11 @@ bool Material::createVertexShader(ID3D11Device* device)
 	getVertexAttributes(attributes);
 	std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementDesc;
 
-	LOG(INFO) << "Adding vertex attr's";
+	LOG(G3LOG_DEBUG) << "Adding vertex attr's";
 	for (const auto &attr : attributes)
 	{
 		const auto semanticName = VertexAttributeMeta::semanticName(attr);
-		LOG(INFO) << "  " << semanticName << " to slot " << inputSlot(attr);
+		LOG(G3LOG_DEBUG) << "  " << semanticName << " to slot " << inputSlot(attr);
 		inputElementDesc.push_back(
 			{
 				semanticName,

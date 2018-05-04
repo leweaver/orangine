@@ -33,6 +33,12 @@ namespace OE {
 
 	public:
 		PBRMaterial();
+
+		PBRMaterial(const PBRMaterial& other) = delete;
+		PBRMaterial(PBRMaterial&& other) = delete;
+		void operator=(const PBRMaterial& other) = delete;
+		void operator=(PBRMaterial&& other) = delete;
+
 		virtual ~PBRMaterial();
 
 		/*
@@ -204,7 +210,7 @@ namespace OE {
 			ID3D11DeviceContext *context,
 			ID3D11Buffer *buffer) override;
 
-		void createShaderResources(const DX::DeviceResources &deviceResources);
+		void createShaderResources(const DX::DeviceResources &deviceResources) override;
 		void releaseBindings();
 
 		void setContextSamplers(const DX::DeviceResources &deviceResources) override;

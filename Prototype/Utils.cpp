@@ -5,10 +5,11 @@
 #include <Stringapiset.h>
 #include <comdef.h>
 
-using namespace OE;
+using namespace oe;
+using namespace std::string_literals;
 
 // Convert a wide Unicode string to an UTF8 string
-std::string OE::utf8_encode(const std::wstring &wstr)
+std::string oe::utf8_encode(const std::wstring &wstr)
 {
 	if (wstr.empty()) return std::string();
 	if (wstr.size() > static_cast<size_t>(INT_MAX)) return std::string();
@@ -21,7 +22,7 @@ std::string OE::utf8_encode(const std::wstring &wstr)
 }
 
 // Convert an UTF8 string to a wide Unicode String
-std::wstring OE::utf8_decode(const std::string &str)
+std::wstring oe::utf8_decode(const std::string &str)
 {
 	if (str.empty()) return std::wstring();
 	if (str.size() > static_cast<size_t>(INT_MAX)) return std::wstring();
@@ -33,31 +34,31 @@ std::wstring OE::utf8_decode(const std::string &str)
 	return wstrTo;
 }
 
-bool OE::str_starts(const std::string &str, const std::string &start)
+bool oe::str_starts(const std::string &str, const std::string &prefix)
 {
-	if (start.size() > str.size()) return false;
-	return std::equal(start.begin(), start.end(), str.begin());
+	if (prefix.size() > str.size()) return false;
+	return std::equal(prefix.begin(), prefix.end(), str.begin());
 }
 
-bool OE::str_ends(const std::string &str, const std::string &ending)
+bool oe::str_ends(const std::string &str, const std::string &suffix)
 {
-	if (ending.size() > str.size()) return false;
-	return std::equal(ending.rbegin(), ending.rend(), str.rbegin());
+	if (suffix.size() > str.size()) return false;
+	return std::equal(suffix.rbegin(), suffix.rend(), str.rbegin());
 }
 
-bool OE::str_starts(const std::wstring &str, const std::wstring &start)
+bool oe::str_starts(const std::wstring &str, const std::wstring &prefix)
 {
-	if (start.size() > str.size()) return false;
-	return std::equal(start.begin(), start.end(), str.begin());
+	if (prefix.size() > str.size()) return false;
+	return std::equal(prefix.begin(), prefix.end(), str.begin());
 }
 
-bool OE::str_ends(const std::wstring &str, const std::wstring &ending)
+bool oe::str_ends(const std::wstring &str, const std::wstring &suffix)
 {
-	if (ending.size() > str.size()) return false;
-	return std::equal(ending.rbegin(), ending.rend(), str.rbegin());
+	if (suffix.size() > str.size()) return false;
+	return std::equal(suffix.rbegin(), suffix.rend(), str.rbegin());
 }
 
-std::string OE::str_replace_all(std::string str, const std::string &from, const std::string &to)
+std::string oe::str_replace_all(std::string str, const std::string &from, const std::string &to)
 {
 	size_t start_pos = 0;
 	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
@@ -67,30 +68,25 @@ std::string OE::str_replace_all(std::string str, const std::string &from, const 
 	return str;
 }
 
-std::wstring OE::hr_to_wstring(const HRESULT hr)
+std::wstring oe::hr_to_wstring(const HRESULT hr)
 {
 	_com_error err(hr);
 	return err.ErrorMessage();
 }
 
-com_exception::com_exception(HRESULT hr, const std::string &what)
-	: result(hr)
+com_exception::com_exception(HRESULT hr, std::string_view what)
+	: _result(hr)
 {
 	char s_str[64] = {};
-	sprintf_s(s_str, "Failure with HRESULT of %08X", static_cast<unsigned int>(result));
-	m_what = std::string(s_str);
+	sprintf_s(s_str, "Failure with HRESULT of %08X", static_cast<unsigned int>(_result));
+	_what = std::string(s_str);
 	if (!what.empty())
 	{
-		m_what += " (" + what + ")";
+		_what.append(" (").append(what.data()).append(")");
 	}
 }
 
-com_exception::com_exception(HRESULT hr, const char *what)
-	: com_exception(hr, std::string(what))
-{
-}
-
-std::string OE::hr_to_string(const HRESULT hr)
+std::string oe::hr_to_string(HRESULT hr)
 {
 	_com_error err(hr);
 	const auto errMsg = err.ErrorMessage();

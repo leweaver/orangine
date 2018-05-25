@@ -3,3 +3,4 @@ Debug
 *.log
 AssetWorker/
 *.vcxproj.user
+Prototype/data/meshes/

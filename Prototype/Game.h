@@ -10,7 +10,7 @@
 
 #include "Scene.h"
 
-namespace OE
+namespace oe
 {
 	class Entity;
 }
@@ -26,7 +26,7 @@ public:
 
 	void CreateSceneLeverArm();
 	void CreateSceneCubeSatellite();
-	std::shared_ptr<OE::Entity> LoadGLTF(std::string gltfName, bool animate);
+	std::shared_ptr<oe::Entity> LoadGLTF(std::string gltfName, bool animate);
 	void CreateSceneMetalRoughSpheres(bool animate);
 	void CreateLights();
 	void CreateCamera(bool animate);
@@ -64,7 +64,7 @@ private:
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
 
-	void AddCubeToEntity(OE::Entity& entity, DirectX::SimpleMath::Vector3 animationSpeed, DirectX::SimpleMath::Vector3 localScale, DirectX::SimpleMath::Vector3 localPosition) const;
+	void AddCubeToEntity(oe::Entity& entity, DirectX::SimpleMath::Vector3 animationSpeed, DirectX::SimpleMath::Vector3 localScale, DirectX::SimpleMath::Vector3 localPosition) const;
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
@@ -73,7 +73,7 @@ private:
     DX::StepTimer                           m_timer;
 
 	// Services
-	std::unique_ptr<OE::Scene>              m_scene;
+	std::unique_ptr<oe::Scene>              m_scene;
 	
 	bool									m_fatalError;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace OE {
+namespace oe {
 	class Entity;
 	class Scene;
 
@@ -10,19 +10,19 @@ namespace OE {
 	class Component
 	{
 	public:
-		using ComponentType = unsigned int;
+		using Component_type = unsigned int;
 
 	private:
-		static ComponentType ms_maxComponentId;
+		static Component_type _maxComponentId;
 
 	public:
 		/** Returns a new, unique component id */
-		static ComponentType CreateComponentTypeId();
+		static Component_type createComponentTypeId();
 
-		Component() {}
-		virtual ~Component() {}
+		Component() = default;
+		virtual ~Component() = default;
 
-		virtual ComponentType GetType() const = 0;
+		virtual Component_type getType() const = 0;
 
 	};
 
@@ -30,12 +30,12 @@ namespace OE {
 
 #define DECLARE_COMPONENT_TYPE \
 public:\
-	ComponentType GetType() const override; \
-	static ComponentType Type(); \
+	Component_type getType() const override; \
+	static Component_type type(); \
 private:\
-	static Component::ComponentType ms_typeId;
+	static Component::Component_type _typeId;
 
 #define DEFINE_COMPONENT_TYPE(classname) \
-Component::ComponentType classname::ms_typeId = Component::CreateComponentTypeId(); \
-classname::ComponentType classname::GetType() const { return ms_typeId; }\
-classname::ComponentType classname::Type() { return ms_typeId; }
+Component::Component_type classname::_typeId = Component::createComponentTypeId(); \
+classname::Component_type classname::getType() const { return _typeId; }\
+classname::Component_type classname::type() { return _typeId; }

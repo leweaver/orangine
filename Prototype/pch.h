@@ -56,5 +56,5 @@
 
 #include <SimpleMath.h>
 #include <g3log/g3log.hpp>
-#include "SimpleTypes.h"
+#include "Simple_types.h"
 #include "Utils.h"

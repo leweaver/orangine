@@ -1,6 +1,6 @@
 #pragma once
 
-namespace OE {
+namespace oe {
 class Bound
 {
 

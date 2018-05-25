@@ -49,80 +49,12 @@
     <ClInclude Include="Scene.h">
       <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
-    <ClInclude Include="RendererData.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="EntityFilter.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="EntityScriptingManager.h">
-      <Filter>Systems\Scripting</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneGraphManager.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="EntityRenderManager.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderableComponent.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="TestComponent.h">
-      <Filter>Systems\Scripting</Filter>
-    </ClInclude>
-    <ClInclude Include="AssetManager.h">
-      <Filter>Systems</Filter>
-    </ClInclude>
-    <ClInclude Include="SimpleTypes.h" />
-    <ClInclude Include="ManagerBase.h">
-      <Filter>Systems</Filter>
-    </ClInclude>
-    <ClInclude Include="glTFMeshLoader.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="EntityGraphLoader.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="MeshDataComponent.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="EntityRepository.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="MaterialRepository.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Texture.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="TextureImpl.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="LightComponent.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="Material.h">
       <Filter>Systems\Renderer\Materials</Filter>
-    </ClInclude>
-    <ClInclude Include="PBRMaterial.h">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClInclude>
-    <ClInclude Include="ClearGBufferMaterial.h">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClInclude>
-    <ClInclude Include="MeshData.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="PrimitiveMeshDataFactory.h" />
-    <ClInclude Include="TextureRenderTarget.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="DeferredLightMaterial.h">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClInclude>
-    <ClInclude Include="CameraComponent.h">
-      <Filter>Systems\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="LogFileSink.h">
       <Filter>Common</Filter>
@@ -130,7 +62,72 @@
     <ClInclude Include="data\shaders\inc\lighting.hlsl">
       <Filter>Assets\shaders\inc</Filter>
     </ClInclude>
-    <ClInclude Include="MikkTSpaceTriangleMeshInterface.h">
+    <ClInclude Include="Primitive_mesh_data_factory.h" />
+    <ClInclude Include="Mesh_data.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Simple_types.h" />
+    <ClInclude Include="Manager_base.h">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset_manager.h">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Test_component.h">
+      <Filter>Systems\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity_scripting_manager.h">
+      <Filter>Systems\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity_filter.h">
+      <Filter>Systems\SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity_graph_loader.h">
+      <Filter>Systems\SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity_repository.h">
+      <Filter>Systems\SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity_graph_loader_gltf.h">
+      <Filter>Systems\SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene_graph_manager.h">
+      <Filter>Systems\SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="PBR_material.h">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="Deferred_light_material.h">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="Clear_gbuffer_material.h">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera_component.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity_render_manager.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Light_component.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Material_repository.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh_data_component.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Mikk_tspace_triangle_mesh_interface.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderable_component.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer_data.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Render_target_texture.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
@@ -151,72 +148,72 @@
     <ClCompile Include="Scene.cpp">
       <Filter>Systems\SceneGraph</Filter>
     </ClCompile>
-    <ClCompile Include="RendererData.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="EntityScriptingManager.cpp">
-      <Filter>Systems\Scripting</Filter>
-    </ClCompile>
-    <ClCompile Include="SceneGraphManager.cpp">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClCompile>
-    <ClCompile Include="EntityRenderManager.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderableComponent.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="TestComponent.cpp">
-      <Filter>Systems\Scripting</Filter>
-    </ClCompile>
-    <ClCompile Include="AssetManager.cpp">
-      <Filter>Systems</Filter>
-    </ClCompile>
-    <ClCompile Include="glTFMeshLoader.cpp">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClCompile>
-    <ClCompile Include="MeshDataComponent.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="EntityRepository.cpp">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClCompile>
-    <ClCompile Include="MaterialRepository.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="Utils.cpp" />
-    <ClCompile Include="TextureImpl.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="LightComponent.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="Material.cpp">
       <Filter>Systems\Renderer\Materials</Filter>
-    </ClCompile>
-    <ClCompile Include="PBRMaterial.cpp">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClCompile>
-    <ClCompile Include="ClearGBufferMaterial.cpp">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClCompile>
-    <ClCompile Include="MeshData.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="PrimitiveMeshDataFactory.cpp" />
-    <ClCompile Include="TextureRenderTarget.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="DeferredLightMaterial.cpp">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClCompile>
-    <ClCompile Include="CameraComponent.cpp">
-      <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="LogFileSink.cpp">
       <Filter>Common</Filter>
     </ClCompile>
-    <ClCompile Include="MikkTSpaceTriangleMeshInterface.cpp">
+    <ClCompile Include="Primitive_mesh_data_factory.cpp" />
+    <ClCompile Include="Mesh_data.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset_manager.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Test_component.cpp">
+      <Filter>Systems\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity_scripting_manager.cpp">
+      <Filter>Systems\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity_repository.cpp">
+      <Filter>Systems\SceneGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity_graph_loader_gltf.cpp">
+      <Filter>Systems\SceneGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene_graph_manager.cpp">
+      <Filter>Systems\SceneGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="PBR_material.cpp">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClCompile>
+    <ClCompile Include="Deferred_light_material.cpp">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClCompile>
+    <ClCompile Include="Clear_gbuffer_material.cpp">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera_component.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity_render_manager.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Light_component.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Material_repository.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh_data_component.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Mikk_tspace_triangle_mesh_interface.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderable_component.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer_data.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Render_target_texture.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
   </ItemGroup>

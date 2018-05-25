@@ -6,23 +6,23 @@
 #include <sstream>
 
 #include <comdef.h>
-#include "RendererData.h"
+#include "Renderer_data.h"
 #include "Texture.h"
 
-using namespace OE;
+using namespace oe;
 using namespace DirectX;
 using namespace SimpleMath;
 using namespace std::literals;
 
 
 Material::Material()
-	: m_vertexShader(nullptr)
-	, m_pixelShader(nullptr)
-	, m_inputLayout(nullptr)
-	, m_vsConstantBuffer(nullptr)
-	, m_errorState(false)
-	, m_requiresRecompile(true)
-	, m_alphaMode(MaterialAlphaMode::OPAQUE)
+	: _vertexShader(nullptr)
+	, _pixelShader(nullptr)
+	, _inputLayout(nullptr)
+	, _vsConstantBuffer(nullptr)
+	, _errorState(false)
+	, _requiresRecompile(true)
+	, _alphaMode(Material_alpha_mode::Opaque)
 {
 }
 
@@ -33,62 +33,62 @@ Material::~Material()
 
 void Material::release()
 {
-	if (m_vertexShader)
+	if (_vertexShader)
 	{
-		m_vertexShader->Release();
-		m_vertexShader = nullptr;
+		_vertexShader->Release();
+		_vertexShader = nullptr;
 	}
 
-	if (m_inputLayout)
+	if (_inputLayout)
 	{
-		m_inputLayout->Release();
-		m_inputLayout = nullptr;
+		_inputLayout->Release();
+		_inputLayout = nullptr;
 	}
 
-	if (m_pixelShader)
+	if (_pixelShader)
 	{
-		m_pixelShader->Release();
-		m_pixelShader = nullptr;
+		_pixelShader->Release();
+		_pixelShader = nullptr;
 	}
 
-	m_blendState.Reset();
-	m_vsConstantBuffer.Reset();
-	m_psConstantBuffer.Reset();
+	_blendState.Reset();
+	_vsConstantBuffer.Reset();
+	_psConstantBuffer.Reset();
 }
 
-void Material::getVertexAttributes(std::vector<VertexAttribute> &vertexAttributes) const {
-	vertexAttributes.push_back(VertexAttribute::VA_POSITION);
-	vertexAttributes.push_back(VertexAttribute::VA_COLOR);
+void Material::vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const {
+	vertexAttributes.push_back(Vertex_attribute::Position);
+	vertexAttributes.push_back(Vertex_attribute::Color);
 }
 
-DXGI_FORMAT Material::format(VertexAttribute attribute)
+DXGI_FORMAT Material::format(Vertex_attribute attribute)
 {
 	switch (attribute)
 	{
-	case VertexAttribute::VA_TEXCOORD_0:
+	case Vertex_attribute::Texcoord_0:
 		return DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT;
 
-	case VertexAttribute::VA_POSITION:
-	case VertexAttribute::VA_COLOR:
-	case VertexAttribute::VA_NORMAL:
+	case Vertex_attribute::Position:
+	case Vertex_attribute::Color:
+	case Vertex_attribute::Normal:
 		return DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT;
 
-	case VertexAttribute::VA_TANGENT:
+	case Vertex_attribute::Tangent:
 		return DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT;
 
 	default:
-		throw std::logic_error("Material does not support format: " + VertexAttributeMeta::str(attribute));
+		throw std::logic_error("Material does not support format: "s.append(Vertex_attribute_meta::str(attribute)));
 	}
 }
 
-UINT Material::inputSlot(VertexAttribute attribute)
+UINT Material::inputSlot(Vertex_attribute attribute)
 {
-	return attribute == VertexAttribute::VA_POSITION ? 0 : 1;
+	return attribute == Vertex_attribute::Position ? 0 : 1;
 }
 
-Material::ShaderCompileSettings Material::vertexShaderSettings() const
+Material::Shader_compile_settings Material::vertexShaderSettings() const
 {
-	return ShaderCompileSettings
+	return Shader_compile_settings
 	{
 		L"data/shaders/vertex_colors_VS.hlsl"s,
 		"VSMain"s,
@@ -97,9 +97,9 @@ Material::ShaderCompileSettings Material::vertexShaderSettings() const
 	};
 }
 
-Material::ShaderCompileSettings Material::pixelShaderSettings() const
+Material::Shader_compile_settings Material::pixelShaderSettings() const
 {
-	return ShaderCompileSettings
+	return Shader_compile_settings
 	{
 		L"data/shaders/vertex_colors_PS.hlsl"s,
 		"PSMain"s,
@@ -115,19 +115,19 @@ bool Material::createVertexShader(ID3D11Device* device)
 	ID3DBlob* vertexShaderBytecode;
 	auto settings = vertexShaderSettings();
 
-	std::vector<VertexAttribute> attributes;
-	getVertexAttributes(attributes);
+	std::vector<Vertex_attribute> attributes;
+	vertexAttributes(attributes);
 	std::vector<D3D11_INPUT_ELEMENT_DESC> inputElementDesc;
 
-	LOG(INFO) << "Adding vertex attr's";
-	for (const auto &attr : attributes)
+	LOG(G3LOG_DEBUG) << "Adding vertex attr's";
+	for (const auto& attr : attributes)
 	{
-		const auto semanticName = VertexAttributeMeta::semanticName(attr);
-		LOG(INFO) << "  " << semanticName << " to slot " << inputSlot(attr);
+		const auto semanticName = Vertex_attribute_meta::semanticName(attr);
+		LOG(G3LOG_DEBUG) << "  " << semanticName << " to slot " << inputSlot(attr);
 		inputElementDesc.push_back(
 			{
-				semanticName,
-				VertexAttributeMeta::semanticIndex(attr),
+				semanticName.data(),
+				Vertex_attribute_meta::semanticIndex(attr),
 				format(attr),
 				inputSlot(attr),
 				D3D11_APPEND_ALIGNED_ELEMENT,
@@ -158,7 +158,7 @@ bool Material::createVertexShader(ID3D11Device* device)
 	}
 	hr = device->CreateInputLayout(inputElementDesc.data(), static_cast<UINT>(inputElementDesc.size()), 
 	                          vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), 
-	                          &m_inputLayout);
+	                          &_inputLayout);
 	if (!SUCCEEDED(hr))
 	{
 		LOG(WARNING) << "Failed to create vertex input layout: " << std::to_string(hr);
@@ -166,7 +166,7 @@ bool Material::createVertexShader(ID3D11Device* device)
 		return false;
 	}
 
-	hr = device->CreateVertexShader(vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), nullptr, &m_vertexShader);
+	hr = device->CreateVertexShader(vertexShaderBytecode->GetBufferPointer(), vertexShaderBytecode->GetBufferSize(), nullptr, &_vertexShader);
 	if (!SUCCEEDED(hr))
 	{
 		LOG(WARNING) << "Failed to create vertex shader: " << std::to_string(hr);
@@ -192,7 +192,7 @@ bool Material::createPixelShader(ID3D11Device* device)
 	auto settings = pixelShaderSettings();
 
 	std::vector<D3D_SHADER_MACRO> defines;
-	for (const auto &define : settings.defines)
+	for (const auto& define : settings.defines)
 	{
 		defines.push_back({
 			define.first.c_str(),
@@ -215,7 +215,7 @@ bool Material::createPixelShader(ID3D11Device* device)
 		return false;
 	}
 
-	hr = device->CreatePixelShader(pixelShaderBytecode->GetBufferPointer(), pixelShaderBytecode->GetBufferSize(), nullptr, &m_pixelShader);
+	hr = device->CreatePixelShader(pixelShaderBytecode->GetBufferPointer(), pixelShaderBytecode->GetBufferSize(), nullptr, &_pixelShader);
 	if (!SUCCEEDED(hr))
 	{
 		LOG(WARNING) << "Failed to create vertex shader: " << std::to_string(hr);
@@ -225,57 +225,61 @@ bool Material::createPixelShader(ID3D11Device* device)
 
 	return true;
 }
-void Material::createBlendState(ID3D11Device *device, ID3D11BlendState *&blendState)
+void Material::createBlendState(ID3D11Device* device, ID3D11BlendState*& blendState)
 {
 	D3D11_BLEND_DESC blendStateDesc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
 	device->CreateBlendState(&blendStateDesc, &blendState);
 }
 
-bool Material::render(const RendererData &rendererData, const Matrix &worldMatrix, const Matrix &viewMatrix, const Matrix &projMatrix, const DX::DeviceResources &deviceResources)
+bool Material::render(const Renderer_data& rendererData,
+	const Matrix& worldMatrix, 
+	const Matrix& viewMatrix, 
+	const Matrix& projMatrix, 
+	const DX::DeviceResources& deviceResources)
 {
 	const auto device = deviceResources.GetD3DDevice();
 	auto context = deviceResources.GetD3DDeviceContext();
 
-	if (m_requiresRecompile) {
+	if (_requiresRecompile) {
 		LOG(INFO) << "Recompiling shaders for material";
 
-		m_requiresRecompile = false;
+		_requiresRecompile = false;
 		release();
 
-		m_errorState = true;
+		_errorState = true;
 		{
 			createShaderResources(deviceResources);
 			
 			if (!createVertexShader(device))
 				return false;
 
-			createVSConstantBuffer(device, *m_vsConstantBuffer.ReleaseAndGetAddressOf());
+			createVSConstantBuffer(device, *_vsConstantBuffer.ReleaseAndGetAddressOf());
 
 			if (!createPixelShader(device))
 				return false;
 
-			createPSConstantBuffer(device, *m_psConstantBuffer.ReleaseAndGetAddressOf());
-			createBlendState(device, *m_blendState.ReleaseAndGetAddressOf());
+			createPSConstantBuffer(device, *_psConstantBuffer.ReleaseAndGetAddressOf());
+			createBlendState(device, *_blendState.ReleaseAndGetAddressOf());
 		}
-		m_errorState = false;
+		_errorState = false;
 	}
 
-	if (m_errorState)
+	if (_errorState)
 		return false;
 
 	// We have a valid shader
-	context->IASetInputLayout(m_inputLayout);
-	context->VSSetShader(m_vertexShader, nullptr, 0);
-	context->PSSetShader(m_pixelShader, nullptr, 0);
+	context->IASetInputLayout(_inputLayout);
+	context->VSSetShader(_vertexShader, nullptr, 0);
+	context->PSSetShader(_pixelShader, nullptr, 0);
 
 	// Update constant buffers
-	if (m_vsConstantBuffer != nullptr) {
-		updateVSConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, m_vsConstantBuffer.Get());
-		context->VSSetConstantBuffers(0, 1, m_vsConstantBuffer.GetAddressOf());
+	if (_vsConstantBuffer != nullptr) {
+		updateVSConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, _vsConstantBuffer.Get());
+		context->VSSetConstantBuffers(0, 1, _vsConstantBuffer.GetAddressOf());
 	}
-	if (m_psConstantBuffer != nullptr) {
-		updatePSConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, m_psConstantBuffer.Get());
-		context->PSSetConstantBuffers(0, 1, m_psConstantBuffer.GetAddressOf());
+	if (_psConstantBuffer != nullptr) {
+		updatePSConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, _psConstantBuffer.Get());
+		context->PSSetConstantBuffers(0, 1, _psConstantBuffer.GetAddressOf());
 	}
 
 	// Set texture samples
@@ -284,7 +288,7 @@ bool Material::render(const RendererData &rendererData, const Matrix &worldMatri
 	// set blend state
 	const float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	const UINT sampleMask = 0xffffffff;
-	context->OMSetBlendState(m_blendState.Get(), blendFactor, sampleMask);
+	context->OMSetBlendState(_blendState.Get(), blendFactor, sampleMask);
 
 	return true;
 }
@@ -294,7 +298,7 @@ void Material::unbind(const DX::DeviceResources& deviceResources)
 	unsetContextSamplers(deviceResources);
 }
 
-std::string Material::createShaderError(HRESULT hr, ID3D10Blob* errorMessage, const ShaderCompileSettings &compileSettings)
+std::string Material::createShaderError(HRESULT hr, ID3D10Blob* errorMessage, const Shader_compile_settings& compileSettings)
 {
 	std::stringstream ss;
 
@@ -303,7 +307,7 @@ std::string Material::createShaderError(HRESULT hr, ID3D10Blob* errorMessage, co
 
 	// Get a pointer to the error message text buffer.
 	if (errorMessage != nullptr) {
-		char *compileErrors = static_cast<char*>(errorMessage->GetBufferPointer());
+		const auto compileErrors = static_cast<char*>(errorMessage->GetBufferPointer());
 		ss << compileErrors << std::endl;
 		errorMessage->Release();
 	}
@@ -316,7 +320,7 @@ std::string Material::createShaderError(HRESULT hr, ID3D10Blob* errorMessage, co
 	return ss.str();
 }
 
-bool Material::ensureSamplerState(const DX::DeviceResources &deviceResources, Texture &texture, ID3D11SamplerState **d3D11SamplerState)
+bool Material::ensureSamplerState(const DX::DeviceResources& deviceResources, Texture& texture, ID3D11SamplerState** d3D11SamplerState)
 {
 	const auto device = deviceResources.GetD3DDevice();
 
@@ -327,7 +331,7 @@ bool Material::ensureSamplerState(const DX::DeviceResources &deviceResources, Te
 		{
 			texture.load(device);
 		}
-		catch (std::exception &e)
+		catch (std::exception& e)
 		{
 			LOG(WARNING) << "Material: Failed to load texture: "s + e.what();
 			return false;

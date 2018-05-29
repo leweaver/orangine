@@ -4,18 +4,18 @@
 
 #include "pch.h"
 #include "Game.h"
-#include "SceneGraphManager.h"
+#include "Scene_graph_manager.h"
 #include "Scene.h"
-#include "TestComponent.h"
-#include "EntityRenderManager.h"
-#include "CameraComponent.h"
-#include "LightComponent.h"
+#include "Test_component.h"
+#include "Entity_render_manager.h"
+#include "Camera_component.h"
+#include "Light_component.h"
 
 extern void ExitGame();
 
 using namespace DirectX;
 using namespace SimpleMath;
-using namespace OE;
+using namespace oe;
 
 using Microsoft::WRL::ComPtr;
 
@@ -29,8 +29,8 @@ Game::Game()
 Game::~Game()
 {
 	if (m_scene) {
-		m_scene->GetEntityRenderManger().destroyDeviceDependentResources();
-		m_scene->Shutdown();
+		m_scene->entityRenderManger().destroyDeviceDependentResources();
+		m_scene->shutdown();
 	}
 
 	// Uncomment to output debug information on shutdown
@@ -46,13 +46,13 @@ Game::~Game()
 
 void Game::CreateSceneCubeSatellite()
 {
-	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
-	const auto &root1 = entityManager.Instantiate("Root 1");
+	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
+	const auto &root1 = entityManager.instantiate("Root 1");
 	//root1->AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
 
-	const auto &child1 = entityManager.Instantiate("Child 1", *root1);
-	const auto &child2 = entityManager.Instantiate("Child 2", *root1);
-	const auto &child3 = entityManager.Instantiate("Child 3", *root1);
+	const auto &child1 = entityManager.instantiate("Child 1", *root1);
+	const auto &child2 = entityManager.instantiate("Child 2", *root1);
+	const auto &child3 = entityManager.instantiate("Child 3", *root1);
 
 	AddCubeToEntity(*child1, {0.5f, 0.0f, 0.0f}, {2, 1, 1}, { 4, 0, 0});
 	AddCubeToEntity(*child2, {0.0f, 0.5f, 0.0f}, {1, 2, 1}, { 0, 0, 0});
@@ -61,61 +61,61 @@ void Game::CreateSceneCubeSatellite()
 
 std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 {
-	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
-	auto root = entityManager.Instantiate("Root");
+	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
+	auto root = entityManager.instantiate("Root");
 
 	if (animate)
-		root->AddComponent<TestComponent>().SetSpeed({ 0.0f, 0.1f, 0.0f });
+		root->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 
-	m_scene->LoadEntities("data/meshes/" + gltfName + "/" + gltfName + ".gltf", *root);
+	m_scene->loadEntities("data/meshes/" + gltfName + "/" + gltfName + ".gltf", *root);
 
 	return root;
 }
 
 void Game::CreateSceneMetalRoughSpheres(bool animate)
 {
-	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
-	const auto &root1 = entityManager.Instantiate("Root");
+	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
+	const auto &root1 = entityManager.instantiate("Root");
 	//root1->SetPosition({ 0, 0, -10 });
-	root1->SetScale({ 1, 1, 1 });
+	root1->setScale({ 1, 1, 1 });
 
 	if (animate)
-		root1->AddComponent<TestComponent>().SetSpeed({ 0.0f, 0.1f, 0.0f });
+		root1->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 
-	m_scene->LoadEntities("data/meshes/MetalRoughSpheres/MetalRoughSpheres.gltf", *root1);
+	m_scene->loadEntities("data/meshes/MetalRoughSpheres/MetalRoughSpheres.gltf", *root1);
 }
 
 void Game::CreateCamera(bool animate)
 {
-	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
+	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
 
-	auto cameraDollyAnchor = entityManager.Instantiate("CameraDollyAnchor");
+	auto cameraDollyAnchor = entityManager.instantiate("CameraDollyAnchor");
 	if (animate)
-		cameraDollyAnchor->AddComponent<TestComponent>().SetSpeed({0.0f, 0.1f, 0.0f});
+		cameraDollyAnchor->addComponent<Test_component>().setSpeed({0.0f, 0.1f, 0.0f});
 	
-	auto camera = entityManager.Instantiate("Camera", *cameraDollyAnchor);
-	camera->SetPosition(Vector3(10.0f, 0.0f, 15));
+	auto camera = entityManager.instantiate("Camera", *cameraDollyAnchor);
+	camera->setPosition(Vector3(10.0f, 0.0f, 15));
 	
-	cameraDollyAnchor->Update();
+	cameraDollyAnchor->update();
 
-	auto &component = camera->AddComponent<CameraComponent>();
-	component.SetFov(XMConvertToRadians(60.0f));
-	component.SetFarPlane(100.0f);
-	component.SetNearPlane(0.1f);
+	auto &component = camera->addComponent<Camera_component>();
+	component.setFov(XMConvertToRadians(60.0f));
+	component.setFarPlane(100.0f);
+	component.setNearPlane(0.1f);
 
-	camera->LookAt({ 0, 0, 0 }, Vector3::Up);
+	camera->lookAt({ 0, 0, 0 }, Vector3::Up);
 
-	m_scene->SetMainCamera(camera);
+	m_scene->setMainCamera(camera);
 }
 
 void Game::CreateLights()
 {
-	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
+	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
 	int lightCount = 0;
 	auto createDirLight = [&entityManager, &lightCount](const Vector3 &normal, const Color &color, float intensity)
 	{
-		auto lightEntity = entityManager.Instantiate("Directional Light " + std::to_string(++lightCount));
-		auto &component = lightEntity->AddComponent<DirectionalLightComponent>();
+		auto lightEntity = entityManager.instantiate("Directional Light " + std::to_string(++lightCount));
+		auto &component = lightEntity->addComponent<Directional_light_component>();
 		component.setColor(color);
 		component.setIntensity(intensity);
 
@@ -132,55 +132,55 @@ void Game::CreateLights()
 
 			assert(normal.LengthSquared() != 0);
 			float angle = acos(Vector3::Forward.Dot(normal) / normal.Length());
-			lightEntity->SetRotation(Quaternion::CreateFromAxisAngle(axis, angle));
+			lightEntity->setRotation(Quaternion::CreateFromAxisAngle(axis, angle));
 		}
 		return lightEntity;
 	};
 	auto createPointLight = [&entityManager, &lightCount](const Vector3 &position, const Color &color, float intensity)
 	{
-		auto lightEntity = entityManager.Instantiate("Point Light " + std::to_string(++lightCount));
-		auto &component = lightEntity->AddComponent<PointLightComponent>();
+		auto lightEntity = entityManager.instantiate("Point Light " + std::to_string(++lightCount));
+		auto &component = lightEntity->addComponent<Point_light_component>();
 		component.setColor(color);
 		component.setIntensity(intensity);
-		lightEntity->SetPosition(position);
+		lightEntity->setPosition(position);
 		return lightEntity;
 	};
 	auto createAmbientLight = [&entityManager, &lightCount](const Color &color, float intensity)
 	{
-		auto lightEntity = entityManager.Instantiate("Ambient Light " + std::to_string(++lightCount));
-		auto &component = lightEntity->AddComponent<AmbientLightComponent>();
+		auto lightEntity = entityManager.instantiate("Ambient Light " + std::to_string(++lightCount));
+		auto &component = lightEntity->addComponent<Ambient_light_component>();
 		component.setColor(color);
 		component.setIntensity(intensity);
 		return lightEntity;
 	};
 
-	const auto &lightRoot = entityManager.Instantiate("Light Root");
-	lightRoot->SetPosition({ 0, 0, 0 });
+	const auto &lightRoot = entityManager.instantiate("Light Root");
+	lightRoot->setPosition({ 0, 0, 0 });
 	//createDirLight({ 0.5, 0, -1 }, { 1, 1, 1 }, 0.35)->SetParent(*lightRoot);
 
-	createAmbientLight({ 1, 1, 1 }, 1)->SetParent(*lightRoot);
+	createAmbientLight({ 1, 1, 1 }, 1)->setParent(*lightRoot);
 
 	if (true)
 	{
-		createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 1)->SetParent(*lightRoot);
-		createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75)->SetParent(*lightRoot);
+		createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 1)->setParent(*lightRoot);
+		createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75)->setParent(*lightRoot);
 	}
 	else
 	{
-		createPointLight({ 10, 0, 10 }, { 1, 1, 1 }, 13)->SetParent(*lightRoot);
-		createPointLight({ 10, 5, -10 }, { 1, 0, 1 }, 20)->SetParent(*lightRoot);
+		createPointLight({ 10, 0, 10 }, { 1, 1, 1 }, 13)->setParent(*lightRoot);
+		createPointLight({ 10, 5, -10 }, { 1, 0, 1 }, 20)->setParent(*lightRoot);
 	}
 }
 
 void Game::CreateSceneLeverArm()
 {
-	SceneGraphManager& entityManager = m_scene->GetSceneGraphManager();
-	const auto &root1 = entityManager.Instantiate("Root 1");
-	root1->SetPosition({ 5, 0, 5 });
+	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
+	const auto &root1 = entityManager.instantiate("Root 1");
+	root1->setPosition({ 5, 0, 5 });
 
-	const auto &child1 = entityManager.Instantiate("Child 1", *root1);
-	const auto &child2 = entityManager.Instantiate("Child 2", *child1);
-	const auto &child3 = entityManager.Instantiate("Child 3", *child2);
+	const auto &child1 = entityManager.instantiate("Child 1", *root1);
+	const auto &child2 = entityManager.instantiate("Child 2", *child1);
+	const auto &child3 = entityManager.instantiate("Child 3", *child2);
 
 	AddCubeToEntity(*child1, { 0, 0, 0.1f }, { 0.5f, 0.5f, 1.0f }, { 0, 0, 0 });
 	AddCubeToEntity(*child2, { 0, 0.25, 0 }, { 1.0f, 2.0f, 0.5f }, { 2, 0, 0 });
@@ -208,7 +208,7 @@ void Game::Initialize(HWND window, int width, int height)
 		//CreateSceneLeverArm();
 		//LoadGLTF("Avocado", true)->SetScale({ 120, 120, 120 });
 		//LoadGLTF("FlightHelmet", true);
-		LoadGLTF("WaterBottle", true)->SetScale({ 80, 80, 80 });
+		LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
 		
 		//CreateSceneMetalRoughSpheres(true);
 
@@ -229,12 +229,12 @@ void Game::Initialize(HWND window, int width, int height)
 
 void Game::AddCubeToEntity(Entity& entity, Vector3 animationSpeed, Vector3 localScale, Vector3 localPosition) const
 {
-	entity.AddComponent<TestComponent>().SetSpeed(animationSpeed);
+	entity.addComponent<Test_component>().setSpeed(animationSpeed);
 
-	entity.SetScale(localScale);
-	entity.SetPosition(localPosition);
+	entity.setScale(localScale);
+	entity.setPosition(localPosition);
 	
-	m_scene->LoadEntities("data/meshes/Cube/Cube.gltf", entity);
+	m_scene->loadEntities("data/meshes/Cube/Cube.gltf", entity);
 }
 
 #pragma region Frame Update
@@ -253,7 +253,7 @@ void Game::Tick()
 void Game::Update(DX::StepTimer const& timer)
 {
     // TODO: Add your game logic here.
-	m_scene->Tick(timer);
+	m_scene->tick(timer);
 }
 #pragma endregion
 
@@ -268,7 +268,7 @@ void Game::Render()
     }
 	
     // TODO: Add your rendering code here.
-	m_scene->GetEntityRenderManger().render();
+	m_scene->entityRenderManger().render();
 	
     // Show the new frame.
     m_deviceResources->Present();
@@ -310,7 +310,7 @@ void Game::OnWindowSizeChanged(int width, int height)
     if (!m_deviceResources->WindowSizeChanged(width, height))
         return;
 
-	m_scene->GetEntityRenderManger().destroyWindowSizeDependentResources();
+	m_scene->entityRenderManger().destroyWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
 }
 
@@ -328,7 +328,7 @@ void Game::GetDefaultSize(int& width, int& height) const
 void Game::CreateDeviceDependentResources()
 {
 	try {
-		m_scene->GetEntityRenderManger().createDeviceDependentResources();
+		m_scene->entityRenderManger().createDeviceDependentResources();
 	}
 	catch (std::exception &e)
 	{
@@ -342,7 +342,7 @@ void Game::CreateWindowSizeDependentResources()
 {
 	try
 	{
-		m_scene->GetEntityRenderManger().createWindowSizeDependentResources();
+		m_scene->entityRenderManger().createWindowSizeDependentResources();
 	}
 	catch (std::exception &e)
 	{
@@ -353,8 +353,8 @@ void Game::CreateWindowSizeDependentResources()
 
 void Game::OnDeviceLost()
 {
-	m_scene->GetEntityRenderManger().destroyWindowSizeDependentResources();
-	m_scene->GetEntityRenderManger().destroyDeviceDependentResources();
+	m_scene->entityRenderManger().destroyWindowSizeDependentResources();
+	m_scene->entityRenderManger().destroyDeviceDependentResources();
 }
 
 void Game::OnDeviceRestored()

@@ -188,10 +188,10 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="AssetManager.h" />
+    <ClInclude Include="Asset_manager.h" />
     <ClInclude Include="Bound.h" />
-    <ClInclude Include="CameraComponent.h" />
-    <ClInclude Include="ClearGBufferMaterial.h" />
+    <ClInclude Include="Camera_component.h" />
+    <ClInclude Include="Clear_gbuffer_material.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="data\shaders\inc\lighting.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -199,61 +199,60 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="DeferredLightMaterial.h" />
+    <ClInclude Include="Deferred_light_material.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="Entity.h" />
-    <ClInclude Include="EntityRepository.h" />
-    <ClInclude Include="EntityFilter.h" />
-    <ClInclude Include="glTFMeshLoader.h" />
-    <ClInclude Include="LightComponent.h" />
+    <ClInclude Include="Entity_repository.h" />
+    <ClInclude Include="Entity_filter.h" />
+    <ClInclude Include="Entity_graph_loader_gltf.h" />
+    <ClInclude Include="Light_component.h" />
     <ClInclude Include="LogFileSink.h" />
-    <ClInclude Include="MaterialRepository.h" />
-    <ClInclude Include="MeshData.h" />
-    <ClInclude Include="MeshDataComponent.h" />
-    <ClInclude Include="EntityGraphLoader.h" />
-    <ClInclude Include="MikkTSpaceTriangleMeshInterface.h" />
-    <ClInclude Include="PBRMaterial.h" />
-    <ClInclude Include="PrimitiveMeshDataFactory.h" />
-    <ClInclude Include="SceneGraphManager.h" />
-    <ClInclude Include="ManagerBase.h" />
-    <ClInclude Include="EntityRenderManager.h" />
-    <ClInclude Include="EntityScriptingManager.h" />
+    <ClInclude Include="Material_repository.h" />
+    <ClInclude Include="Mesh_data.h" />
+    <ClInclude Include="Mesh_data_component.h" />
+    <ClInclude Include="Entity_graph_loader.h" />
+    <ClInclude Include="Mikk_tspace_triangle_mesh_interface.h" />
+    <ClInclude Include="PBR_material.h" />
+    <ClInclude Include="Primitive_mesh_data_factory.h" />
+    <ClInclude Include="Scene_graph_manager.h" />
+    <ClInclude Include="Manager_base.h" />
+    <ClInclude Include="Entity_render_manager.h" />
+    <ClInclude Include="Entity_scripting_manager.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="RenderableComponent.h" />
-    <ClInclude Include="RendererData.h" />
+    <ClInclude Include="Renderable_component.h" />
+    <ClInclude Include="Renderer_data.h" />
     <ClInclude Include="Scene.h" />
-    <ClInclude Include="SimpleTypes.h" />
+    <ClInclude Include="Simple_types.h" />
     <ClInclude Include="StepTimer.h" />
-    <ClInclude Include="TestComponent.h" />
+    <ClInclude Include="Test_component.h" />
     <ClInclude Include="Texture.h" />
-    <ClInclude Include="TextureImpl.h" />
-    <ClInclude Include="TextureRenderTarget.h" />
+    <ClInclude Include="Render_target_texture.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AssetManager.cpp" />
+    <ClCompile Include="Asset_manager.cpp" />
     <ClCompile Include="Bound.cpp" />
-    <ClCompile Include="CameraComponent.cpp" />
-    <ClCompile Include="ClearGBufferMaterial.cpp" />
+    <ClCompile Include="Camera_component.cpp" />
+    <ClCompile Include="Clear_gbuffer_material.cpp" />
     <ClCompile Include="Component.cpp" />
-    <ClCompile Include="DeferredLightMaterial.cpp" />
+    <ClCompile Include="Deferred_light_material.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="Entity.cpp" />
-    <ClCompile Include="EntityRepository.cpp" />
-    <ClCompile Include="glTFMeshLoader.cpp" />
-    <ClCompile Include="LightComponent.cpp" />
+    <ClCompile Include="Entity_repository.cpp" />
+    <ClCompile Include="Entity_graph_loader_gltf.cpp" />
+    <ClCompile Include="Light_component.cpp" />
     <ClCompile Include="LogFileSink.cpp" />
-    <ClCompile Include="MaterialRepository.cpp" />
-    <ClCompile Include="MeshData.cpp" />
-    <ClCompile Include="MeshDataComponent.cpp" />
-    <ClCompile Include="MikkTSpaceTriangleMeshInterface.cpp" />
-    <ClCompile Include="PBRMaterial.cpp" />
-    <ClCompile Include="PrimitiveMeshDataFactory.cpp" />
-    <ClCompile Include="SceneGraphManager.cpp" />
-    <ClCompile Include="EntityRenderManager.cpp" />
-    <ClCompile Include="EntityScriptingManager.cpp" />
+    <ClCompile Include="Material_repository.cpp" />
+    <ClCompile Include="Mesh_data.cpp" />
+    <ClCompile Include="Mesh_data_component.cpp" />
+    <ClCompile Include="Mikk_tspace_triangle_mesh_interface.cpp" />
+    <ClCompile Include="PBR_material.cpp" />
+    <ClCompile Include="Primitive_mesh_data_factory.cpp" />
+    <ClCompile Include="Scene_graph_manager.cpp" />
+    <ClCompile Include="Entity_render_manager.cpp" />
+    <ClCompile Include="Entity_scripting_manager.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Material.cpp" />
@@ -263,12 +262,12 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="RenderableComponent.cpp" />
-    <ClCompile Include="RendererData.cpp" />
+    <ClCompile Include="Renderable_component.cpp" />
+    <ClCompile Include="Renderer_data.cpp" />
     <ClCompile Include="Scene.cpp" />
-    <ClCompile Include="TestComponent.cpp" />
-    <ClCompile Include="TextureImpl.cpp" />
-    <ClCompile Include="TextureRenderTarget.cpp" />
+    <ClCompile Include="Test_component.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="Render_target_texture.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>

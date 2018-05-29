@@ -18,7 +18,8 @@ struct PS_OUTPUT
 PS_OUTPUT PSMain(PS_INPUT input)
 {
 	PS_OUTPUT output;    
-	output.Color0 = float4(0.0f, 0.0f, 0.0f, 1.0f);
+	// TODO: Bring clear color in as a constant
+	output.Color0 = float4(0.78f, 0.64f, 0.78f, 1.0f);
 
 	//when transforming 0.5f into [-1,1], we will get 0.0f
 	output.Color1 = float4(0.5f, 0.5f, 0.5f, 0.0f);

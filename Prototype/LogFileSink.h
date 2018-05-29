@@ -11,7 +11,7 @@
 #include <memory>
 
 #include "g3log/logmessage.hpp"
-namespace OE {
+namespace oe {
 
 	// Mostly copied from g3::FileSink - modified to allow overwrite of same logfile each run.
 	class LogFileSink {

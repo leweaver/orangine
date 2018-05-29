@@ -1,86 +1,89 @@
 ﻿#include "pch.h"
 #include "Entity.h"
-#include "SceneGraphManager.h"
+#include "Scene_graph_manager.h"
 #include "Scene.h"
 
-using namespace OE;
+using namespace oe;
 using namespace DirectX;
 using namespace SimpleMath;
 
-Entity::Entity(Scene &scene, const std::string &name, ID_TYPE id)
-	: m_worldTransform(Matrix::Identity)
-	, m_worldRotation(Quaternion::Identity)
-	, m_worldScale(Vector3::One)
-	, m_localRotation(Quaternion::Identity)
-	, m_localPosition(Vector3::Zero)
-	, m_localScale(Vector3::One)
-	, m_id(id)
-	, m_name(name)
-	, m_state(EntityState::UNINITIALIZED)
-	, m_active(true)
-	, m_parent(nullptr)
-	, m_scene(scene)
+Entity::Entity(Scene& scene, std::string&& name, Id_type id)
+	: _worldTransform(Matrix::Identity)
+	, _worldRotation(Quaternion::Identity)
+	, _worldScale(Vector3::One)
+	, _localRotation(Quaternion::Identity)
+	, _localPosition(Vector3::Zero)
+	, _localScale(Vector3::One)
+	, _id(id)
+	, _name(std::move(name))
+	, _state(Entity_state::Uninitialized)
+	, _active(true)
+	, _parent(nullptr)
+	, _scene(scene)
 {
 }
 
-void Entity::ComputeWorldTransform()
+void Entity::computeWorldTransform()
 {
-	if (HasParent())
+	if (hasParent())
 	{
-		m_worldScale = m_parent->m_worldScale * m_localScale;
-		m_worldRotation = Quaternion::Concatenate(m_parent->WorldRotation(), m_localRotation);
+		_worldScale = _parent->_worldScale * _localScale;
+		_worldRotation = Quaternion::Concatenate(_parent->worldRotation(), _localRotation);
 
-		const auto worldPosition = Vector3::Transform(m_localPosition, m_parent->m_worldTransform);
+		const auto worldPosition = Vector3::Transform(_localPosition, _parent->_worldTransform);
 
 		const auto worldT = XMMatrixTranslationFromVector(worldPosition);
-		const auto worldR = XMMatrixRotationQuaternion(m_worldRotation);
-		const auto worldS = XMMatrixScalingFromVector(m_worldScale);
+		const auto worldR = XMMatrixRotationQuaternion(_worldRotation);
+		const auto worldS = XMMatrixScalingFromVector(_worldScale);
 		
-		m_worldTransform = XMMatrixMultiply(XMMatrixMultiply(worldS, worldR), worldT);
+		_worldTransform = XMMatrixMultiply(XMMatrixMultiply(worldS, worldR), worldT);
 	}
 	else
 	{
-		m_worldRotation = m_localRotation;
-		m_worldScale = m_localScale;
+		_worldRotation = _localRotation;
+		_worldScale = _localScale;
 
-		const auto localT = XMMatrixTranslationFromVector(m_localPosition);
-		const auto localR = XMMatrixRotationQuaternion(m_worldRotation);
-		const auto localS = XMMatrixScalingFromVector(m_worldScale);
-		m_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT);
+		const auto localT = XMMatrixTranslationFromVector(_localPosition);
+		const auto localR = XMMatrixRotationQuaternion(_worldRotation);
+		const auto localS = XMMatrixScalingFromVector(_worldScale);
+		_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT);
 	}
 }
 
-void Entity::Update()
+void Entity::update()
 {
-	ComputeWorldTransform();
-	if (!m_children.empty())
+	computeWorldTransform();
+	if (!_children.empty())
 	{
-		for (auto const& child : m_children)
+		for (auto const& child : _children)
 		{
-			if (child->IsActive())
-				child->Update();
+			if (child->isActive())
+				child->update();
 		}
 	}
 }
 
-Component& Entity::GetComponent(size_t index) const
+Component& Entity::getComponent(size_t index) const
 {
-	return *m_components[index].get();
+	return *_components[index];
 }
 
-void Entity::LookAt(const Entity& other)
+void Entity::lookAt(const Entity& other)
 {
-	LookAt(other.Position(), Vector3::Up);
+	lookAt(other.position(), Vector3::Up);
 }
 
-void Entity::LookAt(Vector3 position, const Vector3 &worldUp)
+void Entity::lookAt(const Vector3& position, const Vector3 &worldUp)
 {
-	if (HasParent()) {
-		const auto parentWorldInv = m_parent->m_worldTransform.Invert();
-		position = Vector3::Transform(position, parentWorldInv);
+	Vector3 forward;
+	if (hasParent()) {
+		const auto parentWorldInv = _parent->_worldTransform.Invert();
+		forward = Vector3::Transform(position, parentWorldInv) - _localPosition;
 	}
-		
-	Vector3 forward = position - m_localPosition;
+	else {
+		forward = position - _localPosition;
+	}
+
 	if (forward.LengthSquared() == 0)
 		return;
 
@@ -109,38 +112,40 @@ void Entity::LookAt(Vector3 position, const Vector3 &worldUp)
 	camToWorld._32 = -forward.y;
 	camToWorld._33 = -forward.z;
 
-	m_localRotation = Quaternion::CreateFromRotationMatrix(camToWorld);
+	_localRotation = Quaternion::CreateFromRotationMatrix(camToWorld);
 
-	ComputeWorldTransform();
+	computeWorldTransform();
 }
 
-void Entity::SetActive(bool bActive)
+void Entity::setActive(bool bActive)
 {
-	m_active = bActive;
+	_active = bActive;
 }
 
-void Entity::SetParent(Entity& newParent)
+void Entity::setParent(Entity& newParent)
 {
 	// TODO: Check that we don't create a cycle?
-	if (HasParent())
+	if (hasParent())
 	{
-		RemoveParent();
+		removeParent();
 	}
 
-	auto &entityManager = m_scene.GetSceneGraphManager();
-	const auto thisPtr = entityManager.GetEntityPtrById(getId());
-	entityManager.RemoveFromRoot(thisPtr);
+	auto &entityManager = _scene.sceneGraphManager();
+	const auto thisPtr = entityManager.getEntityPtrById(getId());
+	entityManager.removeFromRoot(thisPtr);
 
-	newParent.m_children.push_back(thisPtr);
-	m_parent = &newParent;
+	auto newParentPtr = entityManager.getEntityPtrById(newParent.getId());
+	newParentPtr->_children.push_back(thisPtr);
+
+	_parent = newParentPtr.get();
 }
 
-void Entity::RemoveParent()
+void Entity::removeParent()
 {
-	if (m_parent == nullptr)
+	if (_parent == nullptr)
 		return;
 
-	EntityPtrVec& children = m_parent->m_children;
+	Entity_ptr_vec& children = _parent->_children;
 	for (auto it = children.begin(); it != children.end(); ++it) {
 		const auto child = (*it).get();
 		if (child->getId() == getId()) {
@@ -149,35 +154,35 @@ void Entity::RemoveParent()
 		}
 	}
 
-	auto &entityManager = m_scene.GetSceneGraphManager();
-	const auto thisPtr = entityManager.GetEntityPtrById(getId());
-	entityManager.AddToRoot(thisPtr);
-	m_parent = nullptr;
+	auto &entityManager = _scene.sceneGraphManager();
+	const auto thisPtr = entityManager.getEntityPtrById(getId());
+	entityManager.addToRoot(thisPtr);
+	_parent = nullptr;
 }
 
-Vector3 Entity::WorldPosition() const
+Vector3 Entity::worldPosition() const
 {
-	return m_worldTransform.Translation();
+	return _worldTransform.Translation();
 }
 
-const Vector3 &Entity::WorldScale() const
+const Vector3& Entity::worldScale() const
 {
-	return m_worldScale;
+	return _worldScale;
 }
 
-const Quaternion &Entity::WorldRotation() const
+const Quaternion& Entity::worldRotation() const
 {
-	return m_worldRotation;
+	return _worldRotation;
 }
 
-void Entity::OnComponentAdded(Component& component)
+void Entity::onComponentAdded(Component& component)
 {
-	m_scene.OnComponentAdded(*this, component);
+	_scene.onComponentAdded(*this, component);
 }
 
-Entity &EntityRef::Get() const
+Entity& EntityRef::get() const
 {
-	const auto ptr = scene.GetSceneGraphManager().GetEntityPtrById(id);
+	const auto ptr = scene.sceneGraphManager().getEntityPtrById(id);
 	if (!ptr)
 		throw std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(id) + ")");
 	return *ptr.get();

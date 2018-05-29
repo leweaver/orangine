@@ -1,20 +1,20 @@
 ﻿#pragma once
 
 #include <string>
-#include <string>
+#include <string_view>
 
-namespace OE {
+namespace oe {
 	// Convert a wide Unicode string to an UTF8 string
-	std::string utf8_encode(const std::wstring &wstr);
+	std::string utf8_encode(const std::wstring& wstr);
 
 	// Convert an UTF8 string to a wide Unicode String
-	std::wstring utf8_decode(const std::string &str);
+	std::wstring utf8_decode(const std::string& str);
 
-	bool str_starts(const std::string &str, const std::string &prefix);
-	bool str_ends(const std::string &str, const std::string &suffix);
+	bool str_starts(const std::string& str, const std::string& prefix);
+	bool str_ends(const std::string& str, const std::string& suffix);
 
-	bool str_starts(const std::wstring &str, const std::wstring &prefix);
-	bool str_ends(const std::wstring &str, const std::wstring &suffix);
+	bool str_starts(const std::wstring& str, const std::wstring& prefix);
+	bool str_ends(const std::wstring& str, const std::wstring& suffix);
 
 	std::string str_replace_all(std::string str, const std::string& from, const std::string& to);
 
@@ -22,58 +22,41 @@ namespace OE {
 	std::wstring hr_to_wstring(HRESULT hr);
 
 	// Helper class for COM exceptions
-	class com_exception : public std::exception
-	{
-		std::string m_what;
+	class com_exception : public std::exception {
+		std::string _what;
 	public:
-		com_exception(HRESULT hr) : com_exception(hr, nullptr) {}
-		com_exception(HRESULT hr, const std::string &what);
-		com_exception(HRESULT hr, const char *what);
+		explicit com_exception(HRESULT hr)
+			: com_exception(hr, nullptr) {}
 
-		const char* what() const override
-		{
-			return m_what.c_str();
+		com_exception(HRESULT hr, std::string_view what);
+
+		const char* what() const override {
+			return _what.c_str();
 		}
 
 	private:
-		HRESULT result;
+		HRESULT _result;
 	};
 
 	// Helper utility converts D3D API failures into exceptions.
-	inline void ThrowIfFailed(HRESULT hr)
-	{
-		if (FAILED(hr))
-		{
+	inline void ThrowIfFailed(HRESULT hr) {
+		if (FAILED(hr)) {
 			throw com_exception(hr);
 		}
 	}
 
 	// Helper utility converts D3D API failures into exceptions.
-	inline void ThrowIfFailed(HRESULT hr, const char *what)
-	{
-		if (FAILED(hr))
-		{
-			throw com_exception(hr, what);
-		}
-	}
-
-	// Helper utility converts D3D API failures into exceptions.
-	inline void ThrowIfFailed(HRESULT hr, const std::string &what)
-	{
-		if (FAILED(hr))
-		{
+	inline void ThrowIfFailed(HRESULT hr, const std::string_view what) {
+		if (FAILED(hr)) {
 			throw com_exception(hr, what);
 		}
 	}
 }
 
-namespace DX
-{
-	inline void ThrowIfFailed(HRESULT hr)
-	{
-		if (FAILED(hr))
-		{
-			throw OE::com_exception(hr);
+namespace DX {
+	inline void ThrowIfFailed(HRESULT hr) {
+		if (FAILED(hr)) {
+			throw oe::com_exception(hr);
 		}
 	}
 }

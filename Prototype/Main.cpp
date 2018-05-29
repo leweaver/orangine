@@ -39,19 +39,19 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	std::string logFileName;
 	auto logWorker = g3::LogWorker::createLogWorker();
 	{
-		auto execName = OE::utf8_encode(__wargv[0]);
+		auto execName = oe::utf8_encode(__wargv[0]);
 		auto pos = execName.find_last_of("\\");
 		if (pos != std::string::npos)
 			logFileName = execName.substr(pos + 1);
 		else
 			logFileName = execName;
-		execName = OE::str_replace_all(execName, "\\", "/");
+		execName = oe::str_replace_all(execName, "\\", "/");
 	}
 
 	// Create a sink with a non-timebased filename
-	auto sink = std::make_unique<OE::LogFileSink>(logFileName, path_to_log_file, "game", false);
+	auto sink = std::make_unique<oe::LogFileSink>(logFileName, path_to_log_file, "game", false);
 	sink->fileInit();
-	auto logFileSinkHandle = logWorker->addSink(move(sink), &OE::LogFileSink::fileWrite);
+	auto logFileSinkHandle = logWorker->addSink(move(sink), &oe::LogFileSink::fileWrite);
 
 	g3::initializeLogging(logWorker.get());
 

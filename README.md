@@ -34,24 +34,31 @@ Normals are expected to be in tangent space. Further, the tangents on meshes mus
 Tangents in art assets must be generated using the MikkiT algorithm (see [Simulation of Wrinkled Surfaces Revisited by Morten S. Mikkelsen](http://image.diku.dk/projects/media/morten.mikkelsen.08.pdf).)
 
 # Coding Style Guide
+Using [Cpp Core Guidelines](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md) with some additions/clarifications:
+
 ## Forward Declarations
 Don't use for model classes in 'Manager' class header files (ie, for the things that the manager class managers)
 Do use when referencing manager classes in header files
 
-## Pointers vs References
-Use reference wherever you can, pointers wherever you must. Avoid pointers until you can't.
+## Pointers, References, SmartPointers
+Function Arguments:
+	[https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rr-smartptrparam](R.30)
+	Prefer references to objects, but take a pointer if it can be null.
+	Only take in a smart/unique pointer when lifetime/ownership needs to be managed:
+		[https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rr-smartptrparam](R.36)
+		```
+		void share(shared_ptr<widget>);            // share -- "will" retain refcount
+		void reseat(shared_ptr<widget>&);          // "might" reseat ptr
+		void may_share(const shared_ptr<widget>&); // "might" retain refcount
+		```
 
-heap objects & method signatures:
-	parameters should be 
-		references when used, but not stored.
-		smart/unique pointers if stored.
-	return values should be
-		reference if a unique object instance.
-		smart pointers if a shared object,
+## Naming
+[https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#nl10-prefer-underscore_style-names](NL.10) Prefer	underscore_case for names
+[https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#nl17-use-kr-derived-layout](NL.17) use KR derived layout
 
-## 
-classes, enums: MyClassName
-template parameters: TMyClassName
+namespace: lower_underscored
+classes, structs, enums: My_class_name
+template parameters: TMy_class_name
 
-private field members: m_lowerCamelCase
+private field members: _lowerCamelCase
 public field members: lowerCamelCase

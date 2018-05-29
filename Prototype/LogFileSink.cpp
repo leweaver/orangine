@@ -15,7 +15,7 @@
 #include <cassert>
 #include <chrono>
 
-namespace OE {
+namespace oe {
 	using namespace g3;
 	using namespace internal;
 

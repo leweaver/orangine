@@ -26,8 +26,8 @@ namespace oe {
 		iterator begin() { return _entities.begin(); }
 		iterator end() { return _entities.end(); }
 
-		const_iterator cbegin() const { return _entities.begin(); }
-		const_iterator cend() const { return _entities.end(); }
+		const_iterator begin() const { return _entities.begin(); }
+		const_iterator end() const { return _entities.end(); }
 
 	};
 }

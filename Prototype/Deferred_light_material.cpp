@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "Deferred_light_material.h"
 #include "Render_target_texture.h"
+#include "Render_pass_info.h"
 
 using namespace oe;
 using namespace std::literals;
@@ -10,6 +11,11 @@ using namespace SimpleMath;
 void Deferred_light_material::vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const
 {
 	vertexAttributes.push_back(Vertex_attribute::Position);
+}
+
+void Deferred_light_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_output_format outputFormat)
+{
+	assert(outputFormat == Render_pass_output_format::Shaded_Unlit);
 }
 
 UINT Deferred_light_material::inputSlot(Vertex_attribute attribute)
@@ -37,39 +43,9 @@ Material::Shader_compile_settings Deferred_light_material::pixelShaderSettings()
 	return settings;
 }
 
-void Deferred_light_material::setupPointLight(const Vector3& lightPosition, const Color& color, float intensity)
+void Deferred_light_material::setupEmitted(bool enabled)
 {
-	_constants.lightType = Deferred_light_type::Point;
-	XMStoreFloat3(&_constants.position, XMVectorSet(lightPosition.x, lightPosition.y, lightPosition.z, 0.0f));
-
-	XMVECTOR intensifiedColor = color;
-	intensifiedColor = XMVectorScale(intensifiedColor, intensity);
-	XMStoreFloat3(&_constants.intensifiedColor, intensifiedColor);
-}
-
-void Deferred_light_material::setupDirectionalLight(const Vector3& lightDirection, const Color& color, float intensity)
-{
-	_constants.lightType = Deferred_light_type::Directional;
-	XMStoreFloat3(&_constants.direction, XMVectorSet(lightDirection.x, lightDirection.y, lightDirection.z, 0.0f));
-
-	XMVECTOR intensifiedColor = color;
-	intensifiedColor = XMVectorScale(intensifiedColor, intensity);
-	XMStoreFloat3(&_constants.intensifiedColor, intensifiedColor);
-}
-
-void Deferred_light_material::setupAmbientLight(const Color& color, float intensity)
-{
-	_constants.lightType = Deferred_light_type::Ambient;
-	XMStoreFloat3(&_constants.position, XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f));
-
-	XMVECTOR intensifiedColor = color;
-	intensifiedColor = XMVectorScale(intensifiedColor, intensity);
-	XMStoreFloat3(&_constants.intensifiedColor, intensifiedColor);
-}
-
-void Deferred_light_material::setupEmitted()
-{
-	_constants.lightType = Deferred_light_type::Emitted;
+	_constants.emittedEnabled = enabled;
 }
 
 bool Deferred_light_material::createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer)
@@ -108,19 +84,6 @@ void Deferred_light_material::updatePSConstantBuffer(const Matrix& worldMatrix,
 	_constants.eyePosition = Vector4(worldMatrix._41, worldMatrix._42, worldMatrix._43, 0.0);
 
 	context->UpdateSubresource(buffer, 0, nullptr, &_constants, 0, 0);	
-}
-
-void Deferred_light_material::createBlendState(ID3D11Device* device, ID3D11BlendState*& blendState)
-{
-	// additive blend
-	D3D11_BLEND_DESC blendStateDesc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
-	blendStateDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
-	blendStateDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
-
-	blendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	blendStateDesc.RenderTarget[0].BlendEnable = true;
-	blendStateDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	device->CreateBlendState(&blendStateDesc, &blendState);
 }
 
 void Deferred_light_material::setContextSamplers(const DX::DeviceResources& deviceResources)

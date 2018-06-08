@@ -67,7 +67,8 @@ std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 	if (animate)
 		root->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 
-	m_scene->loadEntities("data/meshes/" + gltfName + "/" + gltfName + ".gltf", *root);
+	//m_scene->loadEntities("data/meshes/" + gltfName + "/" + gltfName + ".gltf", *root);
+	m_scene->loadEntities("../../glTF-Sample-Models/2.0/" + gltfName + "/glTF/" + gltfName + ".gltf", *root);
 
 	return root;
 }
@@ -94,7 +95,7 @@ void Game::CreateCamera(bool animate)
 		cameraDollyAnchor->addComponent<Test_component>().setSpeed({0.0f, 0.1f, 0.0f});
 	
 	auto camera = entityManager.instantiate("Camera", *cameraDollyAnchor);
-	camera->setPosition(Vector3(10.0f, 0.0f, 15));
+	camera->setPosition(Vector3(0.0f, 0.0f, 15));
 	
 	cameraDollyAnchor->update();
 
@@ -206,9 +207,12 @@ void Game::Initialize(HWND window, int width, int height)
 
 		//CreateSceneCubeSatellite();
 		//CreateSceneLeverArm();
-		//LoadGLTF("Avocado", true)->SetScale({ 120, 120, 120 });
-		//LoadGLTF("FlightHelmet", true);
-		LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
+		//LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
+		
+		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
+		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
+		LoadGLTF("FlightHelmet", true)->setScale({ 10, 10, 10 });
+		//LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
 		
 		//CreateSceneMetalRoughSpheres(true);
 

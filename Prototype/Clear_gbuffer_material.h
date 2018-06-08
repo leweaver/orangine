@@ -13,5 +13,7 @@ namespace oe {
 
 		Shader_compile_settings vertexShaderSettings() const override;
 		Shader_compile_settings pixelShaderSettings() const override;
+
+		void createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_output_format outputFormat) override;
 	};
 }

@@ -20,31 +20,15 @@ namespace oe
 
 		void vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const override;
 
-		void setupPointLight(const DirectX::SimpleMath::Vector3& lightPosition, const DirectX::SimpleMath::Color& color, float getIntensity);
-		void setupDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, const DirectX::SimpleMath::Color& color, float getIntensity);
-		void setupAmbientLight(const DirectX::SimpleMath::Color& color, float getIntensity);
-		void setupEmitted();
+		void setupEmitted(bool enabled);
 
 	protected:
-
-		enum class Deferred_light_type : int32_t
-		{
-			Directional,
-			Point,
-			Ambient,
-			Emitted
-		};
-
+		
 		struct Deferred_light_constants
 		{
 			DirectX::XMMATRIX invProjection;
-			union {
-				DirectX::XMFLOAT3 direction;
-				DirectX::XMFLOAT3 position;
-			};
-			Deferred_light_type lightType;
 			DirectX::XMFLOAT4 eyePosition;
-			DirectX::XMFLOAT3 intensifiedColor;
+			bool emittedEnabled = false;
 		} _constants;
 
 		UINT inputSlot(Vertex_attribute attribute) override;
@@ -55,7 +39,8 @@ namespace oe
 		bool createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) override;
 		void updatePSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix, const DirectX::SimpleMath::Matrix& viewMatrix,
 			const DirectX::SimpleMath::Matrix& projMatrix, ID3D11DeviceContext* context, ID3D11Buffer* buffer) override;
-		void createBlendState(ID3D11Device* device, ID3D11BlendState*& blendState) override;
+
+		void createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_output_format outputFormat) override;
 
 		void setContextSamplers(const DX::DeviceResources& deviceResources) override;
 		void unsetContextSamplers(const DX::DeviceResources& deviceResources) override;

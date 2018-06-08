@@ -2,15 +2,16 @@
 
 #include "StepTimer.h"
 #include "Entity_graph_loader.h"
+
+#include "Entity_render_manager.h"
+#include "Entity_repository.h"
+#include "Scene_graph_manager.h"
+#include "Entity_scripting_manager.h"
+#include "Asset_manager.h"
+
 #include <map>
 
 namespace oe {
-	class Scene_graph_manager;
-	class Entity_render_manager;
-	class Entity_scripting_manager;
-	class Entity_repository;
-	class Material_repository;
-	class Asset_manager;
 	class Entity;
 	class Component;
 
@@ -36,7 +37,7 @@ namespace oe {
 
 	public:
 		Scene(DX::DeviceResources& deviceResources);
-		~Scene();
+		~Scene() = default;
 
 		Scene_graph_manager& sceneGraphManager() const { return *_sceneGraphManager; }
 		Entity_render_manager& entityRenderManger() const { return *_entityRenderManager; }

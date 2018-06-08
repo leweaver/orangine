@@ -6,6 +6,8 @@
 #include <tiny_gltf.h>
 #include <wincodec.h>
 
+#include <functional>
+
 #include "Material.h"
 #include "Entity_repository.h"
 #include "Entity_graph_loader_gltf.h"
@@ -14,6 +16,7 @@
 #include "PBR_material.h"
 #include "Texture.h"
 #include "Primitive_mesh_data_factory.h"
+#include "Mesh_utils.h"
 
 using namespace std;
 using namespace tinygltf;
@@ -53,8 +56,6 @@ unique_ptr<Mesh_index_buffer_accessor> read_index_buffer(const Model& model,
 	LoaderData& loaderData);
 
 shared_ptr<Entity> create_entity(const Node& node, Entity_repository& entityRepository, Material_repository& Material_repository, LoaderData& loaderData);
-shared_ptr<Mesh_buffer> create_buffer_s(size_t elementSize, size_t elementCount, const vector<uint8_t>& sourceData, size_t sourceStride, size_t sourceOffset);
-shared_ptr<Mesh_buffer> create_buffer(UINT elementSize, UINT elementCount, const vector<uint8_t>& sourceData, UINT sourceStride, UINT sourceOffset);
 
 string g_pbrPropertyName_BaseColorFactor = "baseColorFactor";
 string g_pbrPropertyName_BaseColorTexture = "baseColorTexture";
@@ -62,6 +63,8 @@ string g_pbrPropertyName_MetallicFactor = "metallicFactor";
 string g_pbrPropertyName_RoughnessFactor = "roughnessFactor";
 string g_pbrPropertyName_EmissiveFactor = "emissiveFactor";
 string g_pbrPropertyName_MetallicRoughnessTexture = "metallicRoughnessTexture";
+string g_pbrPropertyName_AlphaMode = "alphaMode";
+string g_pbrPropertyName_AlphaCutoff = "alphaCutoff";
 
 string g_pbrPropertyValue_AlphaMode_Opaque = "OPAQUE";
 string g_pbrPropertyValue_AlphaMode_Mask = "MASK";
@@ -237,83 +240,87 @@ unique_ptr<oe::Material> create_material(const Primitive& prim, Material_reposit
 {
 	const tinygltf::Material& gltfMaterial = loaderData.model.materials.at(prim.material);
 	auto material = Material_repository.instantiate<PBR_material>();
-	
-	// base color factor
-	{
-		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_BaseColorFactor);
+
+	const auto withParam = [gltfMaterial](const string& name, std::function<void(const string&, const Parameter&)> found, std::function<void(const string&)> notFound) {
+		auto paramPos = gltfMaterial.values.find(name);
 		if (paramPos != gltfMaterial.values.end()) {
-			const auto& param = paramPos->second;
-			if (param.number_array.size() == 4) {
-				const auto color = DirectX::SimpleMath::Color(
-					static_cast<float>(param.number_array[0]),
-					static_cast<float>(param.number_array[1]),
-					static_cast<float>(param.number_array[2]),
-					static_cast<float>(param.number_array[3])
-				);
-				material->setBaseColor(color);
-			}
-			else
-				throw runtime_error("Failed to parse glTF: expected material "+ g_pbrPropertyName_BaseColorFactor+" to be an array of 4 numbers");
-		} 
-		else
-		{
-			material->setBaseColor(DirectX::SimpleMath::Color(DirectX::Colors::White));
+			found(name, paramPos->second);
+			return true;
 		}
-	}
-	// metallic factor
-	{
-		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_MetallicFactor);
-		if (paramPos != gltfMaterial.values.end()) {
-			const auto& param = paramPos->second;
+
+		paramPos = gltfMaterial.additionalValues.find(name);
+		if (paramPos != gltfMaterial.additionalValues.end()) {
+			found(name, paramPos->second);
+			return true;
+		}
+
+		notFound(name);
+		return false;
+	};
+
+	const auto withScalarParam = [&withParam, &material](const string& name, float defaultValue, function<void(float)> setter) {
+		withParam(name, [&setter](auto name, auto param) {
 			if (param.number_array.size() == 1) {
-				material->setMetallicFactor(static_cast<float>(param.number_array[0]));
+				setter(static_cast<float>(param.number_array[0]));
 			}
-			else
-				throw runtime_error("Failed to parse glTF: expected material "+ g_pbrPropertyName_MetallicFactor+" to be scalar");
-		}
-		else
-		{
-			material->setBaseColor(DirectX::SimpleMath::Color(DirectX::Colors::White));
-		}
-	}
-	// roughness factor
-	{
-		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_RoughnessFactor);
-		if (paramPos != gltfMaterial.values.end()) {
-			const auto& param = paramPos->second;
-			if (param.number_array.size() == 1) {
-				material->setRoughnessFactor(static_cast<float>(param.number_array[0]));
+			else {
+				throw runtime_error("Failed to parse glTF: expected material " + name + " to be scalar");
 			}
-			else
-				throw runtime_error("Failed to parse glTF: expected material "+ g_pbrPropertyName_RoughnessFactor+" to be scalar");
-		}
-		else
-		{
-			material->setBaseColor(DirectX::SimpleMath::Color(DirectX::Colors::White));
-		}
-	}
-	// emissive factor
-	{
-		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_EmissiveFactor);
-		if (paramPos != gltfMaterial.values.end()) {
-			const auto& param = paramPos->second;
+		}, [&setter, defaultValue](auto) {
+			setter(defaultValue);
+		});
+	};
+
+	const auto withColorParam = [&withParam, &material](const string& name, DirectX::SimpleMath::Color defaultValue, function<void(DirectX::SimpleMath::Color)> setter) {
+		withParam(name, [&setter](auto name, auto param) {
 			if (param.number_array.size() == 3) {
-				const auto color = DirectX::SimpleMath::Color(
+				setter(DirectX::SimpleMath::Color(
 					static_cast<float>(param.number_array[0]),
 					static_cast<float>(param.number_array[1]),
 					static_cast<float>(param.number_array[2]),
 					1.0f
-				);
-				material->setEmissiveFactor(color);
+				));
+			}
+			else if(param.number_array.size() == 4) {
+				setter(DirectX::SimpleMath::Color(
+					static_cast<float>(param.number_array[0]),
+					static_cast<float>(param.number_array[1]),
+					static_cast<float>(param.number_array[2]),
+					static_cast<float>(param.number_array[3])
+				));
 			}
 			else
-				throw runtime_error("Failed to parse glTF: expected material " + g_pbrPropertyName_RoughnessFactor + " to be scalar");
+				throw runtime_error("Failed to parse glTF: expected material " + name + " to be a 3 or 4 element array");
+		}, [&setter, defaultValue](auto) {
+			setter(defaultValue);
+		});
+	};
+
+	// Numeric/Color Parameters
+	withScalarParam(g_pbrPropertyName_MetallicFactor, 1.0f, bind(&PBR_material::setMetallicFactor, material.get(), std::placeholders::_1));
+	withScalarParam(g_pbrPropertyName_RoughnessFactor, 0.0f, bind(&PBR_material::setRoughnessFactor, material.get(), std::placeholders::_1));
+	withScalarParam(g_pbrPropertyName_AlphaCutoff, 0.5f, bind(&PBR_material::setAlphaCutoff, material.get(), std::placeholders::_1));
+	withColorParam(g_pbrPropertyName_BaseColorFactor, DirectX::SimpleMath::Color(DirectX::Colors::White), bind(&PBR_material::setBaseColor, material.get(), std::placeholders::_1));
+	withColorParam(g_pbrPropertyName_EmissiveFactor, DirectX::SimpleMath::Color(DirectX::Colors::Black), bind(&PBR_material::setEmissiveFactor, material.get(), std::placeholders::_1));
+	
+	// Alpha Mode
+	withParam(g_pbrPropertyName_AlphaMode, [&material](const string& name, const Parameter& param) {
+		if (param.string_value == g_pbrPropertyValue_AlphaMode_Mask)
+			material->setAlphaMode(Material_alpha_mode::Mask);
+		else if (param.string_value == g_pbrPropertyValue_AlphaMode_Blend)
+			material->setAlphaMode(Material_alpha_mode::Blend);
+		else if (param.string_value == g_pbrPropertyValue_AlphaMode_Opaque)
+			material->setAlphaMode(Material_alpha_mode::Opaque);
+		else {
+			throw runtime_error("Failed to parse glTF: expected material " + name + " to be one of:" +
+				g_pbrPropertyValue_AlphaMode_Mask + ", " +
+				g_pbrPropertyValue_AlphaMode_Blend + ", " + 
+				g_pbrPropertyValue_AlphaMode_Opaque
+			);
 		}
-		else
-		{
-			material->setEmissiveFactor(DirectX::SimpleMath::Color(DirectX::Colors::Black));
-		}
-	}
+	}, [&material](const string&) {
+		material->setAlphaMode(Material_alpha_mode::Opaque);
+	});
 
 	// PBR Textures
 	material->setBaseColorTexture(try_create_texture(loaderData, gltfMaterial, "baseColorTexture"));
@@ -324,29 +331,6 @@ unique_ptr<oe::Material> create_material(const Primitive& prim, Material_reposit
 	// Material Textures
 	material->setNormalTexture(try_create_texture(loaderData, gltfMaterial, "normalTexture"));
 
-	// Alpha Mode
-	{
-		const auto paramPos = gltfMaterial.values.find(g_pbrPropertyName_MetallicFactor);
-		if (paramPos != gltfMaterial.values.end()) {
-			const auto& param = paramPos->second;
-			if (param.number_array.size() == 1) {
-				if (param.string_value == g_pbrPropertyValue_AlphaMode_Mask)
-					material->setAlphaMode(Material_alpha_mode::Mask);
-				else if (param.string_value == g_pbrPropertyValue_AlphaMode_Blend)
-					material->setAlphaMode(Material_alpha_mode::Blend);
-				else
-					material->setAlphaMode(Material_alpha_mode::Opaque);
-			}
-			else
-				throw runtime_error("Failed to parse glTF: expected material " + g_pbrPropertyName_MetallicFactor + " to be scalar");
-		}
-		else
-		{
-			material->setAlphaMode(Material_alpha_mode::Opaque);
-		}
-	}
-
-	// TODO: Other material parameters; roughness etc
 	return material;
 }
 
@@ -601,7 +585,7 @@ unique_ptr<Mesh_vertex_buffer_accessor> read_vertex_buffer(const Model& model,
 	{
 		// Copy the data.
 		LOG(G3LOG_DEBUG) << "Reading vertex buffer data: " << g_gltfMappingToAttributeMap[vertexAttribute];
-		meshBuffer = create_buffer_s(sourceElementSize, accessor.count, buffer.data, sourceStride, bufferOffset);
+		meshBuffer = mesh_utils::create_buffer_s(sourceElementSize, accessor.count, buffer.data, sourceStride, bufferOffset);
 		loaderData.accessorIdxToMeshBuffers[accessorIndex] = meshBuffer;
 		/*
 		 // Output stream data to the log
@@ -659,6 +643,14 @@ unique_ptr<Mesh_index_buffer_accessor> read_index_buffer(const Model& model,
 	DXGI_FORMAT format;
 	size_t sourceElementSize;
 	switch (accessor.componentType) {
+	case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+		format = DXGI_FORMAT_R8_UINT;
+		sourceElementSize = sizeof(uint8_t);
+		break;
+	case TINYGLTF_COMPONENT_TYPE_BYTE:
+		format = DXGI_FORMAT_R8_SINT;
+		sourceElementSize = sizeof(int8_t);
+		break;
 	case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
 		format = DXGI_FORMAT_R16_UINT;
 		sourceElementSize = sizeof(uint16_t);
@@ -704,63 +696,31 @@ unique_ptr<Mesh_index_buffer_accessor> read_index_buffer(const Model& model,
 	{
 		LOG(G3LOG_DEBUG) << "Creating new MeshBuffer instance.";
 
-		// Copy the data.
-		meshBuffer = create_buffer(
-			static_cast<uint32_t>(sourceElementSize),
-			static_cast<uint32_t>(accessor.count), 
-			buffer.data, 
-			static_cast<uint32_t>(sourceStride),
-			static_cast<uint32_t>(bufferOffset));
-
+		if (format == DXGI_FORMAT_R8_UINT || format == DXGI_FORMAT_R8_SINT) {
+			// Transform the data to a known format
+			auto [ indexMeshBuffer, indexFormat ] = mesh_utils::create_index_buffer(
+				buffer.data,
+				static_cast<uint32_t>(accessor.count),
+				format,
+				static_cast<uint32_t>(sourceStride),
+				static_cast<uint32_t>(bufferOffset)
+			);
+			meshBuffer = indexMeshBuffer;
+			format = indexFormat;
+		}
+		else {
+			// Copy the data.
+			meshBuffer = mesh_utils::create_buffer(
+				static_cast<uint32_t>(sourceElementSize),
+				static_cast<uint32_t>(accessor.count),
+				buffer.data,
+				static_cast<uint32_t>(sourceStride),
+				static_cast<uint32_t>(bufferOffset));
+		}
 		loaderData.accessorIdxToMeshBuffers[accessorIndex] = meshBuffer;
 	}
 	
 	LOG(G3LOG_DEBUG) << "Creating Index Buffer Accessor.   DXGI format: " << format << "   count: " << accessor.count;
 
 	return make_unique<Mesh_index_buffer_accessor>(meshBuffer, format, static_cast<UINT>(accessor.count), static_cast<UINT>(sourceElementSize), 0);
-}
-
-shared_ptr<Mesh_buffer> create_buffer_s(size_t elementSize, size_t elementCount, const vector<uint8_t>& sourceData, size_t sourceStride, size_t sourceOffset) 
-{
-	assert(elementSize <= UINT32_MAX);
-	assert(elementCount < UINT32_MAX);
-	assert(sourceStride <= UINT32_MAX);
-	assert(sourceOffset < UINT32_MAX);
-
-	return create_buffer(
-		static_cast<UINT>(elementSize),
-		static_cast<UINT>(elementCount),
-		sourceData,
-		static_cast<UINT>(sourceStride),
-		static_cast<UINT>(sourceOffset)
-	);
-}
-
-shared_ptr<Mesh_buffer> create_buffer(UINT elementSize, UINT elementCount, const vector<uint8_t>& sourceData, UINT sourceStride, UINT sourceOffset)
-{
-	assert(sourceOffset <= sourceData.size());
-
-	UINT byteWidth = elementCount * elementSize;
-	assert(sourceOffset + byteWidth <= sourceData.size());
-
-	shared_ptr<Mesh_buffer> meshBuffer = make_shared<Mesh_buffer>(byteWidth);
-	{
-		uint8_t *dest = meshBuffer->data;
-		const uint8_t *src = sourceData.data() + sourceOffset;
-
-		if (sourceStride == elementSize) {
-			memcpy_s(dest, byteWidth, src, byteWidth);
-		}
-		else {
-			size_t destSize = byteWidth;
-			for (UINT i = 0; i < elementCount; ++i) {
-				memcpy_s(dest, byteWidth, src, elementSize);
-				dest += elementSize;
-				destSize -= elementSize;
-				src += sourceStride;
-			}
-		}
-	}
-
-	return meshBuffer;
 }

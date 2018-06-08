@@ -3,9 +3,22 @@
 // Constants
 //--------------------------------------------------------------------------------------
 
+#define LIGHT_TYPE_DIRECTIONAL 0
+#define LIGHT_TYPE_POINT 1
+#define LIGHT_TYPE_AMBIENT 2
+#define LIGHT_TYPE_EMITTED 3
+
 static const float3 g_dielectricSpecular = { 0.04, 0.04, 0.04 };
 static const float3 g_black = { 0, 0, 0 };
 static const float  g_PI = 3.14159;
+
+// For use in constant buffers
+struct Light {
+	uint   type;
+	float3 directionPosition;
+	float3 intensifiedColor;
+	uint   _pad0;
+};
 
 //--------------------------------------------------------------------------------------
 // Lighting Term Calculation Methods
@@ -19,7 +32,7 @@ float3 surfaceReflectionRatio(float3 F0, float3 VdotH)
 }
 
 // Returns a value between 0 and 1
-float geometricOcclusion(float roughness, float3 NdotL, float3 NdotV)
+float geometricOcclusion(float roughness, float NdotL, float NdotV)
 {
 	// glTF Reference Implementation:
 	// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#geometric-occlusion-g		
@@ -49,7 +62,7 @@ float geometricOcclusion(float roughness, float3 NdotL, float3 NdotV)
 }
 
 // Returns a value between 0 and 1
-float microfacedDistribution(float alphaSqr, float3 NdotH)
+float microfacedDistribution(float alphaSqr, float NdotH)
 {
 	float expr = ((NdotH * NdotH) * (alphaSqr - 1) + 1);
 	return alphaSqr / (g_PI * expr * expr);
@@ -100,4 +113,64 @@ float3 BRDF(in float metallic, in float roughness, in float3 baseColor,
 	return NdotL * (fDiffuse + fSpecular);
 	return fSpecular;
 	//return F0;
+}
+
+// -----------------------
+struct BRDFLightInputs {
+	int lightType;
+	float3 lightIntensifiedColor;
+	float3 lightPosition;
+
+	float3 baseColor;
+	float3 emissiveColor;
+	float metallic;
+	float roughness;
+	float occlusion;
+
+	float3 worldPosition;
+	float3 worldNormal;
+	float3 eyeVectorW;
+
+};
+float3 BRDFLight(BRDFLightInputs inputs) {
+	// Vector from surface point to light
+	float3 lightVector;
+
+	float3 finalColor;
+	if (inputs.lightType == LIGHT_TYPE_AMBIENT)
+	{
+		finalColor = inputs.occlusion * inputs.lightIntensifiedColor * inputs.baseColor;
+	}
+	else if (inputs.lightType == LIGHT_TYPE_EMITTED)
+	{
+		finalColor = inputs.emissiveColor;
+	}
+	else
+	{
+		if (inputs.lightType == LIGHT_TYPE_POINT)
+		{
+			float3 posDifference = inputs.lightPosition - inputs.worldPosition;
+			inputs.lightIntensifiedColor = inputs.lightIntensifiedColor / length(posDifference);
+			lightVector = normalize(posDifference);
+		}
+		else if (inputs.lightType == LIGHT_TYPE_DIRECTIONAL)
+		{
+			lightVector = -inputs.lightPosition;
+		}
+		else
+		{
+			lightVector = float3(0, 0, 1);
+		}
+
+		// BRDF lighting calculations
+		finalColor = inputs.lightIntensifiedColor * BRDF(
+			inputs.metallic,
+			inputs.roughness,
+			inputs.baseColor,
+			inputs.eyeVectorW,
+			lightVector,
+			inputs.worldNormal);
+	}
+
+	return finalColor;
 }

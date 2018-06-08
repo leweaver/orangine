@@ -7,6 +7,7 @@
 
 #include <comdef.h>
 #include "Renderer_data.h"
+#include "Render_light_data.h"
 #include "Texture.h"
 
 using namespace oe;
@@ -14,12 +15,10 @@ using namespace DirectX;
 using namespace SimpleMath;
 using namespace std::literals;
 
-
 Material::Material()
 	: _vertexShader(nullptr)
 	, _pixelShader(nullptr)
 	, _inputLayout(nullptr)
-	, _vsConstantBuffer(nullptr)
 	, _errorState(false)
 	, _requiresRecompile(true)
 	, _alphaMode(Material_alpha_mode::Opaque)
@@ -51,7 +50,6 @@ void Material::release()
 		_pixelShader = nullptr;
 	}
 
-	_blendState.Reset();
 	_vsConstantBuffer.Reset();
 	_psConstantBuffer.Reset();
 }
@@ -225,13 +223,10 @@ bool Material::createPixelShader(ID3D11Device* device)
 
 	return true;
 }
-void Material::createBlendState(ID3D11Device* device, ID3D11BlendState*& blendState)
-{
-	D3D11_BLEND_DESC blendStateDesc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
-	device->CreateBlendState(&blendStateDesc, &blendState);
-}
 
 bool Material::render(const Renderer_data& rendererData,
+	const Render_pass_output_format outputFormat,
+	const Render_light_data& renderLightData,
 	const Matrix& worldMatrix, 
 	const Matrix& viewMatrix, 
 	const Matrix& projMatrix, 
@@ -248,18 +243,19 @@ bool Material::render(const Renderer_data& rendererData,
 
 		_errorState = true;
 		{
-			createShaderResources(deviceResources);
+			createShaderResources(deviceResources, outputFormat);
 			
 			if (!createVertexShader(device))
 				return false;
 
-			createVSConstantBuffer(device, *_vsConstantBuffer.ReleaseAndGetAddressOf());
+			if (!createVSConstantBuffer(device, *_vsConstantBuffer.ReleaseAndGetAddressOf()))
+				return false;
 
 			if (!createPixelShader(device))
 				return false;
 
-			createPSConstantBuffer(device, *_psConstantBuffer.ReleaseAndGetAddressOf());
-			createBlendState(device, *_blendState.ReleaseAndGetAddressOf());
+			if (!createPSConstantBuffer(device, *_psConstantBuffer.ReleaseAndGetAddressOf()))
+				return false;
 		}
 		_errorState = false;
 	}
@@ -279,16 +275,12 @@ bool Material::render(const Renderer_data& rendererData,
 	}
 	if (_psConstantBuffer != nullptr) {
 		updatePSConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, _psConstantBuffer.Get());
-		context->PSSetConstantBuffers(0, 1, _psConstantBuffer.GetAddressOf());
 	}
+	ID3D11Buffer* psConstantBuffers[] = { _psConstantBuffer.Get(), renderLightData.buffer() };
+	context->PSSetConstantBuffers(0, 2, psConstantBuffers);
 
 	// Set texture samples
 	setContextSamplers(deviceResources);
-
-	// set blend state
-	const float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	const UINT sampleMask = 0xffffffff;
-	context->OMSetBlendState(_blendState.Get(), blendFactor, sampleMask);
 
 	return true;
 }
@@ -309,7 +301,6 @@ std::string Material::createShaderError(HRESULT hr, ID3D10Blob* errorMessage, co
 	if (errorMessage != nullptr) {
 		const auto compileErrors = static_cast<char*>(errorMessage->GetBufferPointer());
 		ss << compileErrors << std::endl;
-		errorMessage->Release();
 	}
 	else
 	{

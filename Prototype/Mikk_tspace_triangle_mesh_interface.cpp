@@ -2,6 +2,7 @@
 
 #include "Mikk_tspace_triangle_mesh_interface.h"
 #include "SimpleMath.h"
+#include "Mesh_utils.h"
 
 using namespace oe;
 using namespace std::literals;
@@ -169,27 +170,7 @@ uint32_t Mikk_tspace_triangle_mesh_interface::getVertexIndex(User_data* userData
 	const auto indexAccessor = userData->meshData->indexBufferAccessor.get();
 	const auto index = static_cast<uint32_t>(iFace * 3 + iVert);
 	assert(index <= indexAccessor->count);
-	uint8_t* indexBufferPos = indexAccessor->buffer->data + indexAccessor->offset + index * indexAccessor->stride;
+	const auto indexBufferPos = indexAccessor->buffer->data + indexAccessor->offset + index * indexAccessor->stride;
 
-	switch (indexAccessor->format)
-	{
-	case DXGI_FORMAT_R16_UINT:
-		return static_cast<uint32_t>(*reinterpret_cast<uint16_t*>(indexBufferPos));
-	case DXGI_FORMAT_R32_UINT:
-		return static_cast<uint32_t>(*reinterpret_cast<uint32_t*>(indexBufferPos));
-	case DXGI_FORMAT_R16_SINT:
-	{
-		auto* signedvalue = reinterpret_cast<int16_t*>(indexBufferPos);
-		assert(*signedvalue >= 0);
-		return static_cast<uint32_t>(*signedvalue);
-	}
-	case DXGI_FORMAT_R32_SINT:
-	{
-		auto* signedvalue = reinterpret_cast<int32_t*>(indexBufferPos);
-		assert(*signedvalue >= 0);
-		return static_cast<uint32_t>(*signedvalue);
-	}
-	default:
-		throw std::runtime_error(g_msg_index_buffer_format);
-	}
+	return mesh_utils::convertIndexValue(indexAccessor->format, indexBufferPos);
 }

@@ -4,16 +4,16 @@
 // Globals
 //--------------------------------------------------------------------------------------
 
-cbuffer constants : register(b0)
+cbuffer main_cb : register(b0)
 {
 	matrix        g_mMatInvProjection;
-	// --
-	float3        g_lightPosition;
-	int			  g_lightType;
-	// --
 	float4        g_eyePosition;
-	// --
-	float3        g_lightIntensifiedColor;
+	bool          g_emittedEnabled;
+};
+cbuffer light_cb : register(b1)
+{
+	Light g_lights[8];
+	uint  g_lightCount;
 };
 
 //--------------------------------------------------------------------------------------
@@ -24,11 +24,6 @@ struct PS_INPUT
 {
 	float2 vTexCoord0   : TEXCOORD0;
 };
-
-#define LIGHT_TYPE_DIRECTIONAL 0
-#define LIGHT_TYPE_POINT 1
-#define LIGHT_TYPE_AMBIENT 2
-#define LIGHT_TYPE_EMITTED 3
 
 // rgb: Diffuse           
 // a:   Specular intensity
@@ -65,51 +60,39 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	float4 color2 = color2Texture.Sample(color2Sampler, input.vTexCoord0);
 	float  depth  = depthTexture.Sample(depthSampler,   input.vTexCoord0).r;
 
-	// Decoded inputs
-	float3 vsPosition = VSPositionFromDepth(input.vTexCoord0);
-	float3 worldNormal = color1.xyz * 2 - 1;
-	float metallic = color0.w;
-	float roughness = color1.w;
-	float3 emissiveColor = color2.rgb;
-	float occlusion = color2.a;
+	BRDFLightInputs brdf;
+	brdf.emissiveColor = color2.rgb;
+	brdf.metallic = color0.w;
+	brdf.roughness = color1.w;
+	brdf.occlusion = color2.a;
+	brdf.worldPosition = VSPositionFromDepth(input.vTexCoord0);
+	brdf.worldNormal = color1.xyz * 2 - 1;
+	brdf.baseColor = color0.rgb;
 
 #ifdef DEBUG_LIGHTING_ONLY
-	float3 baseColor = float3(1, 1, 1);
-#else
-	float3 baseColor = color0.rgb;
+	brdf.baseColor = float3(1, 1, 1);
 #endif
 
 	// Vector from surface point to camera
-	float3 eyeVectorW = normalize(g_eyePosition.xyz - vsPosition);
+	brdf.eyeVectorW = normalize(g_eyePosition.xyz - brdf.worldPosition);
 
-	// Vector from surface point to light
-	float3 lightVector;
-	float3 lightIntensifiedColor = g_lightIntensifiedColor.rgb;
-	float3 finalColor;
-	if (g_lightType == LIGHT_TYPE_AMBIENT)
+	// Iterate over the lights
+	float3 finalColor = float3(0, 0, 0);
+	for (uint lightIdx = 0; lightIdx < g_lightCount; ++lightIdx)
 	{
-		finalColor = occlusion * lightIntensifiedColor * baseColor;
-	}
-	else if (g_lightType == LIGHT_TYPE_EMITTED)
-	{
-		finalColor = emissiveColor;
-	}
-	else 
-	{
-		if (g_lightType == LIGHT_TYPE_POINT)
-		{
-			float3 posDifference = g_lightPosition.xyz - vsPosition;
-			lightIntensifiedColor = lightIntensifiedColor / length(posDifference);
-			lightVector = normalize(posDifference);
-		}
-		else if (g_lightType == LIGHT_TYPE_DIRECTIONAL)
-		{
-			lightVector = -g_lightPosition.xyz;
-		}
+		Light light = g_lights[lightIdx];
 
-		// BRDF lighting calculations
-		finalColor = lightIntensifiedColor * BRDF(metallic, roughness, baseColor,
-			eyeVectorW, lightVector, worldNormal);
+		brdf.lightType = light.type;
+		brdf.lightIntensifiedColor = light.intensifiedColor.rgb;
+		brdf.lightPosition = light.directionPosition;
+
+		finalColor += BRDFLight(brdf);
+	}
+
+	if (g_emittedEnabled)
+	{
+		brdf.lightType = LIGHT_TYPE_EMITTED;
+		finalColor += BRDFLight(brdf);
 	}
 
 #ifdef DEBUG_NO_LIGHTING

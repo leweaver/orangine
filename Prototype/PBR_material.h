@@ -1,7 +1,9 @@
 ﻿#pragma once
+
 #include "Material.h"
 #include "Material_repository.h"
 #include "Texture.h"
+
 #include <memory>
 #include <array>
 #include "SimpleMath.h"
@@ -103,6 +105,17 @@ namespace oe {
 			_emissive = emissive;
 		}
 
+		float alphaCutoff() const
+		{
+			return _alphaCutoff;
+		}
+
+		void setAlphaCutoff(float alphaCutoff)
+		{
+			_alphaCutoff = alphaCutoff;
+			markRequiresRecomplie();
+		}
+
 		/*
 		 * The metallic-roughness texture. 
 		 * The metalness values are sampled from the B channel. The roughness values are sampled from the G channel. 
@@ -178,6 +191,7 @@ namespace oe {
 			DirectX::XMFLOAT4 baseColor;
 			DirectX::XMFLOAT4 metallicRoughness; // metallic, roughness
 			DirectX::XMFLOAT4 emissive; // emissive color (RGB)
+			DirectX::XMFLOAT4 eyePosition;
 		} _constantsPs{};
 
 		uint32_t inputSlot(Vertex_attribute attribute) override;
@@ -198,18 +212,22 @@ namespace oe {
 			const DirectX::SimpleMath::Matrix& projMatrix,
 			ID3D11DeviceContext* context,
 			ID3D11Buffer* buffer) override;
-
-		void createShaderResources(const DX::DeviceResources& deviceResources) override;
+		
+		void createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_output_format outputFormat) override;
 		void releaseBindings();
 
 		void setContextSamplers(const DX::DeviceResources& deviceResources) override;
 		void unsetContextSamplers(const DX::DeviceResources& deviceResources) override;
 
 	private:
+
+		bool _enableDeferred;
+
 		DirectX::SimpleMath::Color _baseColor;
 		float _metallic;
 		float _roughness;
 		DirectX::SimpleMath::Color _emissive;
+		float _alphaCutoff;
 
 		std::array<std::shared_ptr<Texture>, NumTextureTypes> _textures;
 

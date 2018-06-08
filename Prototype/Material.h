@@ -1,27 +1,23 @@
 #pragma once
-#include "DeviceResources.h"
-#include "Mesh_data_component.h"
 
+#include "Mesh_data_component.h"
+#include "Renderer_enum.h"
+
+#include "DeviceResources.h"
 #include "SimpleMath.h"
 #include <string>
 #include <set>
 
 namespace oe {
+	class Render_light_data;
 	struct Renderer_data;
 	class Texture;
-
-	enum class Material_alpha_mode
-	{
-		Opaque,
-		Mask,
-		Blend
-	};
-
+	
 	class Material
 	{
 	public:
 		Material();
-		
+
 		Material(const Material& other) = delete;
 		Material(Material&& other) = delete;
 		void operator=(const Material& other) = delete;
@@ -37,28 +33,33 @@ namespace oe {
 
 		void release();
 
-		// Binds material textures on to the GPU
-		bool render(const Renderer_data& rendererData, 
-			const DirectX::SimpleMath::Matrix& worldMatrix, 
-			const DirectX::SimpleMath::Matrix& viewMatrix, 
-			const DirectX::SimpleMath::Matrix& projMatrix, 
+		// Binds material textures and buffers
+		bool render(const Renderer_data& rendererData,
+			const Render_pass_output_format renderPassInfo,
+			const Render_light_data& renderLightData, 
+			const DirectX::SimpleMath::Matrix& worldMatrix,
+			const DirectX::SimpleMath::Matrix& viewMatrix,
+			const DirectX::SimpleMath::Matrix& projMatrix,
 			const DX::DeviceResources& deviceResources);
 
 		// Unbinds textures
 		void unbind(const DX::DeviceResources& deviceResources);
 
 		Material_alpha_mode getAlphaMode() const { return _alphaMode; }
-		void setAlphaMode(Material_alpha_mode mode) { _alphaMode = mode; }
+		void setAlphaMode(Material_alpha_mode mode) { 
+			_alphaMode = mode;
+			markRequiresRecomplie();
+		}
 
 	protected:
-		struct Shader_compile_settings
-		{
+
+		struct Shader_compile_settings {
 			std::wstring filename;
 			std::string entryPoint;
 			std::map<std::string, std::string> defines;
 			std::set<std::string> includes;
 		};
-
+		
 		static std::string createShaderError(HRESULT hr, ID3D10Blob* errorMessage, const Shader_compile_settings& compileSettings);
 		
 		virtual DXGI_FORMAT format(Vertex_attribute attribute);
@@ -80,7 +81,6 @@ namespace oe {
 			const DirectX::SimpleMath::Matrix& projMatrix, 
 			ID3D11DeviceContext* context, 
 			ID3D11Buffer* buffer) {};
-		virtual void createBlendState(ID3D11Device* device, ID3D11BlendState*& blendState);
 
 		virtual bool createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) { return true; }
 		virtual void updatePSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix, 
@@ -91,7 +91,7 @@ namespace oe {
 
 		// This method is the entry point for generating the shader. It will determine the constant layout, 
 		// create the shader resource view & sampler arrays.
-		virtual void createShaderResources(const DX::DeviceResources& deviceResources) {};
+		virtual void createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_output_format outputFormat) = 0;
 
 		/* 
 		 * Per Frame
@@ -107,7 +107,6 @@ namespace oe {
 		ID3D11InputLayout*  _inputLayout;
 		Microsoft::WRL::ComPtr<ID3D11Buffer> _vsConstantBuffer;
 		Microsoft::WRL::ComPtr<ID3D11Buffer> _psConstantBuffer;
-		Microsoft::WRL::ComPtr<ID3D11BlendState> _blendState;
 		bool _errorState;
 		bool _requiresRecompile;
 

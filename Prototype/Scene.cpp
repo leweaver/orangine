@@ -3,11 +3,6 @@
 
 #include "Entity.h"
 #include "Component.h"
-#include "Entity_render_manager.h"
-#include "Entity_repository.h"
-#include "Scene_graph_manager.h"
-#include "Entity_scripting_manager.h"
-#include "Asset_manager.h"
 #include "Entity_graph_loader_gltf.h"
 #include "Camera_component.h"
 
@@ -35,10 +30,6 @@ Scene::Scene(DX::DeviceResources& deviceResources)
 	_entityRenderManager->initialize();
 	_entityScriptinigManager->initialize();
 	_assetManager->initialize();
-}
-
-Scene::~Scene()
-{
 }
 
 void Scene::loadEntities(const std::string& filename)

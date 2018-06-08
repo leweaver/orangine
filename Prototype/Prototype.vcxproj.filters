@@ -29,6 +29,9 @@
     <Filter Include="Assets\shaders\inc">
       <UniqueIdentifier>{4af0fe66-d1d3-4436-af4d-54fbfcc4f374}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Assets\shaders\test">
+      <UniqueIdentifier>{3c0807bd-77f9-4013-9a3f-31190b38a1ea}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -130,6 +133,21 @@
     <ClInclude Include="Render_target_texture.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Render_pass_info.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh_utils.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Render_light_data.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Alpha_sorter.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer_enum.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -216,6 +234,12 @@
     <ClCompile Include="Texture.cpp">
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Mesh_utils.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Alpha_sorter.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -263,6 +287,15 @@
     </FxCompile>
     <FxCompile Include="data\shaders\inc\utils.hlsl">
       <Filter>Assets\shaders\inc</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\inc\pipeline_deferred.hlsl">
+      <Filter>Assets\shaders\inc</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\inc\pipeline_standard.hlsl">
+      <Filter>Assets\shaders\inc</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\test\test_pbr_standard.hlsl">
+      <Filter>Assets\shaders\test</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,15 +1,18 @@
 ﻿#include "pch.h"
 #include "PBR_material.h"
+#include "Render_pass_info.h"
 
 using namespace oe;
 using namespace DirectX;
 using namespace std::literals;
 
 PBR_material::PBR_material()
-	: _baseColor(SimpleMath::Vector4::One)
+	: _enableDeferred(false)
+	, _baseColor(SimpleMath::Vector4::One)
 	, _metallic(1.0)
 	, _roughness(1.0)
 	, _emissive(0, 0, 0)
+	, _alphaCutoff(0.5)
 	, _boundTextureCount(0)
 	, _samplerStates{}
 	, _shaderResourceViews{}
@@ -50,14 +53,14 @@ UINT PBR_material::inputSlot(Vertex_attribute attribute)
 
 Material::Shader_compile_settings PBR_material::vertexShaderSettings() const
 {
-	Shader_compile_settings settings = Material::vertexShaderSettings();
+	auto settings = Material::vertexShaderSettings();
 	settings.filename = L"data/shaders/pbr_metallic_VS.hlsl"s;
 	return settings;
 }
 
 Material::Shader_compile_settings PBR_material::pixelShaderSettings() const
 {
-	Shader_compile_settings settings = Material::pixelShaderSettings();
+	auto settings = Material::pixelShaderSettings();
 	settings.filename = L"data/shaders/pbr_metallic_PS.hlsl"s;
 	
 	if (_textures[BaseColor])
@@ -70,6 +73,14 @@ Material::Shader_compile_settings PBR_material::pixelShaderSettings() const
 		settings.defines["MAP_EMISSIVE"] = "1";
 	if (_textures[Occlusion])
 		settings.defines["MAP_OCCLUSION"] = "1";
+
+	if (_enableDeferred)
+		settings.defines["PS_PIPELINE_DEFERRED"] = "1";
+	else 
+		settings.defines["PS_PIPELINE_STANDARD"] = "1";
+
+	if (getAlphaMode() == Material_alpha_mode::Mask)
+		settings.defines["ALPHA_MASK_VALUE"] = std::to_string(alphaCutoff());
 
 	return settings;
 }
@@ -91,10 +102,10 @@ bool PBR_material::createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& b
 	initData.SysMemPitch = 0;
 	initData.SysMemSlicePitch = 0;
 
-	device->CreateBuffer(&bufferDesc, &initData, &buffer);
+	DX::ThrowIfFailed(device->CreateBuffer(&bufferDesc, &initData, &buffer));
 
 	std::string name("PBR_Material Constant Buffer");
-	buffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
+	DX::ThrowIfFailed(buffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str()));
 
 	return true;
 }
@@ -132,10 +143,10 @@ bool PBR_material::createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& b
 	initData.SysMemPitch = 0;
 	initData.SysMemSlicePitch = 0;
 
-	device->CreateBuffer(&bufferDesc, &initData, &buffer);
+	DX::ThrowIfFailed(device->CreateBuffer(&bufferDesc, &initData, &buffer));
 
 	std::string name("PBR_Material Constant Buffer");
-	buffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
+	DX::ThrowIfFailed(buffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str()));
 
 	return true;
 }
@@ -151,20 +162,24 @@ void PBR_material::updatePSConstantBuffer(const SimpleMath::Matrix& worldMatrix,
 	_constantsPs.baseColor = _baseColor;
 	_constantsPs.metallicRoughness = SimpleMath::Vector4(_metallic, _roughness, 0.0, 0.0);
 	_constantsPs.emissive = SimpleMath::Vector4(_emissive.x, _emissive.y, _emissive.z, 0.0);
+	_constantsPs.eyePosition = SimpleMath::Vector4(worldMatrix._41, worldMatrix._42, worldMatrix._43, 0.0);
 
 	context->UpdateSubresource(buffer, 0, nullptr, &_constantsPs, 0, 0);
 }
 
-void PBR_material::createShaderResources(const DX::DeviceResources& deviceResources)
+void PBR_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_output_format outputFormat)
 {
-	auto device = deviceResources.GetD3DDevice();
+	_enableDeferred = outputFormat == Render_pass_output_format::Shaded_DeferredLight;
+	assert(_enableDeferred || outputFormat == Render_pass_output_format::Shaded_StandardLight);
 
-	assert(sizeof(_shaderResourceViews) == (sizeof(ID3D11SamplerState*) * NumTextureTypes));
+	static_assert(sizeof(_shaderResourceViews) == (sizeof(ID3D11SamplerState*) * NumTextureTypes));
+
+	auto device = deviceResources.GetD3DDevice();
 
 	// Release any previous samplerState and shaderResourceView objects
 	releaseBindings();
 	
-	for (int t = 0; t < NumTextureTypes; ++t)
+	for (auto t = 0; t < NumTextureTypes; ++t)
 	{
 		// Only initialize if a texture has been bound to this slot.
 		const auto& texture = _textures[t];
@@ -209,7 +224,7 @@ void PBR_material::createShaderResources(const DX::DeviceResources& deviceResour
 		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 		// Create the texture sampler state.
-		HRESULT hr = device->CreateSamplerState(&samplerDesc, &_samplerStates[t]);
+		const auto hr = device->CreateSamplerState(&samplerDesc, &_samplerStates[t]);
 		if (SUCCEEDED(hr))
 		{
 			_samplerStates[t]->AddRef();

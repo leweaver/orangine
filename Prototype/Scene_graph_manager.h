@@ -56,7 +56,7 @@ public:
 
 	std::shared_ptr<Entity> getEntityPtrById(Entity::Id_type id) const;
 	std::shared_ptr<Entity_filter> getEntityFilter(const Component_type_set& componentTypes, Entity_filter_mode mode = Entity_filter_mode::All);
-
+	
 	void handleEntityAdd(const Entity& entity);
 	void handleEntityRemove(const Entity& entity);
 	void handleEntityComponentAdd(const Entity& entity, const Component& componentType);

@@ -20,7 +20,7 @@ namespace oe {
 
 	std::string hr_to_string(HRESULT hr);
 	std::wstring hr_to_wstring(HRESULT hr);
-
+	
 	// Helper class for COM exceptions
 	class com_exception : public std::exception {
 		std::string _what;

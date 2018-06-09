@@ -61,7 +61,10 @@ Entity_render_manager::Entity_render_manager(Scene& scene, std::shared_ptr<Mater
 
 void Entity_render_manager::initialize()
 {
+	using namespace std::placeholders;
+
 	_renderableEntities = _scene.sceneGraphManager().getEntityFilter({ Renderable_component::type() });
+
 	_lightEntities = _scene.sceneGraphManager().getEntityFilter({ 
 		Directional_light_component::type(),
 		Point_light_component::type(),
@@ -284,11 +287,9 @@ void Entity_render_manager::render()
 		return;
 
 	Buffer_array_set bufferArraySet;
-
-	// TODO: This could be optimized; instead of a bulk replace, listen for add/remove events.
-	// TODO: Currently we are sorting all entities, not just ones with alpha!
-	_alphaSorter->updateEntityList(_renderableEntities->begin(), _renderableEntities->end());
-	_alphaSorter->beginSort(cameraEntity->worldPosition());
+	
+	// Find the list of entities that have alpha, and sort them.
+	_alphaSorter->beginSortAsync(_renderableEntities->begin(), _renderableEntities->end(), cameraEntity->worldPosition());
 		
 	// Deferred Lighting passes
 	setBlendEnabled(false); 
@@ -344,7 +345,7 @@ void Entity_render_manager::render()
 
 			_deviceResources.PIXBeginEvent(L"renderPass_EntityStandard_draw");
 			for (auto entry : entries)
-				render(entry.entity.get(), bufferArraySet, lightDataProvider, std::get<0>(_renderPass_entityStandard));
+				render(entry.entity, bufferArraySet, lightDataProvider, std::get<0>(_renderPass_entityStandard));
 			_deviceResources.PIXEndEvent();
 		}
 	});
@@ -366,7 +367,6 @@ void Entity_render_manager::render(Entity* entity,
 		const auto material = renderable->material().get();
 		assert(material != nullptr);
 
-		// TODO: Replace this with filters
 		if constexpr (Render_pass_info<TOutputFormat>::supportsBlendedAlpha()) {
 			if (material->getAlphaMode() != Material_alpha_mode::Blend)
 				return;

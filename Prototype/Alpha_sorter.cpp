@@ -8,7 +8,7 @@
 using namespace oe;
 using namespace DirectX;
 
-void Alpha_sorter::beginSort(SimpleMath::Vector3 eyePosition)
+void Alpha_sorter::beginSortTask(SimpleMath::Vector3 eyePosition)
 {
 	_handle = std::async(std::launch::async, [this, &eyePosition]() {
 		const XMVECTOR eyePosition_v = eyePosition;
@@ -20,6 +20,12 @@ void Alpha_sorter::beginSort(SimpleMath::Vector3 eyePosition)
 			return lhs.distanceSqr < rhs.distanceSqr;
 		}); 
 	});
+}
+
+void Alpha_sorter::reset()
+{
+	assert(!_handle.valid());
+	_entities.clear();
 }
 
 void Alpha_sorter::wait(const std::function<void(const std::vector<Sort_entry>&)>& callback)

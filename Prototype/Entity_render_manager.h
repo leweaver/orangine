@@ -101,13 +101,16 @@ namespace oe {
 
 		// renders a full screen quad that sets our output buffers to decent default values.
 		// Takes ownership of the passed in material
-		Renderable initScreenSpaceQuad(std::shared_ptr<Material> material) const;
-		
+		Renderable initScreenSpaceQuad(std::shared_ptr<Material> material) const;		
+
+
 		DX::DeviceResources& _deviceResources;
 		std::unique_ptr<DirectX::CommonStates> _commonStates;
 
+		// Entities
 		std::shared_ptr<Entity_filter> _renderableEntities;
 		std::shared_ptr<Entity_filter> _lightEntities;
+		
 		std::shared_ptr<Material_repository> _materialRepository;
 
 		std::unique_ptr<Primitive_mesh_data_factory> _primitiveMeshDataFactory;

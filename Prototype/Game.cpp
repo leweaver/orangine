@@ -97,7 +97,7 @@ void Game::CreateCamera(bool animate)
 	auto camera = entityManager.instantiate("Camera", *cameraDollyAnchor);
 	camera->setPosition(Vector3(0.0f, 0.0f, 15));
 	
-	cameraDollyAnchor->update();
+	cameraDollyAnchor->computeWorldTransform();
 
 	auto &component = camera->addComponent<Camera_component>();
 	component.setFov(XMConvertToRadians(60.0f));

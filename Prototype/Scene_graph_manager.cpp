@@ -40,16 +40,40 @@ void Scene_graph_manager::tick()
 
 	for (auto const& entity : _rootEntities)
 	{
-		if (entity == nullptr) {
+		const auto entityPtr = entity.get();
+		if (entityPtr == nullptr) {
 			assert(false);
 			continue;
 		}
 
-		if (!entity->isActive())
+		if (!entityPtr->isActive())
 			continue;
 
-		entity->update();
+		updateEntity(entityPtr);
 	}
+}
+
+void Scene_graph_manager::updateEntity(Entity* entity)
+{
+	entity->computeWorldTransform();
+
+	if (entity->hasChildren()) {
+		const auto& children = entity->children();
+		for (auto const& child : children) {
+			if (child->isActive())
+				updateEntity(child.get());
+		}
+
+		if (entity->calculateBoundSphereFromChildren()) {
+
+			auto accumulatedBounds = children[0]->boundSphere();
+			for (auto pos = children.begin() + 1; pos < children.end(); ++pos) {
+				DirectX::BoundingSphere::CreateMerged(accumulatedBounds, accumulatedBounds, (*pos)->boundSphere());
+			}
+
+			entity->setBoundSphere(accumulatedBounds);
+		}
+	}	
 }
 
 std::shared_ptr<Entity> Scene_graph_manager::instantiate(const std::string &name)

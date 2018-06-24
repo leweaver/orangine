@@ -73,6 +73,12 @@ private:
 	std::shared_ptr<Entity> removeFromRoot(std::shared_ptr<Entity> entity);
 	void addToRoot(std::shared_ptr<Entity> entity);
 
+	/**
+	* Applies transforms recursively down (from root -> leaves),
+	* then updates components from bottom up (from leaves -> root)
+	*/
+	void updateEntity(Entity* entity);
+
 	class Entity_filter_impl : public Entity_filter {
 	public:
 		std::set<Component::Component_type> componentTypes;

@@ -40,8 +40,7 @@ namespace oe
 
 			DX::ThrowIfFailed(device->CreateBuffer(&bufferDesc, &initData, &_constantBuffer));
 
-			std::string name("Render_light_data constant buffer");
-			DX::ThrowIfFailed(_constantBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str()));
+			DirectX::SetDebugObjectName(_constantBuffer.Get(), L"Render_light_data constant buffer");
 		}
 
 		bool addPointLight(const DirectX::SimpleMath::Vector3& lightPosition, const DirectX::SimpleMath::Color& color, float intensity)

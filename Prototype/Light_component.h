@@ -40,6 +40,14 @@ namespace oe {
 	class Directional_light_component : public Light_component
 	{
 		DECLARE_COMPONENT_TYPE;
+
+	public:
+
+		bool shadowsEnabled() const { return _shadowsEnabled; }
+		void setShadowsEnabled(bool shadowsEnabled) { _shadowsEnabled = shadowsEnabled; }
+	private:
+
+		bool _shadowsEnabled = false;
 	};
 
 	class Point_light_component : public Light_component

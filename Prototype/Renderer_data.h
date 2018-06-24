@@ -3,6 +3,8 @@
 #include <memory>
 #include <d3d11.h>
 
+#include <DirectXCollision.h>
+
 namespace oe 
 {
 	struct D3D_buffer

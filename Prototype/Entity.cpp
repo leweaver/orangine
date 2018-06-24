@@ -8,18 +8,19 @@ using namespace DirectX;
 using namespace SimpleMath;
 
 Entity::Entity(Scene& scene, std::string&& name, Id_type id)
-	: _worldTransform(Matrix::Identity)
-	, _worldRotation(Quaternion::Identity)
-	, _worldScale(Vector3::One)
-	, _localRotation(Quaternion::Identity)
+	: _localRotation(Quaternion::Identity)
 	, _localPosition(Vector3::Zero)
 	, _localScale(Vector3::One)
+	, _calculateBoundSphereFromChildren(true)
 	, _id(id)
 	, _name(std::move(name))
 	, _state(Entity_state::Uninitialized)
 	, _active(true)
 	, _parent(nullptr)
 	, _scene(scene)
+	, _worldTransform(Matrix::Identity)
+	, _worldRotation(Quaternion::Identity)
+	, _worldScale(Vector3::One)
 {
 }
 
@@ -47,19 +48,6 @@ void Entity::computeWorldTransform()
 		const auto localR = XMMatrixRotationQuaternion(_worldRotation);
 		const auto localS = XMMatrixScalingFromVector(_worldScale);
 		_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT);
-	}
-}
-
-void Entity::update()
-{
-	computeWorldTransform();
-	if (!_children.empty())
-	{
-		for (auto const& child : _children)
-		{
-			if (child->isActive())
-				child->update();
-		}
 	}
 }
 

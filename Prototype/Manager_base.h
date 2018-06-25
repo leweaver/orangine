@@ -3,16 +3,20 @@
 namespace oe {
 	class Scene;
 
+	class Manager_tickable {
+		// Classes that implement this interface must have the following methods:
+		//     void tick();
+	};
+
 	class Manager_base {
 	public:
 		explicit Manager_base(Scene& scene)
 			: _scene(scene) {}
 		virtual ~Manager_base() = default;
 		
-		virtual void initialize() = 0;
-		virtual void tick() = 0;
-		virtual void shutdown() = 0;
-
+		// Classes that implement this interface must have the following methods:
+		//     void initialize();
+		//     void shutdown();
 	protected:
 		Scene& _scene;
 	};

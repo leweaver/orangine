@@ -7,7 +7,7 @@
 
 namespace oe {
 	
-	class Asset_manager : public Manager_base
+	class Asset_manager : public Manager_base, public Manager_tickable
 	{
 		struct Asset_info
 		{
@@ -24,10 +24,13 @@ namespace oe {
 		virtual ~Asset_manager() = default;
 
 		bool getFilePath(FAsset_id assetId, std::wstring& path) const;
+		
+		// Manager_base implementation
+		void initialize();
+		void shutdown();
 
-		void initialize() override;
-		void tick() override;
-		void shutdown() override {}
+		// Manager_tickable implementation
+		void tick();
 
 	};
 }

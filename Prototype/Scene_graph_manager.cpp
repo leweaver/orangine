@@ -22,6 +22,10 @@ void Scene_graph_manager::initialize()
 	assert(_rootEntities.empty());
 }
 
+void Scene_graph_manager::shutdown()
+{	
+}
+
 void Scene_graph_manager::tick()
 {
 	if (!_initialized)

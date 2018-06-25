@@ -32,6 +32,9 @@
     <Filter Include="Assets\shaders\test">
       <UniqueIdentifier>{3c0807bd-77f9-4013-9a3f-31190b38a1ea}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Systems\Input">
+      <UniqueIdentifier>{b25137f5-325c-4981-accb-0e3fab44bf24}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -148,6 +151,9 @@
     <ClInclude Include="Renderer_enum.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Input_manager.h">
+      <Filter>Systems\Input</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -239,6 +245,9 @@
     </ClCompile>
     <ClCompile Include="Alpha_sorter.cpp">
       <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Input_manager.cpp">
+      <Filter>Systems\Input</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

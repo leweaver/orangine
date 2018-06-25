@@ -20,6 +20,10 @@ void Asset_manager::tick()
 {
 }
 
+void Asset_manager::shutdown()
+{
+}
+
 bool Asset_manager::getFilePath(FAsset_id assetId, std::wstring& path) const
 {
 	const auto pos = _assets.find(assetId);

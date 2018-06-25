@@ -118,7 +118,7 @@ void Entity::setParent(Entity& newParent)
 		removeParent();
 	}
 
-	auto &entityManager = _scene.sceneGraphManager();
+	auto &entityManager = _scene.manager<Scene_graph_manager>();
 	const auto thisPtr = entityManager.getEntityPtrById(getId());
 	entityManager.removeFromRoot(thisPtr);
 
@@ -142,7 +142,7 @@ void Entity::removeParent()
 		}
 	}
 
-	auto &entityManager = _scene.sceneGraphManager();
+	auto &entityManager = _scene.manager<Scene_graph_manager>();
 	const auto thisPtr = entityManager.getEntityPtrById(getId());
 	entityManager.addToRoot(thisPtr);
 	_parent = nullptr;
@@ -170,7 +170,7 @@ void Entity::onComponentAdded(Component& component)
 
 Entity& EntityRef::get() const
 {
-	const auto ptr = scene.sceneGraphManager().getEntityPtrById(id);
+	const auto ptr = scene.manager<Scene_graph_manager>().getEntityPtrById(id);
 	if (!ptr)
 		throw std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(id) + ")");
 	return *ptr.get();

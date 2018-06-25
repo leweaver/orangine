@@ -5,31 +5,37 @@
 #include "Component.h"
 #include "Entity_graph_loader_gltf.h"
 #include "Camera_component.h"
+#include "Input_manager.h"
+
+#include <type_traits>
 
 using namespace oe;
 
 Scene::Scene(DX::DeviceResources& deviceResources)
 {
+	using namespace std;
+
 	// Mesh loaders
-	AddMeshLoader<Entity_graph_loader_gltf>();
+	addMeshLoader<Entity_graph_loader_gltf>();
 
 	// Repositories
-	_entityRepository = std::make_shared<Entity_repository>(*this);
-	_materialRepository = std::make_shared<Material_repository>();
+	get<shared_ptr<Entity_repository>>(_managers) = make_shared<Entity_repository>(*this);
+	get<shared_ptr<Material_repository>>(_managers) = make_shared<Material_repository>();
 
 	// Factories
-	_primitiveMeshDataFactory = std::make_shared<Primitive_mesh_data_factory>();
+	get<shared_ptr<Primitive_mesh_data_factory>>(_managers) = make_shared<Primitive_mesh_data_factory>();
 
 	// Services / Managers
-	_sceneGraphManager = std::make_unique<Scene_graph_manager>(*this, _entityRepository);
-	_entityRenderManager = std::make_unique<Entity_render_manager>(*this, _materialRepository, deviceResources);
-	_entityScriptinigManager = std::make_unique<Entity_scripting_manager>(*this);
-	_assetManager = std::make_unique<Asset_manager>(*this);
+	get<unique_ptr<Scene_graph_manager>>(_managers) = make_unique<Scene_graph_manager>(*this, get<shared_ptr<Entity_repository>>(_managers));
+	get<unique_ptr<Entity_render_manager>>(_managers) = make_unique<Entity_render_manager>(*this, get<shared_ptr<Material_repository>>(_managers), deviceResources);
+	get<unique_ptr<Entity_scripting_manager>>(_managers) = make_unique<Entity_scripting_manager>(*this);
+	get<unique_ptr<Asset_manager>>(_managers) = make_unique<Asset_manager>(*this);
+	get<unique_ptr<Input_manager>>(_managers) = make_unique<Input_manager>(*this, deviceResources);
 
-	_sceneGraphManager->initialize();
-	_entityRenderManager->initialize();
-	_entityScriptinigManager->initialize();
-	_assetManager->initialize();
+	static_assert(std::is_base_of_v<Manager_base, remove_pointer_t<decltype(std::get<unique_ptr<Entity_render_manager>>(_managers).get())>>, "Is a Manager_base!");
+	static_assert(std::is_base_of_v<Manager_base, remove_pointer_t<decltype(std::get<3>(_managers).get())>>, "Is a Manager_base!");
+
+	initializeManagers();
 }
 
 void Scene::loadEntities(const std::string& filename)
@@ -37,10 +43,9 @@ void Scene::loadEntities(const std::string& filename)
 	return loadEntities(filename, nullptr);
 }
 
-
 void Scene::loadEntities(const std::string& filename, Entity& parentEntity)
 {
-	auto entity = _entityRepository->getEntityPtrById(parentEntity.getId());
+	auto entity = std::get<std::shared_ptr<Entity_repository>>(_managers)->getEntityPtrById(parentEntity.getId());
 	return loadEntities(filename, entity.get());
 }
 
@@ -55,12 +60,12 @@ void Scene::loadEntities(const std::string& filename, Entity *parentEntity)
 	const auto extPos = _entityGraphLoaders.find(extension);
 	if (extPos == _entityGraphLoaders.end())
 		throw std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension);
-
+	
 	std::vector<std::shared_ptr<Entity>> newRootEntities = extPos->second->loadFile(
 		filename, 
-		*_entityRepository, 
-		*_materialRepository,
-		*_primitiveMeshDataFactory);
+		*std::get<std::shared_ptr<Entity_repository>>(_managers).get(),
+		*std::get<std::shared_ptr<Material_repository>>(_managers).get(),
+		*std::get<std::shared_ptr<Primitive_mesh_data_factory>>(_managers).get());
 	
 	if (parentEntity)
 	{
@@ -68,7 +73,7 @@ void Scene::loadEntities(const std::string& filename, Entity *parentEntity)
 			entity->setParent(*parentEntity);
 	}
 
-	_sceneGraphManager->handleEntitiesLoaded(newRootEntities);
+	sceneGraphManager().handleEntitiesLoaded(newRootEntities);
 }
 
 void Scene::tick(DX::StepTimer const& timer)
@@ -76,44 +81,32 @@ void Scene::tick(DX::StepTimer const& timer)
 	_deltaTime = timer.GetElapsedSeconds();
 	_elapsedTime += _deltaTime;
 
-	_sceneGraphManager->tick();
-	_entityRenderManager->tick();
-	_entityScriptinigManager->tick();
+	tickManagers();
 }
 
 void Scene::shutdown()
 {
-	_entityRenderManager->shutdown();
-	_entityScriptinigManager->shutdown();
-	_sceneGraphManager->shutdown();
-	
-	_assetManager.reset();
-	_entityScriptinigManager.reset();
-	_entityRenderManager.reset();
-	_sceneGraphManager.reset();
-	
-	_entityRepository.reset();
-	_materialRepository.reset();
+	shutdownManagers();
 }
 
 void Scene::onComponentAdded(Entity& entity, Component& component) const
 {
-	_sceneGraphManager->handleEntityComponentAdd(entity, component);
+	sceneGraphManager().handleEntityComponentAdd(entity, component);
 }
 
 void Scene::onComponentRemoved(Entity& entity, Component& component) const
 {
-	_sceneGraphManager->handleEntityComponentAdd(entity, component);
+	sceneGraphManager().handleEntityComponentAdd(entity, component);
 }
 
 void Scene::onEntityAdded(Entity& entity) const
 {
-	_sceneGraphManager->handleEntityAdd(entity);
+	sceneGraphManager().handleEntityAdd(entity);
 }
 
 void Scene::onEntityRemoved(Entity& entity) const
 {
-	_sceneGraphManager->handleEntityRemove(entity);
+	sceneGraphManager().handleEntityRemove(entity);
 }
 
 void Scene::setMainCamera(const std::shared_ptr<Entity>& cameraEntity)

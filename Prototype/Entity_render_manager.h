@@ -23,7 +23,7 @@ namespace oe {
 	class Render_target_texture;
 	class Alpha_sorter;
 
-	class Entity_render_manager : public Manager_base
+	class Entity_render_manager : public Manager_base, public Manager_tickable
 	{
 		struct Buffer_array_set {
 			std::vector<ID3D11Buffer*> bufferArray;
@@ -52,9 +52,12 @@ namespace oe {
 		Entity_render_manager(Scene& scene, std::shared_ptr<Material_repository> materialRepository, DX::DeviceResources& deviceResources);
 		~Entity_render_manager() = default;
 		
-		void initialize() override;
-		void tick() override;
-		void shutdown() override;
+		// Manager_base implementation
+		void initialize();
+		void shutdown();
+
+		// Manager_tickable implementation
+		void tick();
 
 		void createDeviceDependentResources();
 		void createWindowSizeDependentResources();

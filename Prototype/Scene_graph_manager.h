@@ -17,34 +17,23 @@ enum class Entity_filter_mode
 };
 
 
-class Scene_graph_manager : public Manager_base
-{
+class Scene_graph_manager : public Manager_base, public Manager_tickable {
 	friend Entity;
 	friend EntityRef;
 	class Entity_filter_impl;
-
-	std::vector<std::shared_ptr<Entity_filter_impl>> m_entityFilters;
-
 	using Component_type_set = std::set<Component::Component_type>;
-
-	// All entities
-	std::shared_ptr<Entity_repository> _entityRepository;
-
-	// A cache of entities that have no parents
-	// TODO: Turn this into a filter?
-	std::vector<std::shared_ptr<Entity>> _rootEntities;
-
-	bool _initialized = false;
-
 public:
 	
 	Scene_graph_manager(Scene& scene, std::shared_ptr<Entity_repository> entityRepository);
 	Scene_graph_manager(const Scene_graph_manager& other) = delete;
 	~Scene_graph_manager();
+	
+	// Manager_base implementation
+	void initialize();
+	void shutdown();
 
-	void initialize() override;
-	void tick() override;
-	void shutdown() override {}
+	// Manager_tickable implementation
+	void tick();
 
 	std::shared_ptr<Entity> instantiate(const std::string& name);
 	std::shared_ptr<Entity> instantiate(const std::string& name, Entity& parentEntity);
@@ -91,6 +80,17 @@ private:
 		void handleEntityComponentsUpdated(const std::shared_ptr<Entity>& entity);
 
 	};
+
+	std::vector<std::shared_ptr<Entity_filter_impl>> m_entityFilters;
+	
+	// All entities
+	std::shared_ptr<Entity_repository> _entityRepository;
+
+	// A cache of entities that have no parents
+	// TODO: Turn this into a filter?
+	std::vector<std::shared_ptr<Entity>> _rootEntities;
+
+	bool _initialized = false;
 };
 
 }

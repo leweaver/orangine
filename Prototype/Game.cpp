@@ -29,7 +29,7 @@ Game::Game()
 Game::~Game()
 {
 	if (m_scene) {
-		m_scene->entityRenderManger().destroyDeviceDependentResources();
+		m_scene->manager<Entity_render_manager>().destroyDeviceDependentResources();
 		m_scene->shutdown();
 	}
 
@@ -46,7 +46,7 @@ Game::~Game()
 
 void Game::CreateSceneCubeSatellite()
 {
-	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
+	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Root 1");
 	//root1->AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
 
@@ -61,7 +61,7 @@ void Game::CreateSceneCubeSatellite()
 
 std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 {
-	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
+	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
 	auto root = entityManager.instantiate("Root");
 
 	if (animate)
@@ -75,7 +75,7 @@ std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 
 void Game::CreateSceneMetalRoughSpheres(bool animate)
 {
-	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
+	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Root");
 	//root1->SetPosition({ 0, 0, -10 });
 	root1->setScale({ 1, 1, 1 });
@@ -88,7 +88,7 @@ void Game::CreateSceneMetalRoughSpheres(bool animate)
 
 void Game::CreateCamera(bool animate)
 {
-	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
+	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
 
 	auto cameraDollyAnchor = entityManager.instantiate("CameraDollyAnchor");
 	if (animate)
@@ -111,7 +111,7 @@ void Game::CreateCamera(bool animate)
 
 void Game::CreateLights()
 {
-	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
+	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
 	int lightCount = 0;
 	auto createDirLight = [&entityManager, &lightCount](const Vector3 &normal, const Color &color, float intensity)
 	{
@@ -175,7 +175,7 @@ void Game::CreateLights()
 
 void Game::CreateSceneLeverArm()
 {
-	Scene_graph_manager& entityManager = m_scene->sceneGraphManager();
+	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Root 1");
 	root1->setPosition({ 5, 0, 5 });
 
@@ -191,9 +191,9 @@ void Game::CreateSceneLeverArm()
 // Initialize the Direct3D resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
-	m_scene = std::make_unique<Scene>(*(m_deviceResources.get()));
-
     m_deviceResources->SetWindow(window, width, height);
+
+	m_scene = std::make_unique<Scene>(*(m_deviceResources.get()));
 
 	try
 	{
@@ -211,7 +211,7 @@ void Game::Initialize(HWND window, int width, int height)
 		
 		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
-		LoadGLTF("FlightHelmet", true)->setScale({ 10, 10, 10 });
+		LoadGLTF("FlightHelmet", true)->setScale({ 7, 7, 7 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
 		
 		//CreateSceneMetalRoughSpheres(true);
@@ -272,7 +272,7 @@ void Game::Render()
     }
 	
     // TODO: Add your rendering code here.
-	m_scene->entityRenderManger().render();
+	m_scene->manager<Entity_render_manager>().render();
 	
     // Show the new frame.
     m_deviceResources->Present();
@@ -314,16 +314,20 @@ void Game::OnWindowSizeChanged(int width, int height)
     if (!m_deviceResources->WindowSizeChanged(width, height))
         return;
 
-	m_scene->entityRenderManger().destroyWindowSizeDependentResources();
+	m_scene->manager<Entity_render_manager>().destroyWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
 }
 
 // Properties
 void Game::GetDefaultSize(int& width, int& height) const
 {
-    // TODO: Change to desired default window size (note minimum size is 320x200).
-    width = 1024 * 2;
-    height = 800 * 2;
+	// Get dimensions of the primary monitor
+	RECT rc;
+	GetWindowRect(GetDesktopWindow(), &rc);
+
+	// Set window to 75% of the desktop size
+    width = std::max(320l, rc.right >> 1);
+    height = std::max(200l, rc.bottom >> 1);
 }
 #pragma endregion
 
@@ -332,7 +336,7 @@ void Game::GetDefaultSize(int& width, int& height) const
 void Game::CreateDeviceDependentResources()
 {
 	try {
-		m_scene->entityRenderManger().createDeviceDependentResources();
+		m_scene->manager<Entity_render_manager>().createDeviceDependentResources();
 	}
 	catch (std::exception &e)
 	{
@@ -346,7 +350,7 @@ void Game::CreateWindowSizeDependentResources()
 {
 	try
 	{
-		m_scene->entityRenderManger().createWindowSizeDependentResources();
+		m_scene->manager<Entity_render_manager>().createWindowSizeDependentResources();
 	}
 	catch (std::exception &e)
 	{
@@ -357,8 +361,8 @@ void Game::CreateWindowSizeDependentResources()
 
 void Game::OnDeviceLost()
 {
-	m_scene->entityRenderManger().destroyWindowSizeDependentResources();
-	m_scene->entityRenderManger().destroyDeviceDependentResources();
+	m_scene->manager<Entity_render_manager>().destroyWindowSizeDependentResources();
+	m_scene->manager<Entity_render_manager>().destroyDeviceDependentResources();
 }
 
 void Game::OnDeviceRestored()

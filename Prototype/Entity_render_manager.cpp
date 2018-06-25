@@ -63,9 +63,9 @@ void Entity_render_manager::initialize()
 {
 	using namespace std::placeholders;
 
-	_renderableEntities = _scene.sceneGraphManager().getEntityFilter({ Renderable_component::type() });
+	_renderableEntities = _scene.manager<Scene_graph_manager>().getEntityFilter({ Renderable_component::type() });
 
-	_lightEntities = _scene.sceneGraphManager().getEntityFilter({ 
+	_lightEntities = _scene.manager<Scene_graph_manager>().getEntityFilter({
 		Directional_light_component::type(),
 		Point_light_component::type(),
 		Ambient_light_component::type()

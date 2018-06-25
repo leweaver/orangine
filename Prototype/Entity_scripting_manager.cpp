@@ -19,7 +19,7 @@ Entity_scripting_manager::Entity_scripting_manager(Scene &scene)
 
 void Entity_scripting_manager::initialize()
 {
-	_scriptableEntityFilter = _scene.sceneGraphManager().getEntityFilter({ Test_component::type() });
+	_scriptableEntityFilter = _scene.manager<Scene_graph_manager>().getEntityFilter({ Test_component::type() });
 }
 
 void Entity_scripting_manager::tick() {
@@ -37,4 +37,8 @@ void Entity_scripting_manager::tick() {
 
 		entity.setRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));
 	}
+}
+
+void Entity_scripting_manager::shutdown()
+{
 }

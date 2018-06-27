@@ -192,7 +192,6 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
   <ItemGroup>
     <ClInclude Include="Alpha_sorter.h" />
     <ClInclude Include="Asset_manager.h" />
-    <ClInclude Include="Bound.h" />
     <ClInclude Include="Camera_component.h" />
     <ClInclude Include="Clear_gbuffer_material.h" />
     <ClInclude Include="Component.h" />
@@ -242,7 +241,6 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
   <ItemGroup>
     <ClCompile Include="Alpha_sorter.cpp" />
     <ClCompile Include="Asset_manager.cpp" />
-    <ClCompile Include="Bound.cpp" />
     <ClCompile Include="Camera_component.cpp" />
     <ClCompile Include="Clear_gbuffer_material.cpp" />
     <ClCompile Include="Component.cpp" />

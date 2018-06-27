@@ -33,13 +33,13 @@ Game::~Game()
 		m_scene->shutdown();
 	}
 
-	// Uncomment to output debug information on shutdown
 	/*
-	Microsoft::WRL::ComPtr<ID3D11Debug> d3D11Debug;	
-	HRESULT hr = m_deviceResources->GetD3DDevice()->QueryInterface(IID_PPV_ARGS(&d3D11Debug));
-	if (d3D11Debug != nullptr)
-	{
-		d3D11Debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+	ComPtr<ID3D11Device> device = m_deviceResources->GetD3DDevice();
+	m_deviceResources.reset();
+
+	ComPtr<ID3D11Debug> d3dDebug;
+	if (SUCCEEDED(device.As(&d3dDebug))) {
+		HRESULT hr = d3dDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 	}
 	*/
 }
@@ -191,6 +191,7 @@ void Game::CreateSceneLeverArm()
 // Initialize the Direct3D resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
+	_window = window;
     m_deviceResources->SetWindow(window, width, height);
 
 	m_scene = std::make_unique<Scene>(*(m_deviceResources.get()));
@@ -224,10 +225,7 @@ void Game::Initialize(HWND window, int width, int height)
 		LOG(FATAL) << "Failed to load scene: " << e.what();
 	}
 
-	m_deviceResources->CreateDeviceResources();
 	CreateDeviceDependentResources();
-
-	m_deviceResources->CreateWindowSizeDependentResources();
 	CreateWindowSizeDependentResources();
 }
 
@@ -314,7 +312,8 @@ void Game::OnWindowSizeChanged(int width, int height)
     if (!m_deviceResources->WindowSizeChanged(width, height))
         return;
 
-	m_scene->manager<Entity_render_manager>().destroyWindowSizeDependentResources();
+	m_scene->destroyWindowSizeDependentResources();
+
     CreateWindowSizeDependentResources();
 }
 
@@ -336,7 +335,8 @@ void Game::GetDefaultSize(int& width, int& height) const
 void Game::CreateDeviceDependentResources()
 {
 	try {
-		m_scene->manager<Entity_render_manager>().createDeviceDependentResources();
+		m_deviceResources->CreateDeviceResources();
+		m_scene->createDeviceDependentResources(*(m_deviceResources.get()));
 	}
 	catch (std::exception &e)
 	{
@@ -350,7 +350,12 @@ void Game::CreateWindowSizeDependentResources()
 {
 	try
 	{
-		m_scene->manager<Entity_render_manager>().createWindowSizeDependentResources();
+		m_deviceResources->CreateWindowSizeDependentResources();
+		const auto outputSize = m_deviceResources->GetOutputSize();
+		m_scene->createWindowSizeDependentResources(*m_deviceResources.get(),
+			_window, 
+			std::max<UINT>(outputSize.right - outputSize.left, 1),
+			std::max<UINT>(outputSize.bottom - outputSize.top, 1));
 	}
 	catch (std::exception &e)
 	{
@@ -361,8 +366,8 @@ void Game::CreateWindowSizeDependentResources()
 
 void Game::OnDeviceLost()
 {
-	m_scene->manager<Entity_render_manager>().destroyWindowSizeDependentResources();
-	m_scene->manager<Entity_render_manager>().destroyDeviceDependentResources();
+	m_scene->destroyWindowSizeDependentResources();
+	m_scene->destroyDeviceDependentResources();
 }
 
 void Game::OnDeviceRestored()

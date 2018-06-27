@@ -142,9 +142,13 @@ void Entity_render_manager::shutdown()
 	
 	_depthTexture.reset();
 	_pass1RenderTargets.clear();
+
+	auto context = _deviceResources.GetD3DDeviceContext();
+	ID3D11RenderTargetView* renderTargetViews[] = { nullptr, nullptr, nullptr };
+	context->OMSetRenderTargets(3, renderTargetViews, nullptr);
 }
 
-void Entity_render_manager::createDeviceDependentResources()
+void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
 {
 	_rasterizerStateDepthDisabled.Reset();
 	_rasterizerStateDepthEnabled.Reset();
@@ -200,16 +204,12 @@ void Entity_render_manager::createDeviceDependentResources()
 	_renderPass_entityStandard_renderLightData = std::make_unique<decltype(_renderPass_entityStandard_renderLightData)::element_type>(_deviceResources.GetD3DDevice());
 }
 
-void Entity_render_manager::createWindowSizeDependentResources()
+void Entity_render_manager::createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND /*window*/, int width, int height)
 {
 	assert(_pass1RenderTargets.empty());
 	const auto d3dDevice = _deviceResources.GetD3DDevice();
 
-	// Determine the render target size in pixels.
-	const auto& outputSize = _deviceResources.GetOutputSize();
-	const auto width = std::max<UINT>(outputSize.right - outputSize.left, 1);
-	const auto height = std::max<UINT>(outputSize.bottom - outputSize.top, 1);
-	
+	// Determine the render target size in pixels.	
 	for (auto i = 0; i < 3; ++i)
 	{
 		auto target = std::make_unique<Render_target_texture>(width, height);
@@ -237,13 +237,15 @@ void Entity_render_manager::destroyDeviceDependentResources()
 
 	_rasterizerStateDepthDisabled.Reset();
 	_rasterizerStateDepthEnabled.Reset();
+	_depthStencilStateDepthDisabled.Reset();
+	_depthStencilStateDepthEnabled.Reset();
 	
 	_pass1ScreenSpaceQuad.rendererData.reset();
 	_pass2ScreenSpaceQuad.rendererData.reset();
 	
 	_deferredLightMaterial.reset();	
 	_deferredLightBlendState.Reset();
-
+	
 	_renderPass_entityStandard_renderLightData.reset();
 	_renderPass_entityDeferred_renderLightData.reset();
 	_renderPass_entityDeferred_renderLightData_blank.reset();
@@ -290,7 +292,7 @@ void Entity_render_manager::render()
 	
 	// Find the list of entities that have alpha, and sort them.
 	_alphaSorter->beginSortAsync(_renderableEntities->begin(), _renderableEntities->end(), cameraEntity->worldPosition());
-		
+
 	// Deferred Lighting passes
 	setBlendEnabled(false); 
 	_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step1_setup");
@@ -306,7 +308,7 @@ void Entity_render_manager::render()
 		
 		_deviceResources.PIXEndEvent();
 	}
-	
+
 	_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step2_setup");
 	setupRenderPass_entityDeferred_step2();
 	_deviceResources.PIXEndEvent();
@@ -349,15 +351,17 @@ void Entity_render_manager::render()
 			_deviceResources.PIXEndEvent();
 		}
 	});
+
+	return;
 }
 
 std::vector<Vertex_attribute> vertexAttributes;
 
-template<Render_pass_output_format TOutputFormat>
-void Entity_render_manager::render(Entity* entity, 
+template<Render_pass_output_format TOutput_format>
+void Entity_render_manager::render(Entity* entity,
 	Buffer_array_set& bufferArraySet,
 	const Light_data_provider& lightDataProvider,
-	const Render_pass_info<TOutputFormat>& renderPassInfo) 
+	const Render_pass_info<TOutput_format>& renderPassInfo)
 {
 	auto renderable = entity->getFirstComponentOfType<Renderable_component>();
 	if (!renderable->visible())
@@ -367,7 +371,7 @@ void Entity_render_manager::render(Entity* entity,
 		const auto material = renderable->material().get();
 		assert(material != nullptr);
 
-		if constexpr (Render_pass_info<TOutputFormat>::supportsBlendedAlpha()) {
+		if constexpr (Render_pass_info<TOutput_format>::supportsBlendedAlpha()) {
 			if (material->getAlphaMode() != Material_alpha_mode::Blend)
 				return;
 		}
@@ -439,9 +443,6 @@ void Entity_render_manager::renderLights()
 				_cameraData.projectionMatrix,
 				_deviceResources);
 
-			if (renderSuccess) {
-				_deviceResources.GetD3DDeviceContext()->DrawIndexed(rendererData->indexCount, 0, 0);
-			}
 			_renderPass_entityDeferred_renderLightData->clear();
 		};
 
@@ -556,20 +557,9 @@ void Entity_render_manager::drawRendererData(
 	loadRendererDataToDeviceContext(rendererData, bufferArraySet);
 
 	// Render the trianges
-	if (rendererData.indexBufferAccessor != nullptr)
-	{
-		if (material.render(rendererData, renderPassInfo.outputFormat, renderLightData, worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, _deviceResources))
-		{
-			deviceContext->DrawIndexed(rendererData.indexCount, 0, 0);
-		}
-	}
-	else
-	{
-		if (material.render(rendererData, renderPassInfo.outputFormat, renderLightData, worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, _deviceResources))
-		{
-			deviceContext->Draw(rendererData.vertexCount, rendererData.vertexCount);
-		}
-	}
+	material.render(rendererData, renderPassInfo.outputFormat, renderLightData, 
+		worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, 
+		_deviceResources);
 }
 
 
@@ -688,10 +678,14 @@ void Entity_render_manager::setupRenderPass_entityDeferred_step2()
 	// Clear the views.	
 	context->ClearRenderTargetView(_deviceResources.GetRenderTargetView(), Colors::Black);
 
-	const auto finalColorRenderTarget = _deviceResources.GetRenderTargetView();
+	ID3D11RenderTargetView* renderTargets[] = {
+		_deviceResources.GetRenderTargetView(),
+		nullptr,
+		nullptr
+	};
 	
 	setDepthEnabled(false);
-	context->OMSetRenderTargets(1, &finalColorRenderTarget, nullptr);
+	context->OMSetRenderTargets(3, renderTargets, nullptr);
 
 	constexpr float blendFactor[4]{ 0.0f, 0.0f, 0.0f, 0.0f };
 	context->OMSetBlendState(_deferredLightBlendState.Get(), blendFactor, 0xFFFFFFFF);

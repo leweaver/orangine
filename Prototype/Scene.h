@@ -43,6 +43,11 @@ namespace oe {
 		void onEntityAdded(Entity& entity) const;
 		void onEntityRemoved(Entity& entity) const;
 
+		void createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND window, int width, int height);
+		void destroyWindowSizeDependentResources();
+		void createDeviceDependentResources(DX::DeviceResources& deviceResources);
+		void destroyDeviceDependentResources();
+
 		/*
 		 * Add things to the scene, from a file
 		 */
@@ -64,7 +69,7 @@ namespace oe {
 		}
 
 		std::shared_ptr<Entity> mainCamera() const { return _mainCamera; };
-		void setMainCamera(const std::shared_ptr<Entity>& camera);
+		void setMainCamera(const std::shared_ptr<Entity>& cameraEntity);
 
 	private:
 
@@ -100,46 +105,6 @@ namespace oe {
 		Entity_scripting_manager& entityScriptingManager() const { return *std::get<std::unique_ptr<Entity_scripting_manager>>(_managers); }
 		Asset_manager& assetManager() const { return *std::get<std::unique_ptr<Asset_manager>>(_managers); }
 		Input_manager& inputManager() const { return *std::get<std::unique_ptr<Input_manager>>(_managers); }
-
-		template<int TIdx = 0>
-		constexpr void initializeManagers()
-		{
-			// Initialize only types that derive from Manager_base
-			if constexpr (std::is_base_of_v<Manager_base, std::remove_pointer_t<decltype(std::get<TIdx>(_managers).get())>>)
-				std::get<TIdx>(_managers)->initialize();				
-
-			// iterate the next manager
-			if constexpr (TIdx + 1 < std::tuple_size_v<decltype(_managers)>)
-				initializeManagers<TIdx + 1>();
-		}
-
-		template<int TIdx = 0>
-		constexpr void tickManagers()
-		{
-			using namespace std; 
-			
-			// Tick only types that derive from Manager_base
-			if constexpr (is_base_of_v<Manager_tickable, remove_pointer_t<decltype(get<TIdx>(_managers).get())>>)
-				get<TIdx>(_managers)->tick();
-
-			// Recursively iterate to the next tuple index
-			if constexpr (TIdx + 1 < tuple_size_v<decltype(_managers)>)
-				tickManagers<TIdx + 1>();
-		}
-
-		template<int TIdx = std::tuple_size_v<decltype(_managers)> - 1>
-		constexpr void shutdownManagers()
-		{
-			// Initialize only types that derive from Manager_base
-			if constexpr (std::is_base_of_v<Manager_base, std::remove_pointer_t<decltype(std::get<TIdx>(_managers).get())>>)
-				std::get<TIdx>(_managers)->shutdown();
-
-			std::get<TIdx>(_managers).reset();
-
-			// iterate the next manager (in reverse order than initialized)
-			if constexpr (TIdx > 0)
-				shutdownManagers<TIdx - 1>();
-		}
 	};
 
 	template <typename TMgr>

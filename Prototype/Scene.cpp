@@ -11,6 +11,42 @@
 
 using namespace oe;
 
+template<typename TBase, typename TTuple, int TIdx = 0>
+constexpr void forEachOfType(TTuple& managers, const std::function<void(TBase*)>& fn)
+{
+	// Initialize only types that derive from Manager_base
+	if constexpr (std::is_base_of_v<TBase, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
+		fn(std::get<TIdx>(managers).get());
+
+	// iterate the next manager
+	if constexpr (TIdx + 1 < std::tuple_size_v<TTuple>)
+		forEachOfType<TBase, TTuple, TIdx + 1>(managers, fn);
+}
+
+template<typename TBase, typename TTuple, int TIdx = std::tuple_size_v<TTuple> -1>
+constexpr void forEachOfTypeReverse(TTuple& managers, const std::function<void(TBase*)>& fn)
+{
+	// Initialize only types that derive from Manager_base
+	if constexpr (std::is_base_of_v<TBase, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
+		fn(std::get<TIdx>(managers).get());
+
+	// iterate the next manager (in reverse order than initialized)
+	if constexpr (TIdx > 0)
+		forEachOfTypeReverse<TBase, TTuple, TIdx - 1>(managers, fn);
+}
+
+template<typename TTuple, int TIdx = 0>
+constexpr void tickManagers(TTuple& managers)
+{
+	// Tick only types that derive from Manager_base
+	if constexpr (std::is_base_of_v<Manager_tickable, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
+		std::get<TIdx>(managers)->tick();
+
+	// Recursively iterate to the next tuple index
+	if constexpr (TIdx + 1 < std::tuple_size_v<TTuple>)
+		tickManagers<TTuple, TIdx + 1>(managers);
+}
+
 Scene::Scene(DX::DeviceResources& deviceResources)
 {
 	using namespace std;
@@ -35,7 +71,7 @@ Scene::Scene(DX::DeviceResources& deviceResources)
 	static_assert(std::is_base_of_v<Manager_base, remove_pointer_t<decltype(std::get<unique_ptr<Entity_render_manager>>(_managers).get())>>, "Is a Manager_base!");
 	static_assert(std::is_base_of_v<Manager_base, remove_pointer_t<decltype(std::get<3>(_managers).get())>>, "Is a Manager_base!");
 
-	initializeManagers();
+	forEachOfType<Manager_base>(_managers, [](auto* manager) { manager->initialize(); });
 }
 
 void Scene::loadEntities(const std::string& filename)
@@ -80,13 +116,15 @@ void Scene::tick(DX::StepTimer const& timer)
 {	
 	_deltaTime = timer.GetElapsedSeconds();
 	_elapsedTime += _deltaTime;
-
-	tickManagers();
+	
+	tickManagers(_managers);
 }
 
 void Scene::shutdown()
 {
-	shutdownManagers();
+	forEachOfTypeReverse<Manager_base>(_managers, [](Manager_base* manager) { manager->shutdown(); });
+
+	_managers = decltype(_managers)();
 }
 
 void Scene::onComponentAdded(Entity& entity, Component& component) const
@@ -107,6 +145,34 @@ void Scene::onEntityAdded(Entity& entity) const
 void Scene::onEntityRemoved(Entity& entity) const
 {
 	sceneGraphManager().handleEntityRemove(entity);
+}
+
+void Scene::createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND window, int width, int height)
+{
+	forEachOfType<Manager_windowDependent>(_managers, [&](Manager_windowDependent* manager) {
+		manager->createWindowSizeDependentResources(deviceResources, window, width, height);
+	});
+}
+
+void Scene::destroyWindowSizeDependentResources()
+{
+	forEachOfType<Manager_windowDependent>(_managers, [](Manager_windowDependent* manager) {
+		manager->destroyWindowSizeDependentResources();
+	});
+}
+
+void Scene::createDeviceDependentResources(DX::DeviceResources& deviceResources)
+{
+	forEachOfType<Manager_deviceDependent>(_managers, [&deviceResources](Manager_deviceDependent* manager) {
+		manager->createDeviceDependentResources(deviceResources);
+	});
+}
+
+void Scene::destroyDeviceDependentResources()
+{
+	forEachOfType<Manager_deviceDependent>(_managers, [](Manager_deviceDependent* manager) {
+		manager->destroyDeviceDependentResources();
+	});
 }
 
 void Scene::setMainCamera(const std::shared_ptr<Entity>& cameraEntity)

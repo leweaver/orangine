@@ -48,7 +48,6 @@
     <ClInclude Include="Entity.h">
       <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
-    <ClInclude Include="Bound.h" />
     <ClInclude Include="Component.h">
       <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
@@ -165,7 +164,6 @@
     <ClCompile Include="Entity.cpp">
       <Filter>Systems\SceneGraph</Filter>
     </ClCompile>
-    <ClCompile Include="Bound.cpp" />
     <ClCompile Include="Component.cpp">
       <Filter>Systems\SceneGraph</Filter>
     </ClCompile>

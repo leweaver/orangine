@@ -281,6 +281,19 @@ bool Material::render(const Renderer_data& rendererData,
 
 	// Set texture samples
 	setContextSamplers(deviceResources);
+	
+	// Render the triangles
+	if (rendererData.indexBufferAccessor != nullptr)
+	{
+		context->DrawIndexed(rendererData.indexCount, 0, 0);
+	}
+	else
+	{
+		context->Draw(rendererData.vertexCount, rendererData.vertexCount);
+	}
+
+	// Clean up our mess
+	unsetContextSamplers(deviceResources);
 
 	return true;
 }

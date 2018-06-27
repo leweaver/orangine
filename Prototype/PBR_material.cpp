@@ -6,6 +6,9 @@ using namespace oe;
 using namespace DirectX;
 using namespace std::literals;
 
+const std::array<ID3D11ShaderResourceView*, 5> g_nullShaderResourceViews = { nullptr, nullptr, nullptr, nullptr, nullptr };
+const std::array<ID3D11SamplerState*, 5> g_nullSamplerStates = { nullptr, nullptr, nullptr, nullptr, nullptr };
+
 PBR_material::PBR_material()
 	: _enableDeferred(false)
 	, _baseColor(SimpleMath::Vector4::One)
@@ -24,7 +27,7 @@ PBR_material::PBR_material()
 
 PBR_material::~PBR_material()
 {
-	releaseBindings();
+	releaseShaderResources();
 }
 
 void PBR_material::vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const {
@@ -177,7 +180,7 @@ void PBR_material::createShaderResources(const DX::DeviceResources& deviceResour
 	auto device = deviceResources.GetD3DDevice();
 
 	// Release any previous samplerState and shaderResourceView objects
-	releaseBindings();
+	releaseShaderResources();
 	
 	for (auto t = 0; t < NumTextureTypes; ++t)
 	{
@@ -224,11 +227,10 @@ void PBR_material::createShaderResources(const DX::DeviceResources& deviceResour
 		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 		// Create the texture sampler state.
+		// This call makes an AddRef call.
 		const auto hr = device->CreateSamplerState(&samplerDesc, &_samplerStates[t]);
 		if (SUCCEEDED(hr))
 		{
-			_samplerStates[t]->AddRef();
-
 			_shaderResourceViews[t] = texture->getShaderResourceView();
 			assert(_shaderResourceViews[t]);
 
@@ -247,12 +249,12 @@ void PBR_material::createShaderResources(const DX::DeviceResources& deviceResour
 	LOG(G3LOG_DEBUG) << "Created PBR_Material shader resources. Texture Count: " << std::to_string(_boundTextureCount);
 }
 
-void PBR_material::releaseBindings()
+void PBR_material::releaseShaderResources()
 {
 	for (unsigned int i = 0; i < NumTextureTypes; ++i)
 	{
 		if (_shaderResourceViews[i]) {
-			_shaderResourceViews[i]->Release();
+			_shaderResourceViews[i]->Release() == 0;
 			_shaderResourceViews[i] = nullptr;
 		}
 
@@ -277,13 +279,10 @@ void PBR_material::setContextSamplers(const DX::DeviceResources& deviceResources
 void PBR_material::unsetContextSamplers(const DX::DeviceResources& deviceResources)
 {
 	auto context = deviceResources.GetD3DDeviceContext();
+	
+	static_assert(g_nullShaderResourceViews.size() == NumTextureTypes);
+	static_assert(g_nullSamplerStates.size() == NumTextureTypes);
 
-	ID3D11ShaderResourceView* shaderResourceViews[] = { nullptr };
-	ID3D11SamplerState* samplerStates[] = { nullptr };
-
-	// TODO: Is it faster to statically allocate an array of size NumTextures?
-	for (unsigned int i = 0; i < _boundTextureCount; ++i) {
-		context->PSSetShaderResources(i, 1, shaderResourceViews);
-		context->PSSetSamplers(i, 1, samplerStates);
-	}
+	context->PSSetShaderResources(0, NumTextureTypes, g_nullShaderResourceViews.data());
+	context->PSSetSamplers(0, NumTextureTypes, g_nullSamplerStates.data());
 }

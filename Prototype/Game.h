@@ -76,4 +76,5 @@ private:
 	std::unique_ptr<oe::Scene>              m_scene;
 	
 	bool									m_fatalError;
+	HWND									_window;
 };

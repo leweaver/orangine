@@ -23,7 +23,11 @@ namespace oe {
 	class Render_target_texture;
 	class Alpha_sorter;
 
-	class Entity_render_manager : public Manager_base, public Manager_tickable
+	class Entity_render_manager : 
+		public Manager_base, 
+		public Manager_tickable,
+		public Manager_deviceDependent,
+		public Manager_windowDependent
 	{
 		struct Buffer_array_set {
 			std::vector<ID3D11Buffer*> bufferArray;
@@ -53,24 +57,25 @@ namespace oe {
 		~Entity_render_manager() = default;
 		
 		// Manager_base implementation
-		void initialize();
-		void shutdown();
+		void initialize() override;
+		void shutdown() override;
 
 		// Manager_tickable implementation
 		void tick();
 
-		void createDeviceDependentResources();
-		void createWindowSizeDependentResources();
-		void destroyDeviceDependentResources();
-		void destroyWindowSizeDependentResources();
-
+		// Manager_windowDependent implementation
+		void createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND window, int width, int height) override;
+		void destroyWindowSizeDependentResources() override;
+		
+		void createDeviceDependentResources(DX::DeviceResources& deviceResources) override;
+		void destroyDeviceDependentResources() override;
 		void render();
 
 	protected:
 		using Light_data_provider = std::function<const Render_light_data*(const Entity&)>;
 
 		template<Render_pass_output_format TOutput_format>
-		void render(Entity* enitty, 
+		void render(Entity* entity, 
 			Buffer_array_set& bufferArraySet,
 			const Light_data_provider& lightDataProvider,
 			const Render_pass_info<TOutput_format>& renderPassInfo);

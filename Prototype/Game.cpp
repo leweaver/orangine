@@ -208,11 +208,11 @@ void Game::Initialize(HWND window, int width, int height)
 
 		//CreateSceneCubeSatellite();
 		//CreateSceneLeverArm();
-		//LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
+		LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
 		
 		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
-		LoadGLTF("FlightHelmet", true)->setScale({ 7, 7, 7 });
+		//LoadGLTF("FlightHelmet", true)->setScale({ 7, 7, 7 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
 		
 		//CreateSceneMetalRoughSpheres(true);

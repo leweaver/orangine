@@ -47,6 +47,8 @@ namespace oe {
 		void destroyWindowSizeDependentResources();
 		void createDeviceDependentResources(DX::DeviceResources& deviceResources);
 		void destroyDeviceDependentResources();
+		void processMessage(UINT message, WPARAM wParam, LPARAM lParam) const;
+
 
 		/*
 		 * Add things to the scene, from a file

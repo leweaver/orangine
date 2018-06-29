@@ -36,7 +36,7 @@ constexpr void forEachOfTypeReverse(TTuple& managers, const std::function<void(T
 }
 
 template<typename TTuple, int TIdx = 0>
-constexpr void tickManagers(TTuple& managers)
+constexpr void forEach_tick(TTuple& managers)
 {
 	// Tick only types that derive from Manager_base
 	if constexpr (std::is_base_of_v<Manager_tickable, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
@@ -44,7 +44,19 @@ constexpr void tickManagers(TTuple& managers)
 
 	// Recursively iterate to the next tuple index
 	if constexpr (TIdx + 1 < std::tuple_size_v<TTuple>)
-		tickManagers<TTuple, TIdx + 1>(managers);
+		forEach_tick<TTuple, TIdx + 1>(managers);
+}
+
+template<typename TTuple, int TIdx = 0>
+constexpr void forEach_processMessage(TTuple& managers, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	// Tick only types that derive from Manager_base
+	if constexpr (std::is_base_of_v<Manager_windowsMessageProcessor, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
+		std::get<TIdx>(managers)->processMessage(message, wParam, lParam);
+
+	// Recursively iterate to the next tuple index
+	if constexpr (TIdx + 1 < std::tuple_size_v<TTuple>)
+		forEach_processMessage<TTuple, TIdx + 1>(managers, message, wParam, lParam);
 }
 
 Scene::Scene(DX::DeviceResources& deviceResources)
@@ -117,7 +129,12 @@ void Scene::tick(DX::StepTimer const& timer)
 	_deltaTime = timer.GetElapsedSeconds();
 	_elapsedTime += _deltaTime;
 	
-	tickManagers(_managers);
+	forEach_tick(_managers);
+}
+
+void Scene::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const
+{
+	forEach_processMessage(_managers, message, wParam, lParam);
 }
 
 void Scene::shutdown()

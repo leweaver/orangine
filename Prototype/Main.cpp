@@ -154,6 +154,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
+	// Give the game managers a change to process messages (for mouse input etc)
+	if (game != nullptr) {
+		game->processMessage(message, wParam, lParam);
+	}
+
     switch (message)
     {
     case WM_PAINT:

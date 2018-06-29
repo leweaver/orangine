@@ -6,8 +6,7 @@ namespace oe {
 	class Scene;
 
 	class Manager_tickable {
-		// Classes that implement this interface must have the following methods:
-		//     void tick();
+		virtual void tick() = 0;
 	};
 
 	class Manager_windowDependent {
@@ -20,6 +19,11 @@ namespace oe {
 	public:
 		virtual void createDeviceDependentResources(DX::DeviceResources& deviceResources) = 0;
 		virtual void destroyDeviceDependentResources() = 0;
+	};
+
+	class Manager_windowsMessageProcessor {
+	public:
+		virtual void processMessage(UINT message, WPARAM wParam, LPARAM lParam) = 0;
 	};
 
 	class Manager_base {

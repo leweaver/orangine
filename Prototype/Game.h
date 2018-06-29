@@ -46,6 +46,7 @@ public:
     virtual void OnDeviceRestored() override;
 
     // Messages
+	inline void processMessage(UINT message, WPARAM wParam, LPARAM lParam) const;
     void OnActivated();
     void OnDeactivated();
     void OnSuspending();
@@ -78,3 +79,10 @@ private:
 	bool									m_fatalError;
 	HWND									_window;
 };
+
+void Game::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const
+{
+	if (m_scene != nullptr) {
+		m_scene->processMessage(message, wParam, lParam);
+	}
+}

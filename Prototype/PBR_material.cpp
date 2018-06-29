@@ -254,7 +254,7 @@ void PBR_material::releaseShaderResources()
 	for (unsigned int i = 0; i < NumTextureTypes; ++i)
 	{
 		if (_shaderResourceViews[i]) {
-			_shaderResourceViews[i]->Release() == 0;
+			_shaderResourceViews[i]->Release();
 			_shaderResourceViews[i] = nullptr;
 		}
 

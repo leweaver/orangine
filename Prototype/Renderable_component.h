@@ -23,11 +23,11 @@ namespace oe
 		void setVisible(bool visible) { _visible = visible; }
 
 		// Runtime, non-serializable
-		const std::unique_ptr<Material>& material() const { return _material; }
-		void setMaterial(std::unique_ptr<Material>& material) { _material = std::move(material); }
+		const std::unique_ptr<Material>	& material() const { return _material; }
+		void setMaterial(std::unique_ptr<Material>&& material) { _material = std::move(material); }
 
 		const std::unique_ptr<Renderer_data>& rendererData() const { return _rendererData; }
-		void setRendererData(std::unique_ptr<Renderer_data> rendererData) { _rendererData = std::move(rendererData); }
+		void setRendererData(std::unique_ptr<Renderer_data>&& rendererData) { _rendererData = std::move(rendererData); }
 
 	private:
 

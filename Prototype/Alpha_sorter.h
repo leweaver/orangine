@@ -24,7 +24,9 @@ public:
 			Entity* entity = (*iter).get();
 			const auto renderable = entity->getFirstComponentOfType<Renderable_component>();
 			assert(renderable != nullptr);
-			if (renderable->material()->getAlphaMode() == Material_alpha_mode::Blend)
+
+			const auto& material = renderable->material();
+			if (material != nullptr && material->getAlphaMode() == Material_alpha_mode::Blend)
 				_entities.push_back({ 0.0f, entity });
 		}
 		beginSortTask(eyePosition);

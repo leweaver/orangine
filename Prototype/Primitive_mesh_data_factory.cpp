@@ -4,6 +4,9 @@
 #include "SimpleMath.h"
 #include "Mikk_tspace_triangle_mesh_interface.h"
 
+#include <cstddef>
+#include <GeometricPrimitive.h>
+
 using namespace oe;
 using namespace DirectX::SimpleMath;
 
@@ -12,6 +15,73 @@ struct Vertex
 	float x, y, z;
 };
 
+std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::GeometricPrimitive::VertexType>&& vertices, std::vector<uint16_t>&& indices)
+{
+	auto meshData = std::make_shared<Mesh_data>();
+
+	{
+		// Indices
+		const auto srcSize = sizeof(Vertex) * indices.size();
+		assert(srcSize < static_cast<unsigned long long>(INT32_MAX));
+
+		auto meshBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(srcSize));
+		memcpy_s(meshBuffer->data, meshBuffer->dataSize, indices.data(), srcSize);
+
+		meshData->indexBufferAccessor = std::make_unique<Mesh_index_buffer_accessor>(meshBuffer, DXGI_FORMAT_R16_UINT,
+			static_cast<uint32_t>(indices.size()), static_cast<uint32_t>(sizeof(uint16_t)), 0);
+	}
+
+	{
+		const auto posNormalTexSize = sizeof(DirectX::GeometricPrimitive::VertexType) * vertices.size();
+		assert(posNormalTexSize < static_cast<unsigned long long>(INT32_MAX));
+
+		auto posNormalTexBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(posNormalTexSize));
+		memcpy_s(posNormalTexBuffer->data, posNormalTexBuffer->dataSize, vertices.data(), posNormalTexSize);
+
+		// Position
+		meshData->vertexBufferAccessors[Vertex_attribute::Position] = std::make_unique<Mesh_vertex_buffer_accessor>(
+			posNormalTexBuffer,
+			Vertex_attribute::Position,
+			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(DirectX::GeometricPrimitive::VertexType)),
+			offsetof(DirectX::GeometricPrimitive::VertexType, position)
+			);
+		// Normal
+		meshData->vertexBufferAccessors[Vertex_attribute::Normal] = std::make_unique<Mesh_vertex_buffer_accessor>(
+			posNormalTexBuffer,
+			Vertex_attribute::Normal,
+			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(DirectX::GeometricPrimitive::VertexType)),
+			offsetof(DirectX::GeometricPrimitive::VertexType, normal)
+			);
+		// Texcoord
+		meshData->vertexBufferAccessors[Vertex_attribute::Texcoord_0] = std::make_unique<Mesh_vertex_buffer_accessor>(
+			posNormalTexBuffer,
+			Vertex_attribute::Texcoord_0,
+			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(DirectX::GeometricPrimitive::VertexType)),
+			offsetof(DirectX::GeometricPrimitive::VertexType, textureCoordinate)
+			);
+
+		// Tangents
+		auto tangentsBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(sizeof(Vector4) * vertices.size()));
+		meshData->vertexBufferAccessors[Vertex_attribute::Tangent] = std::make_unique<Mesh_vertex_buffer_accessor>(
+			tangentsBuffer,
+			Vertex_attribute::Tangent,
+			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(Vector4)),
+			0
+			);
+
+		Mikk_tspace_triangle_mesh_interface generator(meshData);
+		SMikkTSpaceContext context;
+
+		context.m_pUserData = generator.userData();
+		context.m_pInterface = generator.getInterface();
+		if (!genTangSpaceDefault(&context)) {
+			throw std::exception("Failed to generate tangents");
+		}
+	}
+
+	return meshData;
+}
+
 std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2 &size) const
 {
 	return createQuad(size, Vector3(-size.x * 0.5f, -size.y * 0.5f, 0.0f));
@@ -19,51 +89,36 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2
 
 std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2 &size, const Vector3 &positionOffset) const
 {
-	auto md = std::make_shared<Mesh_data>();
+	const auto 
+		top    = positionOffset.y + size.y,
+		right  = positionOffset.x + size.x,
+		bottom = positionOffset.y,
+		left   = positionOffset.x;
+	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  top,    positionOffset.z }, Vector3::Backward, { 0.0f, 0.0f }));
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ right, top,    positionOffset.z }, Vector3::Backward, { 1.0f, 0.0f }));
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  bottom, positionOffset.z }, Vector3::Backward, { 0.0f, 1.0f }));
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ right, bottom, positionOffset.z }, Vector3::Backward, { 1.0f, 1.0f }));
 
-	{
-		const auto 
-			top    = positionOffset.y + size.y,
-			right  = positionOffset.x + size.x,
-			bottom = positionOffset.y,
-			left   = positionOffset.x;
-		const std::vector<Vertex> vertices = {
-			{ left,  top,    positionOffset.z },
-			{ right, top,    positionOffset.z },
-			{ left,  bottom, positionOffset.z },
-			{ right, bottom, positionOffset.z }
-		};
+	std::vector<uint16_t> indices = {
+		0, 2, 1,
+		1, 2, 3
+	};
 
-		const auto srcSize = sizeof(Vertex) * vertices.size();
-		assert(srcSize < INT32_MAX);
+	auto md = createMeshData(move(vertices), move(indices));
+	generateTangents(md);
+	return md;
+}
 
-		auto meshBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(srcSize));
-		memcpy_s(meshBuffer->data, meshBuffer->dataSize, vertices.data(), srcSize);
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createTeapot(size_t tessellation) const
+{
+	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
+	std::vector<uint16_t> indices;
 
-		auto meshBufferAccessor = std::make_unique<Mesh_vertex_buffer_accessor>(meshBuffer, Vertex_attribute::Position, 
-			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(Vertex)), 0);
+	DirectX::GeometricPrimitive::CreateTeapot(vertices, indices, 1, tessellation, false);
 
-		md->vertexBufferAccessors[Vertex_attribute::Position] = move(meshBufferAccessor);
-	}
-
-	{
-		const std::vector<uint16_t> indices = {
-			0, 2, 1,
-			1, 2, 3
-		};
-
-		const auto srcSize = sizeof(Vertex) * indices.size();
-		assert(srcSize < INT32_MAX);
-
-		auto meshBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(srcSize));
-		memcpy_s(meshBuffer->data, meshBuffer->dataSize, indices.data(), srcSize);
-
-		auto meshBufferAccessor = std::make_unique<Mesh_index_buffer_accessor>(meshBuffer, DXGI_FORMAT_R16_UINT, 
-			static_cast<uint32_t>(indices.size()), static_cast<uint32_t>(sizeof(uint16_t)), 0);
-
-		md->indexBufferAccessor = std::move(meshBufferAccessor);
-	}
-
+	auto md = createMeshData(move(vertices), move(indices));
+	generateTangents(md);
 	return md;
 }
 
@@ -153,6 +208,6 @@ void Primitive_mesh_data_factory::generateTangents(std::shared_ptr<Mesh_data> me
 	context.m_pUserData = generator.userData();
 	context.m_pInterface = generator.getInterface();
 	if (!genTangSpaceDefault(&context)) {
-		LOG(WARNING) << "Failed to generate tangents!";
+		throw std::exception("Failed to generate tangents");
 	}
 }

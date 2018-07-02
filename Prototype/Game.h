@@ -25,6 +25,7 @@ public:
 	~Game();
 
 	void CreateSceneLeverArm();
+	void CreateGeometricPrimitives();
 	void CreateSceneCubeSatellite();
 	std::shared_ptr<oe::Entity> LoadGLTF(std::string gltfName, bool animate);
 	void CreateSceneMetalRoughSpheres(bool animate);

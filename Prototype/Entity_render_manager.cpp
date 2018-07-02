@@ -359,8 +359,6 @@ void Entity_render_manager::render()
 			_deviceResources.PIXEndEvent();
 		}
 	});
-	
-	renderSimplePrimitives();
 }
 
 std::vector<Vertex_attribute> vertexAttributes;
@@ -394,7 +392,7 @@ void Entity_render_manager::render(Entity* entity,
 			const auto meshDataComponent = entity->getFirstComponentOfType<Mesh_data_component>();
 			if (meshDataComponent == nullptr || meshDataComponent->meshData() == nullptr)
 			{
-				// There is no mesh data, we can't render.
+				// There is no mesh data (it may still be loading!), we can't render.
 				return;
 			}
 			const auto& meshData = meshDataComponent->meshData();
@@ -482,13 +480,6 @@ void Entity_render_manager::renderLights()
 	{
 		_fatalError = true;
 		LOG(WARNING) << "Failed to render lights.\n" << e.what();
-	}
-}
-
-void Entity_render_manager::renderSimplePrimitives()
-{
-	for (const auto& simplePrimitive : _simplePrimitives) {
-		simplePrimitive->Draw(Matrix::Identity, _cameraData.viewMatrix, _cameraData.projectionMatrix);
 	}
 }
 

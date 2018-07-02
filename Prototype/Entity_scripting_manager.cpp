@@ -30,32 +30,38 @@ void Entity_scripting_manager::tick() {
 	for (auto iter = _scriptableEntityFilter->begin(); iter != _scriptableEntityFilter->end(); ++iter) {
 		auto& entity = **iter;
 		auto* component = entity.getFirstComponentOfType<Test_component>();
+		
+		const auto &speed = component->getSpeed();
 
+		const auto animTimePitch = static_cast<float>(fmod(elapsedTime * speed.x * XM_2PI, XM_2PI));
+		const auto animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.y * XM_2PI, XM_2PI));
+		const auto animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.z * XM_2PI, XM_2PI));
+		entity.setRotation(Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));
+	}
+	
+	const auto mouseSpeed = 1.0f / 300.0f;
+	const auto mouseState = _scene.manager<Input_manager>().mouseState().lock();
+	if (mouseState) {
+		if (mouseState->left == Input_manager::Mouse_state::Button_state::HELD) {
+			_scriptData.yaw += -mouseState->deltaPosition.x * XM_2PI * mouseSpeed;
+			_scriptData.pitch += mouseState->deltaPosition.y * XM_2PI * mouseSpeed;
 
-		const auto mouseSpeed = 1.0f / 300.0f;
+			_scriptData.pitch = std::max(XM_PI * -0.45f, std::min(XM_PI * 0.45f, _scriptData.pitch));
 
-		const auto mouseState = _scene.manager<Input_manager>().mouseState().lock();
-		if (mouseState) {
-			if (mouseState->left == Input_manager::Mouse_state::Button_state::HELD) {
-				const auto deltaRot = Quaternion::CreateFromYawPitchRoll(
-					static_cast<float>(mouseState->deltaPosition.x) * XM_2PI * mouseSpeed,
-					static_cast<float>(mouseState->deltaPosition.y) * XM_2PI * mouseSpeed,
-					0.0f);
-				
-				//Quaternion::CreateFromRotationMatrix(Matrix::CreateLookAt(Vector3::Zero, entity.position(), Vector3::Up));
-				//auto forwardVector = Vector3::Forward * ;
-				entity.setRotation(entity.rotation() * deltaRot);
-			}
 		}
-		else {
-			const auto &speed = component->getSpeed();
+		//if (mouseState->middle == Input_manager::Mouse_state::Button_state::HELD) {
+			_scriptData.distance = std::max(1.0f, std::min(40.0f, _scriptData.distance + static_cast<float>(mouseState->scrollWheelDelta) * -mouseSpeed));
+		//}
 
-			const auto animTimePitch = static_cast<float>(fmod(elapsedTime * speed.x * XM_2PI, XM_2PI));
-			const auto animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.y * XM_2PI, XM_2PI));
-			const auto animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.z * XM_2PI, XM_2PI));
-			entity.setRotation(Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));			
+		const auto deltaRot = Quaternion::CreateFromYawPitchRoll(_scriptData.yaw, _scriptData.pitch, 0.0f);			
+		auto cameraPosition = Vector3(DirectX::XMVector3Rotate(XMLoadFloat3(&Vector3::Forward), XMLoadFloat4(&deltaRot)));
+		cameraPosition *= _scriptData.distance;
+
+		auto entity = _scene.mainCamera();
+		if (entity != nullptr) {
+			entity->setPosition(cameraPosition);
+			entity->lookAt(Vector3::Zero, Vector3::Up);
 		}
-
 	}
 }
 

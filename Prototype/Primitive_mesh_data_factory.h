@@ -10,8 +10,12 @@ namespace oe {
 	class Primitive_mesh_data_factory
 	{
 	public:
+		// Creates an indexed mesh with Position
 		std::shared_ptr<Mesh_data> createQuad(const DirectX::SimpleMath::Vector2& size) const;
 		std::shared_ptr<Mesh_data> createQuad(const DirectX::SimpleMath::Vector2& size, const DirectX::SimpleMath::Vector3& positionOffset) const;
+
+		// Creates an indexed mesh with Position, Normal, Tangent, Textcoord_0
+		std::shared_ptr<Mesh_data> createTeapot(size_t tessellation = 8) const;
 
 		/*
 		 * Generates flat normals for the given triangles (ie, does not interpolate neighbours)

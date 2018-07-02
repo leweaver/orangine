@@ -14,7 +14,6 @@
 
 namespace DirectX {
 	class CommonStates;
-	class GeometricPrimitive;
 }
 
 namespace oe {
@@ -81,7 +80,6 @@ namespace oe {
 			const Light_data_provider& lightDataProvider,
 			const Render_pass_info<TOutput_format>& renderPassInfo);
 		
-		void renderSimplePrimitives();
 		void renderLights();
 
 	private:
@@ -124,7 +122,6 @@ namespace oe {
 				
 		std::shared_ptr<Material_repository> _materialRepository;
 		std::unique_ptr<Primitive_mesh_data_factory> _primitiveMeshDataFactory;
-		std::vector<std::unique_ptr<DirectX::GeometricPrimitive>> _simplePrimitives;
 
 		bool _enableDeferredRendering;
 		bool _fatalError;

@@ -10,6 +10,8 @@
 #include "Entity_render_manager.h"
 #include "Camera_component.h"
 #include "Light_component.h"
+#include "Renderable_component.h"
+#include "PBR_material.h"
 
 extern void ExitGame();
 
@@ -159,7 +161,7 @@ void Game::CreateLights()
 	lightRoot->setPosition({ 0, 0, 0 });
 	//createDirLight({ 0.5, 0, -1 }, { 1, 1, 1 }, 0.35)->SetParent(*lightRoot);
 
-	createAmbientLight({ 1, 1, 1 }, 1)->setParent(*lightRoot);
+	createAmbientLight({ 1, 1, 1 }, 0.2f)->setParent(*lightRoot);
 
 	if (true)
 	{
@@ -188,6 +190,40 @@ void Game::CreateSceneLeverArm()
 	AddCubeToEntity(*child3, { 0.5f, 0, 0 }, { 2.0f, 0.50f, 1.0f }, { 0, 2, 0});
 }
 
+void Game::CreateGeometricPrimitives()
+{
+	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
+	const auto &root1 = entityManager.instantiate("Primitives");
+
+	{
+		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
+		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
+		material->setBaseColor(Color(Colors::GreenYellow));
+		material->setMetallicFactor(1.0f);
+		material->setRoughnessFactor(0.0f);
+		child1->addComponent<Renderable_component>().setMaterial(move(std::unique_ptr<Material>(material.release())));
+
+		Primitive_mesh_data_factory pmdf;
+		const auto meshData = pmdf.createTeapot();
+		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
+	}
+	{
+		const auto &child2 = entityManager.instantiate("Primitive Child 2", *root1);
+		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
+		material->setBaseColor(Color(Colors::White));
+		material->setMetallicFactor(1.0f);
+		material->setRoughnessFactor(0.0f);
+		child2->addComponent<Renderable_component>().setMaterial(move(std::unique_ptr<Material>(material.release())));
+
+		Primitive_mesh_data_factory pmdf;
+		const auto meshData = pmdf.createQuad({3, 3});
+		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
+
+		child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
+		child2->setPosition({ 0.0f, -0.5f, 0.0f });
+	}
+}
+
 // Initialize the Direct3D resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
@@ -212,13 +248,14 @@ void Game::Initialize(HWND window, int width, int height)
 		
 		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
-		LoadGLTF("FlightHelmet", true)->setScale({ 14, 14, 14 });
+		//LoadGLTF("FlightHelmet", true)->setScale({ 14, 14, 14 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
 		
 		//CreateSceneMetalRoughSpheres(true);
 
 		CreateCamera(false);
 		CreateLights();
+		CreateGeometricPrimitives();
 	}
 	catch (const std::exception &e)
 	{

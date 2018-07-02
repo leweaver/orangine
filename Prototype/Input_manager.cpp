@@ -24,6 +24,9 @@ public:
 			mouseState->absolutePosition.y = state.y;
 			mouseState->deltaPosition.x = state.x - lastPosition.x;
 			mouseState->deltaPosition.y = state.y - lastPosition.y;
+
+			mouseState->scrollWheelDelta = state.scrollWheelValue;
+			mouse->ResetScrollWheelValue();
 		}
 	}
 

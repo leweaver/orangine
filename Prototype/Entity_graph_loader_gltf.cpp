@@ -500,7 +500,7 @@ shared_ptr<Entity> create_entity(const Node& node, Entity_repository& entityRepo
 
 				// Add this component last, to make sure there wasn't an error loading!
 				auto& renderableComponent = primitiveEntity->addComponent<Renderable_component>();
-				renderableComponent.setMaterial(material);
+				renderableComponent.setMaterial(move(material));
 			}
 			catch (const exception& e)
 			{

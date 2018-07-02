@@ -23,12 +23,13 @@ public:
 			PRESSED = 3,    // Buton was just pressed
 		};
 
-		POINT absolutePosition;
-		POINT deltaPosition;
+		POINT absolutePosition = {0, 0};
+		POINT deltaPosition = { 0, 0 };
 
-		Button_state left;
-		Button_state middle;
-		Button_state right;
+		Button_state left = Button_state::UP;
+		Button_state middle = Button_state::UP;
+		Button_state right = Button_state::UP;
+		int scrollWheelDelta = 0;
 	};
 
 	explicit Input_manager(Scene &scene, DX::DeviceResources& deviceResources);

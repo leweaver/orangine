@@ -19,5 +19,13 @@ namespace oe {
 
 	private:
 		std::shared_ptr<Entity_filter> _scriptableEntityFilter;
+
+		// TODO: This would be part of a script context
+		struct ScriptData {
+			float yaw = 0.0f;
+			float pitch = 0.0f;
+			float distance = 10.0f;
+		};
+		ScriptData _scriptData;
 	};
 }

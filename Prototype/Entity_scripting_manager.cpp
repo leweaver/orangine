@@ -11,6 +11,7 @@
 #include <set>
 
 using namespace DirectX;
+using namespace SimpleMath;
 using namespace oe;
 
 Entity_scripting_manager::Entity_scripting_manager(Scene &scene)
@@ -30,17 +31,31 @@ void Entity_scripting_manager::tick() {
 		auto& entity = **iter;
 		auto* component = entity.getFirstComponentOfType<Test_component>();
 
-		const auto &speed = component->getSpeed();
 
-		const auto animTimePitch = static_cast<float>(fmod(elapsedTime * speed.x * XM_2PI, XM_2PI));
-		const auto animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.y * XM_2PI, XM_2PI));
-		const auto animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.z * XM_2PI, XM_2PI));
+		const auto mouseSpeed = 1.0f / 300.0f;
 
 		const auto mouseState = _scene.manager<Input_manager>().mouseState().lock();
 		if (mouseState) {
-			if (mouseState->left == Input_manager::Mouse_state::Button_state::HELD)
-				entity.setRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));
+			if (mouseState->left == Input_manager::Mouse_state::Button_state::HELD) {
+				const auto deltaRot = Quaternion::CreateFromYawPitchRoll(
+					static_cast<float>(mouseState->deltaPosition.x) * XM_2PI * mouseSpeed,
+					static_cast<float>(mouseState->deltaPosition.y) * XM_2PI * mouseSpeed,
+					0.0f);
+				
+				//Quaternion::CreateFromRotationMatrix(Matrix::CreateLookAt(Vector3::Zero, entity.position(), Vector3::Up));
+				//auto forwardVector = Vector3::Forward * ;
+				entity.setRotation(entity.rotation() * deltaRot);
+			}
 		}
+		else {
+			const auto &speed = component->getSpeed();
+
+			const auto animTimePitch = static_cast<float>(fmod(elapsedTime * speed.x * XM_2PI, XM_2PI));
+			const auto animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.y * XM_2PI, XM_2PI));
+			const auto animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.z * XM_2PI, XM_2PI));
+			entity.setRotation(Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));			
+		}
+
 	}
 }
 

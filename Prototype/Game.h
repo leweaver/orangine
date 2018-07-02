@@ -62,8 +62,8 @@ private:
     void Update(DX::StepTimer const& timer);
     void Render();
 
-    void CreateDeviceDependentResources();
-    void CreateWindowSizeDependentResources();
+    void createDeviceDependentResources();
+    void createWindowSizeDependentResources();
 
 	void AddCubeToEntity(oe::Entity& entity, DirectX::SimpleMath::Vector3 animationSpeed, DirectX::SimpleMath::Vector3 localScale, DirectX::SimpleMath::Vector3 localPosition) const;
 

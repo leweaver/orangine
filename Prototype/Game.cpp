@@ -208,11 +208,11 @@ void Game::Initialize(HWND window, int width, int height)
 
 		//CreateSceneCubeSatellite();
 		//CreateSceneLeverArm();
-		LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
+		//LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
 		
 		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
-		//LoadGLTF("FlightHelmet", true)->setScale({ 7, 7, 7 });
+		LoadGLTF("FlightHelmet", true)->setScale({ 14, 14, 14 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
 		
 		//CreateSceneMetalRoughSpheres(true);
@@ -225,8 +225,8 @@ void Game::Initialize(HWND window, int width, int height)
 		LOG(FATAL) << "Failed to load scene: " << e.what();
 	}
 
-	CreateDeviceDependentResources();
-	CreateWindowSizeDependentResources();
+	createDeviceDependentResources();
+	createWindowSizeDependentResources();
 }
 
 void Game::AddCubeToEntity(Entity& entity, Vector3 animationSpeed, Vector3 localScale, Vector3 localPosition) const
@@ -314,7 +314,7 @@ void Game::OnWindowSizeChanged(int width, int height)
 
 	m_scene->destroyWindowSizeDependentResources();
 
-    CreateWindowSizeDependentResources();
+    createWindowSizeDependentResources();
 }
 
 // Properties
@@ -332,7 +332,7 @@ void Game::GetDefaultSize(int& width, int& height) const
 
 #pragma region Direct3D Resources
 // These are the resources that depend on the device.
-void Game::CreateDeviceDependentResources()
+void Game::createDeviceDependentResources()
 {
 	try {
 		m_deviceResources->CreateDeviceResources();
@@ -346,7 +346,7 @@ void Game::CreateDeviceDependentResources()
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
-void Game::CreateWindowSizeDependentResources()
+void Game::createWindowSizeDependentResources()
 {
 	try
 	{
@@ -372,8 +372,8 @@ void Game::OnDeviceLost()
 
 void Game::OnDeviceRestored()
 {
-    CreateDeviceDependentResources();
+    createDeviceDependentResources();
 
-    CreateWindowSizeDependentResources();
+    createWindowSizeDependentResources();
 }
 #pragma endregion

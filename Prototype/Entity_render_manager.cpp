@@ -20,6 +20,7 @@
 #include "Camera_component.h"
 #include "Alpha_sorter.h"
 #include "CommonStates.h"
+#include "GeometricPrimitive.h"
 #include <optional>
 
 using namespace oe;
@@ -153,18 +154,20 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 	_rasterizerStateDepthDisabled.Reset();
 	_rasterizerStateDepthEnabled.Reset();
 
-	_commonStates = std::make_unique<CommonStates>(_deviceResources.GetD3DDevice());
+	auto device = _deviceResources.GetD3DDevice();
+	auto context = _deviceResources.GetD3DDeviceContext();
+	_commonStates = std::make_unique<CommonStates>(device);
 
 	D3D11_RASTERIZER_DESC rasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
 	rasterizerDesc.FrontCounterClockwise = true;
 	rasterizerDesc.DepthClipEnable = false;
-	ThrowIfFailed(_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, _rasterizerStateDepthDisabled.ReleaseAndGetAddressOf()),
+	ThrowIfFailed(device->CreateRasterizerState(&rasterizerDesc, _rasterizerStateDepthDisabled.ReleaseAndGetAddressOf()),
 		"Create rasterizerStateDepthDisabled");
 
 	// Render using a right handed coordinate system
 	rasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
 	rasterizerDesc.FrontCounterClockwise = true;
-	ThrowIfFailed(_deviceResources.GetD3DDevice()->CreateRasterizerState(&rasterizerDesc, _rasterizerStateDepthEnabled.ReleaseAndGetAddressOf()),
+	ThrowIfFailed(device->CreateRasterizerState(&rasterizerDesc, _rasterizerStateDepthEnabled.ReleaseAndGetAddressOf()),
 		"Create rasterizerStateDepthEnabled");
 
 	// Depth buffer settings
@@ -172,11 +175,11 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 	depthStencilDesc.DepthEnable = false;
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
-	ThrowIfFailed(_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, _depthStencilStateDepthDisabled.ReleaseAndGetAddressOf()),
+	ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, _depthStencilStateDepthDisabled.ReleaseAndGetAddressOf()),
 		"Create depthStencilStateDepthDisabled");
 
 	depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
-	ThrowIfFailed(_deviceResources.GetD3DDevice()->CreateDepthStencilState(&depthStencilDesc, _depthStencilStateDepthEnabled.ReleaseAndGetAddressOf()),
+	ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, _depthStencilStateDepthEnabled.ReleaseAndGetAddressOf()),
 		"Create depthStencilStateDepthEnabled");
 
 	// Initial settings
@@ -193,15 +196,20 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 	blendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	blendStateDesc.RenderTarget[0].BlendEnable = true;
 	blendStateDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	_deviceResources.GetD3DDevice()->CreateBlendState(&blendStateDesc, &_deferredLightBlendState);
+	device->CreateBlendState(&blendStateDesc, &_deferredLightBlendState);
 
 	// Full-screen quads
 	_pass1ScreenSpaceQuad = initScreenSpaceQuad(std::make_shared<Clear_gbuffer_material>());
 	_pass2ScreenSpaceQuad = initScreenSpaceQuad(_deferredLightMaterial);
 
-	_renderPass_entityDeferred_renderLightData = std::make_unique<decltype(_renderPass_entityDeferred_renderLightData)::element_type>(_deviceResources.GetD3DDevice());
-	_renderPass_entityDeferred_renderLightData_blank = std::make_unique<decltype(_renderPass_entityDeferred_renderLightData_blank)::element_type>(_deviceResources.GetD3DDevice());
-	_renderPass_entityStandard_renderLightData = std::make_unique<decltype(_renderPass_entityStandard_renderLightData)::element_type>(_deviceResources.GetD3DDevice());
+	_renderPass_entityDeferred_renderLightData = std::make_unique<decltype(_renderPass_entityDeferred_renderLightData)::element_type>(device);
+	_renderPass_entityDeferred_renderLightData_blank = std::make_unique<decltype(_renderPass_entityDeferred_renderLightData_blank)::element_type>(device);
+	_renderPass_entityStandard_renderLightData = std::make_unique<decltype(_renderPass_entityStandard_renderLightData)::element_type>(device);
+
+	// Debug meshes
+/*	_simplePrimitives.push_back(
+		GeometricPrimitive::CreateTeapot(context)
+	);*/
 }
 
 void Entity_render_manager::createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND /*window*/, int width, int height)
@@ -351,8 +359,8 @@ void Entity_render_manager::render()
 			_deviceResources.PIXEndEvent();
 		}
 	});
-
-	return;
+	
+	renderSimplePrimitives();
 }
 
 std::vector<Vertex_attribute> vertexAttributes;
@@ -474,6 +482,13 @@ void Entity_render_manager::renderLights()
 	{
 		_fatalError = true;
 		LOG(WARNING) << "Failed to render lights.\n" << e.what();
+	}
+}
+
+void Entity_render_manager::renderSimplePrimitives()
+{
+	for (const auto& simplePrimitive : _simplePrimitives) {
+		simplePrimitive->Draw(Matrix::Identity, _cameraData.viewMatrix, _cameraData.projectionMatrix);
 	}
 }
 

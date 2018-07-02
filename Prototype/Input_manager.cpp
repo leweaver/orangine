@@ -23,7 +23,7 @@ public:
 			mouseState->absolutePosition.x = state.x;
 			mouseState->absolutePosition.y = state.y;
 			mouseState->deltaPosition.x = state.x - lastPosition.x;
-			mouseState->deltaPosition.x = state.y - lastPosition.y;
+			mouseState->deltaPosition.y = state.y - lastPosition.y;
 		}
 	}
 

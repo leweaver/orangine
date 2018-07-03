@@ -14,6 +14,7 @@ namespace oe
 
 		Renderable_component()
 			: _visible(true)
+			, _wireframe(false)
 			, _rendererData(nullptr)
 			, _material(nullptr)
 		{}
@@ -21,6 +22,9 @@ namespace oe
 		
 		bool visible() const { return _visible; }
 		void setVisible(bool visible) { _visible = visible; }
+		
+		bool wireframe() const { return _wireframe; }
+		void setWireframe(bool wireframe) { _wireframe = wireframe; }
 
 		// Runtime, non-serializable
 		const std::unique_ptr<Material>	& material() const { return _material; }
@@ -32,6 +36,7 @@ namespace oe
 	private:
 
 		bool _visible;
+		bool _wireframe;
 
 		// Runtime, non-serializable
 		std::unique_ptr<Renderer_data> _rendererData;

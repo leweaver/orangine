@@ -106,6 +106,7 @@ namespace oe {
 			const Render_pass_info<TOutput_format>& renderPassInfo,
 			const Render_light_data& renderLightData,
 			Material& material,
+			bool wireframe,
 			Buffer_array_set& bufferArraySet) const;
 
 		// renders a full screen quad that sets our output buffers to decent default values.
@@ -128,9 +129,9 @@ namespace oe {
 		bool _lastBlendEnabled;
 
 		std::unique_ptr<Alpha_sorter> _alphaSorter;
-
-		Microsoft::WRL::ComPtr<ID3D11RasterizerState> _rasterizerStateDepthDisabled;
-		Microsoft::WRL::ComPtr<ID3D11RasterizerState> _rasterizerStateDepthEnabled;
+		
+		//Microsoft::WRL::ComPtr<ID3D11RasterizerState> _rasterizerStateDepthDisabled;
+		//Microsoft::WRL::ComPtr<ID3D11RasterizerState> _rasterizerStateDepthEnabled;
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> _depthStencilStateDepthDisabled;
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> _depthStencilStateDepthEnabled;
 

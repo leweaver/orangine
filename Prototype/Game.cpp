@@ -201,7 +201,10 @@ void Game::CreateGeometricPrimitives()
 		material->setBaseColor(Color(Colors::GreenYellow));
 		material->setMetallicFactor(1.0f);
 		material->setRoughnessFactor(0.0f);
-		child1->addComponent<Renderable_component>().setMaterial(move(std::unique_ptr<Material>(material.release())));
+		
+		auto& renderable = child1->addComponent<Renderable_component>();
+		renderable.setMaterial(move(std::unique_ptr<Material>(material.release())));
+		renderable.setWireframe(true);
 
 		Primitive_mesh_data_factory pmdf;
 		const auto meshData = pmdf.createTeapot();

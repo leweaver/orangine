@@ -55,8 +55,6 @@ Entity_render_manager::Entity_render_manager(Scene& scene, std::shared_ptr<Mater
 	, _enableDeferredRendering(true)
 	, _fatalError(false)
 	, _lastBlendEnabled(false)
-	, _rasterizerStateDepthDisabled(nullptr)
-	, _rasterizerStateDepthEnabled(nullptr)
 {
 }
 
@@ -134,10 +132,7 @@ void Entity_render_manager::shutdown()
 {
 	if (_primitiveMeshDataFactory)
 		_primitiveMeshDataFactory.reset();
-
-	_rasterizerStateDepthDisabled.Reset();
-	_rasterizerStateDepthEnabled.Reset();
-
+	
 	_pass1ScreenSpaceQuad = Renderable();
 	_pass2ScreenSpaceQuad = Renderable();
 	
@@ -150,25 +145,9 @@ void Entity_render_manager::shutdown()
 }
 
 void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
-{
-	_rasterizerStateDepthDisabled.Reset();
-	_rasterizerStateDepthEnabled.Reset();
-
+{	
 	auto device = _deviceResources.GetD3DDevice();
-	auto context = _deviceResources.GetD3DDeviceContext();
 	_commonStates = std::make_unique<CommonStates>(device);
-
-	D3D11_RASTERIZER_DESC rasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
-	rasterizerDesc.FrontCounterClockwise = true;
-	rasterizerDesc.DepthClipEnable = false;
-	ThrowIfFailed(device->CreateRasterizerState(&rasterizerDesc, _rasterizerStateDepthDisabled.ReleaseAndGetAddressOf()),
-		"Create rasterizerStateDepthDisabled");
-
-	// Render using a right handed coordinate system
-	rasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
-	rasterizerDesc.FrontCounterClockwise = true;
-	ThrowIfFailed(device->CreateRasterizerState(&rasterizerDesc, _rasterizerStateDepthEnabled.ReleaseAndGetAddressOf()),
-		"Create rasterizerStateDepthEnabled");
 
 	// Depth buffer settings
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
@@ -243,8 +222,6 @@ void Entity_render_manager::destroyDeviceDependentResources()
 {
 	_commonStates.reset();
 
-	_rasterizerStateDepthDisabled.Reset();
-	_rasterizerStateDepthEnabled.Reset();
 	_depthStencilStateDepthDisabled.Reset();
 	_depthStencilStateDepthEnabled.Reset();
 	
@@ -377,6 +354,7 @@ void Entity_render_manager::render(Entity* entity,
 		const auto material = renderable->material().get();
 		assert(material != nullptr);
 
+		// Check that this render pass supports this materials alpha mode
 		if constexpr (Render_pass_info<TOutput_format>::supportsBlendedAlpha()) {
 			if (material->getAlphaMode() != Material_alpha_mode::Blend)
 				return;
@@ -418,6 +396,7 @@ void Entity_render_manager::render(Entity* entity,
 			renderPassInfo,
 			*renderLightData,
 			*material,
+			renderable->wireframe(),
 			bufferArraySet);
 	} 
 	catch (std::runtime_error& e)
@@ -488,12 +467,10 @@ void Entity_render_manager::setDepthEnabled(bool enabled)
 	const auto deviceContext = _deviceResources.GetD3DDeviceContext();
 	if (enabled)
 	{
-		deviceContext->RSSetState(_rasterizerStateDepthEnabled.Get());
 		deviceContext->OMSetDepthStencilState(_depthStencilStateDepthEnabled.Get(), 0);
 	}
 	else
 	{
-		deviceContext->RSSetState(_rasterizerStateDepthDisabled.Get());
 		deviceContext->OMSetDepthStencilState(_depthStencilStateDepthDisabled.Get(), 0);
 	}
 }
@@ -554,6 +531,7 @@ void Entity_render_manager::drawRendererData(
 	const Render_pass_info<TOutputFormat>& renderPassInfo,
 	const Render_light_data& renderLightData,
 	Material& material,
+	bool wireframe,
 	Buffer_array_set& bufferArraySet) const
 {
 	if (rendererData.vertexBuffers.empty())
@@ -561,6 +539,12 @@ void Entity_render_manager::drawRendererData(
 
 	const auto deviceContext = _deviceResources.GetD3DDeviceContext();
 	loadRendererDataToDeviceContext(rendererData, bufferArraySet);
+	
+	// Set the rasterizer state
+	if (wireframe)
+		deviceContext->RSSetState(_commonStates->Wireframe());
+	else
+		deviceContext->RSSetState(_commonStates->CullClockwise());
 
 	// Render the trianges
 	material.render(rendererData, renderPassInfo.outputFormat, renderLightData, 
@@ -665,6 +649,7 @@ void Entity_render_manager::setupRenderPass_entityDeferred_step1()
 				std::get<g_entity_deferred_cleargbuffer>(_renderPass_entityDeferred),
 				*_renderPass_entityDeferred_renderLightData_blank,
 				*_pass1ScreenSpaceQuad.material, 
+				false,
 				bufferArraySet);
 		}
 		catch (std::runtime_error& e)

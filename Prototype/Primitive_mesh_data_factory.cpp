@@ -43,21 +43,21 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::GeometricPrimitiv
 			posNormalTexBuffer,
 			Vertex_attribute::Position,
 			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(DirectX::GeometricPrimitive::VertexType)),
-			offsetof(DirectX::GeometricPrimitive::VertexType, position)
+			static_cast<uint32_t>(offsetof(DirectX::GeometricPrimitive::VertexType, position))
 			);
 		// Normal
 		meshData->vertexBufferAccessors[Vertex_attribute::Normal] = std::make_unique<Mesh_vertex_buffer_accessor>(
 			posNormalTexBuffer,
 			Vertex_attribute::Normal,
 			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(DirectX::GeometricPrimitive::VertexType)),
-			offsetof(DirectX::GeometricPrimitive::VertexType, normal)
+			static_cast<uint32_t>(offsetof(DirectX::GeometricPrimitive::VertexType, normal))
 			);
 		// Texcoord
 		meshData->vertexBufferAccessors[Vertex_attribute::Texcoord_0] = std::make_unique<Mesh_vertex_buffer_accessor>(
 			posNormalTexBuffer,
 			Vertex_attribute::Texcoord_0,
 			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(DirectX::GeometricPrimitive::VertexType)),
-			offsetof(DirectX::GeometricPrimitive::VertexType, textureCoordinate)
+			static_cast<uint32_t>(offsetof(DirectX::GeometricPrimitive::VertexType, textureCoordinate))
 			);
 
 		// Tangents
@@ -115,6 +115,7 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createTeapot(size_t tess
 	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
 	std::vector<uint16_t> indices;
 
+	// FIXME: This doesn't seem right, as we are trying to use a RH coordinate system:
 	DirectX::GeometricPrimitive::CreateTeapot(vertices, indices, 1, tessellation, false);
 
 	auto md = createMeshData(move(vertices), move(indices));

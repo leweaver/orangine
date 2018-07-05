@@ -15,12 +15,13 @@ namespace oe
 		Bi_Tangent,
 		Texcoord_0,
 
-		Invalid
+		Invalid,
 	};
 
 	enum class Mesh_index_type : std::int8_t
 	{
-		Triangles
+		Triangles,
+		Lines
 	};
 
 	class Mesh_data

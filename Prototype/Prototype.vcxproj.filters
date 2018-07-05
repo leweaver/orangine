@@ -153,6 +153,9 @@
     <ClInclude Include="Input_manager.h">
       <Filter>Systems\Input</Filter>
     </ClInclude>
+    <ClInclude Include="Unlit_material.h">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -247,6 +250,9 @@
     <ClCompile Include="Input_manager.cpp">
       <Filter>Systems\Input</Filter>
     </ClCompile>
+    <ClCompile Include="Unlit_material.cpp">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -303,6 +309,9 @@
     </FxCompile>
     <FxCompile Include="data\shaders\test\test_pbr_standard.hlsl">
       <Filter>Assets\shaders\test</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\unlit_VS.hlsl">
+      <Filter>Assets\shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

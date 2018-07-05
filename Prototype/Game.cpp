@@ -12,6 +12,7 @@
 #include "Light_component.h"
 #include "Renderable_component.h"
 #include "PBR_material.h"
+#include "Unlit_material.h"
 
 extern void ExitGame();
 
@@ -195,6 +196,10 @@ void Game::CreateGeometricPrimitives()
 	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Primitives");
 
+
+	Primitive_mesh_data_factory pmdf;
+
+
 	{
 		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
 		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
@@ -203,27 +208,46 @@ void Game::CreateGeometricPrimitives()
 		material->setRoughnessFactor(0.0f);
 		
 		auto& renderable = child1->addComponent<Renderable_component>();
-		renderable.setMaterial(move(std::unique_ptr<Material>(material.release())));
-		renderable.setWireframe(true);
+		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
+		renderable.setWireframe(false);
 
-		Primitive_mesh_data_factory pmdf;
 		const auto meshData = pmdf.createTeapot();
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
 	}
+
 	{
 		const auto &child2 = entityManager.instantiate("Primitive Child 2", *root1);
 		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
-		material->setBaseColor(Color(Colors::White));
-		material->setMetallicFactor(1.0f);
-		material->setRoughnessFactor(0.0f);
-		child2->addComponent<Renderable_component>().setMaterial(move(std::unique_ptr<Material>(material.release())));
+		material->setBaseColor(Color(Colors::Green));
+		child2->addComponent<Renderable_component>().setMaterial(std::unique_ptr<Material>(material.release()));
 
-		Primitive_mesh_data_factory pmdf;
-		const auto meshData = pmdf.createQuad({3, 3});
+		const auto meshData = pmdf.createQuad({ 3, 3 });
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
 		child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
 		child2->setPosition({ 0.0f, -0.5f, 0.0f });
+	}
+
+	{
+		const auto &child3 = entityManager.instantiate("Primitive Child 3", *root1);
+		std::unique_ptr<Unlit_material> material = std::make_unique<Unlit_material>();
+		material->setBaseColor(Color(Colors::White));
+		
+		auto& renderable = child3->addComponent<Renderable_component>();
+		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
+
+		const auto projMatrix = Matrix::CreatePerspectiveFieldOfView(
+			60 * XM_PI / 180.0f,
+			400.0f / 300.0f,
+			0.1f,
+			4.0f);
+		BoundingFrustum frustum;
+		BoundingFrustum::CreateFromMatrix(frustum, projMatrix);
+		const auto meshData = pmdf.createFrustum(frustum);
+		child3->addComponent<Mesh_data_component>().setMeshData(meshData);
+
+		//child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
+		//child2->setPosition({ 0.0f, -0.5f, 0.0f });
 	}
 }
 

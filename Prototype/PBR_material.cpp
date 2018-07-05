@@ -99,6 +99,7 @@ bool PBR_material::createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& b
 
 	_constantsVs.worldViewProjection = SimpleMath::Matrix::Identity;
 	_constantsVs.world = SimpleMath::Matrix::Identity;
+	_constantsVs.worldInvTranspose = SimpleMath::Matrix::Identity;
 
 	D3D11_SUBRESOURCE_DATA initData;
 	initData.pSysMem = &_constantsVs;

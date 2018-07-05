@@ -308,7 +308,6 @@ void Entity_render_manager::render()
 	}
 
 	// Standard Lighting pass
-	setBlendEnabled(true);
 	_alphaSorter->wait([this, &bufferArraySet](const std::vector<Alpha_sorter::Sort_entry>& entries) {
 		// TODO: Draw alpha entities
 
@@ -417,7 +416,7 @@ void Entity_render_manager::renderLights()
 		if (!rendererData || !rendererData->vertexCount)
 			return;
 
-		const auto renderLights = [&]() {
+		const auto renderLight = [&]() {
 			_renderPass_entityDeferred_renderLightData->updateBuffer(context);
 			const auto renderSuccess = _deferredLightMaterial->render(
 				*rendererData,
@@ -443,14 +442,14 @@ void Entity_render_manager::renderLights()
 			addLightToRenderLightData(*eIter->get(), *_renderPass_entityDeferred_renderLightData);
 			
 			if (_renderPass_entityDeferred_renderLightData->full()) {
-				renderLights();
+				renderLight();
 				renderedEmitted = true;
 				_deferredLightMaterial->setupEmitted(false);
 			}
 		}
 
 		if (!_renderPass_entityDeferred_renderLightData->empty() || !renderedEmitted)
-			renderLights();
+			renderLight();
 
 		// Unbind material
 		_deferredLightMaterial->unbind(_deviceResources);
@@ -512,7 +511,7 @@ void Entity_render_manager::loadRendererDataToDeviceContext(const Renderer_data&
 			deviceContext->IASetVertexBuffers(0, 1, &vertexBufferDesc->buffer->d3dBuffer, &vertexBufferDesc->stride, &vertexBufferDesc->offset);
 		}
 
-		// Set the type of primitive that should be rendered from this vertex buffer, in this case triangles.
+		// Set the type of primitive that should be rendered from this vertex buffer.
 		deviceContext->IASetPrimitiveTopology(rendererData.topology);
 
 		if (rendererData.indexBufferAccessor != nullptr) {
@@ -556,7 +555,17 @@ void Entity_render_manager::drawRendererData(
 std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(const Mesh_data& meshData, const std::vector<Vertex_attribute>& vertexAttributes) const
 {
 	auto rendererData = std::make_unique<Renderer_data>();
-	rendererData->topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	switch (meshData.m_meshIndexType) {
+	case Mesh_index_type::Triangles:
+		rendererData->topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		break;
+	case Mesh_index_type::Lines:
+		rendererData->topology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+		break;
+	default:
+		throw std::exception("Unsupported mesh topology");
+	}
 
 	// Create D3D Index Buffer
 	if (meshData.indexBufferAccessor) {
@@ -660,6 +669,9 @@ void Entity_render_manager::setupRenderPass_entityDeferred_step1()
 	}
 
 	setDepthEnabled(true);
+
+	// Make sure wireframe is disabled
+	context->RSSetState(_commonStates->CullClockwise());
 }
 
 void Entity_render_manager::setupRenderPass_entityDeferred_step2()
@@ -680,6 +692,10 @@ void Entity_render_manager::setupRenderPass_entityDeferred_step2()
 
 	constexpr float blendFactor[4]{ 0.0f, 0.0f, 0.0f, 0.0f };
 	context->OMSetBlendState(_deferredLightBlendState.Get(), blendFactor, 0xFFFFFFFF);
+
+	// Make sure wireframe is disabled
+	context->RSSetState(_commonStates->CullClockwise());
+
 }
 
 void Entity_render_manager::setupRenderPass_entityStandard()
@@ -689,6 +705,7 @@ void Entity_render_manager::setupRenderPass_entityStandard()
 
 	const auto finalColorRenderTarget = _deviceResources.GetRenderTargetView();
 
+	setBlendEnabled(true);
 	setDepthEnabled(true);
 	context->OMSetRenderTargets(1, &finalColorRenderTarget, depthStencil);
 }

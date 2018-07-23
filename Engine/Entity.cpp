@@ -33,21 +33,26 @@ void Entity::computeWorldTransform()
 
 		const auto worldPosition = Vector3::Transform(_localPosition, _parent->_worldTransform);
 
+		// LH matrices
 		const auto worldT = XMMatrixTranslationFromVector(worldPosition);
 		const auto worldR = XMMatrixRotationQuaternion(_worldRotation);
 		const auto worldS = XMMatrixScalingFromVector(_worldScale);
 		
-		_worldTransform = XMMatrixMultiply(XMMatrixMultiply(worldS, worldR), worldT);
+		// Transpose the result to RH coordinate system
+		_worldTransform = XMMatrixTranspose(XMMatrixMultiply(XMMatrixMultiply(worldS, worldR), worldT));
 	}
 	else
 	{
 		_worldRotation = _localRotation;
 		_worldScale = _localScale;
 
+		// LH matrices
 		const auto localT = XMMatrixTranslationFromVector(_localPosition);
 		const auto localR = XMMatrixRotationQuaternion(_worldRotation);
 		const auto localS = XMMatrixScalingFromVector(_worldScale);
-		_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT);
+
+		// Transpose the result to RH coordinate system
+		_worldTransform = XMMatrixTranspose(XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT));
 	}
 }
 
@@ -118,7 +123,7 @@ void Entity::setParent(Entity& newParent)
 		removeParent();
 	}
 
-	auto &entityManager = _scene.manager<Scene_graph_manager>();
+	auto &entityManager = _scene.manager<IScene_graph_manager>();
 	const auto thisPtr = entityManager.getEntityPtrById(getId());
 	entityManager.removeFromRoot(thisPtr);
 
@@ -142,7 +147,7 @@ void Entity::removeParent()
 		}
 	}
 
-	auto &entityManager = _scene.manager<Scene_graph_manager>();
+	auto &entityManager = _scene.manager<IScene_graph_manager>();
 	const auto thisPtr = entityManager.getEntityPtrById(getId());
 	entityManager.addToRoot(thisPtr);
 	_parent = nullptr;
@@ -170,7 +175,7 @@ void Entity::onComponentAdded(Component& component)
 
 Entity& EntityRef::get() const
 {
-	const auto ptr = scene.manager<Scene_graph_manager>().getEntityPtrById(id);
+	const auto ptr = scene.manager<IScene_graph_manager>().getEntityPtrById(id);
 	if (!ptr)
 		throw std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(id) + ")");
 	return *ptr.get();

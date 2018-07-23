@@ -4,7 +4,7 @@
 #include "Renderer_enum.h"
 
 #include "DeviceResources.h"
-#include "SimpleMath.h"
+#include <SimpleMath.h>
 #include <string>
 #include <set>
 

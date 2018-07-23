@@ -59,29 +59,13 @@ constexpr void forEach_processMessage(TTuple& managers, UINT message, WPARAM wPa
 		forEach_processMessage<TTuple, TIdx + 1>(managers, message, wParam, lParam);
 }
 
-Scene::Scene(DX::DeviceResources& deviceResources)
+Scene::Scene(Manager_tuple&& managers)
+	: _managers(move(managers))
 {
 	using namespace std;
 
 	// Mesh loaders
 	addMeshLoader<Entity_graph_loader_gltf>();
-
-	// Repositories
-	get<shared_ptr<Entity_repository>>(_managers) = make_shared<Entity_repository>(*this);
-	get<shared_ptr<Material_repository>>(_managers) = make_shared<Material_repository>();
-
-	// Factories
-	get<shared_ptr<Primitive_mesh_data_factory>>(_managers) = make_shared<Primitive_mesh_data_factory>();
-
-	// Services / Managers
-	get<unique_ptr<Scene_graph_manager>>(_managers) = make_unique<Scene_graph_manager>(*this, get<shared_ptr<Entity_repository>>(_managers));
-	get<unique_ptr<Entity_render_manager>>(_managers) = make_unique<Entity_render_manager>(*this, get<shared_ptr<Material_repository>>(_managers), deviceResources);
-	get<unique_ptr<Entity_scripting_manager>>(_managers) = make_unique<Entity_scripting_manager>(*this);
-	get<unique_ptr<Asset_manager>>(_managers) = make_unique<Asset_manager>(*this);
-	get<unique_ptr<Input_manager>>(_managers) = make_unique<Input_manager>(*this, deviceResources);
-
-	static_assert(std::is_base_of_v<Manager_base, remove_pointer_t<decltype(std::get<unique_ptr<Entity_render_manager>>(_managers).get())>>, "Is a Manager_base!");
-	static_assert(std::is_base_of_v<Manager_base, remove_pointer_t<decltype(std::get<3>(_managers).get())>>, "Is a Manager_base!");
 
 	forEachOfType<Manager_base>(_managers, [](auto* manager) { manager->initialize(); });
 }
@@ -132,11 +116,6 @@ void Scene::tick(DX::StepTimer const& timer)
 	forEach_tick(_managers);
 }
 
-void Scene::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const
-{
-	forEach_processMessage(_managers, message, wParam, lParam);
-}
-
 void Scene::shutdown()
 {
 	forEachOfTypeReverse<Manager_base>(_managers, [](Manager_base* manager) { manager->shutdown(); });
@@ -164,34 +143,6 @@ void Scene::onEntityRemoved(Entity& entity) const
 	sceneGraphManager().handleEntityRemove(entity);
 }
 
-void Scene::createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND window, int width, int height)
-{
-	forEachOfType<Manager_windowDependent>(_managers, [&](Manager_windowDependent* manager) {
-		manager->createWindowSizeDependentResources(deviceResources, window, width, height);
-	});
-}
-
-void Scene::destroyWindowSizeDependentResources()
-{
-	forEachOfType<Manager_windowDependent>(_managers, [](Manager_windowDependent* manager) {
-		manager->destroyWindowSizeDependentResources();
-	});
-}
-
-void Scene::createDeviceDependentResources(DX::DeviceResources& deviceResources)
-{
-	forEachOfType<Manager_deviceDependent>(_managers, [&deviceResources](Manager_deviceDependent* manager) {
-		manager->createDeviceDependentResources(deviceResources);
-	});
-}
-
-void Scene::destroyDeviceDependentResources()
-{
-	forEachOfType<Manager_deviceDependent>(_managers, [](Manager_deviceDependent* manager) {
-		manager->destroyDeviceDependentResources();
-	});
-}
-
 void Scene::setMainCamera(const std::shared_ptr<Entity>& cameraEntity)
 {	
 	if (cameraEntity) {
@@ -203,4 +154,67 @@ void Scene::setMainCamera(const std::shared_ptr<Entity>& cameraEntity)
 	}
 	else
 		_mainCamera = nullptr;
+}
+
+
+void Scene_device_resource_aware::createWindowSizeDependentResources(HWND window, int width, int height)
+{
+	forEachOfType<Manager_windowDependent>(_managers, [=](Manager_windowDependent* manager) {
+		manager->createWindowSizeDependentResources(_deviceResources, window, width, height);
+	});
+}
+
+void Scene_device_resource_aware::destroyWindowSizeDependentResources()
+{
+	forEachOfType<Manager_windowDependent>(_managers, [](Manager_windowDependent* manager) {
+		manager->destroyWindowSizeDependentResources();
+	});
+}
+
+void Scene_device_resource_aware::createDeviceDependentResources()
+{
+	forEachOfType<Manager_deviceDependent>(_managers, [this](Manager_deviceDependent* manager) {
+		manager->createDeviceDependentResources(_deviceResources);
+	});
+}
+
+void Scene_device_resource_aware::destroyDeviceDependentResources()
+{
+	forEachOfType<Manager_deviceDependent>(_managers, [](Manager_deviceDependent* manager) {
+		manager->destroyDeviceDependentResources();
+	});
+}
+
+void Scene_device_resource_aware::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const
+{
+	forEach_processMessage(_managers, message, wParam, lParam);
+}
+
+Scene::Manager_tuple Scene_device_resource_aware::createManagers(DX::DeviceResources& deviceResources)
+{
+	using namespace std;
+
+	Manager_tuple managers;
+
+	// Repositories
+	get<shared_ptr<Entity_repository>>(managers) = make_shared<Entity_repository>(*this);
+	get<shared_ptr<Material_repository>>(managers) = make_shared<Material_repository>();
+
+	// Factories
+	get<shared_ptr<Primitive_mesh_data_factory>>(managers) = make_shared<Primitive_mesh_data_factory>();
+
+	// Services / Managers
+	get<unique_ptr<IScene_graph_manager>>(managers) = make_unique<Scene_graph_manager>(*this, get<shared_ptr<Entity_repository>>(managers));
+	get<unique_ptr<Entity_render_manager>>(managers) = make_unique<Entity_render_manager>(*this, get<shared_ptr<Material_repository>>(managers), deviceResources);
+	get<unique_ptr<Entity_scripting_manager>>(managers) = make_unique<Entity_scripting_manager>(*this);
+	get<unique_ptr<Asset_manager>>(managers) = make_unique<Asset_manager>(*this);
+	get<unique_ptr<Input_manager>>(managers) = make_unique<Input_manager>(*this, deviceResources);
+	
+	return managers;
+}
+
+Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& deviceResources)
+	: Scene(createManagers(deviceResources))
+	, _deviceResources(deviceResources)
+{
 }

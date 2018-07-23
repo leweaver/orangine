@@ -17,11 +17,13 @@ namespace DirectX {
 }
 
 namespace oe {
+	class Camera_component;
 	class Scene;
 	class Material;
 	class Entity_filter;
 	class Render_target_texture;
-	class Alpha_sorter;
+	class Entity_alpha_sorter;
+	class Entity_cull_sorter;
 
 	class Entity_render_manager : 
 		public Manager_base, 
@@ -70,6 +72,8 @@ namespace oe {
 		void createDeviceDependentResources(DX::DeviceResources& deviceResources) override;
 		void destroyDeviceDependentResources() override;
 		void render();
+		
+		DirectX::BoundingFrustum createFrustum(const Entity& entity, const Camera_component& cameraComponent);
 
 	protected:
 		using Light_data_provider = std::function<const Render_light_data*(const Entity&)>;
@@ -128,7 +132,8 @@ namespace oe {
 		bool _fatalError;
 		bool _lastBlendEnabled;
 
-		std::unique_ptr<Alpha_sorter> _alphaSorter;
+		std::unique_ptr<Entity_alpha_sorter> _alphaSorter;
+		std::unique_ptr<Entity_cull_sorter> _cullSorter;
 		
 		//Microsoft::WRL::ComPtr<ID3D11RasterizerState> _rasterizerStateDepthDisabled;
 		//Microsoft::WRL::ComPtr<ID3D11RasterizerState> _rasterizerStateDepthEnabled;

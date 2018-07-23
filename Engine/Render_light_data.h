@@ -53,7 +53,7 @@ namespace oe
 		}
 		bool addAmbientLight(const DirectX::SimpleMath::Color& color, float intensity)
 		{
-			return _lightConstants.addLight({ Light_type::Ambient, DirectX::SimpleMath::Vector4::Zero, encodeColor(color, intensity) });
+			return _lightConstants.addLight({ Light_type::Ambient, DirectX::SimpleMath::Vector3::Zero, encodeColor(color, intensity) });
 		}
 		void updateBuffer(ID3D11DeviceContext* context)
 		{

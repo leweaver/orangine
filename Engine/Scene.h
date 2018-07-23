@@ -20,7 +20,6 @@ namespace oe {
 	class Scene
 	{
 	public:
-		explicit Scene(DX::DeviceResources& deviceResources);
 		~Scene() = default;
 
 		void tick(DX::StepTimer const& timer);
@@ -42,13 +41,6 @@ namespace oe {
 		void onComponentRemoved(Entity& entity, Component& component) const;
 		void onEntityAdded(Entity& entity) const;
 		void onEntityRemoved(Entity& entity) const;
-
-		void createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND window, int width, int height);
-		void destroyWindowSizeDependentResources();
-		void createDeviceDependentResources(DX::DeviceResources& deviceResources);
-		void destroyDeviceDependentResources();
-		void processMessage(UINT message, WPARAM wParam, LPARAM lParam) const;
-
 
 		/*
 		 * Add things to the scene, from a file
@@ -73,11 +65,8 @@ namespace oe {
 		std::shared_ptr<Entity> mainCamera() const { return _mainCamera; };
 		void setMainCamera(const std::shared_ptr<Entity>& cameraEntity);
 
-	private:
-
-		void loadEntities(const std::string& filename, Entity* parentEntity);
-		
-		std::tuple<
+	protected:
+		using Manager_tuple = std::tuple<
 			// Repositories
 			std::shared_ptr<Entity_repository>,
 			std::shared_ptr<Material_repository>,
@@ -86,12 +75,20 @@ namespace oe {
 			std::shared_ptr<Primitive_mesh_data_factory>,
 
 			// Managers
-			std::unique_ptr<Scene_graph_manager>,
+			std::unique_ptr<IScene_graph_manager>,
 			std::unique_ptr<Entity_render_manager>,
 			std::unique_ptr<Entity_scripting_manager>,
 			std::unique_ptr<Asset_manager>,
 			std::unique_ptr<Input_manager>
-		> _managers;
+		>;
+
+		Scene(Manager_tuple&& managers);
+
+		Manager_tuple _managers;
+
+	private:
+
+		void loadEntities(const std::string& filename, Entity* parentEntity);
 
 		std::map<std::string, std::shared_ptr<Entity_graph_loader>> _entityGraphLoaders;
 
@@ -102,7 +99,7 @@ namespace oe {
 		double _elapsedTime = 0;
 
 		// Templated helper methods		
-		Scene_graph_manager& sceneGraphManager() const { return *std::get<std::unique_ptr<Scene_graph_manager>>(_managers); }
+		IScene_graph_manager& sceneGraphManager() const { return *std::get<std::unique_ptr<IScene_graph_manager>>(_managers); }
 		Entity_render_manager& entityRenderManger() const { return *std::get<std::unique_ptr<Entity_render_manager>>(_managers); }
 		Entity_scripting_manager& entityScriptingManager() const { return *std::get<std::unique_ptr<Entity_scripting_manager>>(_managers); }
 		Asset_manager& assetManager() const { return *std::get<std::unique_ptr<Asset_manager>>(_managers); }
@@ -115,4 +112,20 @@ namespace oe {
 		return *std::get<std::unique_ptr<TMgr>>(_managers);
 	}
 
+	class Scene_device_resource_aware : public Scene {
+	public:
+
+		explicit Scene_device_resource_aware(DX::DeviceResources& deviceResources);
+
+		void createWindowSizeDependentResources(HWND window, int width, int height);
+		void destroyWindowSizeDependentResources();
+		void createDeviceDependentResources();
+		void destroyDeviceDependentResources();
+		void processMessage(UINT message, WPARAM wParam, LPARAM lParam) const;
+
+		Manager_tuple createManagers(DX::DeviceResources& deviceResources);
+
+	private:
+		DX::DeviceResources& _deviceResources;
+	};
 }

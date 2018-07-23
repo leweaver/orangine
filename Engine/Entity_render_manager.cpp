@@ -18,7 +18,7 @@
 #include "Deferred_light_material.h"
 #include "Texture.h"
 #include "Camera_component.h"
-#include "Alpha_sorter.h"
+#include "Entity_sorter.h"
 #include "CommonStates.h"
 #include "GeometricPrimitive.h"
 #include <optional>
@@ -62,16 +62,17 @@ void Entity_render_manager::initialize()
 {
 	using namespace std::placeholders;
 
-	_renderableEntities = _scene.manager<Scene_graph_manager>().getEntityFilter({ Renderable_component::type() });
+	_renderableEntities = _scene.manager<IScene_graph_manager>().getEntityFilter({ Renderable_component::type() });
 
-	_lightEntities = _scene.manager<Scene_graph_manager>().getEntityFilter({
+	_lightEntities = _scene.manager<IScene_graph_manager>().getEntityFilter({
 		Directional_light_component::type(),
 		Point_light_component::type(),
 		Ambient_light_component::type()
 	}, Entity_filter_mode::Any);
 
 	_primitiveMeshDataFactory = std::make_unique<Primitive_mesh_data_factory>();
-	_alphaSorter = std::make_unique<Alpha_sorter>();
+	_alphaSorter = std::make_unique<Entity_alpha_sorter>();
+	_cullSorter = std::make_unique<Entity_cull_sorter>();
 }
 
 void Entity_render_manager::tick() 
@@ -275,9 +276,15 @@ void Entity_render_manager::render()
 
 	Buffer_array_set bufferArraySet;
 	
-	// Find the list of entities that have alpha, and sort them.
-	_alphaSorter->beginSortAsync(_renderableEntities->begin(), _renderableEntities->end(), cameraEntity->worldPosition());
+	const auto frustum = createFrustum(*cameraEntity.get(), *cameraEntity->getFirstComponentOfType<Camera_component>());
+	_cullSorter->beginSortAsync(_renderableEntities->begin(), _renderableEntities->end(), frustum);
 
+	// Block on the cull sorter, since we can't render until it is done; and it is a good place to kick off the alpha sort.
+	_cullSorter->then([&](const std::vector<Entity_cull_sorter_entry>& entities) {
+		// Find the list of entities that have alpha, and sort them.
+		_alphaSorter->beginSortAsync(entities.begin(), entities.end(), cameraEntity->worldPosition());
+	});
+	
 	// Deferred Lighting passes
 	setBlendEnabled(false); 
 	_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step1_setup");
@@ -288,8 +295,11 @@ void Entity_render_manager::render()
 		_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step1_draw");
 
 		const auto lightDataProvider = [this](const Entity&) { return _renderPass_entityDeferred_renderLightData_blank.get(); };
-		for (const auto& entity : *_renderableEntities)
-			render(entity.get(), bufferArraySet, lightDataProvider, std::get<g_entity_deferred_geometry>(_renderPass_entityDeferred));
+
+		_cullSorter->then([&](const std::vector<Entity_cull_sorter_entry>& entities) {
+			for (const auto& entry : entities)
+				render(entry.entity, bufferArraySet, lightDataProvider, std::get<g_entity_deferred_geometry>(_renderPass_entityDeferred));
+		});
 		
 		_deviceResources.PIXEndEvent();
 	}
@@ -308,9 +318,7 @@ void Entity_render_manager::render()
 	}
 
 	// Standard Lighting pass
-	_alphaSorter->wait([this, &bufferArraySet](const std::vector<Alpha_sorter::Sort_entry>& entries) {
-		// TODO: Draw alpha entities
-
+	_alphaSorter->then([this, &bufferArraySet](const std::vector<Entity_alpha_sorter_entry>& entries) {
 		if (!_fatalError)
 		{
 			_deviceResources.PIXBeginEvent(L"renderPass_EntityStandard_setup");
@@ -330,11 +338,37 @@ void Entity_render_manager::render()
 			};
 
 			_deviceResources.PIXBeginEvent(L"renderPass_EntityStandard_draw");
-			for (auto entry : entries)
-				render(entry.entity, bufferArraySet, lightDataProvider, std::get<0>(_renderPass_entityStandard));
+
+			_cullSorter->then([&](const std::vector<Entity_cull_sorter_entry>& entities) {
+				for (const auto& entry : entities)
+					render(entry.entity, bufferArraySet, lightDataProvider, std::get<0>(_renderPass_entityStandard));
+			});
+
 			_deviceResources.PIXEndEvent();
 		}
 	});
+}
+
+BoundingFrustum Entity_render_manager::createFrustum(const Entity& entity, const Camera_component& cameraComponent)
+{
+	const auto viewport = _deviceResources.GetScreenViewport();
+	const auto aspectRatio = viewport.Width / viewport.Height;
+
+	const auto projMatrix = Matrix::CreatePerspectiveFieldOfView(
+		cameraComponent.fov(),
+		aspectRatio,
+		cameraComponent.nearPlane(),
+		cameraComponent.farPlane());
+	BoundingFrustum frustum;
+	BoundingFrustum::CreateFromMatrix(frustum, projMatrix);
+	frustum.Origin = entity.worldPosition();
+	frustum.Orientation = entity.worldRotation();
+
+	// TODO: For some reason, CreateFromMatrix sets near/far to -ve values?
+	//frustum.Near = cameraComponent.nearPlane();
+	//frustum.Far = cameraComponent.farPlane();
+
+	return frustum;
 }
 
 std::vector<Vertex_attribute> vertexAttributes;

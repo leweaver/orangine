@@ -2,7 +2,7 @@
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
-#define _SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING
+
 #include <tiny_gltf.h>
 #include <wincodec.h>
 

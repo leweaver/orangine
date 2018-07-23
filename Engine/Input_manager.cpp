@@ -44,7 +44,6 @@ Input_manager::Input_manager(Scene& scene, DX::DeviceResources& deviceResources)
 
 void Input_manager::initialize()
 {
-	_impl->mouse = std::make_unique<DirectX::Mouse>();
 }
 
 void Input_manager::shutdown()
@@ -59,12 +58,13 @@ void Input_manager::tick()
 
 void Input_manager::createWindowSizeDependentResources(DX::DeviceResources& /*deviceResources*/, HWND window, int /*width*/, int /*height*/)
 {
+	_impl->mouse = std::make_unique<DirectX::Mouse>();
 	_impl->mouse->SetWindow(window);
 }
 
 void Input_manager::destroyWindowSizeDependentResources()
 {
-	_impl->mouse = std::make_unique<DirectX::Mouse>();
+	_impl->mouse = std::unique_ptr<DirectX::Mouse>();
 }
 
 void Input_manager::processMessage(UINT message, WPARAM wParam, LPARAM lParam)

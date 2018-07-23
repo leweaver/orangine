@@ -10,3 +10,6 @@
 [submodule "thirdparty/DirectXTK"]
 	path = thirdparty/DirectXTK
 	url = git@github.com:Microsoft/DirectXTK.git
+[submodule "thirdparty/Fakeit"]
+	path = thirdparty/Fakeit
+	url = git@github.com:eranpeer/FakeIt.git

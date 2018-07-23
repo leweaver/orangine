@@ -75,7 +75,7 @@ private:
     DX::StepTimer                           m_timer;
 
 	// Services
-	std::unique_ptr<oe::Scene>              m_scene;
+	std::unique_ptr<oe::Scene_device_resource_aware> m_scene;
 	
 	bool									m_fatalError;
 	HWND									_window;

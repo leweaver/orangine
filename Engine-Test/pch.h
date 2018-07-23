@@ -5,6 +5,7 @@
 
 #pragma once
 
+
 #include <WinSDKVer.h>
 #define _WIN32_WINNT 0x0601
 #include <SDKDDKVer.h>
@@ -40,20 +41,10 @@
 #include <dxgi1_5.h>
 #endif
 
-#include <DirectXMath.h>
-#include <DirectXColors.h>
-#include <DirectXHelpers.h>
 
-#include <algorithm>
-#include <exception>
-#include <memory>
-#include <stdexcept>
+#define GTEST_LANG_CXX11 TRUE
+#include "gtest/gtest.h"
 
-#include <cstdio>
+#define _SILENCE_CXX17_UNCAUGHT_EXCEPTION_DEPRECATION_WARNING 1
+#include <fakeit.hpp>
 
-#ifdef _DEBUG
-#include <dxgidebug.h>
-#endif
-
-#include <SimpleMath.h>
-#include <g3log/g3log.hpp>

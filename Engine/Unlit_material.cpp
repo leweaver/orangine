@@ -48,7 +48,7 @@ void Unlit_material::updateVSConstantBuffer(const SimpleMath::Matrix& worldMatri
 	ID3D11Buffer* buffer)
 {
 	// Convert to LH, for DirectX.
-	_constantsVs.worldViewProjection = XMMatrixMultiplyTranspose(worldMatrix, XMMatrixMultiply(viewMatrix, projMatrix));
+	_constantsVs.worldViewProjection = XMMatrixMultiply(worldMatrix, XMMatrixMultiply(viewMatrix, projMatrix));
 
 	_constantsVs.baseColor = _baseColor;
 

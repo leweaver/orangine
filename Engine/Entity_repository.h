@@ -1,12 +1,11 @@
 ﻿#pragma once
 
-#include "Scene.h"
 #include "Entity.h"
 
 #include <memory>
 
 namespace oe {
-
+	class Scene;
 	class Entity_repository
 	{
 		Entity::Entity_ptr_map _entities;

@@ -98,16 +98,17 @@ namespace oe {
 		Scene& scene() const { return _scene; }
 
 		/*
-		* Returns the world transform matrix (T*R*S).
-		* If this Entity has no parent, this equals the local transform matrix).
-		* Otherwise, this is localTransform * parentTransform.
+		* Returns the right handed world transform matrix (T*R*S).
+		* If this Entity has no parent, this equals the local transform matrix.
+		* Otherwise, this is localTransform * parent.worldTransform.
 		*/
+		// TODO: This is still a LH MAtrix... :(
 		const DirectX::SimpleMath::Matrix& worldTransform() const { return _worldTransform; }
 
 		const DirectX::SimpleMath::Vector3& worldScale() const;
 		DirectX::SimpleMath::Vector3 worldPosition() const;
 		const DirectX::SimpleMath::Quaternion& worldRotation() const;
-
+		
 	private:
 		// TODO: Refactor into a public & private interface, so that friend isn't required.
 		friend class Entity_repository;

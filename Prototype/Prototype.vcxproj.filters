@@ -11,247 +11,29 @@
     <Filter Include="Assets\shaders">
       <UniqueIdentifier>{5552b684-2186-4d88-a4a8-3b3fd05d6580}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Systems">
-      <UniqueIdentifier>{a1dbed6d-878d-4e6f-a6a2-e1f02dd1bc54}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Systems\SceneGraph">
-      <UniqueIdentifier>{a82e037c-f09d-4da8-ad77-13cdd17ce8c7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Systems\Renderer">
-      <UniqueIdentifier>{e2abaab7-70a2-434c-bf13-f8d8bbc91183}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Systems\Scripting">
-      <UniqueIdentifier>{aa84136d-04a0-4739-bf9b-a40477a648cf}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Systems\Renderer\Materials">
-      <UniqueIdentifier>{93383671-ad64-448f-9e94-7d1a56a37cb7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Assets\shaders\inc">
       <UniqueIdentifier>{4af0fe66-d1d3-4436-af4d-54fbfcc4f374}</UniqueIdentifier>
     </Filter>
     <Filter Include="Assets\shaders\test">
       <UniqueIdentifier>{3c0807bd-77f9-4013-9a3f-31190b38a1ea}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Systems\Input">
-      <UniqueIdentifier>{b25137f5-325c-4981-accb-0e3fab44bf24}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Game.h" />
-    <ClInclude Include="StepTimer.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="DeviceResources.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Entity.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="Component.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils.h" />
-    <ClInclude Include="Texture.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClInclude>
     <ClInclude Include="LogFileSink.h">
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="data\shaders\inc\lighting.hlsl">
       <Filter>Assets\shaders\inc</Filter>
     </ClInclude>
-    <ClInclude Include="Primitive_mesh_data_factory.h" />
-    <ClInclude Include="Mesh_data.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Simple_types.h" />
-    <ClInclude Include="Manager_base.h">
-      <Filter>Systems</Filter>
-    </ClInclude>
-    <ClInclude Include="Asset_manager.h">
-      <Filter>Systems</Filter>
-    </ClInclude>
-    <ClInclude Include="Test_component.h">
-      <Filter>Systems\Scripting</Filter>
-    </ClInclude>
-    <ClInclude Include="Entity_scripting_manager.h">
-      <Filter>Systems\Scripting</Filter>
-    </ClInclude>
-    <ClInclude Include="Entity_filter.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="Entity_graph_loader.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="Entity_repository.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="Entity_graph_loader_gltf.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene_graph_manager.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="PBR_material.h">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClInclude>
-    <ClInclude Include="Deferred_light_material.h">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClInclude>
-    <ClInclude Include="Clear_gbuffer_material.h">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClInclude>
-    <ClInclude Include="Camera_component.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Entity_render_manager.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Light_component.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Material_repository.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Mesh_data_component.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Mikk_tspace_triangle_mesh_interface.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderable_component.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer_data.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Render_target_texture.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Render_pass_info.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Mesh_utils.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Render_light_data.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Alpha_sorter.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer_enum.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Input_manager.h">
-      <Filter>Systems\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Unlit_material.h">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="DeviceResources.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Entity.cpp">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClCompile>
-    <ClCompile Include="Component.cpp">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene.cpp">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClCompile>
-    <ClCompile Include="Utils.cpp" />
-    <ClCompile Include="Material.cpp">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClCompile>
     <ClCompile Include="LogFileSink.cpp">
       <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Primitive_mesh_data_factory.cpp" />
-    <ClCompile Include="Mesh_data.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Asset_manager.cpp">
-      <Filter>Systems</Filter>
-    </ClCompile>
-    <ClCompile Include="Test_component.cpp">
-      <Filter>Systems\Scripting</Filter>
-    </ClCompile>
-    <ClCompile Include="Entity_scripting_manager.cpp">
-      <Filter>Systems\Scripting</Filter>
-    </ClCompile>
-    <ClCompile Include="Entity_repository.cpp">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClCompile>
-    <ClCompile Include="Entity_graph_loader_gltf.cpp">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene_graph_manager.cpp">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClCompile>
-    <ClCompile Include="PBR_material.cpp">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClCompile>
-    <ClCompile Include="Deferred_light_material.cpp">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClCompile>
-    <ClCompile Include="Clear_gbuffer_material.cpp">
-      <Filter>Systems\Renderer\Materials</Filter>
-    </ClCompile>
-    <ClCompile Include="Camera_component.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Entity_render_manager.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Light_component.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Material_repository.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Mesh_data_component.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Mikk_tspace_triangle_mesh_interface.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderable_component.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer_data.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Render_target_texture.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Texture.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Mesh_utils.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Alpha_sorter.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Input_manager.cpp">
-      <Filter>Systems\Input</Filter>
-    </ClCompile>
-    <ClCompile Include="Unlit_material.cpp">
-      <Filter>Systems\Renderer\Materials</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -269,9 +51,6 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="LICENSE.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="data\meshes\Cube\Cube.gltf" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="data\shaders\vertex_colors_VS.hlsl">

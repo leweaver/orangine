@@ -121,10 +121,10 @@ void PBR_material::updateVSConstantBuffer(const SimpleMath::Matrix& worldMatrix,
 	ID3D11Buffer* buffer)
 {
 	// Convert to LH, for DirectX.
-	_constantsVs.worldViewProjection = XMMatrixMultiplyTranspose(worldMatrix, XMMatrixMultiply(viewMatrix, projMatrix));
+	_constantsVs.worldViewProjection = XMMatrixMultiply(XMMatrixMultiply(projMatrix, viewMatrix), worldMatrix);
 
-	_constantsVs.world = XMMatrixTranspose(worldMatrix);
-	_constantsVs.worldInvTranspose = XMMatrixInverse(nullptr, worldMatrix);
+	_constantsVs.world = (worldMatrix);
+	_constantsVs.worldInvTranspose =  XMMatrixTranspose(XMMatrixInverse(nullptr, worldMatrix));
 
 	context->UpdateSubresource(buffer, 0, nullptr, &_constantsVs, 0, 0);
 }

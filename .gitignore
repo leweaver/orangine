@@ -5,3 +5,4 @@ AssetWorker/
 *.vcxproj.user
 Prototype/data/meshes/
 *.TMP
+packages/

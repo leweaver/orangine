@@ -1,13 +1,20 @@
 ﻿#include "pch.h"
-#include <algorithm>
 
 #include "Scene_graph_manager.h"
+#include "Scene.h"
+
+#include <algorithm>
 #include <deque>
 
 using namespace oe;
 
-Scene_graph_manager::Scene_graph_manager(Scene& scene, std::shared_ptr<Entity_repository> entityRepository)
+IScene_graph_manager::IScene_graph_manager(Scene& scene)
 	: Manager_base(scene)
+{}
+
+
+Scene_graph_manager::Scene_graph_manager(Scene& scene, std::shared_ptr<Entity_repository> entityRepository)
+	: IScene_graph_manager(scene)
 	, _entityRepository(std::move(entityRepository))
 {
 }

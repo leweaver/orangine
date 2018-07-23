@@ -21,7 +21,8 @@ Entity_scripting_manager::Entity_scripting_manager(Scene &scene)
 
 void Entity_scripting_manager::initialize()
 {
-	_scriptableEntityFilter = _scene.manager<Scene_graph_manager>().getEntityFilter({ Test_component::type() });
+	_scriptableEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({ Test_component::type() });
+	_scriptData.yaw = XM_PI;
 }
 
 void Entity_scripting_manager::tick() {

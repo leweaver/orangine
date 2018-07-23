@@ -22,6 +22,8 @@ using namespace oe;
 
 using Microsoft::WRL::ComPtr;
 
+std::shared_ptr<Entity> g_debugEntity;
+
 Game::Game()
 	: m_fatalError(false)
 {
@@ -31,6 +33,7 @@ Game::Game()
 
 Game::~Game()
 {
+	g_debugEntity.reset();
 	if (m_scene) {
 		m_scene->manager<Entity_render_manager>().destroyDeviceDependentResources();
 		m_scene->shutdown();
@@ -49,7 +52,7 @@ Game::~Game()
 
 void Game::CreateSceneCubeSatellite()
 {
-	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
+	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Root 1");
 	//root1->AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
 
@@ -64,7 +67,7 @@ void Game::CreateSceneCubeSatellite()
 
 std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 {
-	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
+	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	auto root = entityManager.instantiate("Root");
 
 	if (animate)
@@ -78,7 +81,7 @@ std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 
 void Game::CreateSceneMetalRoughSpheres(bool animate)
 {
-	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
+	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Root");
 	//root1->SetPosition({ 0, 0, -10 });
 	root1->setScale({ 1, 1, 1 });
@@ -91,7 +94,7 @@ void Game::CreateSceneMetalRoughSpheres(bool animate)
 
 void Game::CreateCamera(bool animate)
 {
-	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
+	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 
 	auto cameraDollyAnchor = entityManager.instantiate("CameraDollyAnchor");
 	if (animate)
@@ -110,11 +113,13 @@ void Game::CreateCamera(bool animate)
 	camera->lookAt({ 0, 0, 0 }, Vector3::Up);
 
 	m_scene->setMainCamera(camera);
+
+
 }
 
 void Game::CreateLights()
 {
-	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
+	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	int lightCount = 0;
 	auto createDirLight = [&entityManager, &lightCount](const Vector3 &normal, const Color &color, float intensity)
 	{
@@ -166,7 +171,7 @@ void Game::CreateLights()
 
 	if (true)
 	{
-		createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 1)->setParent(*lightRoot);
+		createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 2)->setParent(*lightRoot);
 		createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75)->setParent(*lightRoot);
 	}
 	else
@@ -178,7 +183,7 @@ void Game::CreateLights()
 
 void Game::CreateSceneLeverArm()
 {
-	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
+	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Root 1");
 	root1->setPosition({ 5, 0, 5 });
 
@@ -193,13 +198,11 @@ void Game::CreateSceneLeverArm()
 
 void Game::CreateGeometricPrimitives()
 {
-	Scene_graph_manager& entityManager = m_scene->manager<Scene_graph_manager>();
+	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Primitives");
 
 
 	Primitive_mesh_data_factory pmdf;
-
-
 	{
 		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
 		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
@@ -212,6 +215,8 @@ void Game::CreateGeometricPrimitives()
 		renderable.setWireframe(false);
 
 		const auto meshData = pmdf.createTeapot();
+		
+		//const auto meshData = pmdf.createSphere(4);
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
 	}
 
@@ -228,27 +233,6 @@ void Game::CreateGeometricPrimitives()
 		child2->setPosition({ 0.0f, -0.5f, 0.0f });
 	}
 
-	{
-		const auto &child3 = entityManager.instantiate("Primitive Child 3", *root1);
-		std::unique_ptr<Unlit_material> material = std::make_unique<Unlit_material>();
-		material->setBaseColor(Color(Colors::White));
-		
-		auto& renderable = child3->addComponent<Renderable_component>();
-		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
-
-		const auto projMatrix = Matrix::CreatePerspectiveFieldOfView(
-			60 * XM_PI / 180.0f,
-			400.0f / 300.0f,
-			0.1f,
-			4.0f);
-		BoundingFrustum frustum;
-		BoundingFrustum::CreateFromMatrix(frustum, projMatrix);
-		const auto meshData = pmdf.createFrustum(frustum);
-		child3->addComponent<Mesh_data_component>().setMeshData(meshData);
-
-		//child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
-		//child2->setPosition({ 0.0f, -0.5f, 0.0f });
-	}
 }
 
 // Initialize the Direct3D resources required to run.
@@ -257,7 +241,7 @@ void Game::Initialize(HWND window, int width, int height)
 	_window = window;
     m_deviceResources->SetWindow(window, width, height);
 
-	m_scene = std::make_unique<Scene>(*(m_deviceResources.get()));
+	m_scene = std::make_unique<Scene_device_resource_aware>(*(m_deviceResources.get()));
 
 	try
 	{
@@ -379,6 +363,58 @@ void Game::OnWindowSizeChanged(int width, int height)
 	m_scene->destroyWindowSizeDependentResources();
 
     createWindowSizeDependentResources();
+
+	const auto mainCamera = m_scene->mainCamera();
+	if (mainCamera) {
+		auto& entityManager = m_scene->manager<IScene_graph_manager>();
+		const auto camera = mainCamera->getFirstComponentOfType<Camera_component>();
+
+		if (g_debugEntity) {
+			entityManager.destroy(g_debugEntity->getId());
+			g_debugEntity.reset();
+		}
+
+		if (camera != nullptr && width > 0 && height > 0) {
+			const auto &child3 = entityManager.instantiate("Primitive Child 3");
+			std::unique_ptr<Unlit_material> material = std::make_unique<Unlit_material>();
+			material->setBaseColor(Color(Colors::White));
+
+			auto& renderable = child3->addComponent<Renderable_component>();
+			renderable.setMaterial(std::unique_ptr<Material>(material.release()));
+
+			const auto projMatrixLH = XMMatrixPerspectiveFovLH(//Matrix::CreatePerspectiveFieldOfView(
+				camera->fov(),
+				static_cast<float>(width) / static_cast<float>(height),
+				camera->nearPlane(),
+				camera->farPlane() * 0.5f);
+			
+			// DirectX BoundingFrustum's are LH.
+			BoundingFrustum frustum;
+			BoundingFrustum::CreateFromMatrix(frustum, projMatrixLH);
+
+			Matrix viewLH = mainCamera->worldTransform();
+			frustum.Transform(frustum, viewLH.Invert());
+			
+			//frustum.Origin = mainCamera->worldPosition();
+			//frustum.Orientation = mainCamera->worldRotation();
+			//frustum.Near = camera->nearPlane();
+			//frustum.Far = camera->farPlane();
+
+			Primitive_mesh_data_factory pmdf;
+			const auto meshData = pmdf.createFrustumLines(frustum);
+			child3->addComponent<Mesh_data_component>().setMeshData(meshData);
+
+			// Quick sanity check
+			BoundingSphere bs;
+			bs.Center = { 0, 0, 0 };
+			bs.Radius = 2.0f;
+			
+			bool contains = frustum.Contains(bs);
+			bool intersects = frustum.Intersects(bs);
+
+			//assert(contains || intersects);
+		}
+	}
 }
 
 // Properties
@@ -400,7 +436,7 @@ void Game::createDeviceDependentResources()
 {
 	try {
 		m_deviceResources->CreateDeviceResources();
-		m_scene->createDeviceDependentResources(*(m_deviceResources.get()));
+		m_scene->createDeviceDependentResources();
 	}
 	catch (std::exception &e)
 	{
@@ -416,8 +452,7 @@ void Game::createWindowSizeDependentResources()
 	{
 		m_deviceResources->CreateWindowSizeDependentResources();
 		const auto outputSize = m_deviceResources->GetOutputSize();
-		m_scene->createWindowSizeDependentResources(*m_deviceResources.get(),
-			_window, 
+		m_scene->createWindowSizeDependentResources(_window, 
 			std::max<UINT>(outputSize.right - outputSize.left, 1),
 			std::max<UINT>(outputSize.bottom - outputSize.top, 1));
 	}

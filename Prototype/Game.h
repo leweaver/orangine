@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "DeviceResources.h"
-#include "StepTimer.h"
-#include <memory>
+#include "../Engine/DeviceResources.h"
+#include "../Engine/StepTimer.h"
+#include "../Engine/Scene.h"
 
-#include "Scene.h"
+#include <memory>
 
 namespace oe
 {

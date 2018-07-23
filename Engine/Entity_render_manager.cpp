@@ -166,7 +166,7 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 	setDepthEnabled(false);
 
 	// Deffered Lighting Material
-	_deferredLightMaterial = std::make_shared<Deferred_light_material>();
+	_deferredLightMaterial = std::shared_ptr<Deferred_light_material>(new Deferred_light_material());
 	
 	// additive blend
 	D3D11_BLEND_DESC blendStateDesc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());

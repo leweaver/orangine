@@ -4,15 +4,16 @@
 
 #include "pch.h"
 #include "Game.h"
-#include "Scene_graph_manager.h"
-#include "Scene.h"
-#include "Test_component.h"
-#include "Entity_render_manager.h"
-#include "Camera_component.h"
-#include "Light_component.h"
-#include "Renderable_component.h"
-#include "PBR_material.h"
-#include "Unlit_material.h"
+
+#include "../Engine/Scene_graph_manager.h"
+#include "../Engine/Scene.h"
+#include "../Engine/Test_component.h"
+#include "../Engine/Entity_render_manager.h"
+#include "../Engine/Camera_component.h"
+#include "../Engine/Light_component.h"
+#include "../Engine/Renderable_component.h"
+#include "../Engine/PBR_material.h"
+#include "../Engine/Unlit_material.h"
 
 extern void ExitGame();
 

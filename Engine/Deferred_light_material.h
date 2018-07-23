@@ -9,6 +9,8 @@ namespace oe
 	{
 	public:
 
+		Deferred_light_material() = default;
+
 		const std::shared_ptr<Texture>& getColor0Texture() const { return _color0Texture; }
 		void setColor0Texture(const std::shared_ptr<Texture>& texture) { _color0Texture = texture; }
 		const std::shared_ptr<Texture>& getColor1Texture() const { return _color1Texture; }

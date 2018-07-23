@@ -3,7 +3,9 @@
 //
 
 #include "pch.h"
+
 #include "Game.h"
+#include "../Engine/Utils.h"
 
 #include <g3log/logworker.hpp>
 #include "LogFileSink.h"

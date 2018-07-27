@@ -30,8 +30,37 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
   <ImportGroup Label="Shared" />
-  <ImportGroup Label="PropertySheets" />
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="..\Build\Cpp17-Debug.props" />
+    <Import Project="..\Build\Cpp17-Win32.props" />
+    <Import Project="..\Build\Directories.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="..\Build\Cpp17-Debug.props" />
+    <Import Project="..\Build\Directories.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="..\Build\Cpp17-Release.props" />
+    <Import Project="..\Build\Directories.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="..\Build\Cpp17-Release.props" />
+    <Import Project="..\Build\Cpp17-Win32.props" />
+    <Import Project="..\Build\Directories.props" />
+  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LibraryPath>$(SolutionDir)bin\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LibraryPath>$(SolutionDir)bin\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LibraryPath>$(SolutionDir)bin\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LibraryPath>$(SolutionDir)bin\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemGroup>
     <ClInclude Include="Mocks.h" />
     <ClInclude Include="pch.h" />
@@ -75,6 +104,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -93,7 +123,13 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.pdb $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)
+echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -111,6 +147,7 @@
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -129,6 +166,7 @@
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

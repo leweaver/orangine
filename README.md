@@ -1,6 +1,9 @@
 ﻿# First time setup
 I prefer to use bash shell for git commands. (the ubuntu shell within windows, or git-bash work equally well).
 
+## OS & Visual Studio Version
+You must have Windows 10 (RS4 or later), with Visual Studio 2017 15.7.5, or later (Windows SDK 10.0.17134.0 or later)
+
 ## Get the code & dependencies from GIT
 1. Install ssh keypair to your system (run `ssh-keygen`), and load the public key to your github account
 1. Clone the repository.
@@ -26,6 +29,8 @@ We need to create the appropriate visual studio projects, using CMake.
 ```
 .\create-thirdparty-projects.bat
 ```
+
+### Visual Studio 2017
 
 # Renderer 
 ## Normals and Tangents

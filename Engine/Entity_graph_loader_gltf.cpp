@@ -55,7 +55,7 @@ unique_ptr<Mesh_index_buffer_accessor> read_index_buffer(const Model& model,
 	vector<Accessor>::size_type accessorIndex,
 	LoaderData& loaderData);
 
-shared_ptr<Entity> create_entity(const Node& node, Entity_repository& entityRepository, Material_repository& Material_repository, LoaderData& loaderData);
+shared_ptr<Entity> create_entity(const Node& node, IEntity_repository& entityRepository, IMaterial_repository& materialRepository, LoaderData& loaderData);
 
 string g_pbrPropertyName_BaseColorFactor = "baseColorFactor";
 string g_pbrPropertyName_BaseColorTexture = "baseColorTexture";
@@ -73,8 +73,7 @@ string g_pbrPropertyValue_AlphaMode_Blend = "BLEND";
 Entity_graph_loader_gltf::Entity_graph_loader_gltf()
 {
 	// Create the COM imaging factory
-	HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_imagingFactory));
-	assert(SUCCEEDED(hr));
+	ThrowIfFailed(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_imagingFactory)));
 }
 
 void Entity_graph_loader_gltf::getSupportedFileExtensions(vector<string>& extensions) const
@@ -83,8 +82,8 @@ void Entity_graph_loader_gltf::getSupportedFileExtensions(vector<string>& extens
 }
 
 vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filename, 
-	Entity_repository& entityRepository, 
-	Material_repository& Material_repository, 
+	IEntity_repository& entityRepository, 
+	IMaterial_repository& materialRepository,
 	Primitive_mesh_data_factory& meshDataFactory) const
 {
 	vector<shared_ptr<Entity>> entities;
@@ -115,7 +114,7 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filena
 	for (auto nodeIdx : scene.nodes) 
 	{
 		const auto& rootNode = model.nodes.at(nodeIdx);
-		entities.push_back(create_entity(rootNode, entityRepository, Material_repository, loaderData));
+		entities.push_back(create_entity(rootNode, entityRepository, materialRepository, loaderData));
 	}
 
 	return entities;
@@ -236,10 +235,11 @@ shared_ptr<oe::Texture> try_create_texture(const LoaderData& loaderData, const t
 	}
 }
 
-unique_ptr<oe::Material> create_material(const Primitive& prim, Material_repository& Material_repository, LoaderData& loaderData)
+unique_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_repository& materialRepository, LoaderData& loaderData)
 {
 	const tinygltf::Material& gltfMaterial = loaderData.model.materials.at(prim.material);
-	auto material = Material_repository.instantiate<PBR_material>();
+	//auto material = materialRepository.instantiate(std::string("PBR_material"));
+	auto material = std::make_unique<PBR_material>();
 
 	const auto withParam = [gltfMaterial](const string& name, std::function<void(const string&, const Parameter&)> found, std::function<void(const string&)> notFound) {
 		auto paramPos = gltfMaterial.values.find(name);
@@ -382,7 +382,7 @@ void setEntityTransform(Entity&  entity, const Node&  node)
 	}
 }
 
-shared_ptr<Entity> create_entity(const Node& node, Entity_repository& entityRepository, Material_repository& Material_repository, LoaderData& loaderData)
+shared_ptr<Entity> create_entity(const Node& node, IEntity_repository& entityRepository, IMaterial_repository& materialRepository, LoaderData& loaderData)
 {
 	auto rootEntity = entityRepository.instantiate(node.name);
 
@@ -409,7 +409,7 @@ shared_ptr<Entity> create_entity(const Node& node, Entity_repository& entityRepo
 			try {
 				const auto& prim = mesh.primitives.at(primIdx);
 
-				auto material = create_material(prim, Material_repository, loaderData);
+				auto material = create_material(prim, materialRepository, loaderData);
 
 				// Read Index
 				try
@@ -512,7 +512,7 @@ shared_ptr<Entity> create_entity(const Node& node, Entity_repository& entityRepo
 	for (auto childIdx : node.children)
 	{
 		const auto& childNode = loaderData.model.nodes.at(childIdx);
-		auto childEntity = create_entity(childNode, entityRepository, Material_repository, loaderData);
+		auto childEntity = create_entity(childNode, entityRepository, materialRepository, loaderData);
 		childEntity->setParent(*rootEntity.get());
 	}
 

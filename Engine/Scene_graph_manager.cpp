@@ -13,7 +13,7 @@ IScene_graph_manager::IScene_graph_manager(Scene& scene)
 {}
 
 
-Scene_graph_manager::Scene_graph_manager(Scene& scene, std::shared_ptr<Entity_repository> entityRepository)
+Scene_graph_manager::Scene_graph_manager(Scene& scene, std::shared_ptr<IEntity_repository> entityRepository)
 	: IScene_graph_manager(scene)
 	, _entityRepository(std::move(entityRepository))
 {

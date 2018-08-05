@@ -37,7 +37,7 @@ public:
 
 // DirectX Singletons
 Input_manager::Input_manager(Scene& scene, DX::DeviceResources& deviceResources)
-	: Manager_base(scene)
+	: IInput_manager(scene)
 	, _impl(std::make_unique<Impl>())
 {
 }

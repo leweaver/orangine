@@ -46,8 +46,8 @@ Entity_render_manager::Renderable::Renderable()
 {
 }
 
-Entity_render_manager::Entity_render_manager(Scene& scene, std::shared_ptr<Material_repository> materialRepository, DX::DeviceResources& deviceResources)
-	: Manager_base(scene)
+Entity_render_manager::Entity_render_manager(Scene& scene, std::shared_ptr<IMaterial_repository> materialRepository, DX::DeviceResources& deviceResources)
+	: IEntity_render_manager(scene)
 	, _deviceResources(deviceResources)
 	, _renderableEntities(nullptr)
 	, _materialRepository(move(materialRepository))

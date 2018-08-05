@@ -43,8 +43,4 @@
 
 
 #define GTEST_LANG_CXX11 TRUE
-#include "gtest/gtest.h"
-
-#define _SILENCE_CXX17_UNCAUGHT_EXCEPTION_DEPRECATION_WARNING 1
-#include <fakeit.hpp>
-
+#include <gtest/gtest.h>

@@ -4,7 +4,7 @@
 using namespace oe;
 
 Asset_manager::Asset_manager(Scene& scene)
-	: Manager_base(scene)
+	: IAsset_manager(scene)
 {
 }
 
@@ -14,10 +14,6 @@ void Asset_manager::initialize()
 		0,
 		L"data/models/Cube.gltf"
 		};
-}
-
-void Asset_manager::tick()
-{
 }
 
 void Asset_manager::shutdown()

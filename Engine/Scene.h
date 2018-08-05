@@ -68,18 +68,18 @@ namespace oe {
 	protected:
 		using Manager_tuple = std::tuple<
 			// Repositories
-			std::shared_ptr<Entity_repository>,
-			std::shared_ptr<Material_repository>,
+			std::shared_ptr<IEntity_repository>,
+			std::shared_ptr<IMaterial_repository>,
 
 			// Factories
 			std::shared_ptr<Primitive_mesh_data_factory>,
 
 			// Managers
-			std::unique_ptr<IScene_graph_manager>,
-			std::unique_ptr<Entity_render_manager>,
-			std::unique_ptr<Entity_scripting_manager>,
-			std::unique_ptr<Asset_manager>,
-			std::unique_ptr<Input_manager>
+			std::shared_ptr<IScene_graph_manager>,
+			std::shared_ptr<IEntity_render_manager>,
+			std::shared_ptr<IEntity_scripting_manager>,
+			std::shared_ptr<IAsset_manager>,
+			std::shared_ptr<IInput_manager>
 		>;
 
 		Scene(Manager_tuple&& managers);
@@ -99,17 +99,17 @@ namespace oe {
 		double _elapsedTime = 0;
 
 		// Templated helper methods		
-		IScene_graph_manager& sceneGraphManager() const { return *std::get<std::unique_ptr<IScene_graph_manager>>(_managers); }
-		Entity_render_manager& entityRenderManger() const { return *std::get<std::unique_ptr<Entity_render_manager>>(_managers); }
-		Entity_scripting_manager& entityScriptingManager() const { return *std::get<std::unique_ptr<Entity_scripting_manager>>(_managers); }
-		Asset_manager& assetManager() const { return *std::get<std::unique_ptr<Asset_manager>>(_managers); }
-		Input_manager& inputManager() const { return *std::get<std::unique_ptr<Input_manager>>(_managers); }
+		IScene_graph_manager& sceneGraphManager() const { return *std::get<std::shared_ptr<IScene_graph_manager>>(_managers); }
+		IEntity_render_manager& entityRenderManger() const { return *std::get<std::shared_ptr<IEntity_render_manager>>(_managers); }
+		IEntity_scripting_manager& entityScriptingManager() const { return *std::get<std::shared_ptr<IEntity_scripting_manager>>(_managers); }
+		IAsset_manager& assetManager() const { return *std::get<std::shared_ptr<IAsset_manager>>(_managers); }
+		IInput_manager& inputManager() const { return *std::get<std::shared_ptr<IInput_manager>>(_managers); }
 	};
 
 	template <typename TMgr>
 	TMgr& Scene::manager() const
 	{
-		return *std::get<std::unique_ptr<TMgr>>(_managers);
+		return *std::get<std::shared_ptr<TMgr>>(_managers);
 	}
 
 	class Scene_device_resource_aware : public Scene {

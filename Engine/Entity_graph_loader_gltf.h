@@ -13,8 +13,8 @@ namespace oe {
 
 		void getSupportedFileExtensions(std::vector<std::string>& extensions) const override;
 		std::vector<std::shared_ptr<Entity>> loadFile(std::string_view filename,
-			Entity_repository& entityRepository,
-			Material_repository& materialRepository,
+			IEntity_repository& entityRepository,
+			IMaterial_repository& materialRepository,
 			Primitive_mesh_data_factory& meshDataFactory) const override;
 
 	private:

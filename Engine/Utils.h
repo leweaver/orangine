@@ -25,8 +25,7 @@ namespace oe {
 	class com_exception : public std::exception {
 		std::string _what;
 	public:
-		explicit com_exception(HRESULT hr)
-			: com_exception(hr, nullptr) {}
+		explicit com_exception(HRESULT hr);
 
 		com_exception(HRESULT hr, std::string_view what);
 

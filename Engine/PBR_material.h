@@ -236,10 +236,4 @@ namespace oe {
 		std::array<ID3D11SamplerState*, NumTextureTypes> _samplerStates;
 		std::array<ID3D11ShaderResourceView*, NumTextureTypes> _shaderResourceViews;
 	};
-
-	template <>
-	inline std::unique_ptr<PBR_material> Material_repository::instantiate() const
-	{
-		return std::make_unique<PBR_material>();
-	}
 }

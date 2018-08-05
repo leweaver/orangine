@@ -74,6 +74,11 @@ std::wstring oe::hr_to_wstring(const HRESULT hr)
 	return err.ErrorMessage();
 }
 
+com_exception::com_exception(HRESULT hr)
+	: com_exception(hr, hr_to_string(hr))
+{
+}
+
 com_exception::com_exception(HRESULT hr, std::string_view what)
 	: _result(hr)
 {

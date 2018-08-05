@@ -16,20 +16,15 @@ enum class Entity_filter_mode
 	Any
 };
 
-class IScene_graph_manager : public Manager_base, public Manager_tickable {
+class IScene_graph_manager : 
+	public Manager_base,
+	public Manager_tickable {
 public:
 
 	using Component_type_set = std::set<Component::Component_type>;
 
 	IScene_graph_manager(Scene& scene);
 	virtual ~IScene_graph_manager() = default;
-
-	// Manager_base implementation
-	void initialize() override = 0;
-	void shutdown() override = 0;
-
-	// Manager_tickable implementation
-	void tick() override = 0;
 
 	virtual std::shared_ptr<Entity> instantiate(const std::string& name) = 0;
 	virtual std::shared_ptr<Entity> instantiate(const std::string& name, Entity& parentEntity) = 0;
@@ -62,7 +57,7 @@ class Scene_graph_manager : public IScene_graph_manager {
 	class Entity_filter_impl;
 public:
 	
-	Scene_graph_manager(Scene& scene, std::shared_ptr<Entity_repository> entityRepository);
+	Scene_graph_manager(Scene& scene, std::shared_ptr<IEntity_repository> entityRepository);
 	Scene_graph_manager(const Scene_graph_manager& other) = delete;
 	~Scene_graph_manager();
 	
@@ -122,7 +117,7 @@ private:
 	std::vector<std::shared_ptr<Entity_filter_impl>> m_entityFilters;
 	
 	// All entities
-	std::shared_ptr<Entity_repository> _entityRepository;
+	std::shared_ptr<IEntity_repository> _entityRepository;
 
 	// A cache of entities that have no parents
 	// TODO: Turn this into a filter?

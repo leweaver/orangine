@@ -62,11 +62,15 @@
     <LibraryPath>$(SolutionDir)bin\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemGroup>
-    <ClInclude Include="Mocks.h" />
+    <ClInclude Include="Mock_asset_manager.h" />
+    <ClInclude Include="Mock_entity_render_manager.h" />
+    <ClInclude Include="Mock_entity_scripting_manager.h" />
+    <ClInclude Include="Mock_input_manager.h" />
+    <ClInclude Include="Mock_scene.h" />
+    <ClInclude Include="Mock_scene_graph_manager.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Mocks.cpp" />
     <ClCompile Include="Test_entity.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -93,18 +97,20 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>GTEST_LINKED_AS_SHARED_LIBRARY=1;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\Fakeit\single_header\gtest;$(SolutionDir)Prototype;$(SolutionDir)thirdparty\DirectXTK\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\googletest\googletest\include;$(SolutionDir)thirdparty\googletest\googlemock\include;$(SolutionDir)Prototype;$(SolutionDir)thirdparty\DirectXTK\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Debug\gtest_maind.lib;$(SolutionDir)thirdparty\googletest\googletest\Debug\gtestd.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmock_maind.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmockd.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -112,34 +118,43 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>X64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>GTEST_LINKED_AS_SHARED_LIBRARY=1;X64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\Fakeit\single_header\gtest;$(SolutionDir)Prototype;$(SolutionDir)thirdparty\DirectXTK\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\googletest\googletest\include;$(SolutionDir)thirdparty\googletest\googlemock\include;$(SolutionDir)Prototype;$(SolutionDir)thirdparty\DirectXTK\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Debug\gtest_maind.lib;$(SolutionDir)thirdparty\googletest\googletest\Debug\gtestd.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmock_maind.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmockd.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.pdb $(OutputPath) 
 xcopy /D /Y $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)
-echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)</Command>
+xcopy /D /Y $(SolutionDir)thirdparty\googletest\googletest\$(Configuration)\gtest_maind.pdb $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\googletest\googletest\$(Configuration)\gtest_maind.dll $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\googletest\googletest\$(Configuration)\gtestd.pdb $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\googletest\googletest\$(Configuration)\gtestd.dll $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\googletest\googlemock\$(Configuration)\gmock_maind.pdb $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\googletest\googlemock\$(Configuration)\gmock_maind.dll $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\googletest\googlemock\$(Configuration)\gmockd.pdb $(OutputPath) 
+xcopy /D /Y $(SolutionDir)thirdparty\googletest\googlemock\$(Configuration)\gmockd.dll $(OutputPath) </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>GTEST_LINKED_AS_SHARED_LIBRARY=1;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\Fakeit\single_header\gtest;$(SolutionDir)Prototype;$(SolutionDir)thirdparty\DirectXTK\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\googletest\googletest\include;$(SolutionDir)thirdparty\googletest\googlemock\include;$(SolutionDir)Prototype;$(SolutionDir)thirdparty\DirectXTK\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -147,18 +162,19 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Release\gtest_main.lib;$(SolutionDir)thirdparty\googletest\googletest\Release\gtest.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock_main.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>$(MSBuildThisFileDirectory)..\..\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x86\Debug\gtest_main.lib;$(MSBuildThisFileDirectory)..\..\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x86\Debug\gtest.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <PreprocessorDefinitions>X64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>GTEST_LINKED_AS_SHARED_LIBRARY=1;X64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\Fakeit\single_header\gtest;$(SolutionDir)Prototype;$(SolutionDir)thirdparty\DirectXTK\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\googletest\googletest\include;$(SolutionDir)thirdparty\googletest\googlemock\include;$(SolutionDir)Prototype;$(SolutionDir)thirdparty\DirectXTK\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -166,7 +182,8 @@ echo $(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.dll $(OutputPath)<
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Release\gtest_main.lib;$(SolutionDir)thirdparty\googletest\googletest\Release\gtest.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock_main.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>$(MSBuildThisFileDirectory)..\..\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x86\Debug\gtest_main.lib;$(MSBuildThisFileDirectory)..\..\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x86\Debug\gtest.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

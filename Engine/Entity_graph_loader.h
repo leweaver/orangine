@@ -13,8 +13,8 @@ namespace oe
 {
 	class Primitive_mesh_data_factory;
 	class Entity;
-	class Entity_repository;
-	class Material_repository;
+	class IEntity_repository;
+	class IMaterial_repository;
 
 	class Entity_graph_loader
 	{
@@ -28,8 +28,8 @@ namespace oe
 		 * but they will not have been added to that scene yet.
 		 */
 		virtual std::vector<std::shared_ptr<Entity>> loadFile(std::string_view filename,
-			Entity_repository& entityRepository, 
-			Material_repository& materialRepository, 
+			IEntity_repository& entityRepository, 
+			IMaterial_repository& materialRepository, 
 			Primitive_mesh_data_factory& meshDataFactory) const = 0;
 	};
 }

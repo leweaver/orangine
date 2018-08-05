@@ -7,12 +7,13 @@ namespace DX {
 
 namespace oe {
 
-class Input_manager : 
-	public Manager_base, 
+class IInput_manager :
+	public Manager_base,
 	public Manager_windowDependent,
 	public Manager_tickable,
 	public Manager_windowsMessageProcessor {
 public:
+	explicit IInput_manager(Scene& scene) : Manager_base(scene) {}
 
 	struct Mouse_state {
 		enum class Button_state
@@ -23,7 +24,7 @@ public:
 			PRESSED = 3,    // Buton was just pressed
 		};
 
-		POINT absolutePosition = {0, 0};
+		POINT absolutePosition = { 0, 0 };
 		POINT deltaPosition = { 0, 0 };
 
 		Button_state left = Button_state::UP;
@@ -32,6 +33,13 @@ public:
 		int scrollWheelDelta = 0;
 	};
 
+	// Mouse functions
+	virtual std::weak_ptr<Mouse_state> mouseState() const = 0;
+};
+
+class Input_manager : public IInput_manager {
+public:
+	
 	explicit Input_manager(Scene &scene, DX::DeviceResources& deviceResources);
 
 	// Manager_base implementation
@@ -49,7 +57,7 @@ public:
 	void processMessage(UINT message, WPARAM wParam, LPARAM lParam) override;
 
 	// Mouse functions
-	std::weak_ptr<Mouse_state> mouseState() const;
+	std::weak_ptr<Mouse_state> mouseState() const override;
 	
 private:
 	class Impl;

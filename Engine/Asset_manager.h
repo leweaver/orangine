@@ -7,7 +7,14 @@
 
 namespace oe {
 	
-	class Asset_manager : public Manager_base, public Manager_tickable
+	class IAsset_manager : public Manager_base {
+	public:
+		explicit IAsset_manager(Scene& scene) : Manager_base(scene) {}
+		
+		virtual bool getFilePath(FAsset_id assetId, std::wstring& path) const = 0;
+	};
+
+	class Asset_manager : public IAsset_manager
 	{
 		struct Asset_info
 		{
@@ -21,16 +28,11 @@ namespace oe {
 
 	public:
 		explicit Asset_manager(Scene& scene);
-		virtual ~Asset_manager() = default;
 
-		bool getFilePath(FAsset_id assetId, std::wstring& path) const;
+		bool getFilePath(FAsset_id assetId, std::wstring& path) const override;
 		
 		// Manager_base implementation
-		void initialize();
-		void shutdown();
-
-		// Manager_tickable implementation
-		void tick();
-
+		void initialize() override;
+		void shutdown() override;
 	};
 }

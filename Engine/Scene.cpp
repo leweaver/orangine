@@ -14,7 +14,7 @@ using namespace oe;
 template<typename TBase, typename TTuple, int TIdx = 0>
 constexpr void forEachOfType(TTuple& managers, const std::function<void(TBase*)>& fn)
 {
-	// Initialize only types that derive from Manager_base
+	// Initialize only types that derive from TBase
 	if constexpr (std::is_base_of_v<TBase, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
 		fn(std::get<TIdx>(managers).get());
 
@@ -26,7 +26,7 @@ constexpr void forEachOfType(TTuple& managers, const std::function<void(TBase*)>
 template<typename TBase, typename TTuple, int TIdx = std::tuple_size_v<TTuple> -1>
 constexpr void forEachOfTypeReverse(TTuple& managers, const std::function<void(TBase*)>& fn)
 {
-	// Initialize only types that derive from Manager_base
+	// Initialize only types that derive from TBase
 	if constexpr (std::is_base_of_v<TBase, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
 		fn(std::get<TIdx>(managers).get());
 
@@ -38,7 +38,7 @@ constexpr void forEachOfTypeReverse(TTuple& managers, const std::function<void(T
 template<typename TTuple, int TIdx = 0>
 constexpr void forEach_tick(TTuple& managers)
 {
-	// Tick only types that derive from Manager_base
+	// Tick only types that derive from Manager_tickable
 	if constexpr (std::is_base_of_v<Manager_tickable, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
 		std::get<TIdx>(managers)->tick();
 
@@ -50,7 +50,7 @@ constexpr void forEach_tick(TTuple& managers)
 template<typename TTuple, int TIdx = 0>
 constexpr void forEach_processMessage(TTuple& managers, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	// Tick only types that derive from Manager_base
+	// Tick only types that derive from Manager_windowsMessageProcessor
 	if constexpr (std::is_base_of_v<Manager_windowsMessageProcessor, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
 		std::get<TIdx>(managers)->processMessage(message, wParam, lParam);
 
@@ -67,7 +67,10 @@ Scene::Scene(Manager_tuple&& managers)
 	// Mesh loaders
 	addMeshLoader<Entity_graph_loader_gltf>();
 
-	forEachOfType<Manager_base>(_managers, [](auto* manager) { manager->initialize(); });
+	forEachOfType<Manager_base>(_managers, [](auto* manager) { 
+		assert(manager != nullptr);
+		manager->initialize(); 
+	});
 }
 
 void Scene::loadEntities(const std::string& filename)
@@ -77,7 +80,7 @@ void Scene::loadEntities(const std::string& filename)
 
 void Scene::loadEntities(const std::string& filename, Entity& parentEntity)
 {
-	auto entity = std::get<std::shared_ptr<Entity_repository>>(_managers)->getEntityPtrById(parentEntity.getId());
+	auto entity = std::get<std::shared_ptr<IEntity_repository>>(_managers)->getEntityPtrById(parentEntity.getId());
 	return loadEntities(filename, entity.get());
 }
 
@@ -95,8 +98,8 @@ void Scene::loadEntities(const std::string& filename, Entity *parentEntity)
 	
 	std::vector<std::shared_ptr<Entity>> newRootEntities = extPos->second->loadFile(
 		filename, 
-		*std::get<std::shared_ptr<Entity_repository>>(_managers).get(),
-		*std::get<std::shared_ptr<Material_repository>>(_managers).get(),
+		*std::get<std::shared_ptr<IEntity_repository>>(_managers).get(),
+		*std::get<std::shared_ptr<IMaterial_repository>>(_managers).get(),
 		*std::get<std::shared_ptr<Primitive_mesh_data_factory>>(_managers).get());
 	
 	if (parentEntity)
@@ -197,18 +200,18 @@ Scene::Manager_tuple Scene_device_resource_aware::createManagers(DX::DeviceResou
 	Manager_tuple managers;
 
 	// Repositories
-	get<shared_ptr<Entity_repository>>(managers) = make_shared<Entity_repository>(*this);
-	get<shared_ptr<Material_repository>>(managers) = make_shared<Material_repository>();
+	get<shared_ptr<IEntity_repository>>(managers) = make_shared<Entity_repository>(*this);
+	get<shared_ptr<IMaterial_repository>>(managers) = make_shared<Material_repository>();
 
 	// Factories
 	get<shared_ptr<Primitive_mesh_data_factory>>(managers) = make_shared<Primitive_mesh_data_factory>();
 
 	// Services / Managers
-	get<unique_ptr<IScene_graph_manager>>(managers) = make_unique<Scene_graph_manager>(*this, get<shared_ptr<Entity_repository>>(managers));
-	get<unique_ptr<Entity_render_manager>>(managers) = make_unique<Entity_render_manager>(*this, get<shared_ptr<Material_repository>>(managers), deviceResources);
-	get<unique_ptr<Entity_scripting_manager>>(managers) = make_unique<Entity_scripting_manager>(*this);
-	get<unique_ptr<Asset_manager>>(managers) = make_unique<Asset_manager>(*this);
-	get<unique_ptr<Input_manager>>(managers) = make_unique<Input_manager>(*this, deviceResources);
+	get<shared_ptr<IScene_graph_manager>>(managers) = make_shared<Scene_graph_manager>(*this, get<shared_ptr<IEntity_repository>>(managers));
+	get<shared_ptr<IEntity_render_manager>>(managers) = make_shared<Entity_render_manager>(*this, get<shared_ptr<IMaterial_repository>>(managers), deviceResources);
+	get<shared_ptr<IEntity_scripting_manager>>(managers) = make_shared<Entity_scripting_manager>(*this);
+	get<shared_ptr<IAsset_manager>>(managers) = make_shared<Asset_manager>(*this);
+	get<shared_ptr<IInput_manager>>(managers) = make_shared<Input_manager>(*this, deviceResources);
 	
 	return managers;
 }

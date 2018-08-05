@@ -36,7 +36,7 @@ Game::~Game()
 {
 	g_debugEntity.reset();
 	if (m_scene) {
-		m_scene->manager<Entity_render_manager>().destroyDeviceDependentResources();
+		m_scene->manager<IEntity_render_manager>().destroyDeviceDependentResources();
 		m_scene->shutdown();
 	}
 
@@ -319,7 +319,7 @@ void Game::Render()
     }
 	
     // TODO: Add your rendering code here.
-	m_scene->manager<Entity_render_manager>().render();
+	m_scene->manager<IEntity_render_manager>().render();
 	
     // Show the new frame.
     m_deviceResources->Present();

@@ -25,11 +25,21 @@ namespace oe {
 	class Entity_alpha_sorter;
 	class Entity_cull_sorter;
 
-	class Entity_render_manager : 
-		public Manager_base, 
+	class IEntity_render_manager :
+		public Manager_base,
 		public Manager_tickable,
 		public Manager_deviceDependent,
 		public Manager_windowDependent
+	{
+	public:
+		IEntity_render_manager(Scene& scene) : Manager_base(scene) {}
+
+		virtual void render() = 0;
+		virtual DirectX::BoundingFrustum createFrustum(const Entity& entity, const Camera_component& cameraComponent) = 0;
+
+	};
+
+	class Entity_render_manager : public IEntity_render_manager
 	{
 		struct Buffer_array_set {
 			std::vector<ID3D11Buffer*> bufferArray;
@@ -55,9 +65,11 @@ namespace oe {
 		};
 
 	public:
-		Entity_render_manager(Scene& scene, std::shared_ptr<Material_repository> materialRepository, DX::DeviceResources& deviceResources);
-		~Entity_render_manager() = default;
-		
+		Entity_render_manager(Scene& scene, std::shared_ptr<IMaterial_repository> materialRepository, DX::DeviceResources& deviceResources);
+
+		void render() override;
+		DirectX::BoundingFrustum createFrustum(const Entity& entity, const Camera_component& cameraComponent) override;
+
 		// Manager_base implementation
 		void initialize() override;
 		void shutdown() override;
@@ -71,9 +83,6 @@ namespace oe {
 		
 		void createDeviceDependentResources(DX::DeviceResources& deviceResources) override;
 		void destroyDeviceDependentResources() override;
-		void render();
-		
-		DirectX::BoundingFrustum createFrustum(const Entity& entity, const Camera_component& cameraComponent);
 
 	protected:
 		using Light_data_provider = std::function<const Render_light_data*(const Entity&)>;
@@ -125,7 +134,7 @@ namespace oe {
 		std::shared_ptr<Entity_filter> _renderableEntities;
 		std::shared_ptr<Entity_filter> _lightEntities;
 				
-		std::shared_ptr<Material_repository> _materialRepository;
+		std::shared_ptr<IMaterial_repository> _materialRepository;
 		std::unique_ptr<Primitive_mesh_data_factory> _primitiveMeshDataFactory;
 
 		bool _enableDeferredRendering;

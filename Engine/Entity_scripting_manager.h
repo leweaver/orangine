@@ -5,10 +5,14 @@
 namespace oe {
 	class Entity_filter;
 
-	class Entity_scripting_manager : public Manager_base, public Manager_tickable {
+	class IEntity_scripting_manager : public Manager_base, public Manager_tickable {
+	public:
+		explicit IEntity_scripting_manager(Scene& scene) : Manager_base(scene) {}
+	};
+
+	class Entity_scripting_manager : public IEntity_scripting_manager {
 	public:
 		explicit Entity_scripting_manager(Scene &scene);
-
 
 		// Manager_base implementation
 		void initialize();

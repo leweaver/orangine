@@ -15,7 +15,7 @@ using namespace SimpleMath;
 using namespace oe;
 
 Entity_scripting_manager::Entity_scripting_manager(Scene &scene)
-	: Manager_base(scene)
+	: IEntity_scripting_manager(scene)
 {
 }
 
@@ -41,7 +41,7 @@ void Entity_scripting_manager::tick() {
 	}
 	
 	const auto mouseSpeed = 1.0f / 300.0f;
-	const auto mouseState = _scene.manager<Input_manager>().mouseState().lock();
+	const auto mouseState = _scene.manager<IInput_manager>().mouseState().lock();
 	if (mouseState) {
 		if (mouseState->left == Input_manager::Mouse_state::Button_state::HELD) {
 			_scriptData.yaw += -mouseState->deltaPosition.x * XM_2PI * mouseSpeed;

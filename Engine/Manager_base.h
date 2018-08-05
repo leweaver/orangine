@@ -6,6 +6,7 @@ namespace oe {
 	class Scene;
 
 	class Manager_tickable {
+	public:
 		virtual void tick() = 0;
 	};
 

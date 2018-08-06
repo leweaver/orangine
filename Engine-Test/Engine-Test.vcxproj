@@ -64,6 +64,7 @@
   <ItemGroup>
     <ClInclude Include="Mock_asset_manager.h" />
     <ClInclude Include="Mock_entity_render_manager.h" />
+    <ClInclude Include="Mock_entity_repository.h" />
     <ClInclude Include="Mock_entity_scripting_manager.h" />
     <ClInclude Include="Mock_input_manager.h" />
     <ClInclude Include="Mock_scene.h" />

@@ -20,17 +20,35 @@ git submodule update --recursive --remote
 ```
 
 ## Build dependencies
-### g3log
-We need to create the appropriate visual studio projects, using CMake.
-1. Using the start menu, find and open `Developer Command Prompt for VS 2017`.
+The following third party libraries should be build from the `Developer Command Prompt for VS 2017`, which can be found in the start menu.
+
+- g3log
+- googletest
+- googlemock
+
+We need to create the appropriate visual studio projects, using CMake. In the `Developer Command Prompt for VS 2017`:
 1. Change directory to the root of the GIT repository
-1. Run:
+1. Execute command: `.\create-thirdparty-projects.bat`
 
-```
-.\create-thirdparty-projects.bat
-```
+### DEPRECATED INSTRUCTIONS: googlemock
+Download the Visual Studio 2015 Build Tools, in visual studio 2017 Installer:
+1. Install "VC++ 2015.3 v140 toolset(x86,x64)" component Under Desktop development with C++ workload.
 
-### Visual Studio 2017
+In the `Developer Command Prompt for VS 2017`:
+1. Change directory to the root of the GIT repository
+1. Change directory to `thirdparty\googletest\googlemock\msvc\2015`
+1. Execute command: `msbuild gmock.sln /p:Platform="x64"`
+
+# Running unit tests
+Tests are executed via the `Test Explorer` window in visual studio. Projects that contain tests are suffixed with `-Test` and compile to an x64 executable. To run them;
+
+1. Test -> Test Settings -> Select Test Settings File 
+1. Open `.\Engine-Test\x64.runsettings`
+1. Click the Run All button in the test explorer window.
+
+> NOTE: Don't try to run individual tests; this seems to break the Test Explorer window. If in doubt, `Run All` makes things work again :) 
+
+> Tip: Optionally you can unload the `Prototype` solution to make runs faster, since it doesn't contain any tests.
 
 # Renderer 
 ## Normals and Tangents

@@ -12,14 +12,18 @@ class Entity_transforms_test : public ::testing::Test {
 protected:
 	void SetUp() override
 	{
-		HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
+		const auto hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
 		ASSERT_TRUE(SUCCEEDED(hr));
 
 		_mockScene = std::make_unique<Mock_scene>();
+		_mockScene->initialize();
 	}
 
 	void TearDown() override
 	{
+		_mockScene->shutdown();
+		_mockScene.reset();
+
 		CoUninitialize();
 	}
 

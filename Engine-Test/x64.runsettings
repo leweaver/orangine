@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <!-- Configurations that affect the Test Framework -->
+  <RunConfiguration>
+    <!-- Path relative to solution directory -->
+    <ResultsDirectory>.\TestResults</ResultsDirectory>
+
+    <!-- [x86] | x64  
+      - You can also change it from menu Test, Test Settings, Default Processor Architecture -->
+    <TargetPlatform>x64</TargetPlatform>
+
+    <!-- Framework35 | [Framework40] | Framework45 -->
+    <TargetFrameworkVersion>Framework40</TargetFrameworkVersion>
+
+    <!-- In visual studio (prior to Preview 2017 Preview 3 [15.8.0 P3]), there is a bug that prevents the tests being enumerated. -->
+    <!-- This flag is a workaround (see https://developercommunity.visualstudio.com/content/problem/178469/tests-could-not-locate-debug-symbols.html) -->
+    <ForceListContent>True</ForceListContent>
+  </RunConfiguration>
+</RunSettings>

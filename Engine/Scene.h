@@ -20,10 +20,11 @@ namespace oe {
 	class Scene
 	{
 	public:
-		~Scene() = default;
+		virtual ~Scene() = default;
 
+		virtual void initialize();
 		void tick(DX::StepTimer const& timer);
-		void shutdown();
+		virtual void shutdown();
 
 		template <typename TMgr>
 		TMgr& manager() const;
@@ -82,7 +83,7 @@ namespace oe {
 			std::shared_ptr<IInput_manager>
 		>;
 
-		Scene(Manager_tuple&& managers);
+		Scene() = default;
 
 		Manager_tuple _managers;
 
@@ -90,7 +91,7 @@ namespace oe {
 
 		void loadEntities(const std::string& filename, Entity* parentEntity);
 
-		std::map<std::string, std::shared_ptr<Entity_graph_loader>> _entityGraphLoaders;
+		std::map<std::string, std::shared_ptr<Entity_graph_loader>> _entityGraphLoaders = {};
 
 		std::shared_ptr<Entity> _mainCamera;
 
@@ -116,15 +117,15 @@ namespace oe {
 	public:
 
 		explicit Scene_device_resource_aware(DX::DeviceResources& deviceResources);
+		
+		void initialize() override;
 
 		void createWindowSizeDependentResources(HWND window, int width, int height);
 		void destroyWindowSizeDependentResources();
 		void createDeviceDependentResources();
 		void destroyDeviceDependentResources();
 		void processMessage(UINT message, WPARAM wParam, LPARAM lParam) const;
-
-		Manager_tuple createManagers(DX::DeviceResources& deviceResources);
-
+		
 	private:
 		DX::DeviceResources& _deviceResources;
 	};

@@ -59,8 +59,7 @@ constexpr void forEach_processMessage(TTuple& managers, UINT message, WPARAM wPa
 		forEach_processMessage<TTuple, TIdx + 1>(managers, message, wParam, lParam);
 }
 
-Scene::Scene(Manager_tuple&& managers)
-	: _managers(move(managers))
+void Scene::initialize()
 {
 	using namespace std;
 
@@ -193,31 +192,31 @@ void Scene_device_resource_aware::processMessage(UINT message, WPARAM wParam, LP
 	forEach_processMessage(_managers, message, wParam, lParam);
 }
 
-Scene::Manager_tuple Scene_device_resource_aware::createManagers(DX::DeviceResources& deviceResources)
+Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& deviceResources)
+	: Scene()
+	, _deviceResources(deviceResources)
+{
+}
+
+void Scene_device_resource_aware::initialize()
 {
 	using namespace std;
 
-	Manager_tuple managers;
-
 	// Repositories
-	get<shared_ptr<IEntity_repository>>(managers) = make_shared<Entity_repository>(*this);
-	get<shared_ptr<IMaterial_repository>>(managers) = make_shared<Material_repository>();
+	const auto entityRepository = make_shared<Entity_repository>(*this);
+	const auto materialRepository = make_shared<Material_repository>();
+	get<shared_ptr<IEntity_repository>>(_managers) = entityRepository;
+	get<shared_ptr<IMaterial_repository>>(_managers) = materialRepository;
 
 	// Factories
-	get<shared_ptr<Primitive_mesh_data_factory>>(managers) = make_shared<Primitive_mesh_data_factory>();
+	get<shared_ptr<Primitive_mesh_data_factory>>(_managers) = make_shared<Primitive_mesh_data_factory>();
 
 	// Services / Managers
-	get<shared_ptr<IScene_graph_manager>>(managers) = make_shared<Scene_graph_manager>(*this, get<shared_ptr<IEntity_repository>>(managers));
-	get<shared_ptr<IEntity_render_manager>>(managers) = make_shared<Entity_render_manager>(*this, get<shared_ptr<IMaterial_repository>>(managers), deviceResources);
-	get<shared_ptr<IEntity_scripting_manager>>(managers) = make_shared<Entity_scripting_manager>(*this);
-	get<shared_ptr<IAsset_manager>>(managers) = make_shared<Asset_manager>(*this);
-	get<shared_ptr<IInput_manager>>(managers) = make_shared<Input_manager>(*this, deviceResources);
-	
-	return managers;
-}
+	get<shared_ptr<IScene_graph_manager>>(_managers) = make_shared<Scene_graph_manager>(*this, entityRepository);
+	get<shared_ptr<IEntity_render_manager>>(_managers) = make_shared<Entity_render_manager>(*this, materialRepository, _deviceResources);
+	get<shared_ptr<IEntity_scripting_manager>>(_managers) = make_shared<Entity_scripting_manager>(*this);
+	get<shared_ptr<IAsset_manager>>(_managers) = make_shared<Asset_manager>(*this);
+	get<shared_ptr<IInput_manager>>(_managers) = make_shared<Input_manager>(*this, _deviceResources);
 
-Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& deviceResources)
-	: Scene(createManagers(deviceResources))
-	, _deviceResources(deviceResources)
-{
+	Scene::initialize();
 }

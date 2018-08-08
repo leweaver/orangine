@@ -243,6 +243,7 @@ void Game::Initialize(HWND window, int width, int height)
     m_deviceResources->SetWindow(window, width, height);
 
 	m_scene = std::make_unique<Scene_device_resource_aware>(*(m_deviceResources.get()));
+	m_scene->initialize();
 
 	try
 	{

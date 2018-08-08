@@ -52,8 +52,7 @@ protected:
 
 TEST_F(Scene_graph_manager_tests, instantiateEntity) 
 {
-	auto mockScene = std::make_unique<Mock_scene>();
-	mockScene->initialize();
+	auto mockScene = createInitMockScene();
 	auto sceneGraphManager = std::make_shared<Scene_graph_manager>(*mockScene, mockScene->mockEntityRepository);
 	
 	{
@@ -78,6 +77,7 @@ TEST_F(Scene_graph_manager_tests, entityTransformFromParent)
 	auto mockScene = createInitMockScene();
 	auto sceneGraphManager = std::make_shared<Scene_graph_manager>(*mockScene, mockScene->mockEntityRepository);
 
+	// Set up mocks
 	{
 		const auto parentEntity = std::make_shared<Entity>(*mockScene, std::string(PARENT_ENTITY_NAME), PARENT_ENTITY_ID);
 		const auto child1Entity = std::make_shared<Entity>(*mockScene, std::string(CHILD_ENTITY_1_NAME), CHILD_ENTITY_1_ID);
@@ -103,6 +103,7 @@ TEST_F(Scene_graph_manager_tests, entityTransformFromParent)
 			.WillOnce(testing::Return(child2Entity));
 	}
 
+	// Perform test
 	{
 		const auto parentEntity = sceneGraphManager->instantiate(PARENT_ENTITY_NAME);
 		ASSERT_NE(parentEntity.get(), nullptr);

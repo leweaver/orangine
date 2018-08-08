@@ -158,6 +158,7 @@
     <ClInclude Include="Asset_manager.h" />
     <ClInclude Include="Camera_component.h" />
     <ClInclude Include="Clear_gbuffer_material.h" />
+    <ClInclude Include="Collision.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="Deferred_light_material.h" />
     <ClInclude Include="DeviceResources.h" />
@@ -201,6 +202,9 @@
     <ClCompile Include="Asset_manager.cpp" />
     <ClCompile Include="Camera_component.cpp" />
     <ClCompile Include="Clear_gbuffer_material.cpp" />
+    <ClInclude Include="Collision.inl">
+      <FileType>Document</FileType>
+    </ClInclude>
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="Deferred_light_material.cpp" />
     <ClCompile Include="DeviceResources.cpp" />

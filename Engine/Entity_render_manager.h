@@ -9,6 +9,8 @@
 #include "Deferred_light_material.h"
 #include "Render_light_data.h"
 #include "Render_pass_info.h"
+#include "Collision.h"
+
 #include <memory>
 #include <array>
 
@@ -35,7 +37,7 @@ namespace oe {
 		IEntity_render_manager(Scene& scene) : Manager_base(scene) {}
 
 		virtual void render() = 0;
-		virtual DirectX::BoundingFrustum createFrustum(const Entity& entity, const Camera_component& cameraComponent) = 0;
+		virtual BoundingFrustumRH createFrustum(const Entity& entity, const Camera_component& cameraComponent) = 0;
 
 	};
 
@@ -68,14 +70,14 @@ namespace oe {
 		Entity_render_manager(Scene& scene, std::shared_ptr<IMaterial_repository> materialRepository, DX::DeviceResources& deviceResources);
 
 		void render() override;
-		DirectX::BoundingFrustum createFrustum(const Entity& entity, const Camera_component& cameraComponent) override;
+		BoundingFrustumRH createFrustum(const Entity& entity, const Camera_component& cameraComponent) override;
 
-		// Manager_base implementation
+		// Manager_base implementations
 		void initialize() override;
 		void shutdown() override;
 
 		// Manager_tickable implementation
-		void tick();
+		void tick() override;
 
 		// Manager_windowDependent implementation
 		void createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND window, int width, int height) override;

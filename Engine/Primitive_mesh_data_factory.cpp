@@ -3,6 +3,7 @@
 #include "Mesh_data.h"
 #include "SimpleMath.h"
 #include "Mikk_tspace_triangle_mesh_interface.h"
+#include "Collision.h"
 
 #include <array>
 #include <cstddef>
@@ -174,7 +175,7 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createTeapot(size_t tess
 	return md;
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createFrustumLines(const DirectX::BoundingFrustum& frustum)
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createFrustumLines(const BoundingFrustumRH& frustum)
 {
 	constexpr auto numVertices = 8;
 	// Returns 8 corners position of bounding frustum.

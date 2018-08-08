@@ -47,8 +47,8 @@ void Unlit_material::updateVSConstantBuffer(const SimpleMath::Matrix& worldMatri
 	ID3D11DeviceContext* context,
 	ID3D11Buffer* buffer)
 {
-	// Convert to LH, for DirectX.
-	_constantsVs.worldViewProjection = XMMatrixMultiply(worldMatrix, XMMatrixMultiply(viewMatrix, projMatrix));
+	// Note that HLSL matrices are Column Major (as opposed to Row Major in DirectXMath) - so we need to transpose everything.
+	_constantsVs.worldViewProjection = XMMatrixMultiplyTranspose(worldMatrix, XMMatrixMultiply(viewMatrix, projMatrix));
 
 	_constantsVs.baseColor = _baseColor;
 

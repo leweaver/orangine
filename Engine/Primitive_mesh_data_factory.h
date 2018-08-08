@@ -1,8 +1,9 @@
 #pragma once
 #include "Mesh_data.h"
-#include "SimpleMath.h"
+#include <SimpleMath.h>
 
 namespace oe {
+	struct BoundingFrustumRH;
 	class Mesh_data;
 	struct Mesh_index_buffer_accessor;
 	struct Mesh_vertex_buffer_accessor;
@@ -18,7 +19,7 @@ namespace oe {
 		std::shared_ptr<Mesh_data> createTeapot(size_t tessellation = 8) const;
 		std::shared_ptr<Mesh_data> createSphere(size_t tessellation = 16, bool invertNormals = false) const;
 
-		std::shared_ptr<Mesh_data> createFrustumLines(const DirectX::BoundingFrustum& frustum);
+		std::shared_ptr<Mesh_data> createFrustumLines(const BoundingFrustumRH& frustum);
 
 		/*
 		 * Generates flat normals for the given triangles (ie, does not interpolate neighbours)

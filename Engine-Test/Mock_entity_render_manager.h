@@ -11,7 +11,7 @@ namespace oe_test {
 		Mock_entity_render_manager(oe::Scene& scene) : IEntity_render_manager(scene) {}
 		
 		MOCK_METHOD0(render, void());
-		MOCK_METHOD2(createFrustum, DirectX::BoundingFrustum(const oe::Entity&, const oe::Camera_component&));
+		MOCK_METHOD2(createFrustum, oe::BoundingFrustumRH(const oe::Entity&, const oe::Camera_component&));
 
 		// Manager_base implementation
 		MOCK_METHOD0(initialize, void());

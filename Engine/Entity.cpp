@@ -33,7 +33,6 @@ void Entity::computeWorldTransform()
 
 		const auto worldPosition = Vector3::Transform(_localPosition, _parent->_worldTransform);
 
-		// LH matrices
 		const auto worldT = XMMatrixTranslationFromVector(worldPosition);
 		const auto worldR = XMMatrixRotationQuaternion(_worldRotation);
 		const auto worldS = XMMatrixScalingFromVector(_worldScale);
@@ -45,7 +44,6 @@ void Entity::computeWorldTransform()
 		_worldRotation = _localRotation;
 		_worldScale = _localScale;
 
-		// LH matrices
 		const auto localT = XMMatrixTranslationFromVector(_localPosition);
 		const auto localR = XMMatrixRotationQuaternion(_worldRotation);
 		const auto localS = XMMatrixScalingFromVector(_worldScale);

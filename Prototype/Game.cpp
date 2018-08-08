@@ -14,6 +14,7 @@
 #include "../Engine/Renderable_component.h"
 #include "../Engine/PBR_material.h"
 #include "../Engine/Unlit_material.h"
+#include "../Engine/Collision.h"
 
 extern void ExitGame();
 
@@ -384,37 +385,22 @@ void Game::OnWindowSizeChanged(int width, int height)
 			auto& renderable = child3->addComponent<Renderable_component>();
 			renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 
-			const auto projMatrixLH = XMMatrixPerspectiveFovLH(//Matrix::CreatePerspectiveFieldOfView(
+			const auto projMatrixRH = XMMatrixPerspectiveFovRH(
 				camera->fov(),
 				static_cast<float>(width) / static_cast<float>(height),
 				camera->nearPlane(),
 				camera->farPlane() * 0.5f);
 			
 			// DirectX BoundingFrustum's are LH.
-			BoundingFrustum frustum;
-			BoundingFrustum::CreateFromMatrix(frustum, projMatrixLH);
+			auto frustum = BoundingFrustumRH(projMatrixRH);
 
-			Matrix viewLH = mainCamera->worldTransform();
-			frustum.Transform(frustum, viewLH.Invert());
-			
-			//frustum.Origin = mainCamera->worldPosition();
-			//frustum.Orientation = mainCamera->worldRotation();
-			//frustum.Near = camera->nearPlane();
-			//frustum.Far = camera->farPlane();
+			frustum.Origin = mainCamera->worldPosition();
+			frustum.Orientation = mainCamera->worldRotation();
 
 			Primitive_mesh_data_factory pmdf;
 			const auto meshData = pmdf.createFrustumLines(frustum);
 			child3->addComponent<Mesh_data_component>().setMeshData(meshData);
 
-			// Quick sanity check
-			BoundingSphere bs;
-			bs.Center = { 0, 0, 0 };
-			bs.Radius = 2.0f;
-			
-			bool contains = frustum.Contains(bs);
-			bool intersects = frustum.Intersects(bs);
-
-			//assert(contains || intersects);
 		}
 	}
 }

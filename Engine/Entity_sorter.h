@@ -2,6 +2,7 @@
 
 #include "Entity.h"
 #include "Renderable_component.h"
+#include "Collision.h"
 
 #include <vector>
 #include <future>
@@ -38,7 +39,7 @@ namespace oe {
 	public:
 
 		template<class _RanIt>
-		void beginSortAsync(_RanIt begin, _RanIt end, const DirectX::BoundingFrustum& cullingFrustum)
+		void beginSortAsync(_RanIt begin, _RanIt end, const BoundingFrustumRH& cullingFrustum)
 		{
 			_entities.clear();
 
@@ -47,7 +48,7 @@ namespace oe {
 				for (auto iter = begin; iter != end; ++iter) {
 					Entity* entity = (*iter).get();
 
-					//if (cullingFrustum.Contains(entity->boundSphere()))
+					if (cullingFrustum.Contains(entity->boundSphere()))
 						_entities.push_back({ entity });
 				}
 			});

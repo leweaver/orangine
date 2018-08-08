@@ -349,7 +349,7 @@ void Entity_render_manager::render()
 	});
 }
 
-BoundingFrustum Entity_render_manager::createFrustum(const Entity& entity, const Camera_component& cameraComponent)
+BoundingFrustumRH Entity_render_manager::createFrustum(const Entity& entity, const Camera_component& cameraComponent)
 {
 	const auto viewport = _deviceResources.GetScreenViewport();
 	const auto aspectRatio = viewport.Width / viewport.Height;
@@ -359,8 +359,7 @@ BoundingFrustum Entity_render_manager::createFrustum(const Entity& entity, const
 		aspectRatio,
 		cameraComponent.nearPlane(),
 		cameraComponent.farPlane());
-	BoundingFrustum frustum;
-	BoundingFrustum::CreateFromMatrix(frustum, projMatrix);
+	auto frustum = BoundingFrustumRH(projMatrix);
 	frustum.Origin = entity.worldPosition();
 	frustum.Orientation = entity.worldRotation();
 

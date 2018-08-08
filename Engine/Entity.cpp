@@ -38,8 +38,7 @@ void Entity::computeWorldTransform()
 		const auto worldR = XMMatrixRotationQuaternion(_worldRotation);
 		const auto worldS = XMMatrixScalingFromVector(_worldScale);
 		
-		// Transpose the result to RH coordinate system
-		_worldTransform = XMMatrixTranspose(XMMatrixMultiply(XMMatrixMultiply(worldS, worldR), worldT));
+		_worldTransform = XMMatrixMultiply(XMMatrixMultiply(worldS, worldR), worldT);
 	}
 	else
 	{
@@ -51,8 +50,7 @@ void Entity::computeWorldTransform()
 		const auto localR = XMMatrixRotationQuaternion(_worldRotation);
 		const auto localS = XMMatrixScalingFromVector(_worldScale);
 
-		// Transpose the result to RH coordinate system
-		_worldTransform = XMMatrixTranspose(XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT));
+		_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT);
 	}
 }
 

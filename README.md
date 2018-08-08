@@ -50,6 +50,15 @@ Tests are executed via the `Test Explorer` window in visual studio. Projects tha
 
 > Tip: Optionally you can unload the `Prototype` solution to make runs faster, since it doesn't contain any tests.
 
+# Maths
+Matrix conventions are as in SimpleMath: Right Handed, Row Major.
+
+Some notes on libraries that are in use:
+
+- __DirectXMath__ offers both left-handed and right-handed versions of matrix functions with 'handedness', but always assumes a row-major format.
+- __SimpleMath__ as with DirectXMath uses row-major ordering for matrices.
+- __HLSL__ 	defaults to using column-major ordering as this makes for slightly more efficient shader matrix multiplies. Therefore, when a Matrix is going to be copied into a HLSL constant buffer, it is usually transposed as part of updating the constant buffer.  
+
 # Renderer 
 ## Normals and Tangents
 Normals are expected to be in tangent space. Further, the tangents on meshes must be generated using the MikkiT algorithm.

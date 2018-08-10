@@ -4,11 +4,15 @@
 using namespace oe;
 using namespace DirectX;
 
+Render_target_view_texture::Render_target_view_texture(ID3D11RenderTargetView* renderTargetView)
+	: _renderTargetView(renderTargetView)
+{}
+
 Render_target_texture::Render_target_texture(uint32_t width, uint32_t height)
-	: _width(width)
+	: Render_target_view_texture(nullptr)
+	, _width(width)
 	, _height(height)
 	, _renderTargetTexture(nullptr)
-	, _renderTargetView(nullptr)
 {
 }
 

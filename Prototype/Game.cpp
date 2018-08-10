@@ -262,14 +262,14 @@ void Game::Initialize(HWND window, int width, int height)
 		
 		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
-		//LoadGLTF("FlightHelmet", true)->setScale({ 14, 14, 14 });
+		LoadGLTF("FlightHelmet", true)->setScale({ 14, 14, 14 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
 		
 		//CreateSceneMetalRoughSpheres(true);
 
 		CreateCamera(false);
 		CreateLights();
-		CreateGeometricPrimitives();
+		//CreateGeometricPrimitives();
 	}
 	catch (const std::exception &e)
 	{

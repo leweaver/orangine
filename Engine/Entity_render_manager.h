@@ -66,6 +66,16 @@ namespace oe {
 			static const Camera_data identity;
 		};
 
+		template<class TData, class... TRender_passes>
+		class Render_step {
+		public:
+			explicit Render_step(TData data) : data(data) {}
+
+			bool enabled = true;
+			TData data;
+			std::tuple<TRender_passes...> renderPasses;
+		};
+
 	public:
 		Entity_render_manager(Scene& scene, std::shared_ptr<IMaterial_repository> materialRepository, DX::DeviceResources& deviceResources);
 
@@ -100,6 +110,9 @@ namespace oe {
 
 	private:
 
+		template<int TIdx = 0, class TData, class... TRender_passes>
+		void renderStep(Render_step<TData, TRender_passes...>& step);
+
 		template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
 		void renderPass(Render_pass_info<TBlend_mode, TDepth_mode>& renderPassInfo);
 
@@ -115,12 +128,11 @@ namespace oe {
 
 		void loadRendererDataToDeviceContext(const Renderer_data& rendererData, Buffer_array_set& bufferArraySet) const;
 
-		template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
 		void drawRendererData(
 			const Camera_data& cameraData,
 			const DirectX::SimpleMath::Matrix& worldTransform,
 			const Renderer_data& rendererData,
-			const Render_pass_info<TBlend_mode, TDepth_mode>& renderPassInfo,
+			const Render_pass_blend_mode blendMode,
 			const Render_light_data& renderLightData,
 			Material& material,
 			bool wireframe,
@@ -155,36 +167,38 @@ namespace oe {
 		// TODO: Use CommonStates::Additive?
 		Microsoft::WRL::ComPtr<ID3D11BlendState> _deferredLightBlendState;
 
-		std::vector<std::shared_ptr<Render_target_texture>> _pass1RenderTargets;
+		//std::vector<std::shared_ptr<Render_target_texture>> _pass1RenderTargets;
 
 		Camera_data _cameraData;
 		
-		Renderable _pass1ScreenSpaceQuad;
-		Renderable _pass2ScreenSpaceQuad;
+		//Renderable _pass1ScreenSpaceQuad;
+		//Renderable _pass2ScreenSpaceQuad;
 
 		// RenderStep definitions
-		template<class... TRender_passes>
-		struct Render_step {
-			bool enabled = true;
-			std::tuple<TRender_passes...> renderPasses;
+		struct Render_step_deferred_data {
+			std::shared_ptr<Deferred_light_material> _deferredLightMaterial;
+			Renderable _pass0ScreenSpaceQuad;
+			Renderable _pass2ScreenSpaceQuad;
 		};
 
 		Render_step<
+			std::shared_ptr<Render_step_deferred_data>,
 			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Disabled>,
 			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Enabled>,
 			Render_pass_info<Render_pass_blend_mode::Additive, Render_pass_depth_mode::Disabled>
 		> _renderPass_entityDeferred;
 
 		Render_step<
+			void*,
 			Render_pass_info<Render_pass_blend_mode::Blended_alpha, Render_pass_depth_mode::Enabled>
 		> _renderPass_entityStandard;
 
 		Render_step<
+			void*,
 			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Enabled>
 		> _renderPass_debugElements;
 
 		std::shared_ptr<Texture> _depthTexture;
-		std::shared_ptr<Deferred_light_material> _deferredLightMaterial;
 
 		// The template arguments here must match the size of the lights array in the shader constant buffer files.
 		std::unique_ptr<Render_light_data_impl<8>> _renderPass_entityStandard_renderLightData;

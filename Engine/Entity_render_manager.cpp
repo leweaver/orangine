@@ -54,6 +54,9 @@ Entity_render_manager::Entity_render_manager(Scene& scene, std::shared_ptr<IMate
 	, _primitiveMeshDataFactory(nullptr)
 	, _enableDeferredRendering(true)
 	, _fatalError(false)
+	, _renderPass_entityDeferred({})
+	, _renderPass_entityStandard(nullptr)
+	, _renderPass_debugElements(nullptr)
 {
 }
 
@@ -135,11 +138,9 @@ void Entity_render_manager::shutdown()
 	if (_primitiveMeshDataFactory)
 		_primitiveMeshDataFactory.reset();
 	
-	_pass1ScreenSpaceQuad = Renderable();
-	_pass2ScreenSpaceQuad = Renderable();
+	_renderPass_entityDeferred.data.reset();
 	
 	_depthTexture.reset();
-	_pass1RenderTargets.clear();
 
 	auto context = _deviceResources.GetD3DDeviceContext();
 	ID3D11RenderTargetView* renderTargetViews[] = { nullptr, nullptr, nullptr };
@@ -163,9 +164,6 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 	ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, _depthStencilStateDepthEnabled.ReleaseAndGetAddressOf()),
 		"Create depthStencilStateDepthEnabled");
 	
-	// Deffered Lighting Material
-	_deferredLightMaterial = std::shared_ptr<Deferred_light_material>(new Deferred_light_material());
-	
 	// additive blend
 	D3D11_BLEND_DESC blendStateDesc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
 	blendStateDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
@@ -176,41 +174,60 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 	blendStateDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
 	device->CreateBlendState(&blendStateDesc, &_deferredLightBlendState);
 
-	// Full-screen quads
-	_pass1ScreenSpaceQuad = initScreenSpaceQuad(std::make_shared<Clear_gbuffer_material>());
-	_pass2ScreenSpaceQuad = initScreenSpaceQuad(_deferredLightMaterial);
+	// Deferred lighting resources
+	_renderPass_entityDeferred.data = std::make_shared<Render_step_deferred_data>();
+
+	const auto deferredLightMaterial = std::shared_ptr<Deferred_light_material>(new Deferred_light_material());
+	_renderPass_entityDeferred.data->_deferredLightMaterial = deferredLightMaterial;
+
+	_renderPass_entityDeferred.data->_pass0ScreenSpaceQuad = initScreenSpaceQuad(std::make_shared<Clear_gbuffer_material>());
+	_renderPass_entityDeferred.data->_pass2ScreenSpaceQuad = initScreenSpaceQuad(deferredLightMaterial);
 
 	_renderPass_entityDeferred_renderLightData = std::make_unique<decltype(_renderPass_entityDeferred_renderLightData)::element_type>(device);
 	_renderPass_entityDeferred_renderLightData_blank = std::make_unique<decltype(_renderPass_entityDeferred_renderLightData_blank)::element_type>(device);
 	_renderPass_entityStandard_renderLightData = std::make_unique<decltype(_renderPass_entityStandard_renderLightData)::element_type>(device);
-
-	// Debug meshes
-/*	_simplePrimitives.push_back(
-		GeometricPrimitive::CreateTeapot(context)
-	);*/
 }
 
 void Entity_render_manager::createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND /*window*/, int width, int height)
 {
-	assert(_pass1RenderTargets.empty());
 	const auto d3dDevice = _deviceResources.GetD3DDevice();
 
 	// Determine the render target size in pixels.	
-	for (auto i = 0; i < 3; ++i)
+	constexpr size_t maxRenderTargets = 3;
+
+	// Step Deferred, Pass 0
 	{
-		auto target = std::make_unique<Render_target_texture>(width, height);
-		target->load(d3dDevice);
-		_pass1RenderTargets.push_back(move(target));
+		std::vector<std::shared_ptr<Render_target_view_texture>> renderTargets0;
+		renderTargets0.resize(maxRenderTargets);
+		for (auto i = 0; i < maxRenderTargets; ++i)
+		{
+			auto target = std::make_shared<Render_target_texture>(width, height);
+			target->load(d3dDevice);
+			renderTargets0[i] = move(target);
+		}
+
+		// Create a depth texture resource
+		_depthTexture = std::make_unique<Depth_texture>(_deviceResources);
+
+		// Assign textures to the deferred light material
+		auto deferredLightMaterial = _renderPass_entityDeferred.data->_deferredLightMaterial;
+		deferredLightMaterial->setColor0Texture(renderTargets0.at(0));
+		deferredLightMaterial->setColor1Texture(renderTargets0.at(1));
+		deferredLightMaterial->setColor2Texture(renderTargets0.at(2));
+		deferredLightMaterial->setDepthTexture(_depthTexture);
+
+		// Give the render targets to the render pass
+		std::get<0>(_renderPass_entityDeferred.renderPasses).setRenderTargets(move(renderTargets0));
 	}
 
-	// Create a depth texture resource
-	_depthTexture = std::make_unique<Depth_texture>(_deviceResources);
+	// Step Deferred, Pass 2
+	{
+		std::vector<std::shared_ptr<Render_target_view_texture>> renderTargets2;
+		renderTargets2.resize(maxRenderTargets, nullptr);
 
-	// Assign textures to the deferred light material
-	_deferredLightMaterial->setColor0Texture(_pass1RenderTargets.at(0));
-	_deferredLightMaterial->setColor1Texture(_pass1RenderTargets.at(1));
-	_deferredLightMaterial->setColor2Texture(_pass1RenderTargets.at(2));
-	_deferredLightMaterial->setDepthTexture(_depthTexture);
+		renderTargets2[0] = std::make_shared<Render_target_view_texture>(_deviceResources.GetRenderTargetView());
+		std::get<2>(_renderPass_entityDeferred.renderPasses).setRenderTargets(move(renderTargets2));
+	}
 
 	// Set the viewport.
 	auto viewport = _deviceResources.GetScreenViewport();
@@ -224,10 +241,8 @@ void Entity_render_manager::destroyDeviceDependentResources()
 	_depthStencilStateDepthDisabled.Reset();
 	_depthStencilStateDepthEnabled.Reset();
 	
-	_pass1ScreenSpaceQuad.rendererData.reset();
-	_pass2ScreenSpaceQuad.rendererData.reset();
-	
-	_deferredLightMaterial.reset();	
+	_renderPass_entityDeferred.data = std::make_shared<Render_step_deferred_data>();
+
 	_deferredLightBlendState.Reset();
 	
 	_renderPass_entityStandard_renderLightData.reset();
@@ -240,7 +255,9 @@ void Entity_render_manager::destroyDeviceDependentResources()
 void Entity_render_manager::destroyWindowSizeDependentResources()
 {
 	_depthTexture.reset();
-	_pass1RenderTargets.clear();
+
+	std::get<0>(_renderPass_entityDeferred.renderPasses).clearRenderTargets();
+	std::get<2>(_renderPass_entityDeferred.renderPasses).clearRenderTargets();
 }
 
 template<uint8_t TMax_lights>
@@ -267,13 +284,16 @@ void Entity_render_manager::createRenderSteps()
 {	
 	// Deferred Lighting
 	std::get<0>(_renderPass_entityDeferred.renderPasses).render = [this]() {
+		auto renderPass = std::get<0>(_renderPass_entityDeferred.renderPasses);
+
 		_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step0_setup");
 		setupRenderPass_entityDeferred_step0();
 		_deviceResources.PIXEndEvent();
 
 		// Clear the rendered textures (ignoring depth)
 		_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step0_draw");
-		if (_pass1ScreenSpaceQuad.rendererData && _pass1ScreenSpaceQuad.material) {
+		const auto& quad = _renderPass_entityDeferred.data->_pass0ScreenSpaceQuad;
+		if (quad.rendererData && quad.material) {
 			const auto identity = XMMatrixIdentity();
 			Buffer_array_set bufferArraySet;
 
@@ -281,10 +301,10 @@ void Entity_render_manager::createRenderSteps()
 			{
 				drawRendererData(Camera_data::identity,
 					identity,
-					*_pass1ScreenSpaceQuad.rendererData,
-					std::get<g_entity_deferred_cleargbuffer>(_renderPass_entityDeferred.renderPasses),
+					*quad.rendererData,
+					renderPass.blendMode(),
 					*_renderPass_entityDeferred_renderLightData_blank,
-					*_pass1ScreenSpaceQuad.material,
+					*quad.material,
 					false,
 					bufferArraySet);
 			}
@@ -298,6 +318,7 @@ void Entity_render_manager::createRenderSteps()
 	};
 
 	std::get<1>(_renderPass_entityDeferred.renderPasses).render = [this]() {
+		auto renderPass = std::get<1>(_renderPass_entityDeferred.renderPasses);
 
 		if (_enableDeferredRendering) {
 			_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step1_setup");
@@ -311,7 +332,7 @@ void Entity_render_manager::createRenderSteps()
 			_cullSorter->then([&](const std::vector<Entity_cull_sorter_entry>& entities) {
 				auto bufferArraySet = Buffer_array_set();
 				for (const auto& entry : entities)
-					render(entry.entity, bufferArraySet, lightDataProvider, std::get<g_entity_deferred_geometry>(_renderPass_entityDeferred.renderPasses));
+					render(entry.entity, bufferArraySet, lightDataProvider, renderPass);
 			});
 
 			_deviceResources.PIXEndEvent();
@@ -335,6 +356,7 @@ void Entity_render_manager::createRenderSteps()
 
 	// Standard Lighting pass
 	std::get<0>(_renderPass_entityStandard.renderPasses).render = [this]() {
+		auto renderPass = std::get<0>(_renderPass_entityStandard.renderPasses);
 
 		const auto standardLightDataProvider = [this](const Entity&) {
 			_renderPass_entityStandard_renderLightData->clear();
@@ -349,7 +371,7 @@ void Entity_render_manager::createRenderSteps()
 			return _renderPass_entityStandard_renderLightData.get();
 		};
 
-		_alphaSorter->then([this, &standardLightDataProvider](const std::vector<Entity_alpha_sorter_entry>& entries) {
+		_alphaSorter->then([this, &standardLightDataProvider, &renderPass](const std::vector<Entity_alpha_sorter_entry>& entries) {
 			if (!_fatalError)
 			{
 				_deviceResources.PIXBeginEvent(L"renderPass_EntityStandard_setup");
@@ -361,7 +383,7 @@ void Entity_render_manager::createRenderSteps()
 				_cullSorter->then([&](const std::vector<Entity_cull_sorter_entry>& entities) {
 					auto bufferArraySet = Buffer_array_set();
 					for (const auto& entry : entities)
-						render(entry.entity, bufferArraySet, standardLightDataProvider, std::get<0>(_renderPass_entityStandard.renderPasses));
+						render(entry.entity, bufferArraySet, standardLightDataProvider, renderPass);
 				});
 
 				_deviceResources.PIXEndEvent();
@@ -369,9 +391,32 @@ void Entity_render_manager::createRenderSteps()
 		});
 	};
 
+	auto [renderTargetViews, numRenderTargets] = std::get<0>(_renderPass_debugElements.renderPasses).renderTargetViewArray();
+
 	std::get<0>(_renderPass_debugElements.renderPasses).render = [this]() {
 		
 	};
+}
+
+template<int TIdx, class TData, class... TRender_passes>
+void Entity_render_manager::renderStep(Render_step<TData, TRender_passes...>& step)
+{
+	if (!step.enabled)
+		return;
+
+	auto pass = std::get<TIdx>(_renderPass_entityDeferred.renderPasses);
+
+	auto[renderTargetViews, numRenderTargets] = pass.renderTargetViewArray();
+	if (numRenderTargets) {
+		auto context = _deviceResources.GetD3DDeviceContext();
+		context->OMSetRenderTargets(static_cast<UINT>(numRenderTargets), renderTargetViews, _deviceResources.GetDepthStencilView());
+	}
+
+	renderPass(pass);
+
+	if constexpr (TIdx + 1 < sizeof...(TRender_passes)) {
+		renderStep<TIdx + 1, TData, TRender_passes...>(step);
+	}
 }
 
 void Entity_render_manager::render()
@@ -395,21 +440,9 @@ void Entity_render_manager::render()
 	});
 	
 	// Deferred Lighting
-	if (_renderPass_entityDeferred.enabled) {
-		renderPass(std::get<0>(_renderPass_entityDeferred.renderPasses));
-		renderPass(std::get<1>(_renderPass_entityDeferred.renderPasses));
-		renderPass(std::get<2>(_renderPass_entityDeferred.renderPasses));
-	}
-
-	// Standard lighting
-	if (_renderPass_entityStandard.enabled) {
-		renderPass(std::get<0>(_renderPass_entityStandard.renderPasses));
-	}
-
-	// Debug elements pass
-	if (_renderPass_debugElements.enabled) {
-		renderPass(std::get<0>(_renderPass_debugElements.renderPasses));
-	}
+	renderStep(_renderPass_entityDeferred);
+	renderStep(_renderPass_entityStandard);
+	renderStep(_renderPass_debugElements);
 }
 
 BoundingFrustumRH Entity_render_manager::createFrustum(const Entity& entity, const Camera_component& cameraComponent)
@@ -450,7 +483,7 @@ void Entity_render_manager::render(Entity* entity,
 		assert(material != nullptr);
 
 		// Check that this render pass supports this materials alpha mode
-		if constexpr (renderPassInfo.supportsBlendedAlpha()) {
+		if constexpr (TBlend_mode == Render_pass_blend_mode::Blended_alpha) {
 			if (material->getAlphaMode() != Material_alpha_mode::Blend)
 				return;
 		}
@@ -488,7 +521,7 @@ void Entity_render_manager::render(Entity* entity,
 			_cameraData,
 			entity->worldTransform(),
 			*rendererData,
-			renderPassInfo,
+			renderPassInfo.blendMode(),
 			*renderLightData,
 			*material,
 			renderable->wireframe(),
@@ -508,15 +541,18 @@ void Entity_render_manager::renderLights()
 
 	try
 	{
-		const auto rendererData = _pass2ScreenSpaceQuad.rendererData.get();
+		const auto& quad = _renderPass_entityDeferred.data->_pass2ScreenSpaceQuad;
+		const auto rendererData = quad.rendererData.get();
+		const auto deferredLightMaterial = _renderPass_entityDeferred.data->_deferredLightMaterial;
+
 		if (!rendererData || !rendererData->vertexCount)
 			return;
 
 		const auto renderLight = [&]() {
 			_renderPass_entityDeferred_renderLightData->updateBuffer(context);
-			const auto renderSuccess = _deferredLightMaterial->render(
+			const auto renderSuccess = quad.material->render(
 				*rendererData,
-				std::get<g_entity_deferred_lights>(_renderPass_entityDeferred.renderPasses).blendMode,
+				std::get<g_entity_deferred_lights>(_renderPass_entityDeferred.renderPasses).blendMode(),
 				*_renderPass_entityDeferred_renderLightData,
 				_cameraData.worldMatrix,
 				_cameraData.viewMatrix,
@@ -529,7 +565,7 @@ void Entity_render_manager::renderLights()
 		loadRendererDataToDeviceContext(*rendererData, bufferArraySet);
 
 		// Render emitted ight sources once only.
-		_deferredLightMaterial->setupEmitted(true);
+		deferredLightMaterial->setupEmitted(true);
 		auto renderedEmitted = false;
 
 		// Render directional, point, ambient
@@ -540,7 +576,7 @@ void Entity_render_manager::renderLights()
 			if (_renderPass_entityDeferred_renderLightData->full()) {
 				renderLight();
 				renderedEmitted = true;
-				_deferredLightMaterial->setupEmitted(false);
+				deferredLightMaterial->setupEmitted(false);
 			}
 		}
 
@@ -548,7 +584,7 @@ void Entity_render_manager::renderLights()
 			renderLight();
 
 		// Unbind material
-		_deferredLightMaterial->unbind(_deviceResources);
+		quad.material->unbind(_deviceResources);
 	}
 	catch (const std::runtime_error& e)
 	{
@@ -595,12 +631,11 @@ void Entity_render_manager::loadRendererDataToDeviceContext(const Renderer_data&
 	}
 }
 
-template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
 void Entity_render_manager::drawRendererData(
 	const Camera_data& cameraData,
 	const Matrix& worldTransform,
 	const Renderer_data& rendererData,
-	const Render_pass_info<TBlend_mode, TDepth_mode>& renderPassInfo,
+	const Render_pass_blend_mode blendMode,
 	const Render_light_data& renderLightData,
 	Material& material,
 	bool wireframe,
@@ -619,7 +654,7 @@ void Entity_render_manager::drawRendererData(
 		deviceContext->RSSetState(_commonStates->CullClockwise());
 
 	// Render the trianges
-	material.render(rendererData, renderPassInfo.blendMode, renderLightData, 
+	material.render(rendererData, blendMode, renderLightData, 
 		worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, 
 		_deviceResources);
 }
@@ -722,7 +757,7 @@ void Entity_render_manager::renderPass(Render_pass_info<TBlend_mode, TDepth_mode
 		context->OMSetDepthStencilState(_depthStencilStateDepthEnabled.Get(), 0);
 	else
 		context->OMSetDepthStencilState(_depthStencilStateDepthDisabled.Get(), 0);
-	
+		
 	// Make sure wireframe is disabled
 	context->RSSetState(_commonStates->CullClockwise());
 
@@ -734,19 +769,6 @@ void Entity_render_manager::setupRenderPass_entityDeferred_step0()
 {
 	// Clear the views.
 	auto context = _deviceResources.GetD3DDeviceContext();
-
-	const auto depthStencil = _deviceResources.GetDepthStencilView();
-	context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-	constexpr size_t numRenderTargets = 3;
-	assert(_pass1RenderTargets.size() == numRenderTargets);
-	std::array<ID3D11RenderTargetView*, numRenderTargets> renderTargets = {
-		_pass1RenderTargets[0]->renderTargetView(),
-		_pass1RenderTargets[1]->renderTargetView(),
-		_pass1RenderTargets[2]->renderTargetView(),
-	};
-
-	context->OMSetRenderTargets(numRenderTargets, renderTargets.data(), depthStencil);
 }
 
 void Entity_render_manager::setupRenderPass_entityDeferred_step1()
@@ -759,20 +781,6 @@ void Entity_render_manager::setupRenderPass_entityDeferred_step2()
 
 	// Clear the views.	
 	context->ClearRenderTargetView(_deviceResources.GetRenderTargetView(), Colors::Black);
-
-	ID3D11RenderTargetView* renderTargets[] = {
-		_deviceResources.GetRenderTargetView(),
-		nullptr,
-		nullptr
-	};
-
-	context->OMSetRenderTargets(3, renderTargets, nullptr);
-	/*
-	constexpr float blendFactor[4]{ 0.0f, 0.0f, 0.0f, 0.0f };
-	context->OMSetBlendState(_deferredLightBlendState.Get(), blendFactor, 0xFFFFFFFF);
-	*/
-	constexpr float blendFactor[4]{ 0.0f, 0.0f, 0.0f, 0.0f };
-	context->OMSetBlendState(_commonStates->Additive(), blendFactor, 0xFFFFFFFF);
 }
 
 void Entity_render_manager::setupRenderPass_entityStandard()

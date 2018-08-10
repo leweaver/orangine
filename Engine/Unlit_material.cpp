@@ -55,9 +55,9 @@ void Unlit_material::updateVSConstantBuffer(const SimpleMath::Matrix& worldMatri
 	context->UpdateSubresource(buffer, 0, nullptr, &_constantsVs, 0, 0);
 }
 
-void Unlit_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_output_format outputFormat)
+void Unlit_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode)
 {
-	assert(outputFormat != Render_pass_output_format::Shaded_Unlit);
+	assert(blendMode == Render_pass_blend_mode::Opaque);
 }
 
 uint32_t Unlit_material::inputSlot(Vertex_attribute attribute)

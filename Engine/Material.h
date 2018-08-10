@@ -35,7 +35,7 @@ namespace oe {
 
 		// Binds material textures and buffers
 		bool render(const Renderer_data& rendererData,
-			const Render_pass_output_format renderPassInfo,
+			const Render_pass_blend_mode blendMode,
 			const Render_light_data& renderLightData, 
 			const DirectX::SimpleMath::Matrix& worldMatrix,
 			const DirectX::SimpleMath::Matrix& viewMatrix,
@@ -91,7 +91,7 @@ namespace oe {
 
 		// This method is the entry point for generating the shader. It will determine the constant layout, 
 		// create the shader resource view & sampler arrays.
-		virtual void createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_output_format outputFormat) = 0;
+		virtual void createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode) = 0;
 
 		/* 
 		 * Per Frame

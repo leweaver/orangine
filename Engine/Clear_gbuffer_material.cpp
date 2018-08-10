@@ -10,9 +10,9 @@ void Clear_gbuffer_material::vertexAttributes(std::vector<Vertex_attribute>& ver
 	vertexAttributes.push_back(Vertex_attribute::Position);
 }
 
-void Clear_gbuffer_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_output_format outputFormat)
+void Clear_gbuffer_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode)
 {
-	assert(outputFormat == Render_pass_output_format::Shaded_Unlit);
+	assert(blendMode == Render_pass_blend_mode::Opaque);
 }
 
 uint32_t Clear_gbuffer_material::inputSlot(Vertex_attribute attribute)

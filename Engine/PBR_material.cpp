@@ -171,10 +171,10 @@ void PBR_material::updatePSConstantBuffer(const SimpleMath::Matrix& worldMatrix,
 	context->UpdateSubresource(buffer, 0, nullptr, &_constantsPs, 0, 0);
 }
 
-void PBR_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_output_format outputFormat)
+void PBR_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode)
 {
-	_enableDeferred = outputFormat == Render_pass_output_format::Shaded_DeferredLight;
-	assert(_enableDeferred || outputFormat == Render_pass_output_format::Shaded_StandardLight);
+	// TODO: This is a hacky way of finding this information out.
+	_enableDeferred = blendMode == Render_pass_blend_mode::Opaque;
 
 	static_assert(sizeof(_shaderResourceViews) == (sizeof(ID3D11SamplerState*) * NumTextureTypes));
 

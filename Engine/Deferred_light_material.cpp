@@ -13,9 +13,9 @@ void Deferred_light_material::vertexAttributes(std::vector<Vertex_attribute>& ve
 	vertexAttributes.push_back(Vertex_attribute::Position);
 }
 
-void Deferred_light_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_output_format outputFormat)
+void Deferred_light_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode)
 {
-	assert(outputFormat == Render_pass_output_format::Shaded_Unlit);
+	assert(blendMode == Render_pass_blend_mode::Additive);
 }
 
 UINT Deferred_light_material::inputSlot(Vertex_attribute attribute)

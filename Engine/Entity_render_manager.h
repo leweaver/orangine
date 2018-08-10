@@ -71,7 +71,7 @@ namespace oe {
 
 		void render() override;
 		BoundingFrustumRH createFrustum(const Entity& entity, const Camera_component& cameraComponent) override;
-
+		
 		// Manager_base implementations
 		void initialize() override;
 		void shutdown() override;
@@ -87,21 +87,23 @@ namespace oe {
 		void destroyDeviceDependentResources() override;
 
 	protected:
-		using Light_data_provider = std::function<const Render_light_data*(const Entity&)>;
 
-		template<Render_pass_output_format TOutput_format>
+		using Light_data_provider = std::function<const Render_light_data*(const Entity&)>;
+		template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
 		void render(Entity* entity, 
 			Buffer_array_set& bufferArraySet,
 			const Light_data_provider& lightDataProvider,
-			const Render_pass_info<TOutput_format>& renderPassInfo);
+			const Render_pass_info<TBlend_mode, TDepth_mode>& renderPassInfo);
 		
+		void createRenderSteps();
 		void renderLights();
 
 	private:
 
-		void setDepthEnabled(bool enabled);
-		void setBlendEnabled(bool enabled);
+		template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
+		void renderPass(Render_pass_info<TBlend_mode, TDepth_mode>& renderPassInfo);
 
+		void setupRenderPass_entityDeferred_step0();
 		void setupRenderPass_entityDeferred_step1();
 		void setupRenderPass_entityDeferred_step2();
 		void setupRenderPass_entityStandard();
@@ -113,12 +115,12 @@ namespace oe {
 
 		void loadRendererDataToDeviceContext(const Renderer_data& rendererData, Buffer_array_set& bufferArraySet) const;
 
-		template<Render_pass_output_format TOutput_format>
+		template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
 		void drawRendererData(
 			const Camera_data& cameraData,
 			const DirectX::SimpleMath::Matrix& worldTransform,
 			const Renderer_data& rendererData,
-			const Render_pass_info<TOutput_format>& renderPassInfo,
+			const Render_pass_info<TBlend_mode, TDepth_mode>& renderPassInfo,
 			const Render_light_data& renderLightData,
 			Material& material,
 			bool wireframe,
@@ -141,7 +143,6 @@ namespace oe {
 
 		bool _enableDeferredRendering;
 		bool _fatalError;
-		bool _lastBlendEnabled;
 
 		std::unique_ptr<Entity_alpha_sorter> _alphaSorter;
 		std::unique_ptr<Entity_cull_sorter> _cullSorter;
@@ -157,21 +158,30 @@ namespace oe {
 		std::vector<std::shared_ptr<Render_target_texture>> _pass1RenderTargets;
 
 		Camera_data _cameraData;
+		
 		Renderable _pass1ScreenSpaceQuad;
 		Renderable _pass2ScreenSpaceQuad;
 
-		// Render pass definitions
-		std::tuple<
-			Render_pass_info<Render_pass_output_format::Shaded_Unlit>
-		> _renderPass_clear;
-		std::tuple<
-			Render_pass_info<Render_pass_output_format::Shaded_Unlit>,
-			Render_pass_info<Render_pass_output_format::Shaded_DeferredLight>,
-			Render_pass_info<Render_pass_output_format::Shaded_Unlit>
+		// RenderStep definitions
+		template<class... TRender_passes>
+		struct Render_step {
+			bool enabled = true;
+			std::tuple<TRender_passes...> renderPasses;
+		};
+
+		Render_step<
+			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Disabled>,
+			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Enabled>,
+			Render_pass_info<Render_pass_blend_mode::Additive, Render_pass_depth_mode::Disabled>
 		> _renderPass_entityDeferred;
-		std::tuple<
-			Render_pass_info<Render_pass_output_format::Shaded_StandardLight>
+
+		Render_step<
+			Render_pass_info<Render_pass_blend_mode::Blended_alpha, Render_pass_depth_mode::Enabled>
 		> _renderPass_entityStandard;
+
+		Render_step<
+			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Enabled>
+		> _renderPass_debugElements;
 
 		std::shared_ptr<Texture> _depthTexture;
 		std::shared_ptr<Deferred_light_material> _deferredLightMaterial;

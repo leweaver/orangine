@@ -225,7 +225,7 @@ bool Material::createPixelShader(ID3D11Device* device)
 }
 
 bool Material::render(const Renderer_data& rendererData,
-	const Render_pass_output_format outputFormat,
+	const Render_pass_blend_mode blendMode,
 	const Render_light_data& renderLightData,
 	const Matrix& worldMatrix, 
 	const Matrix& viewMatrix, 
@@ -243,7 +243,7 @@ bool Material::render(const Renderer_data& rendererData,
 
 		_errorState = true;
 		{
-			createShaderResources(deviceResources, outputFormat);
+			createShaderResources(deviceResources, blendMode);
 			
 			if (!createVertexShader(device))
 				return false;

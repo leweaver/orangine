@@ -4,20 +4,21 @@
 
 namespace oe
 {
-	template<Render_pass_output_format TFormat>
+	template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
 	struct Render_pass_info {
+		const Render_pass_blend_mode blendMode = TBlend_mode;
+		const Render_pass_depth_mode depthMode = TDepth_mode;
 
-		const Render_pass_output_format outputFormat = TFormat;
+		std::function<void()> render = [](){};
 
 		constexpr static bool supportsBlendedAlpha()
 		{
-			return false;
+			return TBlend_mode == Render_pass_blend_mode::Blended_alpha;
+		}
+
+		constexpr static bool depthEnabled()
+		{
+			return TDepth_mode == Render_pass_depth_mode::Enabled;
 		}
 	};
-
-	template <>
-	constexpr bool Render_pass_info<Render_pass_output_format::Shaded_StandardLight>::supportsBlendedAlpha()
-	{
-		return true;
-	}
 }

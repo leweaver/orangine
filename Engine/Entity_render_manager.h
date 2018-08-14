@@ -110,6 +110,8 @@ namespace oe {
 
 	private:
 
+		void clearDepthStencil(float depth = 1.0f, uint8_t stencil = 0) const;
+
 		template<int TIdx = 0, class TData, class... TRender_passes>
 		void renderStep(Render_step<TData, TRender_passes...>& step);
 
@@ -159,21 +161,11 @@ namespace oe {
 		std::unique_ptr<Entity_alpha_sorter> _alphaSorter;
 		std::unique_ptr<Entity_cull_sorter> _cullSorter;
 		
-		//Microsoft::WRL::ComPtr<ID3D11RasterizerState> _rasterizerStateDepthDisabled;
-		//Microsoft::WRL::ComPtr<ID3D11RasterizerState> _rasterizerStateDepthEnabled;
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> _depthStencilStateDepthDisabled;
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> _depthStencilStateDepthEnabled;
-
-		// TODO: Use CommonStates::Additive?
-		Microsoft::WRL::ComPtr<ID3D11BlendState> _deferredLightBlendState;
-
-		//std::vector<std::shared_ptr<Render_target_texture>> _pass1RenderTargets;
-
+	
 		Camera_data _cameraData;
 		
-		//Renderable _pass1ScreenSpaceQuad;
-		//Renderable _pass2ScreenSpaceQuad;
-
 		// RenderStep definitions
 		struct Render_step_deferred_data {
 			std::shared_ptr<Deferred_light_material> _deferredLightMaterial;
@@ -199,6 +191,13 @@ namespace oe {
 		> _renderPass_debugElements;
 
 		std::shared_ptr<Texture> _depthTexture;
+
+		struct Render_stats {
+			int opaqueEntityCount = 0;
+			int opaqueLightCount = 0;
+			int alphaEntityCount = 0;
+		};
+		Render_stats _renderStats;
 
 		// The template arguments here must match the size of the lights array in the shader constant buffer files.
 		std::unique_ptr<Render_light_data_impl<8>> _renderPass_entityStandard_renderLightData;

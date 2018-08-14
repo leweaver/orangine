@@ -94,7 +94,7 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 		brdf.lightType = LIGHT_TYPE_EMITTED;
 		finalColor += BRDFLight(brdf);
 	}
-
+	
 #ifdef DEBUG_NO_LIGHTING
 	return float4(color0.rgb, 1);
 #elif DEBUG_DISPLAY_METALLIC_ROUGHNESS

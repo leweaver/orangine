@@ -7,7 +7,7 @@ struct PS_INPUT
 
 struct PS_OUTPUT
 {
-	float4 Color0        : SV_Target0;
+	float4 Color0       : SV_Target0;
 	float4 Color1       : SV_Target1;
 	float4 Color2       : SV_Target2;
 };

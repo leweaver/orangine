@@ -164,16 +164,6 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 	ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, _depthStencilStateDepthEnabled.ReleaseAndGetAddressOf()),
 		"Create depthStencilStateDepthEnabled");
 	
-	// additive blend
-	D3D11_BLEND_DESC blendStateDesc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
-	blendStateDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
-	blendStateDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
-
-	blendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	blendStateDesc.RenderTarget[0].BlendEnable = true;
-	blendStateDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	device->CreateBlendState(&blendStateDesc, &_deferredLightBlendState);
-
 	// Deferred lighting resources
 	_renderPass_entityDeferred.data = std::make_shared<Render_step_deferred_data>();
 
@@ -242,9 +232,7 @@ void Entity_render_manager::destroyDeviceDependentResources()
 	_depthStencilStateDepthEnabled.Reset();
 	
 	_renderPass_entityDeferred.data = std::make_shared<Render_step_deferred_data>();
-
-	_deferredLightBlendState.Reset();
-	
+		
 	_renderPass_entityStandard_renderLightData.reset();
 	_renderPass_entityDeferred_renderLightData.reset();
 	_renderPass_entityDeferred_renderLightData_blank.reset();
@@ -329,10 +317,12 @@ void Entity_render_manager::createRenderSteps()
 
 			const auto lightDataProvider = [this](const Entity&) { return _renderPass_entityDeferred_renderLightData_blank.get(); };
 
-			_cullSorter->then([&](const std::vector<Entity_cull_sorter_entry>& entities) {
+			_cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
 				auto bufferArraySet = Buffer_array_set();
-				for (const auto& entry : entities)
+				for (const auto& entry : entities) {
+					++_renderStats.opaqueEntityCount;
 					render(entry.entity, bufferArraySet, lightDataProvider, renderPass);
+				}
 			});
 
 			_deviceResources.PIXEndEvent();
@@ -371,7 +361,7 @@ void Entity_render_manager::createRenderSteps()
 			return _renderPass_entityStandard_renderLightData.get();
 		};
 
-		_alphaSorter->then([this, &standardLightDataProvider, &renderPass](const std::vector<Entity_alpha_sorter_entry>& entries) {
+		_alphaSorter->waitThen([this, &standardLightDataProvider, &renderPass](const std::vector<Entity_alpha_sorter_entry>& entries) {
 			if (!_fatalError)
 			{
 				_deviceResources.PIXBeginEvent(L"renderPass_EntityStandard_setup");
@@ -380,10 +370,12 @@ void Entity_render_manager::createRenderSteps()
 				
 				_deviceResources.PIXBeginEvent(L"renderPass_EntityStandard_draw");
 
-				_cullSorter->then([&](const std::vector<Entity_cull_sorter_entry>& entities) {
+				_cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
 					auto bufferArraySet = Buffer_array_set();
-					for (const auto& entry : entities)
+					for (const auto& entry : entities) {
+						++_renderStats.alphaEntityCount;
 						render(entry.entity, bufferArraySet, standardLightDataProvider, renderPass);
+					}
 				});
 
 				_deviceResources.PIXEndEvent();
@@ -398,18 +390,30 @@ void Entity_render_manager::createRenderSteps()
 	};
 }
 
+void Entity_render_manager::clearDepthStencil(float depth, uint8_t stencil) const
+{
+	const auto depthStencil = _deviceResources.GetDepthStencilView();
+	_deviceResources.GetD3DDeviceContext()->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, depth, stencil);
+}
+
 template<int TIdx, class TData, class... TRender_passes>
 void Entity_render_manager::renderStep(Render_step<TData, TRender_passes...>& step)
 {
 	if (!step.enabled)
 		return;
 
-	auto pass = std::get<TIdx>(_renderPass_entityDeferred.renderPasses);
+	auto pass = std::get<TIdx>(step.renderPasses);
 
 	auto[renderTargetViews, numRenderTargets] = pass.renderTargetViewArray();
 	if (numRenderTargets) {
 		auto context = _deviceResources.GetD3DDeviceContext();
-		context->OMSetRenderTargets(static_cast<UINT>(numRenderTargets), renderTargetViews, _deviceResources.GetDepthStencilView());
+
+		// TODO: Fix me!!!
+		
+		if constexpr (TIdx == 0)
+			context->OMSetRenderTargets(static_cast<UINT>(numRenderTargets), renderTargetViews, _deviceResources.GetDepthStencilView());
+		else
+			context->OMSetRenderTargets(static_cast<UINT>(numRenderTargets), renderTargetViews, nullptr);
 	}
 
 	renderPass(pass);
@@ -434,15 +438,17 @@ void Entity_render_manager::render()
 	_cullSorter->beginSortAsync(_renderableEntities->begin(), _renderableEntities->end(), frustum);
 
 	// Block on the cull sorter, since we can't render until it is done; and it is a good place to kick off the alpha sort.
-	_cullSorter->then([&](const std::vector<Entity_cull_sorter_entry>& entities) {
+	_cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
 		// Find the list of entities that have alpha, and sort them.
 		_alphaSorter->beginSortAsync(entities.begin(), entities.end(), cameraEntity->worldPosition());
+
+		// Deferred Lighting
+		_renderStats = {};
+		clearDepthStencil();
+		renderStep(_renderPass_entityDeferred);
+		renderStep(_renderPass_entityStandard);
+		//renderStep(_renderPass_debugElements);
 	});
-	
-	// Deferred Lighting
-	renderStep(_renderPass_entityDeferred);
-	renderStep(_renderPass_entityStandard);
-	renderStep(_renderPass_debugElements);
 }
 
 BoundingFrustumRH Entity_render_manager::createFrustum(const Entity& entity, const Camera_component& cameraComponent)
@@ -549,6 +555,7 @@ void Entity_render_manager::renderLights()
 			return;
 
 		const auto renderLight = [&]() {
+			++_renderStats.opaqueLightCount;
 			_renderPass_entityDeferred_renderLightData->updateBuffer(context);
 			const auto renderSuccess = quad.material->render(
 				*rendererData,

@@ -19,7 +19,7 @@ namespace oe {
 		// Block until the sorter has completed, then call the given function with the sorted entities.
 		// Subsequent calls to this method will resolve instantly with the same entity list, until
 		// reset() is called.
-		void then(const std::function<void(const std::vector<TEntity_data>&)>& callback);
+		void waitThen(const std::function<void(const std::vector<TEntity_data>&)>& callback);
 		
 		int timeoutMs() const { return _timeoutMs; }
 		void setTimeoutMs(int waitTime) { _timeoutMs = waitTime; }
@@ -97,7 +97,7 @@ namespace oe {
 	}
 
 	template <class TEntity_data>
-	void Entity_sorter<TEntity_data>::then(const std::function<void(const std::vector<TEntity_data>&)>& callback)
+	void Entity_sorter<TEntity_data>::waitThen(const std::function<void(const std::vector<TEntity_data>&)>& callback)
 	{
 		if (!_handle.valid())
 			throw std::runtime_error("Must call beginSort prior to wait");

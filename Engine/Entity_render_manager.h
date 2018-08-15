@@ -19,6 +19,7 @@ namespace DirectX {
 }
 
 namespace oe {
+	class Unlit_material;
 	class Camera_component;
 	class Scene;
 	class Material;
@@ -39,6 +40,9 @@ namespace oe {
 		virtual void render() = 0;
 		virtual BoundingFrustumRH createFrustum(const Entity& entity, const Camera_component& cameraComponent) = 0;
 
+		virtual void addDebugSphere(const DirectX::SimpleMath::Matrix& worldTransform, float radius, const DirectX::SimpleMath::Color& color) = 0;
+		virtual void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const DirectX::SimpleMath::Color& color) = 0;
+		virtual void clearDebugShapes() = 0;
 	};
 
 	class Entity_render_manager : public IEntity_render_manager
@@ -69,10 +73,10 @@ namespace oe {
 		template<class TData, class... TRender_passes>
 		class Render_step {
 		public:
-			explicit Render_step(TData data) : data(data) {}
+			explicit Render_step(std::shared_ptr<TData> data) : data(data) {}
 
 			bool enabled = true;
-			TData data;
+			std::shared_ptr<TData> data;
 			std::tuple<TRender_passes...> renderPasses;
 		};
 
@@ -96,6 +100,10 @@ namespace oe {
 		void createDeviceDependentResources(DX::DeviceResources& deviceResources) override;
 		void destroyDeviceDependentResources() override;
 
+		void addDebugSphere(const DirectX::SimpleMath::Matrix& worldTransform, float radius, const DirectX::SimpleMath::Color& color) override;
+		void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const DirectX::SimpleMath::Color& color) override;
+		void clearDebugShapes() override;
+
 	protected:
 
 		using Light_data_provider = std::function<const Render_light_data*(const Entity&)>;
@@ -117,12 +125,7 @@ namespace oe {
 
 		template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
 		void renderPass(Render_pass_info<TBlend_mode, TDepth_mode>& renderPassInfo);
-
-		void setupRenderPass_entityDeferred_step0();
-		void setupRenderPass_entityDeferred_step1();
-		void setupRenderPass_entityDeferred_step2();
-		void setupRenderPass_entityStandard();
-
+				
 		std::unique_ptr<Material> loadMaterial(const std::string& materialName) const;
 
 		std::shared_ptr<D3D_buffer> createBufferFromData(const Mesh_buffer& buffer, UINT bindFlags) const;
@@ -160,10 +163,7 @@ namespace oe {
 
 		std::unique_ptr<Entity_alpha_sorter> _alphaSorter;
 		std::unique_ptr<Entity_cull_sorter> _cullSorter;
-		
-		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> _depthStencilStateDepthDisabled;
-		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> _depthStencilStateDepthEnabled;
-	
+			
 		Camera_data _cameraData;
 		
 		// RenderStep definitions
@@ -172,22 +172,27 @@ namespace oe {
 			Renderable _pass0ScreenSpaceQuad;
 			Renderable _pass2ScreenSpaceQuad;
 		};
+		struct Render_step_empty_data {};
+		struct Render_step_debug_data {
+			std::shared_ptr<Unlit_material> _unlitMaterial;
+			std::vector<std::tuple<DirectX::SimpleMath::Matrix, DirectX::SimpleMath::Color, std::shared_ptr<Renderer_data>>> _debugShapes;
+		};
 
 		Render_step<
-			std::shared_ptr<Render_step_deferred_data>,
+			Render_step_deferred_data,
 			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Disabled>,
-			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Enabled>,
+			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::ReadWrite>,
 			Render_pass_info<Render_pass_blend_mode::Additive, Render_pass_depth_mode::Disabled>
 		> _renderPass_entityDeferred;
 
 		Render_step<
-			void*,
-			Render_pass_info<Render_pass_blend_mode::Blended_alpha, Render_pass_depth_mode::Enabled>
+			Render_step_empty_data,
+			Render_pass_info<Render_pass_blend_mode::Blended_alpha, Render_pass_depth_mode::ReadWrite>
 		> _renderPass_entityStandard;
 
 		Render_step<
-			void*,
-			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Enabled>
+			Render_step_debug_data,
+			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::ReadWrite>
 		> _renderPass_debugElements;
 
 		std::shared_ptr<Texture> _depthTexture;
@@ -203,5 +208,6 @@ namespace oe {
 		std::unique_ptr<Render_light_data_impl<8>> _renderPass_entityStandard_renderLightData;
 		std::unique_ptr<Render_light_data_impl<0>> _renderPass_entityDeferred_renderLightData_blank;
 		std::unique_ptr<Render_light_data_impl<8>> _renderPass_entityDeferred_renderLightData;
+
 	};
 }

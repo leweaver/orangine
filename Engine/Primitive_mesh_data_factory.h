@@ -17,7 +17,7 @@ namespace oe {
 
 		// Creates an indexed mesh with Position, Normal, Tangent, Textcoord_0
 		std::shared_ptr<Mesh_data> createTeapot(size_t tessellation = 8) const;
-		std::shared_ptr<Mesh_data> createSphere(size_t tessellation = 16, bool invertNormals = false) const;
+		std::shared_ptr<Mesh_data> createSphere(float radius = 0.5f, size_t tessellation = 16, bool invertNormals = false) const;
 
 		std::shared_ptr<Mesh_data> createFrustumLines(const BoundingFrustumRH& frustum);
 

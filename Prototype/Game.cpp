@@ -37,7 +37,8 @@ Game::~Game()
 {
 	g_debugEntity.reset();
 	if (m_scene) {
-		m_scene->manager<IEntity_render_manager>().destroyDeviceDependentResources();
+		m_scene->destroyWindowSizeDependentResources();
+		m_scene->destroyDeviceDependentResources();
 		m_scene->shutdown();
 	}
 
@@ -107,14 +108,12 @@ void Game::CreateCamera(bool animate)
 
 	auto &component = camera->addComponent<Camera_component>();
 	component.setFov(XMConvertToRadians(60.0f));
-	component.setFarPlane(100.0f);
+	component.setFarPlane(200.0f);
 	component.setNearPlane(0.1f);
 
 	camera->lookAt({ 0, 0, 0 }, Vector3::Up);
 
 	m_scene->setMainCamera(camera);
-
-
 }
 
 void Game::CreateLights()
@@ -256,10 +255,10 @@ void Game::Initialize(HWND window, int width, int height)
 
 		//CreateSceneCubeSatellite();
 		//CreateSceneLeverArm();
-		//LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
+		LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
 		
 		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
-		LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
+		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
 		//LoadGLTF("FlightHelmet", true)->setScale({ 14, 14, 14 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
 		

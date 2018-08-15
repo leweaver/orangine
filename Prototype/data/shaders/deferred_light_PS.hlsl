@@ -58,7 +58,7 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	float4 color0 = color0Texture.Sample(color0Sampler, input.vTexCoord0);
 	float4 color1 = color1Texture.Sample(color1Sampler, input.vTexCoord0);
 	float4 color2 = color2Texture.Sample(color2Sampler, input.vTexCoord0);
-	float  depth  = depthTexture.Sample(depthSampler,   input.vTexCoord0).r;
+	float  depth = depthTexture.Sample(depthSampler,   input.vTexCoord0).r;
 
 	BRDFLightInputs brdf;
 	brdf.emissiveColor = color2.rgb;
@@ -94,7 +94,11 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 		brdf.lightType = LIGHT_TYPE_EMITTED;
 		finalColor += BRDFLight(brdf);
 	}
-	
+
+	//depth = depth;
+	//return float4(depth, depth > 1 ? 1 : (finalColor.r * finalColor.g * finalColor.b * 0.01), depth < 0 ? 1 : 0, 1);
+
+
 #ifdef DEBUG_NO_LIGHTING
 	return float4(color0.rgb, 1);
 #elif DEBUG_DISPLAY_METALLIC_ROUGHNESS
@@ -104,7 +108,6 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 #else
 	return float4(finalColor, 1);
 #endif
-
 }
 
 float3 VSPositionFromDepth(float2 vTexCoord)

@@ -148,13 +148,13 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2
 	return md;
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createSphere(size_t tessellation, bool invertNormals) const
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createSphere(float radius, size_t tessellation, bool invertNormals) const
 {
 	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
 	std::vector<uint16_t> indices;
 
 	// FIXME: This doesn't seem right, as we are trying to use a RH coordinate system:
-	DirectX::GeometricPrimitive::CreateSphere(vertices, indices, 1.0f, tessellation, false, invertNormals);
+	DirectX::GeometricPrimitive::CreateSphere(vertices, indices, radius * 2.0f, tessellation, false, invertNormals);
 
 	auto md = createMeshData(move(vertices), move(indices));
 	generateTangents(md);

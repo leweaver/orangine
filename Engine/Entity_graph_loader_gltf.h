@@ -15,7 +15,8 @@ namespace oe {
 		std::vector<std::shared_ptr<Entity>> loadFile(std::string_view filename,
 			IEntity_repository& entityRepository,
 			IMaterial_repository& materialRepository,
-			Primitive_mesh_data_factory& meshDataFactory) const override;
+			Primitive_mesh_data_factory& meshDataFactory,
+			bool calculateBounds) const override;
 
 	private:
 		Microsoft::WRL::ComPtr<IWICImagingFactory> _imagingFactory;

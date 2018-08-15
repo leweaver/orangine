@@ -14,16 +14,10 @@ namespace oe {
 		Blended_alpha,
 		Additive
 	};
-	/*
-	enum class Render_pass_output_format {
-		Shaded_StandardLight,
-		Shaded_DeferredLight,
-		Shaded_Unlit
-	};
-	*/
 
 	enum class Render_pass_depth_mode {
-		Enabled,
+		ReadWrite,
+		ReadOnly,
 		Disabled
 	};
 }

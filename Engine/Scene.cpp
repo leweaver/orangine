@@ -99,7 +99,8 @@ void Scene::loadEntities(const std::string& filename, Entity *parentEntity)
 		filename, 
 		*std::get<std::shared_ptr<IEntity_repository>>(_managers).get(),
 		*std::get<std::shared_ptr<IMaterial_repository>>(_managers).get(),
-		*std::get<std::shared_ptr<Primitive_mesh_data_factory>>(_managers).get());
+		*std::get<std::shared_ptr<Primitive_mesh_data_factory>>(_managers).get(),
+		true);
 	
 	if (parentEntity)
 	{

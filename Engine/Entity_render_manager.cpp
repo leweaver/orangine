@@ -7,20 +7,22 @@
 #include "Entity_filter.h"
 #include "Scene.h"
 
-#include <set>
-#include <array>
-#include <functional>
 #include "Light_component.h"
 #include "Clear_gbuffer_material.h"
 #include "Render_target_texture.h"
 #include "Render_light_data.h"
 #include "Renderable_component.h"
 #include "Deferred_light_material.h"
+#include "Unlit_material.h"
 #include "Texture.h"
 #include "Camera_component.h"
 #include "Entity_sorter.h"
 #include "CommonStates.h"
 #include "GeometricPrimitive.h"
+
+#include <set>
+#include <array>
+#include <functional>
 #include <optional>
 
 using namespace oe;
@@ -55,8 +57,8 @@ Entity_render_manager::Entity_render_manager(Scene& scene, std::shared_ptr<IMate
 	, _enableDeferredRendering(true)
 	, _fatalError(false)
 	, _renderPass_entityDeferred({})
-	, _renderPass_entityStandard(nullptr)
-	, _renderPass_debugElements(nullptr)
+	, _renderPass_entityStandard({})
+	, _renderPass_debugElements({})
 {
 }
 
@@ -131,6 +133,8 @@ void Entity_render_manager::tick()
 
 	_cameraData.projectionMatrix._33 *= invFarPlane;
 	_cameraData.projectionMatrix._43 *= invFarPlane;
+
+	// Update the debug data
 }
 
 void Entity_render_manager::shutdown()
@@ -151,23 +155,11 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 {	
 	auto device = _deviceResources.GetD3DDevice();
 	_commonStates = std::make_unique<CommonStates>(device);
-
-	// Depth buffer settings
-	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
-	depthStencilDesc.DepthEnable = false;
-	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-	depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
-	ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, _depthStencilStateDepthDisabled.ReleaseAndGetAddressOf()),
-		"Create depthStencilStateDepthDisabled");
-
-	depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
-	ThrowIfFailed(device->CreateDepthStencilState(&depthStencilDesc, _depthStencilStateDepthEnabled.ReleaseAndGetAddressOf()),
-		"Create depthStencilStateDepthEnabled");
-	
-	// Deferred lighting resources
+		
+	// Deferred lighting step resources
 	_renderPass_entityDeferred.data = std::make_shared<Render_step_deferred_data>();
 
-	const auto deferredLightMaterial = std::shared_ptr<Deferred_light_material>(new Deferred_light_material());
+	const auto deferredLightMaterial = std::make_shared<Deferred_light_material>();
 	_renderPass_entityDeferred.data->_deferredLightMaterial = deferredLightMaterial;
 
 	_renderPass_entityDeferred.data->_pass0ScreenSpaceQuad = initScreenSpaceQuad(std::make_shared<Clear_gbuffer_material>());
@@ -175,7 +167,13 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 
 	_renderPass_entityDeferred_renderLightData = std::make_unique<decltype(_renderPass_entityDeferred_renderLightData)::element_type>(device);
 	_renderPass_entityDeferred_renderLightData_blank = std::make_unique<decltype(_renderPass_entityDeferred_renderLightData_blank)::element_type>(device);
+
+	// Standard lighting step resources
 	_renderPass_entityStandard_renderLightData = std::make_unique<decltype(_renderPass_entityStandard_renderLightData)::element_type>(device);
+
+	// Debug elements lighting step resources
+	_renderPass_debugElements.data = std::make_shared<Render_step_debug_data>();
+	_renderPass_debugElements.data->_unlitMaterial = std::make_shared<Unlit_material>();
 }
 
 void Entity_render_manager::createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND /*window*/, int width, int height)
@@ -207,16 +205,26 @@ void Entity_render_manager::createWindowSizeDependentResources(DX::DeviceResourc
 		deferredLightMaterial->setDepthTexture(_depthTexture);
 
 		// Give the render targets to the render pass
-		std::get<0>(_renderPass_entityDeferred.renderPasses).setRenderTargets(move(renderTargets0));
+		std::get<0>(_renderPass_entityDeferred.renderPasses).setRenderTargets(std::vector<std::shared_ptr<Render_target_view_texture>>(renderTargets0));
+		std::get<1>(_renderPass_entityDeferred.renderPasses).setRenderTargets(std::vector<std::shared_ptr<Render_target_view_texture>>(renderTargets0));
 	}
 
 	// Step Deferred, Pass 2
 	{
-		std::vector<std::shared_ptr<Render_target_view_texture>> renderTargets2;
-		renderTargets2.resize(maxRenderTargets, nullptr);
+		std::vector<std::shared_ptr<Render_target_view_texture>> renderTargets;
+		renderTargets.resize(maxRenderTargets, nullptr);
 
-		renderTargets2[0] = std::make_shared<Render_target_view_texture>(_deviceResources.GetRenderTargetView());
-		std::get<2>(_renderPass_entityDeferred.renderPasses).setRenderTargets(move(renderTargets2));
+		renderTargets[0] = std::make_shared<Render_target_view_texture>(_deviceResources.GetRenderTargetView());
+		std::get<2>(_renderPass_entityDeferred.renderPasses).setRenderTargets(move(renderTargets));
+	}
+
+	// Step Standard, Pass 0
+	{
+		std::vector<std::shared_ptr<Render_target_view_texture>> renderTargets;
+		renderTargets.resize(maxRenderTargets, nullptr);
+
+		renderTargets[0] = std::make_shared<Render_target_view_texture>(_deviceResources.GetRenderTargetView());
+		std::get<0>(_renderPass_entityStandard.renderPasses).setRenderTargets(move(renderTargets));
 	}
 
 	// Set the viewport.
@@ -227,11 +235,10 @@ void Entity_render_manager::createWindowSizeDependentResources(DX::DeviceResourc
 void Entity_render_manager::destroyDeviceDependentResources()
 {
 	_commonStates.reset();
-
-	_depthStencilStateDepthDisabled.Reset();
-	_depthStencilStateDepthEnabled.Reset();
 	
-	_renderPass_entityDeferred.data = std::make_shared<Render_step_deferred_data>();
+	_renderPass_entityDeferred.data.reset();
+	_renderPass_entityStandard.data.reset();
+	_renderPass_debugElements.data.reset();
 		
 	_renderPass_entityStandard_renderLightData.reset();
 	_renderPass_entityDeferred_renderLightData.reset();
@@ -245,7 +252,10 @@ void Entity_render_manager::destroyWindowSizeDependentResources()
 	_depthTexture.reset();
 
 	std::get<0>(_renderPass_entityDeferred.renderPasses).clearRenderTargets();
+	std::get<1>(_renderPass_entityDeferred.renderPasses).clearRenderTargets();
 	std::get<2>(_renderPass_entityDeferred.renderPasses).clearRenderTargets();
+	std::get<0>(_renderPass_entityStandard.renderPasses).clearRenderTargets();
+	std::get<0>(_renderPass_debugElements.renderPasses).clearRenderTargets();
 }
 
 template<uint8_t TMax_lights>
@@ -273,10 +283,6 @@ void Entity_render_manager::createRenderSteps()
 	// Deferred Lighting
 	std::get<0>(_renderPass_entityDeferred.renderPasses).render = [this]() {
 		auto renderPass = std::get<0>(_renderPass_entityDeferred.renderPasses);
-
-		_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step0_setup");
-		setupRenderPass_entityDeferred_step0();
-		_deviceResources.PIXEndEvent();
 
 		// Clear the rendered textures (ignoring depth)
 		_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step0_draw");
@@ -309,12 +315,7 @@ void Entity_render_manager::createRenderSteps()
 		auto renderPass = std::get<1>(_renderPass_entityDeferred.renderPasses);
 
 		if (_enableDeferredRendering) {
-			_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step1_setup");
-			setupRenderPass_entityDeferred_step1();
-			_deviceResources.PIXEndEvent();
-
 			_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step1_draw");
-
 			const auto lightDataProvider = [this](const Entity&) { return _renderPass_entityDeferred_renderLightData_blank.get(); };
 
 			_cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
@@ -331,7 +332,10 @@ void Entity_render_manager::createRenderSteps()
 	
 	std::get<2>(_renderPass_entityDeferred.renderPasses).render = [this]() {
 		_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step2_setup");
-		setupRenderPass_entityDeferred_step2();
+
+		// TODO: Clear the render target view in a more generic way.	 
+		_deviceResources.GetD3DDeviceContext()->ClearRenderTargetView(_deviceResources.GetRenderTargetView(), Colors::Black);
+
 		_deviceResources.PIXEndEvent();
 
 		if (!_fatalError)
@@ -364,10 +368,6 @@ void Entity_render_manager::createRenderSteps()
 		_alphaSorter->waitThen([this, &standardLightDataProvider, &renderPass](const std::vector<Entity_alpha_sorter_entry>& entries) {
 			if (!_fatalError)
 			{
-				_deviceResources.PIXBeginEvent(L"renderPass_EntityStandard_setup");
-				setupRenderPass_entityStandard();
-				_deviceResources.PIXEndEvent();
-				
 				_deviceResources.PIXBeginEvent(L"renderPass_EntityStandard_draw");
 
 				_cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
@@ -386,7 +386,25 @@ void Entity_render_manager::createRenderSteps()
 	auto [renderTargetViews, numRenderTargets] = std::get<0>(_renderPass_debugElements.renderPasses).renderTargetViewArray();
 
 	std::get<0>(_renderPass_debugElements.renderPasses).render = [this]() {
-		
+		auto unlitMaterial = _renderPass_debugElements.data->_unlitMaterial;
+		Buffer_array_set bufferArraySet;
+		for (const auto& debugShape : _renderPass_debugElements.data->_debugShapes) {
+			const auto& transform = std::get<0>(debugShape);
+			const auto& color = std::get<1>(debugShape);
+			const auto rendererData = std::get<2>(debugShape);
+
+			unlitMaterial->setBaseColor(color);
+
+			drawRendererData(
+				_cameraData,
+				transform,
+				*rendererData,
+				Render_pass_blend_mode::Opaque,
+				*_renderPass_entityDeferred_renderLightData_blank,
+				*unlitMaterial,
+				true,
+				bufferArraySet);
+		}
 	};
 }
 
@@ -394,33 +412,6 @@ void Entity_render_manager::clearDepthStencil(float depth, uint8_t stencil) cons
 {
 	const auto depthStencil = _deviceResources.GetDepthStencilView();
 	_deviceResources.GetD3DDeviceContext()->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, depth, stencil);
-}
-
-template<int TIdx, class TData, class... TRender_passes>
-void Entity_render_manager::renderStep(Render_step<TData, TRender_passes...>& step)
-{
-	if (!step.enabled)
-		return;
-
-	auto pass = std::get<TIdx>(step.renderPasses);
-
-	auto[renderTargetViews, numRenderTargets] = pass.renderTargetViewArray();
-	if (numRenderTargets) {
-		auto context = _deviceResources.GetD3DDeviceContext();
-
-		// TODO: Fix me!!!
-		
-		if constexpr (TIdx == 0)
-			context->OMSetRenderTargets(static_cast<UINT>(numRenderTargets), renderTargetViews, _deviceResources.GetDepthStencilView());
-		else
-			context->OMSetRenderTargets(static_cast<UINT>(numRenderTargets), renderTargetViews, nullptr);
-	}
-
-	renderPass(pass);
-
-	if constexpr (TIdx + 1 < sizeof...(TRender_passes)) {
-		renderStep<TIdx + 1, TData, TRender_passes...>(step);
-	}
 }
 
 void Entity_render_manager::render()
@@ -442,13 +433,73 @@ void Entity_render_manager::render()
 		// Find the list of entities that have alpha, and sort them.
 		_alphaSorter->beginSortAsync(entities.begin(), entities.end(), cameraEntity->worldPosition());
 
-		// Deferred Lighting
+		// Render steps
 		_renderStats = {};
 		clearDepthStencil();
 		renderStep(_renderPass_entityDeferred);
 		renderStep(_renderPass_entityStandard);
-		//renderStep(_renderPass_debugElements);
+		renderStep(_renderPass_debugElements);
 	});
+}
+
+template<int TIdx, class TData, class... TRender_passes>
+void Entity_render_manager::renderStep(Render_step<TData, TRender_passes...>& step)
+{
+	if (!step.enabled)
+		return;
+
+	auto pass = std::get<TIdx>(step.renderPasses);
+
+	auto[renderTargetViews, numRenderTargets] = pass.renderTargetViewArray();
+	if (numRenderTargets) {
+		auto context = _deviceResources.GetD3DDeviceContext();
+
+		// TODO: Fix me!!!
+
+		if constexpr (Render_pass_depth_mode::Disabled == pass.depthMode())
+			context->OMSetRenderTargets(static_cast<UINT>(numRenderTargets), renderTargetViews, nullptr);
+		else
+			context->OMSetRenderTargets(static_cast<UINT>(numRenderTargets), renderTargetViews, _deviceResources.GetDepthStencilView());
+	}
+
+	renderPass(pass);
+
+	if constexpr (TIdx + 1 < sizeof...(TRender_passes)) {
+		renderStep<TIdx + 1, TData, TRender_passes...>(step);
+	}
+}
+
+template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
+void Entity_render_manager::renderPass(Render_pass_info<TBlend_mode, TDepth_mode>& renderPassInfo)
+{
+	auto context = _deviceResources.GetD3DDeviceContext();
+
+	// Set the blend mode
+	constexpr auto opaqueSampleMask = 0xffffffff;
+	constexpr std::array<float, 4> opaqueBlendFactor{ 0.0f, 0.0f, 0.0f, 0.0f };
+
+	if constexpr (TBlend_mode == Render_pass_blend_mode::Opaque)
+		context->OMSetBlendState(_commonStates->Opaque(), opaqueBlendFactor.data(), opaqueSampleMask);
+	else if constexpr (TBlend_mode == Render_pass_blend_mode::Blended_alpha)
+		context->OMSetBlendState(_commonStates->AlphaBlend(), opaqueBlendFactor.data(), opaqueSampleMask);
+	else if constexpr (TBlend_mode == Render_pass_blend_mode::Additive)
+		context->OMSetBlendState(_commonStates->Additive(), opaqueBlendFactor.data(), opaqueSampleMask);
+	else
+		static_assert(false);
+
+	// Depth buffer mode
+	if constexpr (Render_pass_depth_mode::ReadWrite == renderPassInfo.depthMode())
+		context->OMSetDepthStencilState(_commonStates->DepthDefault(), 0);
+	else if constexpr (Render_pass_depth_mode::ReadOnly == renderPassInfo.depthMode())
+		context->OMSetDepthStencilState(_commonStates->DepthRead(), 0);
+	else
+		context->OMSetDepthStencilState(_commonStates->DepthNone(), 0);
+
+	// Make sure wireframe is disabled
+	context->RSSetState(_commonStates->CullClockwise());
+
+	// Call the render method.
+	renderPassInfo.render();
 }
 
 BoundingFrustumRH Entity_render_manager::createFrustum(const Entity& entity, const Camera_component& cameraComponent)
@@ -465,14 +516,8 @@ BoundingFrustumRH Entity_render_manager::createFrustum(const Entity& entity, con
 	frustum.Origin = entity.worldPosition();
 	frustum.Orientation = entity.worldRotation();
 
-	// TODO: For some reason, CreateFromMatrix sets near/far to -ve values?
-	//frustum.Near = cameraComponent.nearPlane();
-	//frustum.Far = cameraComponent.farPlane();
-
 	return frustum;
 }
-
-std::vector<Vertex_attribute> vertexAttributes;
 
 template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
 void Entity_render_manager::render(Entity* entity,
@@ -511,7 +556,7 @@ void Entity_render_manager::render(Entity* entity,
 
 			LOG(INFO) << "Creating renderer data for entity " << entity->getName() << " (ID " << entity->getId() << ")";
 
-			vertexAttributes.clear();
+			std::vector<Vertex_attribute> vertexAttributes;
 			material->vertexAttributes(vertexAttributes);
 
 			auto rendererDataPtr = createRendererData(*meshData, vertexAttributes);
@@ -741,65 +786,6 @@ Entity_render_manager::Renderable Entity_render_manager::initScreenSpaceQuad(std
 	return renderable;
 }
 
-template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
-void Entity_render_manager::renderPass(Render_pass_info<TBlend_mode, TDepth_mode>& renderPassInfo)
-{
-	auto context = _deviceResources.GetD3DDeviceContext();
-
-	// Set the blend mode
-	constexpr auto opaqueSampleMask = 0xffffffff;
-	constexpr std::array<float, 4> opaqueBlendFactor{ 0.0f, 0.0f, 0.0f, 0.0f };
-
-	if constexpr (TBlend_mode == Render_pass_blend_mode::Opaque)
-		context->OMSetBlendState(_commonStates->Opaque(), opaqueBlendFactor.data(), opaqueSampleMask);
-	else if constexpr (TBlend_mode == Render_pass_blend_mode::Blended_alpha)
-		context->OMSetBlendState(_commonStates->AlphaBlend(), opaqueBlendFactor.data(), opaqueSampleMask);
-	else if constexpr (TBlend_mode == Render_pass_blend_mode::Additive)
-		context->OMSetBlendState(_commonStates->Additive(), opaqueBlendFactor.data(), opaqueSampleMask);
-	else
-		static_assert(false);
-
-	// Depth buffer mode
-	if constexpr (renderPassInfo.depthEnabled())
-		context->OMSetDepthStencilState(_depthStencilStateDepthEnabled.Get(), 0);
-	else
-		context->OMSetDepthStencilState(_depthStencilStateDepthDisabled.Get(), 0);
-		
-	// Make sure wireframe is disabled
-	context->RSSetState(_commonStates->CullClockwise());
-
-	// Call the render method.
-	renderPassInfo.render();
-}
-
-void Entity_render_manager::setupRenderPass_entityDeferred_step0()
-{
-	// Clear the views.
-	auto context = _deviceResources.GetD3DDeviceContext();
-}
-
-void Entity_render_manager::setupRenderPass_entityDeferred_step1()
-{
-}
-
-void Entity_render_manager::setupRenderPass_entityDeferred_step2()
-{
-	auto context = _deviceResources.GetD3DDeviceContext();
-
-	// Clear the views.	
-	context->ClearRenderTargetView(_deviceResources.GetRenderTargetView(), Colors::Black);
-}
-
-void Entity_render_manager::setupRenderPass_entityStandard()
-{
-	auto context = _deviceResources.GetD3DDeviceContext();
-
-	const auto depthStencil = _deviceResources.GetDepthStencilView();
-	const auto finalColorRenderTarget = _deviceResources.GetRenderTargetView();
-
-	context->OMSetRenderTargets(1, &finalColorRenderTarget, depthStencil);
-}
-
 std::shared_ptr<D3D_buffer> Entity_render_manager::createBufferFromData(const Mesh_buffer& buffer, UINT bindFlags) const
 {
 	// Create the vertex buffer.
@@ -829,4 +815,33 @@ std::shared_ptr<D3D_buffer> Entity_render_manager::createBufferFromData(const Me
 std::unique_ptr<Material> Entity_render_manager::loadMaterial(const std::string& materialName) const
 {
 	return _materialRepository->instantiate(materialName);
+}
+
+void Entity_render_manager::addDebugSphere(const Matrix& worldTransform, float radius, const Color& color)
+{
+	const auto meshData = _primitiveMeshDataFactory->createSphere(radius, 6);
+
+	std::vector<Vertex_attribute> vertexAttributes;
+	_renderPass_debugElements.data->_unlitMaterial->vertexAttributes(vertexAttributes);
+	auto rendererData = createRendererData(*meshData, vertexAttributes);
+	_renderPass_debugElements.data->_debugShapes.push_back({ worldTransform, color, move(rendererData) });
+}
+
+void Entity_render_manager::addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color)
+{
+	// Create frustum mesh with vertices in WORLD SPACE, based on the position and orientation attributes of the frustum.
+	const auto meshData = _primitiveMeshDataFactory->createFrustumLines(boundingFrustum);
+
+	std::vector<Vertex_attribute> vertexAttributes;
+	_renderPass_debugElements.data->_unlitMaterial->vertexAttributes(vertexAttributes);
+	auto rendererData = createRendererData(*meshData, vertexAttributes);
+	
+	_renderPass_debugElements.data->_debugShapes.push_back({ Matrix::Identity, color, move(rendererData) });
+}
+
+
+void Entity_render_manager::clearDebugShapes()
+{
+	if (_renderPass_debugElements.data)
+		_renderPass_debugElements.data->_debugShapes.clear();
 }

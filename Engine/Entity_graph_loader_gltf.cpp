@@ -32,11 +32,12 @@ map<Vertex_attribute, string> g_gltfMappingToAttributeMap = {
 
 struct LoaderData
 {
-	LoaderData(Model& model, string&& baseDir, IWICImagingFactory *imagingFactory, Primitive_mesh_data_factory& meshDataFactory)
+	LoaderData(Model& model, string&& baseDir, IWICImagingFactory *imagingFactory, Primitive_mesh_data_factory& meshDataFactory, bool calculateBounds)
 		: model(model)
 		, baseDir(std::move(baseDir))
 		, imagingFactory(imagingFactory)
 		, meshDataFactory(meshDataFactory)
+		, calculateBounds(calculateBounds)
 	{}
 
 	Model& model;
@@ -44,6 +45,7 @@ struct LoaderData
 	IWICImagingFactory* imagingFactory;
 	Primitive_mesh_data_factory& meshDataFactory;
 	map<size_t, shared_ptr<Mesh_buffer>> accessorIdxToMeshBuffers;
+	bool calculateBounds;
 };
 
 unique_ptr<Mesh_vertex_buffer_accessor> read_vertex_buffer(const Model& model,
@@ -84,7 +86,8 @@ void Entity_graph_loader_gltf::getSupportedFileExtensions(vector<string>& extens
 vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filename, 
 	IEntity_repository& entityRepository, 
 	IMaterial_repository& materialRepository,
-	Primitive_mesh_data_factory& meshDataFactory) const
+	Primitive_mesh_data_factory& meshDataFactory,
+	bool calculateBounds) const
 {
 	vector<shared_ptr<Entity>> entities;
 	Model model;
@@ -109,7 +112,7 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filena
 	auto baseDir = tinygltf::GetBaseDir(filenameStr);
 	if (baseDir.empty())
 		baseDir = ".";
-	LoaderData loaderData(model, string(baseDir), _imagingFactory.Get(), meshDataFactory);
+	LoaderData loaderData(model, string(baseDir), _imagingFactory.Get(), meshDataFactory, calculateBounds);
 	
 	for (auto nodeIdx : scene.nodes) 
 	{
@@ -390,7 +393,7 @@ shared_ptr<Entity> create_entity(const Node& node, IEntity_repository& entityRep
 
 	// Transform
 	setEntityTransform(*rootEntity, node);
-
+	
 	// Create MeshData
 	if (node.mesh > -1) {
 		const auto& mesh = loaderData.model.meshes.at(node.mesh);
@@ -501,6 +504,19 @@ shared_ptr<Entity> create_entity(const Node& node, IEntity_repository& entityRep
 				// Add this component last, to make sure there wasn't an error loading!
 				auto& renderableComponent = primitiveEntity->addComponent<Renderable_component>();
 				renderableComponent.setMaterial(move(material));
+
+				// Calculate bounds?
+				if (loaderData.calculateBounds) {
+					DirectX::BoundingSphere boundingSphere;
+
+					const auto& vertexBufferAccessor = meshData->vertexBufferAccessors[Vertex_attribute::Position];
+					DirectX::BoundingSphere::CreateFromPoints(boundingSphere,
+						vertexBufferAccessor->count,
+						reinterpret_cast<DirectX::XMFLOAT3*>(vertexBufferAccessor->buffer->data),
+						vertexBufferAccessor->stride);
+
+					primitiveEntity->setBoundSphere(boundingSphere);
+				}
 			}
 			catch (const exception& e)
 			{

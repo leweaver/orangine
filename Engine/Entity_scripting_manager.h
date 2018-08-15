@@ -23,6 +23,7 @@ namespace oe {
 
 	private:
 		std::shared_ptr<Entity_filter> _scriptableEntityFilter;
+		std::shared_ptr<Entity_filter> _renderableEntityFilter;
 
 		// TODO: This would be part of a script context
 		struct ScriptData {
@@ -31,5 +32,7 @@ namespace oe {
 			float distance = 10.0f;
 		};
 		ScriptData _scriptData;
+
+		void renderDebugSpheres() const;
 	};
 }

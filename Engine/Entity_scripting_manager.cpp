@@ -3,6 +3,8 @@
 #include "Entity_scripting_manager.h"
 #include "Input_manager.h"
 #include "Test_component.h"
+#include "Renderable_component.h"
+#include "Camera_component.h"
 #include "Scene.h"
 #include "Entity_filter.h"
 #include "Entity.h"
@@ -22,6 +24,7 @@ Entity_scripting_manager::Entity_scripting_manager(Scene &scene)
 void Entity_scripting_manager::initialize()
 {
 	_scriptableEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({ Test_component::type() });
+	_renderableEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({ Renderable_component::type() });
 	_scriptData.yaw = XM_PI;
 }
 
@@ -54,6 +57,10 @@ void Entity_scripting_manager::tick() {
 			_scriptData.distance = std::max(1.0f, std::min(40.0f, _scriptData.distance + static_cast<float>(mouseState->scrollWheelDelta) * -mouseSpeed));
 		//}
 
+		if (mouseState->right == Input_manager::Mouse_state::Button_state::HELD) {
+			renderDebugSpheres();
+		}
+
 		const auto deltaRot = Quaternion::CreateFromYawPitchRoll(_scriptData.yaw, _scriptData.pitch, 0.0f);			
 		auto cameraPosition = Vector3(DirectX::XMVector3Rotate(XMLoadFloat3(&Vector3::Forward), XMLoadFloat4(&deltaRot)));
 		cameraPosition *= _scriptData.distance;
@@ -68,4 +75,26 @@ void Entity_scripting_manager::tick() {
 
 void Entity_scripting_manager::shutdown()
 {
+}
+
+void Entity_scripting_manager::renderDebugSpheres() const
+{
+	auto& renderManager = _scene.manager<IEntity_render_manager>();
+	renderManager.clearDebugShapes();
+
+	for (const auto entity : *_renderableEntityFilter) {
+		const auto& boundSphere = entity->boundSphere();
+		const auto xform = Matrix::CreateTranslation(boundSphere.Center) * entity->worldTransform();
+		renderManager.addDebugSphere(xform, boundSphere.Radius, Color(Colors::White));
+	}
+
+	const auto entity = _scene.mainCamera();
+	if (entity != nullptr) {
+		const auto cameraComponenet = entity->getFirstComponentOfType<Camera_component>();
+		if (cameraComponenet) {
+			auto frustum = renderManager.createFrustum(*entity, *cameraComponenet);
+			frustum.Far *= 0.5;
+			renderManager.addDebugFrustum(frustum, Color(Colors::Red));
+		}
+	}
 }

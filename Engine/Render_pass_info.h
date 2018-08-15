@@ -7,8 +7,6 @@ namespace oe
 {
 	template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
 	struct Render_pass_info {
-		const Render_pass_depth_mode depthMode = TDepth_mode;
-
 		std::function<void()> render = [](){};
 		
 		constexpr static Render_pass_blend_mode blendMode()
@@ -21,9 +19,9 @@ namespace oe
 			return TBlend_mode == Render_pass_blend_mode::Blended_alpha;
 		}
 
-		constexpr static bool depthEnabled()
+		constexpr static Render_pass_depth_mode depthMode()
 		{
-			return TDepth_mode == Render_pass_depth_mode::Enabled;
+			return TDepth_mode;
 		}
 
 		void setRenderTargets(std::vector<std::shared_ptr<Render_target_view_texture>>&& renderTargets);

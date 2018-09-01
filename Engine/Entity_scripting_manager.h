@@ -24,6 +24,7 @@ namespace oe {
 	private:
 		std::shared_ptr<Entity_filter> _scriptableEntityFilter;
 		std::shared_ptr<Entity_filter> _renderableEntityFilter;
+		std::shared_ptr<Entity_filter> _lightEntityFilter;
 
 		// TODO: This would be part of a script context
 		struct ScriptData {

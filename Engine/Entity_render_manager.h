@@ -167,6 +167,9 @@ namespace oe {
 		Camera_data _cameraData;
 		
 		// RenderStep definitions
+		struct Render_step_shadowmap_data {
+			
+		};
 		struct Render_step_deferred_data {
 			std::shared_ptr<Deferred_light_material> _deferredLightMaterial;
 			Renderable _pass0ScreenSpaceQuad;
@@ -177,6 +180,11 @@ namespace oe {
 			std::shared_ptr<Unlit_material> _unlitMaterial;
 			std::vector<std::tuple<DirectX::SimpleMath::Matrix, DirectX::SimpleMath::Color, std::shared_ptr<Renderer_data>>> _debugShapes;
 		};
+
+		Render_step<
+			Render_step_shadowmap_data,
+			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Disabled>
+		> _renderPass_shadowMap;
 
 		Render_step<
 			Render_step_deferred_data,

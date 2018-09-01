@@ -15,6 +15,7 @@ namespace oe
 		Renderable_component()
 			: _visible(true)
 			, _wireframe(false)
+			, _castShadow(true)
 			, _rendererData(nullptr)
 			, _material(nullptr)
 		{}
@@ -25,6 +26,9 @@ namespace oe
 		
 		bool wireframe() const { return _wireframe; }
 		void setWireframe(bool wireframe) { _wireframe = wireframe; }
+
+		bool castShadow() const { return _castShadow; }
+		void setCastShadow(bool castShadow) { _castShadow = castShadow; }
 
 		// Runtime, non-serializable
 		const std::unique_ptr<Material>	& material() const { return _material; }
@@ -37,6 +41,7 @@ namespace oe
 
 		bool _visible;
 		bool _wireframe;
+		bool _castShadow;
 
 		// Runtime, non-serializable
 		std::unique_ptr<Renderer_data> _rendererData;

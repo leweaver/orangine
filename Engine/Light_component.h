@@ -3,6 +3,8 @@
 #include "Component.h"
 
 namespace oe {
+	class Renderer_shadow_data;
+
 	class Light_component : public Component
 	{
 		DirectX::SimpleMath::Color _color{};
@@ -16,25 +18,21 @@ namespace oe {
 		{
 		}
 
-		const DirectX::SimpleMath::Color& color() const
-		{
-			return _color;
-		}
+		~Light_component();
 
-		void setColor(const DirectX::SimpleMath::Color& color)
-		{
-			_color = color;
-		}
+		const DirectX::SimpleMath::Color& color() const { return _color; }
+		void setColor(const DirectX::SimpleMath::Color& color) { _color = color; }
 
-		float intensity() const
-		{
-			return _intensity;
-		}
+		float intensity() const { return _intensity; }
+		void setIntensity(float intensity) { _intensity = intensity; }
 
-		void setIntensity(float intensity)
-		{
-			_intensity = intensity;
-		}
+		// Runtime, non-serializable
+		std::shared_ptr<Renderer_shadow_data> shadowData() { return _shadowData; }
+		void setShadowData(std::shared_ptr<Renderer_shadow_data> shadowData) { _shadowData = std::move(shadowData); }
+
+	private:
+		std::shared_ptr<Renderer_shadow_data> _shadowData;
+
 	};
 
 	class Directional_light_component : public Light_component

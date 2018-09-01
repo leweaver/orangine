@@ -172,6 +172,11 @@ void Game::CreateLights()
 	{
 		createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 2)->setParent(*lightRoot);
 		createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75)->setParent(*lightRoot);
+		
+		//auto shadowLight = createDirLight({ -1.0f, 0, 0 }, { 1, 1, 1 }, 2);
+		auto shadowLight = createDirLight({ -1.0f, 0, 1.0f }, { 1, 1, 1 }, 2);
+		shadowLight->setParent(*lightRoot);
+		shadowLight->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
 	}
 	else
 	{
@@ -202,10 +207,13 @@ void Game::CreateGeometricPrimitives()
 
 
 	Primitive_mesh_data_factory pmdf;
+	auto createTeapot = [&pmdf, &entityManager, &root1](const Vector3& center, const Color& color)
 	{
 		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
+		child1->setPosition(center);
+
 		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
-		material->setBaseColor(Color(Colors::GreenYellow));
+		material->setBaseColor(color);
 		material->setMetallicFactor(1.0f);
 		material->setRoughnessFactor(0.0f);
 		
@@ -214,16 +222,19 @@ void Game::CreateGeometricPrimitives()
 		renderable.setWireframe(false);
 
 		const auto meshData = pmdf.createTeapot();
-		
-		//const auto meshData = pmdf.createSphere(4);
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
-	}
+		child1->setBoundSphere(BoundingSphere(Vector3::Zero, 1.0f));
+	};
+	createTeapot({ -1.0f,  1.0f, 0.0f }, Color(Colors::Purple));
+	createTeapot({  1.0f,  1.0f, 0.0f }, Color(Colors::Red));
 
 	{
 		const auto &child2 = entityManager.instantiate("Primitive Child 2", *root1);
 		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
 		material->setBaseColor(Color(Colors::Green));
-		child2->addComponent<Renderable_component>().setMaterial(std::unique_ptr<Material>(material.release()));
+		auto& renderable = child2->addComponent<Renderable_component>();
+		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
+		renderable.setCastShadow(false);
 
 		const auto meshData = pmdf.createQuad({ 3, 3 });
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
@@ -255,7 +266,7 @@ void Game::Initialize(HWND window, int width, int height)
 
 		//CreateSceneCubeSatellite();
 		//CreateSceneLeverArm();
-		LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
+		//LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
 		
 		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});

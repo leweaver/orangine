@@ -185,6 +185,7 @@
     <ClInclude Include="Renderable_component.h" />
     <ClInclude Include="Renderer_data.h" />
     <ClInclude Include="Renderer_enum.h" />
+    <ClInclude Include="Renderer_shadow_data.h" />
     <ClInclude Include="Render_light_data.h" />
     <ClInclude Include="Render_pass_info.h" />
     <ClInclude Include="Render_target_texture.h" />

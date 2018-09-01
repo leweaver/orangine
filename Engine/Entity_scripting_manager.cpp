@@ -5,6 +5,8 @@
 #include "Test_component.h"
 #include "Renderable_component.h"
 #include "Camera_component.h"
+#include "Light_component.h"
+#include "Renderer_shadow_data.h"
 #include "Scene.h"
 #include "Entity_filter.h"
 #include "Entity.h"
@@ -25,6 +27,11 @@ void Entity_scripting_manager::initialize()
 {
 	_scriptableEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({ Test_component::type() });
 	_renderableEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({ Renderable_component::type() });
+	_lightEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({
+		Directional_light_component::type(),
+		Point_light_component::type(),
+		Ambient_light_component::type()
+		}, Entity_filter_mode::Any);
 	_scriptData.yaw = XM_PI;
 }
 
@@ -95,6 +102,16 @@ void Entity_scripting_manager::renderDebugSpheres() const
 			auto frustum = renderManager.createFrustum(*entity, *cameraComponenet);
 			frustum.Far *= 0.5;
 			renderManager.addDebugFrustum(frustum, Color(Colors::Red));
+		}
+	}
+
+	for (const auto entity : *_lightEntityFilter) {
+		const auto directionalLight = entity->getFirstComponentOfType<Directional_light_component>();
+		if (directionalLight && directionalLight->shadowsEnabled()) {
+			const auto shadowData = directionalLight->shadowData();
+			if (shadowData) {
+				renderManager.addDebugFrustum(shadowData->frustum(), directionalLight->color());
+			}
 		}
 	}
 }

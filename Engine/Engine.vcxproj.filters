@@ -157,6 +157,10 @@
     <ClInclude Include="Collision.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="Collision.inl" />
+    <ClInclude Include="Renderer_shadow_data.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Input_manager.cpp">
@@ -253,9 +257,6 @@
       <Filter>Systems\Assets</Filter>
     </ClCompile>
     <ClCompile Include="Utils.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="Collision.inl">
       <Filter>Common</Filter>
     </ClCompile>
   </ItemGroup>

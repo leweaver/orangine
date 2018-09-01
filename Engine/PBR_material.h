@@ -233,7 +233,7 @@ namespace oe {
 
 		// Compiled state
 		uint32_t _boundTextureCount;
-		std::array<ID3D11SamplerState*, NumTextureTypes> _samplerStates;
-		std::array<ID3D11ShaderResourceView*, NumTextureTypes> _shaderResourceViews;
+		std::array<ID3D11SamplerState*, NumTextureTypes> _samplerStates{};
+		std::array<ID3D11ShaderResourceView*, NumTextureTypes> _shaderResourceViews{};
 	};
 }

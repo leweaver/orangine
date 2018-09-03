@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "Light_component.h"
 
-#include "Renderer_shadow_data.h"
+#include "Shadow_map_texture.h"
 
 using namespace oe;
 

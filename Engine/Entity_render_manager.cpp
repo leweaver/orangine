@@ -2,7 +2,7 @@
 #include "Entity_render_manager.h"
 #include "Scene_graph_manager.h"
 #include "Renderer_data.h"
-#include "Renderer_shadow_data.h"
+#include "Shadow_map_texture.h"
 #include "Material.h"
 #include "Entity.h"
 #include "Entity_filter.h"
@@ -160,7 +160,7 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 	auto device = _deviceResources.GetD3DDevice();
 	_commonStates = std::make_unique<CommonStates>(device);
 
-	// Shadowmap step resources
+	// Shadow map step resources
 	_renderPass_shadowMap.data = std::make_shared<decltype(_renderPass_shadowMap.data)::element_type>();
 		
 	// Deferred lighting step resources
@@ -174,11 +174,11 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 	_renderPass_entityDeferred.data->_pass0ScreenSpaceQuad = initScreenSpaceQuad(std::make_shared<Clear_gbuffer_material>());
 	_renderPass_entityDeferred.data->_pass2ScreenSpaceQuad = initScreenSpaceQuad(deferredLightMaterial);
 
-	_renderPass_entityDeferred_renderLightData = std::make_unique<decltype(_renderPass_entityDeferred_renderLightData)::element_type>(device);
-	_renderPass_entityDeferred_renderLightData_blank = std::make_unique<decltype(_renderPass_entityDeferred_renderLightData_blank)::element_type>(device);
+	_pbrMaterial_deferred_renderLightData = std::make_unique<decltype(_pbrMaterial_deferred_renderLightData)::element_type>(device);
+	_deferredLightMaterial_renderLightData = std::make_unique<decltype(_deferredLightMaterial_renderLightData)::element_type>(device);
 
 	// Standard lighting step resources
-	_renderPass_entityStandard_renderLightData = std::make_unique<decltype(_renderPass_entityStandard_renderLightData)::element_type>(device);
+	_pbrMaterial_forward_renderLightData = std::make_unique<decltype(_pbrMaterial_forward_renderLightData)::element_type>(device);
 
 	// Debug elements lighting step resources
 	_renderPass_debugElements.data = std::make_shared<decltype(_renderPass_debugElements.data)::element_type>();
@@ -233,10 +233,6 @@ void Entity_render_manager::createWindowSizeDependentResources(DX::DeviceResourc
 		renderTargets[0] = std::make_shared<Render_target_view_texture>(_deviceResources.GetRenderTargetView());
 		std::get<0>(_renderPass_entityStandard.renderPasses).setRenderTargets(std::move(renderTargets));
 	}
-
-	// Set the viewport.
-	auto viewport = _deviceResources.GetScreenViewport();
-	_deviceResources.GetD3DDeviceContext()->RSSetViewports(1, &viewport);
 }
 
 void Entity_render_manager::destroyDeviceDependentResources()
@@ -256,10 +252,12 @@ void Entity_render_manager::destroyDeviceDependentResources()
 	_renderPass_entityDeferred.data.reset();
 	_renderPass_entityStandard.data.reset();
 	_renderPass_debugElements.data.reset();
-		
-	_renderPass_entityStandard_renderLightData.reset();
-	_renderPass_entityDeferred_renderLightData.reset();
-	_renderPass_entityDeferred_renderLightData_blank.reset();
+
+	_clearGBufferMaterial_renderLightData.reset();
+	_pbrMaterial_forward_renderLightData.reset();
+	_pbrMaterial_deferred_renderLightData.reset();
+	_deferredLightMaterial_renderLightData.reset();
+	_unlitMaterial_renderLightData.reset();
 
 	_fatalError = false;
 }
@@ -298,10 +296,10 @@ bool addLightToRenderLightData(const Entity& lightEntity, Render_light_data_impl
 
 void Entity_render_manager::createRenderSteps()
 {	
-	// Shadowmaps
+	// Shadow maps
 	::std::get<0>(_renderPass_shadowMap.renderPasses).render = [this]() {
 
-		// Render shadowmaps for each shadow enabled light
+		// Render shadow maps for each shadow enabled light
 		for (const auto& lightEntity : *_lightEntities) {
 			// Directional light only, right now
 			const auto component = lightEntity->getFirstComponentOfType<Directional_light_component>();
@@ -309,24 +307,19 @@ void Entity_render_manager::createRenderSteps()
 
 				// If this is the first time rendering, initialize.
 				if (!component->shadowData()) {
-					component->setShadowData(std::make_shared<Renderer_shadow_data>());
-
-					// Create a shadowmap texture
-					auto shadowMap = std::shared_ptr<Render_target_texture>(Render_target_texture::createDefaultShadowMap(256, 256));
+					auto shadowMap = std::make_shared<Shadow_map_texture>(256, 256);
 					shadowMap->load(_deviceResources.GetD3DDevice());
-					component->shadowData()->setTexture(shadowMap);
+					component->setShadowData(shadowMap);
 				}
 
 				// Iterate over the shadow *receivers* and build an orthographic frustum from that.
 
-				// Project the receiver bounding volume into the light space (via inverse transform), then take the min & max X, Y, Z bonuding sphere extents.
+				// Project the receiver bounding volume into the light space (via inverse transform), then take the min & max X, Y, Z bounding sphere extents.
 
 				// Get from world to light view space  (world space, origin of {0,0,0}; just rotated)
 				auto worldToLightViewMatrix = Matrix::CreateFromQuaternion(lightEntity->worldRotation());
 
-				auto bb = BoundingBox();
-				
-				auto firstEntity = true;
+				BoundingBox bb;
 
 				// Extents, in light view space (as defined above)
 				XMVECTOR minExtents = Vector3::Zero;
@@ -346,42 +339,54 @@ void Entity_render_manager::createRenderSteps()
 					// Bounds, in light view space (as defined above)
 					Vector3 boundCenter = Vector3::Transform(boundWorldCenter, XMMatrixInverse(nullptr, worldToLightViewMatrix));
 					Vector3 boundEdge = Vector3::Transform(boundWorldEdge, XMMatrixInverse(nullptr, worldToLightViewMatrix));
-					XMVECTOR boundRadius = XMVector3Length(XMVectorSubtract(boundEdge, boundCenter));
+					const XMVECTOR boundRadius = XMVector3Length(XMVectorSubtract(boundEdge, boundCenter));
 
 					minExtents = XMVectorMin(minExtents, XMVectorSubtract(boundCenter, boundRadius));
 					maxExtents = XMVectorMax(maxExtents, XMVectorAdd(boundCenter, boundRadius));
 				}
 
-				auto extents = XMVectorMultiply(XMVectorSubtract(maxExtents, minExtents), XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f));
+				const auto extents = XMVectorMultiply(XMVectorSubtract(maxExtents, minExtents), XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f));
 				bb.Extents = Vector3(extents);
 				bb.Center = Vector3(XMVectorAdd(minExtents, extents));
 
+				auto shadowVolumeBoundingBox = BoundingOrientedBox(bb.Center, Vector3(extents), lightEntity->worldRotation());
+				component->shadowData()->setCasterVolume(shadowVolumeBoundingBox);
+
 				// Now create a shadow camera view matrix. Its position will be the bounds center, offset by {0, 0, extents.z} in light view space.
-				auto lightWorldTransformMatrix = XMMatrixTranslation(bb.Center.x, bb.Center.y, bb.Center.z + bb.Extents.z);
-					
-				auto lightViewMatrix = XMMatrixMultiply(lightWorldTransformMatrix, worldToLightViewMatrix);
-				auto lightProjectionMatrix = Matrix::CreateOrthographic(bb.Extents.x, bb.Extents.y, 0.0f, bb.Extents.z * 2.0f);
+				const auto lightWorldTransformMatrix = XMMatrixTranslation(bb.Center.x, bb.Center.y, bb.Center.z + bb.Extents.z);
 
-				auto worldPos1 = Vector3::Transform(Vector3::Zero, lightWorldTransformMatrix);
-				auto worldPos2 = Vector3::Transform(Vector3::Zero, lightViewMatrix);
+				Camera_data shadowCameraData;
+				shadowCameraData.viewMatrix = XMMatrixMultiply(lightWorldTransformMatrix, worldToLightViewMatrix);
+				shadowCameraData.projectionMatrix = Matrix::CreateOrthographic(bb.Extents.x, bb.Extents.y, 0.0f, bb.Extents.z * 2.0f);
 
-				auto worldToShadowCameraMatrix = XMMatrixMultiply(lightViewMatrix, lightProjectionMatrix);
-				auto test = Vector3::Transform({ -1.0f,  1.0f, 0.0f }, XMMatrixInverse(nullptr, worldToShadowCameraMatrix));
-
-				auto f = BoundingFrustumRH(lightProjectionMatrix);
-				f.Origin = worldPos2;
-				f.Orientation = lightEntity->worldRotation();
-
-				component->shadowData()->setFrustum(f);
-
-				// Now do the actual rendering to the shadowmap!
+				// Now do the actual rendering to the shadow map!
 				auto context = _deviceResources.GetD3DDeviceContext();
+				const auto depthStencilView = component->shadowData()->depthStencilView();
 				std::array<ID3D11RenderTargetView*, g_max_render_target_views> renderTargetViews = {
-					component->shadowData()->texture()->renderTargetView(),
+					nullptr,
 					nullptr,
 					nullptr
 				};
-				context->OMSetRenderTargets(static_cast<UINT>(renderTargetViews.size()), renderTargetViews.data(), nullptr);
+				context->OMSetRenderTargets(static_cast<UINT>(renderTargetViews.size()), renderTargetViews.data(), depthStencilView);
+				context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+				Buffer_array_set bas;
+
+				const auto lightDataProvider = [this](const Entity&) {
+					_pbrMaterial_deferred_renderLightData->clear();
+					return _pbrMaterial_deferred_renderLightData.get();
+				};
+
+				for (auto& entity : *_renderableEntities) {
+					const auto renderable = entity->getFirstComponentOfType<Renderable_component>();
+					assert(renderable != nullptr);
+
+					if (!renderable->castShadow())
+						continue;
+
+					if (shadowVolumeBoundingBox.Contains(entity->boundSphere())) {
+						render(entity.get(), bas, shadowCameraData, lightDataProvider, std::get<0>(_renderPass_shadowMap.renderPasses));
+					}
+				}
 			}
 		}
 	};
@@ -403,7 +408,7 @@ void Entity_render_manager::createRenderSteps()
 					identity,
 					*quad.rendererData,
 					renderPass.blendMode(),
-					*_renderPass_entityDeferred_renderLightData_blank,
+					*_clearGBufferMaterial_renderLightData,
 					*quad.material,
 					false,
 					bufferArraySet);
@@ -422,13 +427,13 @@ void Entity_render_manager::createRenderSteps()
 
 		if (_enableDeferredRendering) {
 			_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step1_draw");
-			const auto lightDataProvider = [this](const Entity&) { return _renderPass_entityDeferred_renderLightData_blank.get(); };
+			const auto lightDataProvider = [this](const Entity&) { return _pbrMaterial_deferred_renderLightData.get(); };
 
 			_cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
 				auto bufferArraySet = Buffer_array_set();
 				for (const auto& entry : entities) {
 					++_renderStats.opaqueEntityCount;
-					render(entry.entity, bufferArraySet, lightDataProvider, renderPass);
+					render(entry.entity, bufferArraySet, _cameraData, lightDataProvider, renderPass);
 				}
 			});
 
@@ -459,16 +464,16 @@ void Entity_render_manager::createRenderSteps()
 		auto renderPass = std::get<0>(_renderPass_entityStandard.renderPasses);
 
 		const auto standardLightDataProvider = [this](const Entity&) {
-			_renderPass_entityStandard_renderLightData->clear();
+			_pbrMaterial_forward_renderLightData->clear();
 			for (auto iter = _lightEntities->begin(); iter != _lightEntities->end(); ++iter) {
-				if (_renderPass_entityStandard_renderLightData->full())
+				if (_pbrMaterial_forward_renderLightData->full())
 					break;
 
-				addLightToRenderLightData(*iter->get(), *_renderPass_entityStandard_renderLightData);
+				addLightToRenderLightData(*iter->get(), *_pbrMaterial_forward_renderLightData);
 			}
-			_renderPass_entityStandard_renderLightData->updateBuffer(_deviceResources.GetD3DDeviceContext());
+			_pbrMaterial_forward_renderLightData->updateBuffer(_deviceResources.GetD3DDeviceContext());
 
-			return _renderPass_entityStandard_renderLightData.get();
+			return _pbrMaterial_forward_renderLightData.get();
 		};
 
 		_alphaSorter->waitThen([this, &standardLightDataProvider, &renderPass](const std::vector<Entity_alpha_sorter_entry>& entries) {
@@ -480,7 +485,7 @@ void Entity_render_manager::createRenderSteps()
 					auto bufferArraySet = Buffer_array_set();
 					for (const auto& entry : entities) {
 						++_renderStats.alphaEntityCount;
-						render(entry.entity, bufferArraySet, standardLightDataProvider, renderPass);
+						render(entry.entity, bufferArraySet, _cameraData, standardLightDataProvider, renderPass);
 					}
 				});
 
@@ -504,7 +509,7 @@ void Entity_render_manager::createRenderSteps()
 				transform,
 				*rendererData,
 				Render_pass_blend_mode::Opaque,
-				*_renderPass_entityDeferred_renderLightData_blank,
+				*_unlitMaterial_renderLightData,
 				*unlitMaterial,
 				true,
 				bufferArraySet);
@@ -600,8 +605,12 @@ void Entity_render_manager::renderPass(Render_pass_info<TBlend_mode, TDepth_mode
 	else
 		context->OMSetDepthStencilState(_commonStates->DepthNone(), 0);
 
-	// Make sure wireframe is disabled
+	// Make sure wire-frame is disabled
 	context->RSSetState(_commonStates->CullClockwise());
+
+	// Set the viewport.
+	auto viewport = _deviceResources.GetScreenViewport();
+	_deviceResources.GetD3DDeviceContext()->RSSetViewports(1, &viewport);
 
 	// Call the render method.
 	renderPassInfo.render();
@@ -627,6 +636,7 @@ BoundingFrustumRH Entity_render_manager::createFrustum(const Entity& entity, con
 template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
 void Entity_render_manager::render(Entity* entity,
 	Buffer_array_set& bufferArraySet,
+	const Camera_data& cameraData,
 	const Light_data_provider& lightDataProvider,
 	const Render_pass_info<TBlend_mode, TDepth_mode>& renderPassInfo)
 {
@@ -674,7 +684,7 @@ void Entity_render_manager::render(Entity* entity,
 			throw std::runtime_error("Could not get Render_light_data");
 
 		drawRendererData(
-			_cameraData,
+			cameraData,
 			entity->worldTransform(),
 			*rendererData,
 			renderPassInfo.blendMode(),
@@ -706,38 +716,40 @@ void Entity_render_manager::renderLights()
 
 		const auto renderLight = [&]() {
 			++_renderStats.opaqueLightCount;
-			_renderPass_entityDeferred_renderLightData->updateBuffer(context);
+			_deferredLightMaterial_renderLightData->updateBuffer(context);
 			const auto renderSuccess = quad.material->render(
 				*rendererData,
 				std::get<g_entity_deferred_lights>(_renderPass_entityDeferred.renderPasses).blendMode(),
-				*_renderPass_entityDeferred_renderLightData,
+				*_deferredLightMaterial_renderLightData,
 				_cameraData.worldMatrix,
 				_cameraData.viewMatrix,
 				_cameraData.projectionMatrix,
 				_deviceResources);
+			if (!renderSuccess)
+				throw std::runtime_error("Failed to render deferred light");
 
-			_renderPass_entityDeferred_renderLightData->clear();
+			_deferredLightMaterial_renderLightData->clear();
 		};
 
 		loadRendererDataToDeviceContext(*rendererData, bufferArraySet);
 
-		// Render emitted ight sources once only.
+		// Render emitted light sources once only.
 		deferredLightMaterial->setupEmitted(true);
 		auto renderedEmitted = false;
 
 		// Render directional, point, ambient
 		for (auto eIter = _lightEntities->begin(); eIter != _lightEntities->end(); ++eIter)
 		{
-			addLightToRenderLightData(*eIter->get(), *_renderPass_entityDeferred_renderLightData);
-			
-			if (_renderPass_entityDeferred_renderLightData->full()) {
+			addLightToRenderLightData(*eIter->get(), *_deferredLightMaterial_renderLightData);
+
+			if (_deferredLightMaterial_renderLightData->full()) {
 				renderLight();
 				renderedEmitted = true;
 				deferredLightMaterial->setupEmitted(false);
 			}
 		}
 
-		if (!_renderPass_entityDeferred_renderLightData->empty() || !renderedEmitted)
+		if (!_deferredLightMaterial_renderLightData->empty() || !renderedEmitted)
 			renderLight();
 
 		// Unbind material
@@ -795,7 +807,7 @@ void Entity_render_manager::drawRendererData(
 	const Render_pass_blend_mode blendMode,
 	const Render_light_data& renderLightData,
 	Material& material,
-	bool wireframe,
+	bool wireFrame,
 	Buffer_array_set& bufferArraySet) const
 {
 	if (rendererData.vertexBuffers.empty())
@@ -804,13 +816,13 @@ void Entity_render_manager::drawRendererData(
 	const auto deviceContext = _deviceResources.GetD3DDeviceContext();
 	loadRendererDataToDeviceContext(rendererData, bufferArraySet);
 	
-	// Set the rasterizer state
-	if (wireframe)
+	// Set the rasteriser state
+	if (wireFrame)
 		deviceContext->RSSetState(_commonStates->Wireframe());
 	else
 		deviceContext->RSSetState(_commonStates->CullClockwise());
 
-	// Render the trianges
+	// Render the triangles
 	material.render(rendererData, blendMode, renderLightData, 
 		worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, 
 		_deviceResources);
@@ -904,7 +916,7 @@ std::shared_ptr<D3D_buffer> Entity_render_manager::createBufferFromData(const Me
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = 0;
 
-	// Fill in the subresource data.
+	// Fill in the sub-resource data.
 	D3D11_SUBRESOURCE_DATA initData;
 	initData.pSysMem = buffer.data;
 	initData.SysMemPitch = 0;
@@ -932,6 +944,19 @@ void Entity_render_manager::addDebugSphere(const Matrix& worldTransform, float r
 	_renderPass_debugElements.data->_debugShapes.push_back({ worldTransform, color, move(rendererData) });
 }
 
+void Entity_render_manager::addDebugBoundingBox(const BoundingOrientedBox& boundingOrientedBox, const Color& color)
+{
+	const auto meshData = _primitiveMeshDataFactory->createBox(boundingOrientedBox.Extents * 2.0f);
+
+	std::vector<Vertex_attribute> vertexAttributes;
+	_renderPass_debugElements.data->_unlitMaterial->vertexAttributes(vertexAttributes);
+	auto rendererData = createRendererData(*meshData, vertexAttributes);
+
+	auto worldTransform = XMMatrixAffineTransformation(Vector3::One, Vector3::Zero, XMLoadFloat4(&boundingOrientedBox.Orientation), XMLoadFloat3(&boundingOrientedBox.Center));
+
+	_renderPass_debugElements.data->_debugShapes.push_back({ worldTransform, color, move(rendererData) });
+}
+
 void Entity_render_manager::addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color)
 {
 	// Create frustum mesh with vertices in WORLD SPACE, based on the position and orientation attributes of the frustum.
@@ -943,7 +968,6 @@ void Entity_render_manager::addDebugFrustum(const BoundingFrustumRH& boundingFru
 	
 	_renderPass_debugElements.data->_debugShapes.push_back({ Matrix::Identity, color, move(rendererData) });
 }
-
 
 void Entity_render_manager::clearDebugShapes()
 {

@@ -3,7 +3,7 @@
 #include "Component.h"
 
 namespace oe {
-	class Renderer_shadow_data;
+	class Shadow_map_texture;
 
 	class Light_component : public Component
 	{
@@ -27,11 +27,11 @@ namespace oe {
 		void setIntensity(float intensity) { _intensity = intensity; }
 
 		// Runtime, non-serializable
-		std::shared_ptr<Renderer_shadow_data> shadowData() { return _shadowData; }
-		void setShadowData(std::shared_ptr<Renderer_shadow_data> shadowData) { _shadowData = std::move(shadowData); }
+		std::shared_ptr<Shadow_map_texture> shadowData() { return _shadowData; }
+		void setShadowData(std::shared_ptr<Shadow_map_texture> shadowData) { _shadowData = std::move(shadowData); }
 
 	private:
-		std::shared_ptr<Renderer_shadow_data> _shadowData;
+		std::shared_ptr<Shadow_map_texture> _shadowData;
 
 	};
 

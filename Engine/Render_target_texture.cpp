@@ -29,27 +29,6 @@ Render_target_texture* Render_target_texture::createDefaultRgb(uint32_t width, u
 	return new Render_target_texture(textureDesc);
 }
 
-Render_target_texture* Render_target_texture::createDefaultShadowMap(uint32_t width, uint32_t height)
-{
-	// Initialize the render target texture description.
-	D3D11_TEXTURE2D_DESC textureDesc;
-	ZeroMemory(&textureDesc, sizeof(textureDesc));
-
-	// Setup the render target texture description.
-	textureDesc.Width = width;
-	textureDesc.Height = height;
-	textureDesc.MipLevels = 1;
-	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R16_UNORM; // TODO: Is this a good shadowmap format?
-	textureDesc.SampleDesc.Count = 1;
-	textureDesc.Usage = D3D11_USAGE_DEFAULT;
-	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.CPUAccessFlags = 0;
-	textureDesc.MiscFlags = 0;
-
-	return new Render_target_texture(textureDesc);
-}
-
 Render_target_texture::Render_target_texture(D3D11_TEXTURE2D_DESC textureDesc)
 	: Render_target_view_texture(nullptr)
 	, _textureDesc(textureDesc)

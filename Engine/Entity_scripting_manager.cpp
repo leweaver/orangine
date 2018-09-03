@@ -6,7 +6,7 @@
 #include "Renderable_component.h"
 #include "Camera_component.h"
 #include "Light_component.h"
-#include "Renderer_shadow_data.h"
+#include "Shadow_map_texture.h"
 #include "Scene.h"
 #include "Entity_filter.h"
 #include "Entity.h"
@@ -95,11 +95,11 @@ void Entity_scripting_manager::renderDebugSpheres() const
 		renderManager.addDebugSphere(xform, boundSphere.Radius, Color(Colors::White));
 	}
 
-	const auto entity = _scene.mainCamera();
-	if (entity != nullptr) {
-		const auto cameraComponenet = entity->getFirstComponentOfType<Camera_component>();
-		if (cameraComponenet) {
-			auto frustum = renderManager.createFrustum(*entity, *cameraComponenet);
+	const auto mainCameraEntity = _scene.mainCamera();
+	if (mainCameraEntity != nullptr) {
+		const auto cameraComponent = mainCameraEntity->getFirstComponentOfType<Camera_component>();
+		if (cameraComponent) {
+			auto frustum = renderManager.createFrustum(*mainCameraEntity, *cameraComponent);
 			frustum.Far *= 0.5;
 			renderManager.addDebugFrustum(frustum, Color(Colors::Red));
 		}
@@ -110,7 +110,7 @@ void Entity_scripting_manager::renderDebugSpheres() const
 		if (directionalLight && directionalLight->shadowsEnabled()) {
 			const auto shadowData = directionalLight->shadowData();
 			if (shadowData) {
-				renderManager.addDebugFrustum(shadowData->frustum(), directionalLight->color());
+				renderManager.addDebugBoundingBox(shadowData->casterVolume(), directionalLight->color());
 			}
 		}
 	}

@@ -19,7 +19,6 @@ namespace oe
 	{
 	public:
 		static Render_target_texture* createDefaultRgb(uint32_t width, uint32_t height);
-		static Render_target_texture* createDefaultShadowMap(uint32_t width, uint32_t height);
 
 		void load(ID3D11Device* device) override;
 		void unload() override;

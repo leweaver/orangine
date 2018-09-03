@@ -161,6 +161,18 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createSphere(float radiu
 	return md;
 }
 
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createBox(const Vector3& size) const
+{
+	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
+	std::vector<uint16_t> indices;
+
+	// FIXME: This doesn't seem right, as we are trying to use a RH coordinate system:
+	DirectX::GeometricPrimitive::CreateBox(vertices, indices, size, false);
+
+	auto md = createMeshData(move(vertices), move(indices));
+	generateTangents(md);
+	return md;
+}
 
 std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createTeapot(size_t tessellation) const
 {

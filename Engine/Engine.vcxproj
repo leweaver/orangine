@@ -185,7 +185,7 @@
     <ClInclude Include="Renderable_component.h" />
     <ClInclude Include="Renderer_data.h" />
     <ClInclude Include="Renderer_enum.h" />
-    <ClInclude Include="Renderer_shadow_data.h" />
+    <ClInclude Include="Shadow_map_texture.h" />
     <ClInclude Include="Render_light_data.h" />
     <ClInclude Include="Render_pass_info.h" />
     <ClInclude Include="Render_target_texture.h" />
@@ -236,6 +236,7 @@
     <ClCompile Include="Render_target_texture.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Scene_graph_manager.cpp" />
+    <ClCompile Include="Shadow_map_texture.cpp" />
     <ClCompile Include="Test_component.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Unlit_material.cpp" />

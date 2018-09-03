@@ -41,6 +41,7 @@ namespace oe {
 		virtual BoundingFrustumRH createFrustum(const Entity& entity, const Camera_component& cameraComponent) = 0;
 
 		virtual void addDebugSphere(const DirectX::SimpleMath::Matrix& worldTransform, float radius, const DirectX::SimpleMath::Color& color) = 0;
+		virtual void addDebugBoundingBox(const DirectX::BoundingOrientedBox& boundingOrientedBox, const DirectX::SimpleMath::Color& color) = 0;
 		virtual void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const DirectX::SimpleMath::Color& color) = 0;
 		virtual void clearDebugShapes() = 0;
 	};
@@ -58,7 +59,7 @@ namespace oe {
 			Renderable();
 			std::shared_ptr<Mesh_data> meshData;
 			std::shared_ptr<Material> material;
-			std::unique_ptr<Renderer_data> rendererData;
+			std::unique_ptr<Renderer_data> rendererData{};
 		};
 
 		struct Camera_data
@@ -101,6 +102,7 @@ namespace oe {
 		void destroyDeviceDependentResources() override;
 
 		void addDebugSphere(const DirectX::SimpleMath::Matrix& worldTransform, float radius, const DirectX::SimpleMath::Color& color) override;
+		void addDebugBoundingBox(const DirectX::BoundingOrientedBox& boundingOrientedBox, const DirectX::SimpleMath::Color& color) override;
 		void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const DirectX::SimpleMath::Color& color) override;
 		void clearDebugShapes() override;
 
@@ -108,8 +110,9 @@ namespace oe {
 
 		using Light_data_provider = std::function<const Render_light_data*(const Entity&)>;
 		template<Render_pass_blend_mode TBlend_mode, Render_pass_depth_mode TDepth_mode>
-		void render(Entity* entity, 
+		void render(Entity* entity,
 			Buffer_array_set& bufferArraySet,
+			const Camera_data& cameraData,
 			const Light_data_provider& lightDataProvider,
 			const Render_pass_info<TBlend_mode, TDepth_mode>& renderPassInfo);
 		
@@ -213,9 +216,10 @@ namespace oe {
 		Render_stats _renderStats;
 
 		// The template arguments here must match the size of the lights array in the shader constant buffer files.
-		std::unique_ptr<Render_light_data_impl<8>> _renderPass_entityStandard_renderLightData;
-		std::unique_ptr<Render_light_data_impl<0>> _renderPass_entityDeferred_renderLightData_blank;
-		std::unique_ptr<Render_light_data_impl<8>> _renderPass_entityDeferred_renderLightData;
-
+		std::unique_ptr<Render_light_data_impl<0>> _clearGBufferMaterial_renderLightData;
+		std::unique_ptr<Render_light_data_impl<8>> _pbrMaterial_forward_renderLightData;
+		std::unique_ptr<Render_light_data_impl<0>> _pbrMaterial_deferred_renderLightData;
+		std::unique_ptr<Render_light_data_impl<8>> _deferredLightMaterial_renderLightData;
+		std::unique_ptr<Render_light_data_impl<0>> _unlitMaterial_renderLightData;
 	};
 }

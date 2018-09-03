@@ -19,6 +19,8 @@ git pull --recurse-submodules
 git submodule update --recursive --remote
 ```
 
+[More submodule tips](https://gist.github.com/gitaarik/8735255)
+
 ## Build dependencies
 The following third party libraries should be build from the `Developer Command Prompt for VS 2017`, which can be found in the start menu.
 

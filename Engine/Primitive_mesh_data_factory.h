@@ -16,6 +16,7 @@ namespace oe {
 		std::shared_ptr<Mesh_data> createQuad(const DirectX::SimpleMath::Vector2& size, const DirectX::SimpleMath::Vector3& positionOffset) const;
 
 		// Creates an indexed mesh with Position, Normal, Tangent, Textcoord_0
+		std::shared_ptr<Mesh_data> createBox(const DirectX::SimpleMath::Vector3& size) const;
 		std::shared_ptr<Mesh_data> createTeapot(size_t tessellation = 8) const;
 		std::shared_ptr<Mesh_data> createSphere(float radius = 0.5f, size_t tessellation = 16, bool invertNormals = false) const;
 

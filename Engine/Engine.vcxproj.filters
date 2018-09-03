@@ -158,7 +158,7 @@
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="Collision.inl" />
-    <ClInclude Include="Renderer_shadow_data.h">
+    <ClInclude Include="Shadow_map_texture.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
@@ -258,6 +258,9 @@
     </ClCompile>
     <ClCompile Include="Utils.cpp">
       <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Shadow_map_texture.cpp">
+      <Filter>Systems\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -10,7 +10,7 @@ void Clear_gbuffer_material::vertexAttributes(std::vector<Vertex_attribute>& ver
 	vertexAttributes.push_back(Vertex_attribute::Position);
 }
 
-void Clear_gbuffer_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode)
+void Clear_gbuffer_material::createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode)
 {
 	assert(blendMode == Render_pass_blend_mode::Opaque);
 }

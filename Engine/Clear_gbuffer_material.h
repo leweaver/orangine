@@ -14,6 +14,6 @@ namespace oe {
 		Shader_compile_settings vertexShaderSettings() const override;
 		Shader_compile_settings pixelShaderSettings() const override;
 
-		void createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode) override;
+		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
 	};
 }

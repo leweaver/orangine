@@ -55,7 +55,7 @@ void Unlit_material::updateVSConstantBuffer(const SimpleMath::Matrix& worldMatri
 	context->UpdateSubresource(buffer, 0, nullptr, &_constantsVs, 0, 0);
 }
 
-void Unlit_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode)
+void Unlit_material::createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode)
 {
 	assert(blendMode == Render_pass_blend_mode::Opaque);
 }

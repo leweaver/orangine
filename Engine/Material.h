@@ -83,7 +83,7 @@ namespace oe {
 			ID3D11Buffer* buffer) {};
 
 		virtual bool createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) { return true; }
-		virtual void updatePSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix, 
+		virtual void updatePSConstantBuffer(const Render_light_data& renderlightData, const DirectX::SimpleMath::Matrix& worldMatrix, 
 			const DirectX::SimpleMath::Matrix& viewMatrix,
 			const DirectX::SimpleMath::Matrix& projMatrix, 
 			ID3D11DeviceContext* context, 
@@ -91,12 +91,13 @@ namespace oe {
 
 		// This method is the entry point for generating the shader. It will determine the constant layout, 
 		// create the shader resource view & sampler arrays.
-		virtual void createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode) = 0;
+		virtual void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) = 0;
+		virtual bool shaderResourcesRequireRecreate(const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) { return false; }
 
 		/* 
 		 * Per Frame
 		 */ 
-		virtual void setContextSamplers(const DX::DeviceResources& deviceResources) {}
+		virtual void setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData) {}
 		virtual void unsetContextSamplers(const DX::DeviceResources& deviceResources) {}
 
 		bool ensureSamplerState(const DX::DeviceResources& deviceResources, Texture& texture, ID3D11SamplerState** d3D11SamplerState);

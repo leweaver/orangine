@@ -45,6 +45,10 @@ SamplerState color2Sampler : register(s2);
 Texture2D depthTexture : register(t3);
 SamplerState depthSampler : register(s3);
 
+// Shadowmaps
+Texture2D shadowMapTextures[8];
+SamplerState shadowMapSamplers[8];
+
 // Forward declarations
 float3 VSPositionFromDepth(float2 vTexCoord);
 float3 PointLightVector(float3 lightPosition, float3 lightIntensifiedColor, float3 pixelPosition, float3 surfaceNormal_n);
@@ -87,6 +91,10 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 		brdf.lightPosition = light.directionPosition;
 
 		finalColor += BRDFLight(brdf);
+
+		if (light.shadowMapIndex != -1) {
+			finalColor.r += shadowMapTextures[0].Sample(shadowMapSamplers[0], input.vTexCoord0).r * 0.5f;
+		}
 	}
 
 	if (g_emittedEnabled)

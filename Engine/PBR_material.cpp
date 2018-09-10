@@ -17,8 +17,6 @@ PBR_material::PBR_material()
 	, _emissive(0, 0, 0)
 	, _alphaCutoff(0.5)
 	, _boundTextureCount(0)
-	, _samplerStates{}
-	, _shaderResourceViews{}
 {
 	std::fill(_textures.begin(), _textures.end(), nullptr);
 	std::fill(_shaderResourceViews.begin(), _shaderResourceViews.end(), nullptr);
@@ -155,7 +153,8 @@ bool PBR_material::createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& b
 	return true;
 }
 
-void PBR_material::updatePSConstantBuffer(const SimpleMath::Matrix& worldMatrix,
+void PBR_material::updatePSConstantBuffer(const Render_light_data& renderlightData, 
+	const SimpleMath::Matrix& worldMatrix,
 	const SimpleMath::Matrix& viewMatrix,
 	const SimpleMath::Matrix& projMatrix,
 	ID3D11DeviceContext* context,
@@ -171,7 +170,7 @@ void PBR_material::updatePSConstantBuffer(const SimpleMath::Matrix& worldMatrix,
 	context->UpdateSubresource(buffer, 0, nullptr, &_constantsPs, 0, 0);
 }
 
-void PBR_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode)
+void PBR_material::createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode)
 {
 	// TODO: This is a hacky way of finding this information out.
 	_enableDeferred = blendMode == Render_pass_blend_mode::Opaque;
@@ -268,7 +267,7 @@ void PBR_material::releaseShaderResources()
 	_boundTextureCount = 0;
 }
 
-void PBR_material::setContextSamplers(const DX::DeviceResources& deviceResources)
+void PBR_material::setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData)
 {
 	auto context = deviceResources.GetD3DDeviceContext();
 	

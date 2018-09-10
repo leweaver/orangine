@@ -14,10 +14,11 @@ static const float  g_PI = 3.14159;
 
 // For use in constant buffers
 struct Light {
-	uint   type;
-	float3 directionPosition;
-	float3 intensifiedColor;
-	uint   _pad0;
+	uint     type;
+	float3   directionPosition;
+	float3   intensifiedColor;
+	int      shadowMapIndex;
+	float4x4 shadowMapViewMatrix;
 };
 
 //--------------------------------------------------------------------------------------

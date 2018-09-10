@@ -234,7 +234,7 @@ bool Material::render(const Renderer_data& rendererData,
 {
 	const auto device = deviceResources.GetD3DDevice();
 	auto context = deviceResources.GetD3DDeviceContext();
-
+	
 	if (_requiresRecompile) {
 		LOG(INFO) << "Recompiling shaders for material";
 
@@ -243,7 +243,7 @@ bool Material::render(const Renderer_data& rendererData,
 
 		_errorState = true;
 		{
-			createShaderResources(deviceResources, blendMode);
+			createShaderResources(deviceResources, renderLightData, blendMode);
 			
 			if (!createVertexShader(device))
 				return false;
@@ -256,6 +256,14 @@ bool Material::render(const Renderer_data& rendererData,
 
 			if (!createPSConstantBuffer(device, *_psConstantBuffer.ReleaseAndGetAddressOf()))
 				return false;
+		}
+		_errorState = false;
+	}
+	else if (shaderResourcesRequireRecreate(renderLightData, blendMode)) {
+		LOG(INFO) << "Recreating shader resources for material";
+		_errorState = true;
+		{
+			createShaderResources(deviceResources, renderLightData, blendMode);
 		}
 		_errorState = false;
 	}
@@ -274,13 +282,13 @@ bool Material::render(const Renderer_data& rendererData,
 		context->VSSetConstantBuffers(0, 1, _vsConstantBuffer.GetAddressOf());
 	}
 	if (_psConstantBuffer != nullptr) {
-		updatePSConstantBuffer(worldMatrix, viewMatrix, projMatrix, context, _psConstantBuffer.Get());
+		updatePSConstantBuffer(renderLightData, worldMatrix, viewMatrix, projMatrix, context, _psConstantBuffer.Get());
 	}
 	ID3D11Buffer* psConstantBuffers[] = { _psConstantBuffer.Get(), renderLightData.buffer() };
 	context->PSSetConstantBuffers(0, 2, psConstantBuffers);
 
 	// Set texture samples
-	setContextSamplers(deviceResources);
+	setContextSamplers(deviceResources, renderLightData);
 	
 	// Render the triangles
 	if (rendererData.indexBufferAccessor != nullptr)

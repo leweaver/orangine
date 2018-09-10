@@ -284,7 +284,11 @@ bool addLightToRenderLightData(const Entity& lightEntity, Render_light_data_impl
 	if (directionalLight)
 	{
 		const auto lightDirection = Vector3::Transform(Vector3::Forward, lightEntity.worldRotation());
-		return renderLightData.addDirectionalLight(lightDirection, directionalLight->color(), directionalLight->intensity());
+		const Shadow_map_texture* shadowData = directionalLight->shadowData().get();
+		if (shadowData == nullptr) {
+			return renderLightData.addDirectionalLight(lightDirection, directionalLight->color(), directionalLight->intensity());
+		}
+		return renderLightData.addDirectionalLight(lightDirection, directionalLight->color(), directionalLight->intensity(), *shadowData);
 	}
 
 	const auto pointLight = lightEntity.getFirstComponentOfType<Point_light_component>();

@@ -1,13 +1,17 @@
 #pragma once
 
+#include "Shadow_map_texture.h"
+
 namespace oe
 {
 	class Render_light_data {
 	public:
-		ID3D11Buffer* buffer() const { return _constantBuffer.Get(); }
+		ID3D11Buffer* buffer() const { return _constantBuffer.Get(); }		
+		std::vector<ID3D11ShaderResourceView*> shadowMapShaderResourceViews() const { return _shadowMaps; };
 
 	protected:
 		Microsoft::WRL::ComPtr<ID3D11Buffer> _constantBuffer;
+		std::vector<ID3D11ShaderResourceView*> _shadowMaps;
 	};
 
 	template<uint8_t TMax_lights>
@@ -23,7 +27,7 @@ namespace oe
 
 		explicit Render_light_data_impl(ID3D11Device* device)
 		{
-			// DirectX constant buffers must be aligned to 16 byte boudaries (vector4)
+			// DirectX constant buffers must be aligned to 16 byte boundaries (vector4)
 			static_assert(sizeof(Light_constants) % 16 == 0);
 
 			D3D11_BUFFER_DESC bufferDesc;
@@ -41,19 +45,31 @@ namespace oe
 			DX::ThrowIfFailed(device->CreateBuffer(&bufferDesc, &initData, &_constantBuffer));
 
 			DirectX::SetDebugObjectName(_constantBuffer.Get(), L"Render_light_data constant buffer");
+
+			_shadowMaps.reserve(TMax_lights);
 		}
 
 		bool addPointLight(const DirectX::SimpleMath::Vector3& lightPosition, const DirectX::SimpleMath::Color& color, float intensity)
 		{
-			return _lightConstants.addLight({ Light_type::Point, lightPosition, encodeColor(color, intensity) });
+			return _lightConstants.addLight({ Light_type::Point, lightPosition, encodeColor(color, intensity), Light_constants::SHADOW_MAP_DISABLED_INDEX });
 		}
 		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, const DirectX::SimpleMath::Color& color, float intensity)
 		{
-			return _lightConstants.addLight({ Light_type::Directional, lightDirection, encodeColor(color, intensity) });
+			return _lightConstants.addLight({ Light_type::Directional, lightDirection, encodeColor(color, intensity), Light_constants::SHADOW_MAP_DISABLED_INDEX });
+		}
+		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, const DirectX::SimpleMath::Color& color, float intensity, const Shadow_map_texture& shadowMapTexture)
+		{
+			if (_lightConstants.addLight({ Light_type::Directional, lightDirection, encodeColor(color, intensity), static_cast<int32_t>(_shadowMaps.size()) })) {
+				auto shadowMap = shadowMapTexture.getShaderResourceView();
+				_shadowMaps.push_back(shadowMap);
+				shadowMap->AddRef();
+				return true;
+			}
+			return false;
 		}
 		bool addAmbientLight(const DirectX::SimpleMath::Color& color, float intensity)
 		{
-			return _lightConstants.addLight({ Light_type::Ambient, DirectX::SimpleMath::Vector3::Zero, encodeColor(color, intensity) });
+			return _lightConstants.addLight({ Light_type::Ambient, DirectX::SimpleMath::Vector3::Zero, encodeColor(color, intensity), Light_constants::SHADOW_MAP_DISABLED_INDEX });
 		}
 		void updateBuffer(ID3D11DeviceContext* context)
 		{
@@ -62,6 +78,11 @@ namespace oe
 		void clear()
 		{
 			_lightConstants.clear();
+			for (const auto shadowMap : _shadowMaps) {
+				if (shadowMap)
+					shadowMap->Release();
+			}
+			_shadowMaps.clear();
 		}
 		bool empty() const
 		{
@@ -72,30 +93,35 @@ namespace oe
 			return _lightConstants.full();
 		}
 
-				
 	private:
 
 		class alignas(16) Light_constants {
 		public:
 
-			struct Light {
+			static constexpr int32_t SHADOW_MAP_DISABLED_INDEX = -1;
+
+			// sizeof must be a multiple of 16 for the shader arrays to behave correctly
+			struct Light_entry {
+
 				Light_type type = Light_type::Directional;
 				DirectX::SimpleMath::Vector3 lightPositionDirection;
 				DirectX::SimpleMath::Vector3 intensifiedColor;
-				uint32_t pad0 = 0;
+				int32_t shadowMapIndex = SHADOW_MAP_DISABLED_INDEX;
+				DirectX::SimpleMath::Matrix shadowViewMatrix;
 			};
 
 			Light_constants()
 			{
-				std::fill(_lights.begin(), _lights.end(), Light());
+				static_assert(sizeof(Light_entry) % 16 == 0);
+				std::fill(_lights.begin(), _lights.end(), Light_entry());
 			}
 
-			bool addLight(Light&& light)
+			bool addLight(Light_entry&& entry)
 			{
 				if (full())
 					return false;
 
-				_lights[_activeLights++] = light;
+				_lights[_activeLights++] = entry;
 				return true;
 			}
 
@@ -115,7 +141,7 @@ namespace oe
 			}
 
 		private:
-			std::array<Light, TMax_lights> _lights;
+			std::array<Light_entry, TMax_lights> _lights;
 			int _activeLights = 0;
 		};
 

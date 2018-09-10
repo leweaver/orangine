@@ -37,7 +37,7 @@ namespace oe {
 			ID3D11DeviceContext* context,
 			ID3D11Buffer* buffer) override;
 
-		void createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode) override;
+		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
 
 	private:
 		DirectX::SimpleMath::Color _baseColor;

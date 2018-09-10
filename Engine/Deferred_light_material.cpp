@@ -1,21 +1,30 @@
 ﻿#include "pch.h"
 #include "Deferred_light_material.h"
-#include "Render_target_texture.h"
 #include "Render_pass_info.h"
+#include "Render_light_data.h"
 
 using namespace oe;
 using namespace std::literals;
 using namespace DirectX;
 using namespace SimpleMath;
 
+constexpr auto g_mrt_sampler_count = 4;
+
 void Deferred_light_material::vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const
 {
 	vertexAttributes.push_back(Vertex_attribute::Position);
 }
 
-void Deferred_light_material::createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode)
+void Deferred_light_material::createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode)
 {
 	assert(blendMode == Render_pass_blend_mode::Additive);
+	_shadowMapCount = static_cast<int32_t>(renderLightData.shadowMapShaderResourceViews().size());
+}
+
+bool Deferred_light_material::shaderResourcesRequireRecreate(const Render_light_data& renderLightData, Render_pass_blend_mode blendMode)
+{
+	// If the number of shadow-maps differs from the last time this material was used, it needs a recompilation.
+	return renderLightData.shadowMapShaderResourceViews().size() != _shadowMapCount;
 }
 
 UINT Deferred_light_material::inputSlot(Vertex_attribute attribute)
@@ -23,7 +32,6 @@ UINT Deferred_light_material::inputSlot(Vertex_attribute attribute)
 	(void)attribute;
 	return 0;
 }
-
 
 Material::Shader_compile_settings Deferred_light_material::vertexShaderSettings() const
 {
@@ -52,7 +60,7 @@ bool Deferred_light_material::createPSConstantBuffer(ID3D11Device* device, ID3D1
 {
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.ByteWidth = sizeof(Deferred_light_constants);
+	bufferDesc.ByteWidth = sizeof(Deferred_light_material_constants);
 	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = 0;
@@ -72,7 +80,8 @@ bool Deferred_light_material::createPSConstantBuffer(ID3D11Device* device, ID3D1
 	return true;
 }
 
-void Deferred_light_material::updatePSConstantBuffer(const Matrix& worldMatrix,
+void Deferred_light_material::updatePSConstantBuffer(const Render_light_data& renderlightData, 
+	const Matrix& worldMatrix,
 	const Matrix& viewMatrix, 
 	const Matrix& projMatrix, 
 	ID3D11DeviceContext* context,
@@ -86,7 +95,7 @@ void Deferred_light_material::updatePSConstantBuffer(const Matrix& worldMatrix,
 	context->UpdateSubresource(buffer, 0, nullptr, &_constants, 0, 0);	
 }
 
-void Deferred_light_material::setContextSamplers(const DX::DeviceResources& deviceResources)
+void Deferred_light_material::setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData)
 {
 	auto device = deviceResources.GetD3DDevice();
 	auto context = deviceResources.GetD3DDeviceContext();
@@ -115,7 +124,7 @@ void Deferred_light_material::setContextSamplers(const DX::DeviceResources& devi
 			_depthTexture->getShaderResourceView()
 		};
 		// Set shader texture resource in the pixel shader.
-		context->PSSetShaderResources(0, 4, shaderResourceViews);
+		context->PSSetShaderResources(0, g_mrt_sampler_count, shaderResourceViews);
 
 		ID3D11SamplerState* samplerStates[] = {
 			_color0SamplerState.Get(),
@@ -123,7 +132,41 @@ void Deferred_light_material::setContextSamplers(const DX::DeviceResources& devi
 			_color2SamplerState.Get(),
 			_depthSamplerState.Get(),
 		};
-		context->PSSetSamplers(0, 4, samplerStates);
+		context->PSSetSamplers(0, g_mrt_sampler_count, samplerStates);
+	}
+
+	const auto shadowMapSRVs = renderLightData.shadowMapShaderResourceViews();
+	if (shadowMapSRVs.size()) {
+		assert(shadowMapSRVs.size() == _shadowMapCount);
+
+		// Set shadow-map shader texture resource in the pixel shader.
+		context->PSSetShaderResources(g_mrt_sampler_count, static_cast<uint32_t>(shadowMapSRVs.size()), shadowMapSRVs.data());
+
+		// Sampler states
+		if (_shadowMapSamplerState == nullptr) {
+			D3D11_SAMPLER_DESC samplerDesc;
+			// Create a texture sampler state description.
+			samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+			samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+			samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+			samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+			samplerDesc.MipLODBias = 0.0f;
+			samplerDesc.MaxAnisotropy = 1;
+			samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+			samplerDesc.BorderColor[0] = 0;
+			samplerDesc.BorderColor[1] = 0;
+			samplerDesc.BorderColor[2] = 0;
+			samplerDesc.BorderColor[3] = 0;
+			samplerDesc.MinLOD = 0;
+			samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+			// Create the texture sampler state.
+			ThrowIfFailed(device->CreateSamplerState(&samplerDesc, &_shadowMapSamplerState));
+		}
+
+		std::vector<ID3D11SamplerState*> shadowMapSamplerStates;
+		shadowMapSamplerStates.resize(_shadowMapCount, _shadowMapSamplerState.Get());
+		context->PSSetSamplers(g_mrt_sampler_count, _shadowMapCount, shadowMapSamplerStates.data());
 	}
 }
 
@@ -131,9 +174,12 @@ void Deferred_light_material::unsetContextSamplers(const DX::DeviceResources& de
 {
 	auto context = deviceResources.GetD3DDeviceContext();
 
-	ID3D11ShaderResourceView* shaderResourceViews[] = { nullptr, nullptr, nullptr, nullptr };
-	context->PSSetShaderResources(0, 4, shaderResourceViews);
+	// TODO: Heap allocation here is not pretty.
+	std::vector<ID3D11ShaderResourceView*> shaderResourceViews;
+	shaderResourceViews.resize(g_mrt_sampler_count + _shadowMapCount);
+	context->PSSetShaderResources(0, static_cast<uint32_t>(shaderResourceViews.size()), shaderResourceViews.data());
 
-	ID3D11SamplerState* samplerStates[] = { nullptr, nullptr, nullptr, nullptr };
-	context->PSSetSamplers(0, 4, samplerStates);
+	std::vector<ID3D11SamplerState*> samplerStates;
+	samplerStates.resize(g_mrt_sampler_count + _shadowMapCount);
+	context->PSSetSamplers(0, static_cast<uint32_t>(shaderResourceViews.size()), samplerStates.data());
 }

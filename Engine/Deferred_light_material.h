@@ -25,8 +25,10 @@ namespace oe
 		void setupEmitted(bool enabled);
 
 	protected:
-		
-		struct Deferred_light_constants
+
+		// This constant buffer contains data that is shared across each light that is rendered, such as the camera data.
+		// Individual light parameters are stored in the constant buffer managed by the Render_light_data_impl class.
+		struct Deferred_light_material_constants
 		{
 			DirectX::XMMATRIX invProjection;
 			DirectX::XMFLOAT4 eyePosition;
@@ -39,12 +41,17 @@ namespace oe
 		Shader_compile_settings pixelShaderSettings() const override;
 
 		bool createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) override;
-		void updatePSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix, const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix, ID3D11DeviceContext* context, ID3D11Buffer* buffer) override;
+		void updatePSConstantBuffer(const Render_light_data& renderlightData, 
+			const DirectX::SimpleMath::Matrix& worldMatrix, 
+			const DirectX::SimpleMath::Matrix& viewMatrix,
+			const DirectX::SimpleMath::Matrix& projMatrix, 
+			ID3D11DeviceContext* context, 
+			ID3D11Buffer* buffer) override;
 
-		void createShaderResources(const DX::DeviceResources& deviceResources, Render_pass_blend_mode blendMode) override;
+		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
+		bool shaderResourcesRequireRecreate(const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
 
-		void setContextSamplers(const DX::DeviceResources& deviceResources) override;
+		void setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData) override;
 		void unsetContextSamplers(const DX::DeviceResources& deviceResources) override;
 
 	private:
@@ -57,5 +64,8 @@ namespace oe
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _color1SamplerState;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _color2SamplerState;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _depthSamplerState;
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> _shadowMapSamplerState;
+
+		int32_t _shadowMapCount = 0;
 	};
 }

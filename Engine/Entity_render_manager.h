@@ -171,12 +171,12 @@ namespace oe {
 		
 		// RenderStep definitions
 		struct Render_step_shadowmap_data {
-			
+
 		};
 		struct Render_step_deferred_data {
-			std::shared_ptr<Deferred_light_material> _deferredLightMaterial;
-			Renderable _pass0ScreenSpaceQuad;
-			Renderable _pass2ScreenSpaceQuad;
+			std::shared_ptr<Deferred_light_material> deferredLightMaterial;
+			Renderable pass0ScreenSpaceQuad;
+			Renderable pass2ScreenSpaceQuad;
 		};
 		struct Render_step_empty_data {};
 		struct Render_step_debug_data {
@@ -186,7 +186,7 @@ namespace oe {
 
 		Render_step<
 			Render_step_shadowmap_data,
-			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Disabled>
+			Render_pass_info<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::ReadWrite>
 		> _renderPass_shadowMap;
 
 		Render_step<

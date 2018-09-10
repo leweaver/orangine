@@ -13,6 +13,9 @@ namespace oe {
 
 		ID3D11DepthStencilView* depthStencilView() const { return _depthStencilView.Get(); }
 
+		uint32_t width() const { return _width; };
+		uint32_t height() const { return _height; };
+
 		// Will throw a std::exception if texture failed to load.
 		void load(ID3D11Device* device) override;
 		void unload() override;

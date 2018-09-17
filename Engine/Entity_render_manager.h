@@ -64,7 +64,6 @@ namespace oe {
 
 		struct Camera_data
 		{
-			DirectX::SimpleMath::Matrix worldMatrix;
 			DirectX::SimpleMath::Matrix viewMatrix;
 			DirectX::SimpleMath::Matrix projectionMatrix;
 
@@ -105,6 +104,11 @@ namespace oe {
 		void addDebugBoundingBox(const DirectX::BoundingOrientedBox& boundingOrientedBox, const DirectX::SimpleMath::Color& color) override;
 		void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const DirectX::SimpleMath::Color& color) override;
 		void clearDebugShapes() override;
+
+		// Find an aabb, with the given orientation, that tightly fits list of entities.
+		static DirectX::BoundingOrientedBox aabbForEntities(const Entity_filter& entities, 
+			const DirectX::SimpleMath::Quaternion& orientation,
+			std::function<bool(const Entity&)> predicate = [](const Entity&) { return true; });
 
 	protected:
 
@@ -148,8 +152,7 @@ namespace oe {
 
 		// renders a full screen quad that sets our output buffers to decent default values.
 		// Takes ownership of the passed in material
-		Renderable initScreenSpaceQuad(std::shared_ptr<Material> material) const;		
-
+		Renderable initScreenSpaceQuad(std::shared_ptr<Material> material) const;
 
 		DX::DeviceResources& _deviceResources;
 		std::unique_ptr<DirectX::CommonStates> _commonStates;

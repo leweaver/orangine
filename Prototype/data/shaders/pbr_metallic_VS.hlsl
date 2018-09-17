@@ -5,9 +5,10 @@
 
 cbuffer constants : register(b0)
 {
-	matrix        g_mWorldViewProjection  : packoffset(c0);
-	matrix        g_mWorld                : packoffset(c4);
-	matrix        g_mWorldInvTranspose    : packoffset(c8);
+	matrix        g_mWorldView            : packoffset(c0);
+	matrix        g_mWorldViewProjection  : packoffset(c4);
+	matrix        g_mWorld                : packoffset(c8);
+	matrix        g_mWorldInvTranspose    : packoffset(c12);
 };
 
 //--------------------------------------------------------------------------------------
@@ -28,6 +29,7 @@ struct VS_OUTPUT
 	float4 vTangent     : TANGENT0;
 	float3 vWorldTangent: TANGENT1;
 	float2 vTexCoord0   : TEXCOORD0;
+	float4 vClipPosition: TEXCOORD1;
 	float4 vPosition    : SV_POSITION;
 };
 
@@ -38,7 +40,10 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 {
 	VS_OUTPUT Output;
 	Output.vPosition = mul(Input.vPosition, g_mWorldViewProjection);
-	Output.vPosition.z *= Output.vPosition.w;
+	Output.vPosition = float4(Output.vPosition.xyz / Output.vPosition.w, 1);
+
+	Output.vClipPosition = mul(Input.vPosition, g_mWorldView);
+
 	/*
 	// Remove any scaling from the world matrix by normalizing each column
 	float3 A = normalize(float3(g_mWorld._11, g_mWorld._12, g_mWorld._13));

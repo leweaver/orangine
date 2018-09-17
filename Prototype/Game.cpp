@@ -108,8 +108,8 @@ void Game::CreateCamera(bool animate)
 
 	auto &component = camera->addComponent<Camera_component>();
 	component.setFov(XMConvertToRadians(60.0f));
-	component.setFarPlane(200.0f);
-	component.setNearPlane(0.1f);
+	component.setFarPlane(20.0f);
+	component.setNearPlane(6.0f);
 
 	camera->lookAt({ 0, 0, 0 }, Vector3::Up);
 
@@ -165,24 +165,25 @@ void Game::CreateLights()
 	const auto &lightRoot = entityManager.instantiate("Light Root");
 	lightRoot->setPosition({ 0, 0, 0 });
 	//createDirLight({ 0.5, 0, -1 }, { 1, 1, 1 }, 0.35)->SetParent(*lightRoot);
-
-	createAmbientLight({ 1, 1, 1 }, 0.2f)->setParent(*lightRoot);
-
+	
 	if (true)
 	{
-		createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 2)->setParent(*lightRoot);
-		createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75)->setParent(*lightRoot);
-		
-		//auto shadowLight = createDirLight({ -1.0f, 0, 0 }, { 1, 1, 1 }, 2);
-		auto shadowLight = createDirLight({ -1.0f, 0, 1.0f }, { 1, 1, 1 }, 2);
+		auto shadowLight = createDirLight({ 0.0f, -1.0f, 0.0f }, { 1, 1, 1 }, 2);
 		shadowLight->setParent(*lightRoot);
 		shadowLight->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
+
+		//createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 2)->setParent(*lightRoot);
+		//createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75)->setParent(*lightRoot);
+		
+		//auto shadowLight = createDirLight({ -1.0f, 0, 0 }, { 1, 1, 1 }, 2);
 	}
 	else
 	{
 		createPointLight({ 10, 0, 10 }, { 1, 1, 1 }, 13)->setParent(*lightRoot);
 		createPointLight({ 10, 5, -10 }, { 1, 0, 1 }, 20)->setParent(*lightRoot);
 	}
+
+	//createAmbientLight({ 1, 1, 1 }, 0.2f)->setParent(*lightRoot);
 }
 
 void Game::CreateSceneLeverArm()
@@ -225,13 +226,13 @@ void Game::CreateGeometricPrimitives()
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
 		child1->setBoundSphere(BoundingSphere(Vector3::Zero, 1.0f));
 	};
-	createTeapot({ -1.0f,  1.0f, 0.0f }, Color(Colors::Purple));
-	createTeapot({  1.0f,  1.0f, 0.0f }, Color(Colors::Red));
+	createTeapot({  0.0f,  1.0f, 1.5f }, Color(Colors::Cyan));
+	createTeapot({  1.5f,  1.0f, 0.0f }, Color(Colors::Yellow));
 
 	{
 		const auto &child2 = entityManager.instantiate("Primitive Child 2", *root1);
 		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
-		material->setBaseColor(Color(Colors::Green));
+		material->setBaseColor(Color(0,1,0));
 		auto& renderable = child2->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 		renderable.setCastShadow(false);
@@ -240,7 +241,7 @@ void Game::CreateGeometricPrimitives()
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
 		child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
-		child2->setPosition({ 0.0f, -0.5f, 0.0f });
+		child2->setPosition({ 0.0f, 0.0f, 0.0f });
 	}
 
 }

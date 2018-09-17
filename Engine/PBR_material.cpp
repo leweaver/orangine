@@ -119,6 +119,7 @@ void PBR_material::updateVSConstantBuffer(const SimpleMath::Matrix& worldMatrix,
 	ID3D11Buffer* buffer)
 {
 	// Note that HLSL matrices are Column Major (as opposed to Row Major in DirectXMath) - so we need to transpose everything.
+	_constantsVs.worldView = XMMatrixMultiplyTranspose(worldMatrix, viewMatrix);
 	_constantsVs.worldViewProjection = XMMatrixMultiplyTranspose(worldMatrix, XMMatrixMultiply(viewMatrix, projMatrix));
 
 	_constantsVs.world = XMMatrixTranspose(worldMatrix);

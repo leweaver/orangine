@@ -14,6 +14,7 @@ namespace oe_test {
 		MOCK_METHOD2(createFrustum, oe::BoundingFrustumRH(const oe::Entity&, const oe::Camera_component&));
 		
 		MOCK_METHOD3(addDebugSphere, void(const DirectX::SimpleMath::Matrix&, float, const DirectX::SimpleMath::Color&));
+		MOCK_METHOD2(addDebugBoundingBox, void(const DirectX::BoundingOrientedBox& boundingOrientedBox, const DirectX::SimpleMath::Color& color));
 		MOCK_METHOD2(addDebugFrustum, void(const oe::BoundingFrustumRH&, const DirectX::SimpleMath::Color&));
 		MOCK_METHOD0(clearDebugShapes, void());
 

@@ -30,7 +30,8 @@ namespace oe
 		// Individual light parameters are stored in the constant buffer managed by the Render_light_data_impl class.
 		struct Deferred_light_material_constants
 		{
-			DirectX::XMMATRIX invProjection;
+			DirectX::XMMATRIX viewMatrixInv;
+			DirectX::XMMATRIX projMatrixInv;
 			DirectX::XMFLOAT4 eyePosition;
 			bool emittedEnabled = false;
 		} _constants;

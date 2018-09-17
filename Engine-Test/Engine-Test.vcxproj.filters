@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Test_collision.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Test_entity.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Test_renderer.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="Fake_entity_filter.h">
+      <Filter>Fakes</Filter>
+    </ClInclude>
+    <ClInclude Include="Mock_asset_manager.h">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="Mock_entity_render_manager.h">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="Mock_entity_repository.h">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="Mock_entity_scripting_manager.h">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="Mock_input_manager.h">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="Mock_scene.h">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="Mock_scene_graph_manager.h">
+      <Filter>Mocks</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="x64.runsettings" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Mocks">
+      <UniqueIdentifier>{d77e697f-6461-4951-8a07-1be51e1c894d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fakes">
+      <UniqueIdentifier>{084f53b6-593a-4db2-9812-86cd4a94c7a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests">
+      <UniqueIdentifier>{fd314f7c-b182-44d4-942c-464ad6eaed35}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -63,6 +63,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ClInclude Include="Mock_asset_manager.h" />
+    <ClInclude Include="Fake_entity_filter.h" />
     <ClInclude Include="Mock_entity_render_manager.h" />
     <ClInclude Include="Mock_entity_repository.h" />
     <ClInclude Include="Mock_entity_scripting_manager.h" />
@@ -80,6 +81,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Test_renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Prototype\Prototype.vcxproj">

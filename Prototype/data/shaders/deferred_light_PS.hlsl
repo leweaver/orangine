@@ -6,7 +6,8 @@
 
 cbuffer main_cb : register(b0)
 {
-	matrix        g_mMatInvProjection;
+	matrix        g_viewMatrixInv;
+	matrix        g_projMatrixInv;
 	float4        g_eyePosition;
 	bool          g_emittedEnabled;
 };
@@ -50,7 +51,7 @@ Texture2D shadowMapTextures[8];
 SamplerState shadowMapSamplers[8];
 
 // Forward declarations
-float3 VSPositionFromDepth(float2 vTexCoord);
+float3 worldPosFromDepth(float2 texCoord);
 float3 PointLightVector(float3 lightPosition, float3 lightIntensifiedColor, float3 pixelPosition, float3 surfaceNormal_n);
 
 //--------------------------------------------------------------------------------------
@@ -69,13 +70,14 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	brdf.metallic = color0.w;
 	brdf.roughness = color1.w;
 	brdf.occlusion = color2.a;
-	brdf.worldPosition = VSPositionFromDepth(input.vTexCoord0);
+	brdf.worldPosition = worldPosFromDepth(input.vTexCoord0);
 	brdf.worldNormal = color1.xyz * 2 - 1;
 	brdf.baseColor = color0.rgb;
 
 #ifdef DEBUG_LIGHTING_ONLY
 	brdf.baseColor = float3(1, 1, 1);
 #endif
+		float3 worldPos = brdf.worldPosition;
 
 	// Vector from surface point to camera
 	brdf.eyeVectorW = normalize(g_eyePosition.xyz - brdf.worldPosition);
@@ -90,11 +92,28 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 		brdf.lightIntensifiedColor = light.intensifiedColor.rgb;
 		brdf.lightPosition = light.directionPosition;
 
-		finalColor += BRDFLight(brdf);
+		float3 lightColor = BRDFLight(brdf);
 
 		if (light.shadowMapIndex != -1) {
-			finalColor.r += shadowMapTextures[0].Sample(shadowMapSamplers[0], input.vTexCoord0).r * 0.5f;
+			float4 shadowCoord = mul(float4(brdf.worldPosition, 1), light.shadowMapViewMatrix);
+			float shadowSample = shadowMapTextures[0].Sample(shadowMapSamplers[0], shadowCoord.rg).r;
+
+			// TODO: Scale shadowmap sample to near/far planes correctly?
+			float shadowNearPlane = 1.0f;
+			float shadowFarPlane = 4.0f;
+
+			//shadowSample = shadowSample * (shadowFarPlane - shadowNearPlane) + shadowNearPlane;
+			if (shadowCoord.z > shadowSample)
+				lightColor = float3(0, 0, 0);
+
+			if (brdf.baseColor.g > 0.95)
+				finalColor = float3(shadowSample, 0, 0);
+				
+			//finalColor = float4(mul(float3(0.1f, 0.1f, 0.0), g_invWorldViewProj).xyz * 3, 0);
+			//finalColor = g_invWorldViewProj._m00_m01_m02_m03;
 		}
+
+		finalColor += lightColor;
 	}
 
 	if (g_emittedEnabled)
@@ -102,10 +121,6 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 		brdf.lightType = LIGHT_TYPE_EMITTED;
 		finalColor += BRDFLight(brdf);
 	}
-
-	//depth = depth;
-	//return float4(depth, depth > 1 ? 1 : (finalColor.r * finalColor.g * finalColor.b * 0.01), depth < 0 ? 1 : 0, 1);
-
 
 #ifdef DEBUG_NO_LIGHTING
 	return float4(color0.rgb, 1);
@@ -118,19 +133,22 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 #endif
 }
 
-float3 VSPositionFromDepth(float2 vTexCoord)
+// https://stackoverflow.com/questions/32227283/getting-world-position-from-depth-buffer-value
+float3 worldPosFromDepth(float2 texCoord)
 {
-	// Get the depth value for this pixel
-	float z = depthTexture.Sample(depthSampler, vTexCoord).r;
+	// Bring z into [-1, 1] space
+	float depth = depthTexture.Sample(depthSampler, texCoord).r;
 
 	// Get x/w and y/w from the viewport position
-	float x = vTexCoord.x * 2 - 1;
-	float y = (1 - vTexCoord.y) * 2 - 1;
-	float4 vProjectedPos = float4(x, y, z, 1.0f);
+	float x = texCoord.x * 2 - 1;
+	float y = (1 - texCoord.y) * 2 - 1;
+	float z = depth;
+	float4 clipSpacePosition = float4(x, y, z, 1.0f);
+	float4 viewSpacePosition = mul(clipSpacePosition, g_projMatrixInv);
 
-	// Transform by the inverse projection matrix
-	float4 vPositionVS = mul(vProjectedPos, g_mMatInvProjection);
+	// Perspective division (go from homogenious to 3d space)
+	viewSpacePosition /= viewSpacePosition.w;
 
-	// Divide by w to get the view-space position
-	return vPositionVS.xyz / vPositionVS.w;
+	// Convert from view to world space
+	return mul(viewSpacePosition, g_viewMatrixInv).xyz;
 }

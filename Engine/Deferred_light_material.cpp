@@ -65,7 +65,8 @@ bool Deferred_light_material::createPSConstantBuffer(ID3D11Device* device, ID3D1
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = 0;
 
-	_constants.invProjection = Matrix::Identity;
+	_constants.viewMatrixInv = Matrix::Identity;
+	_constants.projMatrixInv = Matrix::Identity;
 
 	D3D11_SUBRESOURCE_DATA initData;
 	initData.pSysMem = &_constants;
@@ -87,12 +88,25 @@ void Deferred_light_material::updatePSConstantBuffer(const Render_light_data& re
 	ID3D11DeviceContext* context,
 	ID3D11Buffer* buffer)
 {
-	// Convert to LH, for DirectX.
-	XMVECTOR determinant;
-	_constants.invProjection = XMMatrixTranspose(XMMatrixInverse(&determinant, projMatrix));
-	_constants.eyePosition = Vector4(worldMatrix._41, worldMatrix._42, worldMatrix._43, 0.0);
+	const auto viewMatrixInv = viewMatrix.Invert();
 
-	context->UpdateSubresource(buffer, 0, nullptr, &_constants, 0, 0);	
+	// Convert to LH, for DirectX. 
+	_constants.viewMatrixInv = XMMatrixTranspose(viewMatrixInv);
+	_constants.projMatrixInv = XMMatrixTranspose(XMMatrixInverse(nullptr, projMatrix));
+	/*
+	LOG(DEBUG) <<
+		"\n{" <<
+		"\n  " << worldMatrix._11 << ", " << worldMatrix._12 << ", " << worldMatrix._13 << ", " << worldMatrix._14 <<
+		"\n  " << worldMatrix._21 << ", " << worldMatrix._22 << ", " << worldMatrix._23 << ", " << worldMatrix._24 <<
+		"\n  " << worldMatrix._31 << ", " << worldMatrix._32 << ", " << worldMatrix._33 << ", " << worldMatrix._34 <<
+		"\n  " << worldMatrix._41 << ", " << worldMatrix._42 << ", " << worldMatrix._43 << ", " << worldMatrix._44 << 
+		"\n}";
+		*/
+
+	// Inverse of the view matrix is the camera transform matrix
+	_constants.eyePosition = Vector4(viewMatrixInv._41, viewMatrixInv._42, viewMatrixInv._43, 0.0);
+
+	context->UpdateSubresource(buffer, 0, nullptr, &_constants, 0, 0);
 }
 
 void Deferred_light_material::setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData)

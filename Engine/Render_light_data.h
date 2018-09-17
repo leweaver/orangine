@@ -7,11 +7,11 @@ namespace oe
 	class Render_light_data {
 	public:
 		ID3D11Buffer* buffer() const { return _constantBuffer.Get(); }		
-		std::vector<ID3D11ShaderResourceView*> shadowMapShaderResourceViews() const { return _shadowMaps; };
+		std::vector<ID3D11ShaderResourceView*> shadowMapShaderResourceViews() const { return _shadowMapSRVs; };
 
 	protected:
 		Microsoft::WRL::ComPtr<ID3D11Buffer> _constantBuffer;
-		std::vector<ID3D11ShaderResourceView*> _shadowMaps;
+		std::vector<ID3D11ShaderResourceView*> _shadowMapSRVs;
 	};
 
 	template<uint8_t TMax_lights>
@@ -46,7 +46,7 @@ namespace oe
 
 			DirectX::SetDebugObjectName(_constantBuffer.Get(), L"Render_light_data constant buffer");
 
-			_shadowMaps.reserve(TMax_lights);
+			_shadowMapSRVs.reserve(TMax_lights);
 		}
 
 		bool addPointLight(const DirectX::SimpleMath::Vector3& lightPosition, const DirectX::SimpleMath::Color& color, float intensity)
@@ -59,9 +59,17 @@ namespace oe
 		}
 		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, const DirectX::SimpleMath::Color& color, float intensity, const Shadow_map_texture& shadowMapTexture)
 		{
-			if (_lightConstants.addLight({ Light_type::Directional, lightDirection, encodeColor(color, intensity), static_cast<int32_t>(_shadowMaps.size()) })) {
+			typename Light_constants::Light_entry lightEntry = { 
+				Light_type::Directional, 
+				lightDirection, 
+				encodeColor(color, intensity), 
+				static_cast<int32_t>(_shadowMapSRVs.size()),
+				XMMatrixTranspose(shadowMapTexture.worldViewProjMatrix())
+			};
+
+			if (_lightConstants.addLight(std::move(lightEntry))) {
 				auto shadowMap = shadowMapTexture.getShaderResourceView();
-				_shadowMaps.push_back(shadowMap);
+				_shadowMapSRVs.push_back(shadowMap);
 				shadowMap->AddRef();
 				return true;
 			}
@@ -78,11 +86,11 @@ namespace oe
 		void clear()
 		{
 			_lightConstants.clear();
-			for (const auto shadowMap : _shadowMaps) {
+			for (const auto shadowMap : _shadowMapSRVs) {
 				if (shadowMap)
 					shadowMap->Release();
 			}
-			_shadowMaps.clear();
+			_shadowMapSRVs.clear();
 		}
 		bool empty() const
 		{

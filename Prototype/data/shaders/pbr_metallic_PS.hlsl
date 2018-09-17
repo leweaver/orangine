@@ -31,6 +31,7 @@ struct PS_INPUT
 	float4 vTangent       : TANGENT0;
 	float3 vWorldTangent  : TANGENT1;
 	float2 vTexCoord0     : TEXCOORD0;
+	float4 vClipPosition  : TEXCOORD1;
 	float4 vWorldPosition : SV_POSITION;
 };
 
@@ -69,9 +70,7 @@ float3 NormalSampleToWorldNormal(float3 sampleT, float3 normalW, float3 tangentW
 // Pixel Shader
 //--------------------------------------------------------------------------------------
 PS_OUTPUT PSMain(PS_INPUT input)
-{
-	PS_OUTPUT output;
-		
+{		
 #ifdef MAP_BASECOLOR
 	float4 baseColorSample = baseColorTexture.Sample(baseColorSampler, input.vTexCoord0);
 	float4 baseColor = float4(SRGBtoLINEAR(baseColorSample.rgb) * g_baseColor.rgb, baseColorSample.a);
@@ -113,7 +112,7 @@ PS_OUTPUT PSMain(PS_INPUT input)
 	float occlusionFactor = 1;
 #endif
 
-	return EncodeOutput(
+	PS_OUTPUT output = EncodeOutput(
 		baseColor,
 		metallicRoughness.x,
 		worldNormal * 0.5 + 0.5,
@@ -122,6 +121,7 @@ PS_OUTPUT PSMain(PS_INPUT input)
 		occlusionFactor,
 		input.vWorldPosition.xyz);
 
+	//output.Color = float4(input.vClipPosition.xyz, 0.0);
 	return output;
 }
 

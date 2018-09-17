@@ -180,6 +180,7 @@ namespace oe {
 		
 		struct PBR_constants_vs
 		{
+			DirectX::XMMATRIX worldView; // for debugging only
 			DirectX::XMMATRIX worldViewProjection;
 			DirectX::XMMATRIX world;
 			DirectX::XMMATRIX worldInvTranspose;

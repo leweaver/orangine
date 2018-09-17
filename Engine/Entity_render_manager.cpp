@@ -35,7 +35,6 @@ using namespace std::literals;
 const Entity_render_manager::Camera_data Entity_render_manager::Camera_data::identity = { 
 	{ 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f },
 	{ 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f },
-	{ 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f },
 };
 
 constexpr size_t g_entity_deferred_cleargbuffer = 0;
@@ -120,7 +119,6 @@ void Entity_render_manager::tick()
 
 		auto viewMatrix = Matrix::CreateLookAt(pos, pos + forward, up);
 		_cameraData = {
-			wt,
 			viewMatrix,
 			projMatrix
 		};
@@ -130,15 +128,15 @@ void Entity_render_manager::tick()
 		// Create a default camera
 		constexpr auto defaultFarPlane = 30.0f;
 		_cameraData = {
-			Matrix::Identity,
 			Matrix::CreateLookAt({ 0.0f, 0.0f, 10.0f }, Vector3::Zero, Vector3::Up),
 			Matrix::CreatePerspectiveFieldOfView(XMConvertToRadians(60.0f), aspectRatio, 0.1f, defaultFarPlane)
 		};
 		invFarPlane = 1.0f / defaultFarPlane;
 	}
 
-	_cameraData.projectionMatrix._33 *= invFarPlane;
-	_cameraData.projectionMatrix._43 *= invFarPlane;
+	// This optimization, while fancy, breaks our ability to read in the world pos from the depth buffer in deferred lighting.
+	//_cameraData.projectionMatrix._33 *= invFarPlane;
+	//_cameraData.projectionMatrix._43 *= invFarPlane;
 }
 
 void Entity_render_manager::shutdown()
@@ -329,43 +327,26 @@ void Entity_render_manager::createRenderSteps()
 
 				// Get from world to light view space  (world space, origin of {0,0,0}; just rotated)
 				auto worldToLightViewMatrix = Matrix::CreateFromQuaternion(lightEntity->worldRotation());
-				
-				// Extents, in light view space (as defined above)
-				XMVECTOR minExtents = Vector3::Zero;
-				XMVECTOR maxExtents = Vector3::Zero;
+				auto shadowVolumeBoundingBox = aabbForEntities(
+					*_renderableEntities,
+					lightEntity->worldRotation(),
+					[](const Entity& entity) {
+						const auto renderable = entity.getFirstComponentOfType<Renderable_component>();
+						assert(renderable != nullptr);
 
-				for (auto& entity : *_renderableEntities) {
-					const auto renderable = entity->getFirstComponentOfType<Renderable_component>();
-					assert(renderable != nullptr);
-
-					if (!renderable->castShadow())
-						continue;
-
-					const auto& boundSphere = entity->boundSphere();
-					Vector3 boundWorldCenter = Vector3::Transform(boundSphere.Center, entity->worldTransform());
-					Vector3 boundWorldEdge = Vector3::Transform(Vector3(boundSphere.Center) + Vector3(0, 0, boundSphere.Radius), entity->worldTransform());
-
-					// Bounds, in light view space (as defined above)
-					Vector3 boundCenter = Vector3::Transform(boundWorldCenter, XMMatrixInverse(nullptr, worldToLightViewMatrix));
-					Vector3 boundEdge = Vector3::Transform(boundWorldEdge, XMMatrixInverse(nullptr, worldToLightViewMatrix));
-					const XMVECTOR boundRadius = XMVector3Length(XMVectorSubtract(boundEdge, boundCenter));
-
-					minExtents = XMVectorMin(minExtents, XMVectorSubtract(boundCenter, boundRadius));
-					maxExtents = XMVectorMax(maxExtents, XMVectorAdd(boundCenter, boundRadius));
-				}
-
-				const auto extents = XMVectorMultiply(XMVectorSubtract(maxExtents, minExtents), XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f));
-				BoundingBox bb;
-				bb.Extents = Vector3(extents);
-				bb.Center = Vector3(XMVectorAdd(minExtents, extents));
-
-				auto shadowVolumeBoundingBox = BoundingOrientedBox(bb.Center, Vector3(extents), lightEntity->worldRotation());
+						if (!renderable->castShadow())
+							return false;;
+						return true;
+					});
 				shadowData->setCasterVolume(shadowVolumeBoundingBox);
 
 				// Now create a shadow camera view matrix. Its position will be the bounds center, offset by {0, 0, extents.z} in light view space.
 				const auto lightNearPlaneWorldTranslation = XMVectorAdd(
-					XMVector3Transform(XMVectorSet(0.0f, 0.0f, bb.Extents.z, 0.0f), worldToLightViewMatrix),
-					XMVectorSet(bb.Center.x, bb.Center.y, bb.Center.z, 0.0f)
+					XMVector3Transform(XMVectorSet(0.0f, 0.0f, shadowVolumeBoundingBox.Extents.z, 0.0f), worldToLightViewMatrix),
+					XMVectorSet(shadowVolumeBoundingBox.Center.x,
+								shadowVolumeBoundingBox.Center.y,
+								shadowVolumeBoundingBox.Center.z,
+								0.0f)
 					);
 
 				Camera_data shadowCameraData;
@@ -374,12 +355,15 @@ void Entity_render_manager::createRenderSteps()
 					const auto forward = Vector3::TransformNormal(Vector3::Forward, worldToLightViewMatrix);
 					const auto up = Vector3::TransformNormal(Vector3::Up, worldToLightViewMatrix);
 					Vector3 extents2;
-					XMStoreFloat3(&extents2, XMVectorScale(XMLoadFloat3(&bb.Extents), 2.0f));
+					XMStoreFloat3(&extents2, XMVectorScale(XMLoadFloat3(&shadowVolumeBoundingBox.Extents), 2.0f));
 
-					shadowCameraData.worldMatrix = Matrix::CreateTranslation(lightNearPlaneWorldTranslation);
+					//shadowCameraData.worldMatrix = Matrix::CreateTranslation(lightNearPlaneWorldTranslation);
 					shadowCameraData.viewMatrix = Matrix::CreateLookAt(pos, pos + forward, up);
 					shadowCameraData.projectionMatrix = Matrix::CreateOrthographic(extents2.x, extents2.y, 0.01f, extents2.z);
 				}
+				shadowData->setWorldViewProjMatrix(
+					XMMatrixMultiply(shadowCameraData.viewMatrix, shadowCameraData.projectionMatrix)
+				);
 
 				// Now do the actual rendering to the shadow map
 				auto context = _deviceResources.GetD3DDeviceContext();
@@ -547,6 +531,47 @@ void Entity_render_manager::createRenderSteps()
 				bufferArraySet);
 		}
 	};
+}
+
+BoundingOrientedBox Entity_render_manager::aabbForEntities(const Entity_filter& entities, 
+	const Quaternion& orientation,
+	std::function<bool(const Entity&)> predicate)
+{
+	// Extents, in light view space (as defined above)
+	XMVECTOR minExtents = Vector3::Zero;
+	XMVECTOR maxExtents = Vector3::Zero;
+
+	bool firstExtentsCalc = true;
+	const auto orientationMatrix = Matrix::CreateFromQuaternion(orientation);
+	const auto orientationMatrixInv = XMMatrixInverse(nullptr, orientationMatrix);
+	for (auto& entity : entities) {
+		if (!predicate(*entity.get()))
+			continue;
+
+		const auto& boundSphere = entity->boundSphere();
+		Vector3 boundWorldCenter = Vector3::Transform(boundSphere.Center, entity->worldTransform());
+		Vector3 boundWorldEdge = Vector3::Transform(Vector3(boundSphere.Center) + Vector3(0, 0, boundSphere.Radius), entity->worldTransform());
+
+		// Bounds, in light view space (as defined above)
+		Vector3 boundCenter = Vector3::Transform(boundWorldCenter, orientationMatrixInv);
+		Vector3 boundEdge = Vector3::Transform(boundWorldEdge, orientationMatrixInv);
+		const XMVECTOR boundRadius = XMVector3Length(XMVectorSubtract(boundEdge, boundCenter));
+
+		if (firstExtentsCalc) {
+			minExtents = XMVectorSubtract(boundCenter, boundRadius);
+			maxExtents = XMVectorAdd(boundCenter, boundRadius);
+			firstExtentsCalc = false;
+		} 
+		else {
+			minExtents = XMVectorMin(minExtents, XMVectorSubtract(boundCenter, boundRadius));
+			maxExtents = XMVectorMax(maxExtents, XMVectorAdd(boundCenter, boundRadius));
+		}
+	}
+
+	const auto halfVector = XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f); // OPT: does the compiler optimize this?
+	const auto center = Vector3::Transform(XMVectorMultiply(XMVectorAdd(maxExtents, minExtents), halfVector), orientationMatrix);
+	const auto extents = XMVectorMultiply(XMVectorSubtract(maxExtents, minExtents), halfVector);
+	return BoundingOrientedBox(Vector3(center), Vector3(extents), orientation);
 }
 
 void Entity_render_manager::clearDepthStencil(float depth, uint8_t stencil) const
@@ -753,7 +778,7 @@ void Entity_render_manager::renderLights()
 				*rendererData,
 				std::get<g_entity_deferred_lights>(_renderPass_entityDeferred.renderPasses).blendMode(),
 				*_deferredLightMaterial_renderLightData,
-				_cameraData.worldMatrix,
+				Matrix::Identity,
 				_cameraData.viewMatrix,
 				_cameraData.projectionMatrix,
 				_deviceResources);

@@ -20,25 +20,6 @@ protected:
 	{
 		CoUninitialize();
 	}
-
-	std::unique_ptr<Mock_scene> createInitMockScene() const
-	{
-		auto mockScene = std::make_unique<Mock_scene>();
-		EXPECT_CALL(*mockScene->mockAssetManager, initialize());
-		EXPECT_CALL(*mockScene->mockAssetManager, shutdown());
-		EXPECT_CALL(*mockScene->mockEntityRenderManager, initialize());
-		EXPECT_CALL(*mockScene->mockEntityRenderManager, shutdown());
-		EXPECT_CALL(*mockScene->mockEntityScriptingManager, initialize());
-		EXPECT_CALL(*mockScene->mockEntityScriptingManager, shutdown());
-		EXPECT_CALL(*mockScene->mockInputManager, initialize());
-		EXPECT_CALL(*mockScene->mockInputManager, shutdown());
-		EXPECT_CALL(*mockScene->mockSceneGraphManager, initialize());
-		EXPECT_CALL(*mockScene->mockSceneGraphManager, shutdown());
-
-		mockScene->initialize();
-
-		return mockScene;
-	}
 	
 	const std::string PARENT_ENTITY_NAME = "PARENT";
 	const Entity::Id_type PARENT_ENTITY_ID = 1;
@@ -52,7 +33,7 @@ protected:
 
 TEST_F(Scene_graph_manager_tests, instantiateEntity) 
 {
-	auto mockScene = createInitMockScene();
+	auto mockScene = Mock_scene::createInit();
 	auto sceneGraphManager = std::make_shared<Scene_graph_manager>(*mockScene, mockScene->mockEntityRepository);
 	
 	{
@@ -74,7 +55,7 @@ TEST_F(Scene_graph_manager_tests, entityTransformFromParent)
 {
 	using namespace DirectX::SimpleMath;
 
-	auto mockScene = createInitMockScene();
+	auto mockScene = Mock_scene::createInit();
 	auto sceneGraphManager = std::make_shared<Scene_graph_manager>(*mockScene, mockScene->mockEntityRepository);
 
 	// Set up mocks

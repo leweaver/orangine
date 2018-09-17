@@ -18,6 +18,28 @@ namespace oe_test {
 	class Mock_scene : public oe::Scene {
 	public:
 
+		static std::unique_ptr<Mock_scene> createInit(bool expectCalls = true)
+		{
+			auto mockScene = std::make_unique<Mock_scene>();
+
+			if (expectCalls) {
+				EXPECT_CALL(*mockScene->mockAssetManager, initialize());
+				EXPECT_CALL(*mockScene->mockAssetManager, shutdown());
+				EXPECT_CALL(*mockScene->mockEntityRenderManager, initialize());
+				EXPECT_CALL(*mockScene->mockEntityRenderManager, shutdown());
+				EXPECT_CALL(*mockScene->mockEntityScriptingManager, initialize());
+				EXPECT_CALL(*mockScene->mockEntityScriptingManager, shutdown());
+				EXPECT_CALL(*mockScene->mockInputManager, initialize());
+				EXPECT_CALL(*mockScene->mockInputManager, shutdown());
+				EXPECT_CALL(*mockScene->mockSceneGraphManager, initialize());
+				EXPECT_CALL(*mockScene->mockSceneGraphManager, shutdown());
+			}
+
+			mockScene->initialize();
+
+			return mockScene;
+		}
+
 		Mock_scene()
 		{
 			mockSceneGraphManager = std::make_shared<Mock_scene_graph_manager>(*this);

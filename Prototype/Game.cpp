@@ -166,21 +166,19 @@ void Game::CreateLights()
 	lightRoot->setPosition({ 0, 0, 0 });
 	//createDirLight({ 0.5, 0, -1 }, { 1, 1, 1 }, 0.35)->SetParent(*lightRoot);
 	
-	if (true)
+	//if (true)
 	{
 		auto shadowLight = createDirLight({ 0.0f, -1.0f, 0.0f }, { 1, 1, 1 }, 2);
 		shadowLight->setParent(*lightRoot);
 		shadowLight->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
 
-		//createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 1 }, 2)->setParent(*lightRoot);
-		//createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 0.75)->setParent(*lightRoot);
-		
-		//auto shadowLight = createDirLight({ -1.0f, 0, 0 }, { 1, 1, 1 }, 2);
+	    createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 0 }, 2.75)->setParent(*lightRoot);
+		createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 4.0)->setParent(*lightRoot);
 	}
-	else
+	//else
 	{
-		createPointLight({ 10, 0, 10 }, { 1, 1, 1 }, 13)->setParent(*lightRoot);
-		createPointLight({ 10, 5, -10 }, { 1, 0, 1 }, 20)->setParent(*lightRoot);
+		createPointLight({ 10, 0, 10 }, { 1, 1, 1 }, 2*13)->setParent(*lightRoot);
+		createPointLight({ 10, 5, -10 }, { 1, 0, 1 }, 2*20)->setParent(*lightRoot);
 	}
 
 	//createAmbientLight({ 1, 1, 1 }, 0.2f)->setParent(*lightRoot);
@@ -215,8 +213,8 @@ void Game::CreateGeometricPrimitives()
 
 		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
 		material->setBaseColor(color);
-		material->setMetallicFactor(1.0f);
-		material->setRoughnessFactor(0.0f);
+		material->setMetallicFactor(0.5f);
+		material->setRoughnessFactor(0.5f);
 		
 		auto& renderable = child1->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));

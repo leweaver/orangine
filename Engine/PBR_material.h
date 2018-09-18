@@ -87,12 +87,12 @@ namespace oe {
 		 */
 		float roughnessFactor() const
 		{
-			return _metallic;
+			return _roughness;
 		}
 		 
-		void setRoughnessFactor(float metallic)
+		void setRoughnessFactor(float roughness)
 		{
-			_metallic = metallic;
+			_roughness = roughness;
 		}
 
 		const DirectX::SimpleMath::Color& emissiveFactor() const

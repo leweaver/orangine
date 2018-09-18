@@ -109,7 +109,7 @@ void Game::CreateCamera(bool animate)
 	auto &component = camera->addComponent<Camera_component>();
 	component.setFov(XMConvertToRadians(60.0f));
 	component.setFarPlane(20.0f);
-	component.setNearPlane(6.0f);
+	component.setNearPlane(0.5f);
 
 	camera->lookAt({ 0, 0, 0 }, Vector3::Up);
 
@@ -237,11 +237,12 @@ void Game::CreateGeometricPrimitives()
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 		renderable.setCastShadow(false);
 
-		const auto meshData = pmdf.createQuad({ 3, 3 });
+		const auto meshData = pmdf.createQuad({ 6, 6 });
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
 		child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
 		child2->setPosition({ 0.0f, 0.0f, 0.0f });
+		child2->setBoundSphere(BoundingSphere(Vector3::Zero, 0.01f));
 	}
 
 }

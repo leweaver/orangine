@@ -96,18 +96,30 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 
 		if (light.shadowMapIndex != -1) {
 			float4 shadowCoord = mul(float4(brdf.worldPosition, 1), light.shadowMapViewMatrix);
+			shadowCoord = float4(shadowCoord.xyz / shadowCoord.w, 1.0);
+
+			// Bring x,y from [-1, 1] to [0, 1]
+			// TODO: Why do we need to y-flip here?
+			shadowCoord = shadowCoord * float4(0.5, -0.5, 1, 1) + 0.5;
+
 			float shadowSample = shadowMapTextures[0].Sample(shadowMapSamplers[0], shadowCoord.rg).r;
 
-			// TODO: Scale shadowmap sample to near/far planes correctly?
-			float shadowNearPlane = 1.0f;
-			float shadowFarPlane = 4.0f;
+			// TODO: shadowmap max depth from light param
+			float shadowMaxDepth = 2.0f;
+			float bias = 0.5f;
 
-			//shadowSample = shadowSample * (shadowFarPlane - shadowNearPlane) + shadowNearPlane;
+			shadowSample = shadowSample * shadowMaxDepth + bias;
 			if (shadowCoord.z > shadowSample)
 				lightColor = float3(0, 0, 0);
 
-			if (brdf.baseColor.g > 0.95)
-				finalColor = float3(shadowSample, 0, 0);
+			if (brdf.baseColor.g > 0.1) {
+				//finalColor = float3(shadowSample, 0, 0);
+				//finalColor = float3(
+				//	shadowCoord.x > 0 && shadowCoord.x < 1 ? shadowCoord.x * 0.5 + 0.5 : 0,
+				//	shadowCoord.y > 0 && shadowCoord.y < 1 ? shadowCoord.y * 0.5 + 0.5 : 0,
+				//	0);
+				//finalColor = brdf.worldPosition;
+			}
 				
 			//finalColor = float4(mul(float3(0.1f, 0.1f, 0.0), g_invWorldViewProj).xyz * 3, 0);
 			//finalColor = g_invWorldViewProj._m00_m01_m02_m03;

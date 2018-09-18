@@ -110,12 +110,11 @@ namespace oe
 
 			// sizeof must be a multiple of 16 for the shader arrays to behave correctly
 			struct Light_entry {
-
 				Light_type type = Light_type::Directional;
 				DirectX::SimpleMath::Vector3 lightPositionDirection;
 				DirectX::SimpleMath::Vector3 intensifiedColor;
 				int32_t shadowMapIndex = SHADOW_MAP_DISABLED_INDEX;
-				DirectX::SimpleMath::Matrix shadowViewMatrix;
+				DirectX::SimpleMath::Matrix shadowViewProjMatrix;
 			};
 
 			Light_constants()

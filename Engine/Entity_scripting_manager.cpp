@@ -92,7 +92,7 @@ void Entity_scripting_manager::renderDebugSpheres() const
 	for (const auto entity : *_renderableEntityFilter) {
 		const auto& boundSphere = entity->boundSphere();
 		const auto xform = Matrix::CreateTranslation(boundSphere.Center) * entity->worldTransform();
-		renderManager.addDebugSphere(xform, boundSphere.Radius, Color(Colors::White));
+		renderManager.addDebugSphere(xform, boundSphere.Radius, Color(Colors::Gray));
 	}
 
 	const auto mainCameraEntity = _scene.mainCamera();

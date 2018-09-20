@@ -23,7 +23,6 @@ PS_OUTPUT EncodeOutput(
 	PS_OUTPUT output;
 
 	BRDFLightInputs brdf;
-	brdf.emissiveColor = emissive;
 	brdf.metallic = metallic;
 	brdf.roughness = roughness;
 	brdf.occlusion = occlusion;
@@ -52,8 +51,7 @@ PS_OUTPUT EncodeOutput(
 	}
 	
 	// Emitted light
-	brdf.lightType = LIGHT_TYPE_EMITTED;
-	finalColor += BRDFLight(brdf);
+	finalColor += emissive;
 	
 	// Pre-multiply the alpha
 	output.Color = float4(finalColor.rgb * baseColor.a, baseColor.a);

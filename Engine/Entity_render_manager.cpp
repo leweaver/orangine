@@ -156,7 +156,6 @@ void Entity_render_manager::shutdown()
 void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
 {	
 	auto device = _deviceResources.GetD3DDevice();
-	auto context = _deviceResources.GetD3DDeviceContext();
 	_commonStates = std::make_unique<CommonStates>(device);
 
 	// Shadow map step resources
@@ -196,7 +195,6 @@ void Entity_render_manager::createWindowSizeDependentResources(DX::DeviceResourc
 		renderTargets0.resize(g_max_render_target_views);
 		for (auto i = 0; i < renderTargets0.size(); ++i)
 		{
-
 			auto target = std::shared_ptr<Render_target_texture>(Render_target_texture::createDefaultRgb(width, height));
 			target->load(d3dDevice);
 			renderTargets0[i] = std::move(target);

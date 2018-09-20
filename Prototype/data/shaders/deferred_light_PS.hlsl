@@ -66,24 +66,26 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	float  depth = depthTexture.Sample(depthSampler,   input.vTexCoord0).r;
 
 	BRDFLightInputs brdf;
-	brdf.emissiveColor = color2.rgb;
 	brdf.metallic = color0.w;
 	brdf.roughness = color1.w;
 	brdf.occlusion = color2.a;
 	brdf.worldPosition = worldPosFromDepth(input.vTexCoord0);
 	brdf.worldNormal = color1.xyz * 2 - 1;
 	brdf.baseColor = color0.rgb;
+	float3 emissive = color2.rgb;
 
 #ifdef DEBUG_LIGHTING_ONLY
 	brdf.baseColor = float3(1, 1, 1);
 #endif
-		float3 worldPos = brdf.worldPosition;
 
 	// Vector from surface point to camera
 	brdf.eyeVectorW = normalize(g_eyePosition.xyz - brdf.worldPosition);
 
-	// Iterate over the lights
 	float3 finalColor = float3(0, 0, 0);
+	ShadowSampleInputs ssi;
+	ssi.worldPosition = brdf.worldPosition;
+
+	// Iterate over the lights
 	for (uint lightIdx = 0; lightIdx < g_lightCount; ++lightIdx)
 	{
 		Light light = g_lights[lightIdx];
@@ -91,47 +93,24 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 		brdf.lightType = light.type;
 		brdf.lightIntensifiedColor = light.intensifiedColor.rgb;
 		brdf.lightPosition = light.directionPosition;
-
+		
 		float3 lightColor = BRDFLight(brdf);
-
 		if (light.shadowMapIndex != -1) {
-			float4 shadowCoord = mul(float4(brdf.worldPosition, 1), light.shadowMapViewMatrix);
-			shadowCoord = float4(shadowCoord.xyz / shadowCoord.w, 1.0);
-
-			// Bring x,y from [-1, 1] to [0, 1]
-			// TODO: Why do we need to y-flip here?
-			shadowCoord = shadowCoord * float4(0.5, -0.5, 1, 1) + 0.5;
-
-			float shadowSample = shadowMapTextures[0].Sample(shadowMapSamplers[0], shadowCoord.rg).r;
-
-			// TODO: shadowmap max depth from light param
-			float shadowMaxDepth = 2.0f;
-			float bias = 0.5f;
-
-			shadowSample = shadowSample * shadowMaxDepth + bias;
-			if (shadowCoord.z > shadowSample)
-				lightColor = float3(0, 0, 0);
-
-			if (brdf.baseColor.g > 0.1) {
-				//finalColor = float3(shadowSample, 0, 0);
-				//finalColor = float3(
-				//	shadowCoord.x > 0 && shadowCoord.x < 1 ? shadowCoord.x * 0.5 + 0.5 : 0,
-				//	shadowCoord.y > 0 && shadowCoord.y < 1 ? shadowCoord.y * 0.5 + 0.5 : 0,
-				//	0);
-				//finalColor = brdf.worldPosition;
-			}
-				
-			//finalColor = float4(mul(float3(0.1f, 0.1f, 0.0), g_invWorldViewProj).xyz * 3, 0);
-			//finalColor = g_invWorldViewProj._m00_m01_m02_m03;
+			ssi.lightColor = lightColor;
+			ssi.shadowMapTexture = shadowMapTextures[0];
+			ssi.shadowMapSampler = shadowMapSamplers[0];
+			ssi.shadowMapViewMatrix = light.shadowMapViewMatrix;
+			finalColor += Shadow(ssi);
 		}
-
-		finalColor += lightColor;
+		else {
+			finalColor += lightColor;
+		}
 	}
 
+	// TODO: turn into an ifdef?
 	if (g_emittedEnabled)
 	{
-		brdf.lightType = LIGHT_TYPE_EMITTED;
-		finalColor += BRDFLight(brdf);
+		finalColor += emissive;
 	}
 
 #ifdef DEBUG_NO_LIGHTING

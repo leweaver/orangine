@@ -6,7 +6,6 @@
 #define LIGHT_TYPE_DIRECTIONAL 0
 #define LIGHT_TYPE_POINT 1
 #define LIGHT_TYPE_AMBIENT 2
-#define LIGHT_TYPE_EMITTED 3
 
 static const float3 g_dielectricSpecular = { 0.04, 0.04, 0.04 };
 static const float3 g_black = { 0, 0, 0 };
@@ -18,6 +17,31 @@ struct Light {
 	float3   directionPosition;
 	float3   intensifiedColor;
 	int      shadowMapIndex;
+	float4x4 shadowMapViewMatrix;
+};
+
+// Input to BRDF Lighting function
+struct BRDFLightInputs {
+	int lightType;
+	float3 lightIntensifiedColor;
+	float3 lightPosition;
+
+	float3 baseColor;
+	float metallic;
+	float roughness;
+	float occlusion;
+
+	float3 worldPosition;
+	float3 worldNormal;
+	float3 eyeVectorW;
+};
+
+struct ShadowSampleInputs {
+	float3 lightColor;
+	float3 worldPosition;
+	
+	Texture2D shadowMapTexture;
+	SamplerState shadowMapSampler;
 	float4x4 shadowMapViewMatrix;
 };
 
@@ -117,23 +141,8 @@ float3 BRDF(in float metallic, in float roughness, in float3 baseColor,
 }
 
 // -----------------------
-struct BRDFLightInputs {
-	int lightType;
-	float3 lightIntensifiedColor;
-	float3 lightPosition;
-
-	float3 baseColor;
-	float3 emissiveColor;
-	float metallic;
-	float roughness;
-	float occlusion;
-
-	float3 worldPosition;
-	float3 worldNormal;
-	float3 eyeVectorW;
-
-};
-float3 BRDFLight(BRDFLightInputs inputs) {
+float3 BRDFLight(BRDFLightInputs inputs) 
+{
 	// Vector from surface point to light
 	float3 lightVector;
 
@@ -141,10 +150,6 @@ float3 BRDFLight(BRDFLightInputs inputs) {
 	if (inputs.lightType == LIGHT_TYPE_AMBIENT)
 	{
 		finalColor = inputs.occlusion * inputs.lightIntensifiedColor * inputs.baseColor;
-	}
-	else if (inputs.lightType == LIGHT_TYPE_EMITTED)
-	{
-		finalColor = inputs.emissiveColor;
 	}
 	else
 	{
@@ -174,4 +179,25 @@ float3 BRDFLight(BRDFLightInputs inputs) {
 	}
 
 	return finalColor;
+}
+float3 Shadow(ShadowSampleInputs ssi)
+{
+	float4 shadowCoord = mul(float4(ssi.worldPosition, 1), ssi.shadowMapViewMatrix);
+	shadowCoord = float4(shadowCoord.xyz / shadowCoord.w, 1.0);
+
+	// Bring x,y from [-1, 1] to [0, 1]
+	// TODO: Why do we need to y-flip here?
+	shadowCoord = shadowCoord * float4(0.5, -0.5, 1, 1) + 0.5;
+
+	float shadowSample = ssi.shadowMapTexture.Sample(ssi.shadowMapSampler, shadowCoord.rg).r;
+
+	// TODO: shadowmap max depth from light param
+	float shadowMaxDepth = 2.0f;
+	float bias = 0.5f;
+
+	shadowSample = shadowSample * shadowMaxDepth + bias;
+	if (shadowCoord.z > shadowSample)
+		return float3(0, 0, 0);
+
+	return ssi.lightColor;
 }

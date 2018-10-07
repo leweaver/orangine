@@ -161,6 +161,9 @@
     <ClInclude Include="Shadow_map_texture.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Shadow_map_texture_pool.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Input_manager.cpp">
@@ -260,6 +263,9 @@
       <Filter>Common</Filter>
     </ClCompile>
     <ClCompile Include="Shadow_map_texture.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Shadow_map_texture_pool.cpp">
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
   </ItemGroup>

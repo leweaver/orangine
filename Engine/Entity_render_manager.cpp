@@ -7,6 +7,7 @@
 #include "Entity.h"
 #include "Entity_filter.h"
 #include "Scene.h"
+#include "Shadow_map_texture_pool.h"
 
 #include "Light_component.h"
 #include "Clear_gbuffer_material.h"
@@ -160,6 +161,8 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 
 	// Shadow map step resources
 	_renderPass_shadowMap.data = std::make_shared<decltype(_renderPass_shadowMap.data)::element_type>();
+	_renderPass_shadowMap.data->texturePool = std::make_unique<Shadow_map_texture_pool>(256, 8);
+	_renderPass_shadowMap.data->texturePool->createDeviceDependentResources(_deviceResources);
 		
 	// Deferred lighting step resources
 	_renderPass_entityDeferred.data = std::make_shared<decltype(_renderPass_entityDeferred.data)::element_type>();
@@ -246,7 +249,9 @@ void Entity_render_manager::destroyDeviceDependentResources()
 	}
 
 	_commonStates.reset();
-	
+
+	if (_renderPass_shadowMap.data && _renderPass_shadowMap.data->texturePool)
+		_renderPass_shadowMap.data->texturePool->destroyDeviceDependentResources();
 	_renderPass_shadowMap.data.reset();
 	_renderPass_entityDeferred.data.reset();
 	_renderPass_entityStandard.data.reset();
@@ -313,7 +318,7 @@ void Entity_render_manager::createRenderSteps()
 				auto shadowData = component->shadowData();
 				// If this is the first time rendering, initialize.
 				if (!shadowData) {
-					auto shadowMap = std::make_shared<Shadow_map_texture>(256, 256);
+					auto shadowMap = std::make_shared<Shadow_map_texture_basic>(256, 256);
 					shadowMap->load(_deviceResources.GetD3DDevice());
 					component->setShadowData(shadowMap);
 					shadowData = component->shadowData();
@@ -375,14 +380,7 @@ void Entity_render_manager::createRenderSteps()
 				context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 				Buffer_array_set bas;
 
-				auto viewport = CD3D11_VIEWPORT(
-					0.0f,
-					0.0f,
-					static_cast<float>(shadowData->width()),
-					static_cast<float>(shadowData->height())
-				);
-				context->RSSetViewports(1, &viewport);
-
+				context->RSSetViewports(1,  &shadowData->viewport());
 				const auto lightDataProvider = [this](const Entity&) {
 					_pbrMaterial_deferred_renderLightData->clear();
 					return _pbrMaterial_deferred_renderLightData.get();

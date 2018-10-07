@@ -6,3 +6,4 @@ AssetWorker/
 Prototype/data/meshes/
 *.TMP
 packages/
+*.user

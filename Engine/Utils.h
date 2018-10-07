@@ -20,6 +20,11 @@ namespace oe {
 
 	std::string hr_to_string(HRESULT hr);
 	std::wstring hr_to_wstring(HRESULT hr);
+
+	constexpr bool is_power_of_two(const uint32_t i)
+	{
+		return (i != 0u) && ((i - 1u) & i) == 0u;
+	}
 	
 	// Helper class for COM exceptions
 	class com_exception : public std::exception {

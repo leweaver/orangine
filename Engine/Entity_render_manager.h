@@ -27,6 +27,7 @@ namespace oe {
 	class Render_target_texture;
 	class Entity_alpha_sorter;
 	class Entity_cull_sorter;
+	class Shadow_map_texture_pool;
 
 	class IEntity_render_manager :
 		public Manager_base,
@@ -174,7 +175,7 @@ namespace oe {
 		
 		// RenderStep definitions
 		struct Render_step_shadowmap_data {
-
+			std::unique_ptr<Shadow_map_texture_pool> texturePool;
 		};
 		struct Render_step_deferred_data {
 			std::shared_ptr<Deferred_light_material> deferredLightMaterial;

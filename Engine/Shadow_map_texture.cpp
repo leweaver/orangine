@@ -5,13 +5,32 @@
 using namespace oe;
 using namespace Microsoft::WRL;
 
-Shadow_map_texture::Shadow_map_texture(uint32_t width, uint32_t height) 
-	: _width(width)
-	, _height(height)
-	, _depthStencilView({})
+Shadow_map_texture::Shadow_map_texture()
+	: _depthStencilView({})
 {}
 
-void Shadow_map_texture::load(ID3D11Device* device)
+Shadow_map_texture_basic::Shadow_map_texture_basic(uint32_t width, uint32_t height)
+	: Shadow_map_texture()
+	, _width(width)
+	, _height(height)
+{
+	_viewport = CD3D11_VIEWPORT(
+		0.0f,
+		0.0f,
+		static_cast<float>(width),
+		static_cast<float>(height)
+	);
+}
+
+Shadow_map_texture_array_slice::Shadow_map_texture_array_slice(const D3D11_VIEWPORT& viewport, uint32_t arraySlice,
+	Array_texture_source arrayTextureSource)
+	: Shadow_map_texture()
+	, _arrayTextureSource(arrayTextureSource)
+	, _arraySlice(arraySlice)
+{
+}
+
+void Shadow_map_texture_basic::load(ID3D11Device* device)
 {
 	// Initialize the render target texture description.
 	D3D11_TEXTURE2D_DESC textureDesc;
@@ -57,8 +76,43 @@ void Shadow_map_texture::load(ID3D11Device* device)
 		"Creating Shadow_map_texture shaderResourceView");
 }
 
-void Shadow_map_texture::unload()
+void Shadow_map_texture_basic::unload()
 {
 	_depthStencilView.Reset();
 	Texture::unload();
 }
+
+void Shadow_map_texture_array_slice::load(ID3D11Device* device)
+{
+	// Create the render target texture.
+	ComPtr<ID3D11Texture2D> shadowMapTexture = _arrayTextureSource();
+
+	// depth stencil resource view desc.
+	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+	depthStencilViewDesc.Flags = 0;
+	depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+	depthStencilViewDesc.Texture2DArray.ArraySize = 1;
+	depthStencilViewDesc.Texture2DArray.FirstArraySlice = _arraySlice;
+
+	ThrowIfFailed(device->CreateDepthStencilView(shadowMapTexture.Get(), &depthStencilViewDesc, &_depthStencilView),
+		"Creating Shadow_map_texture depthStencilView");
+
+	// shader resource view desc.
+	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
+	shaderResourceViewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	shaderResourceViewDesc.Texture2DArray.ArraySize = 1;
+	shaderResourceViewDesc.Texture2DArray.FirstArraySlice = _arraySlice;
+
+	// Create the shader resource view.
+	ThrowIfFailed(device->CreateShaderResourceView(shadowMapTexture.Get(), &shaderResourceViewDesc, &_shaderResourceView),
+		"Creating Shadow_map_texture shaderResourceView");
+}
+
+void Shadow_map_texture_array_slice::unload()
+{
+	_depthStencilView.Reset();
+	Texture::unload();
+}
+

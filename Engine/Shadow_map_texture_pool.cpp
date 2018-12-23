@@ -51,6 +51,8 @@ void Shadow_map_texture_pool::createDeviceDependentResources(DX::DeviceResources
 	shaderResourceViewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
 	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
 	shaderResourceViewDesc.Texture2DArray.ArraySize = 1;
+	shaderResourceViewDesc.Texture2DArray.MipLevels = 1;
+	shaderResourceViewDesc.Texture2DArray.MostDetailedMip = 0;
 	shaderResourceViewDesc.Texture2DArray.FirstArraySlice = D3D11CalcSubresource(0, 0, 1);
 	ThrowIfFailed(device->CreateShaderResourceView(_shadowMapArrayTexture.Get(), &shaderResourceViewDesc, &_shaderResourceView),
 		"Creating Shadow_map_texture_pool shaderResourceView");

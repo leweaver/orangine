@@ -93,6 +93,7 @@ void Shadow_map_texture_array_slice::load(ID3D11Device* device)
 	depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
 	depthStencilViewDesc.Texture2DArray.ArraySize = 1;
+	depthStencilViewDesc.Texture2DArray.MipSlice = 0;
 	depthStencilViewDesc.Texture2DArray.FirstArraySlice = D3D11CalcSubresource(0, _arraySlice, 1);
 
 	ThrowIfFailed(device->CreateDepthStencilView(shadowMapTexture.first, &depthStencilViewDesc, &_depthStencilView),

@@ -137,7 +137,7 @@ void Deferred_light_material::setContextSamplers(const DX::DeviceResources& devi
 			_color1Texture->getShaderResourceView(),
 			_color2Texture->getShaderResourceView(),
 			_depthTexture->getShaderResourceView(),
-			_shadowMapTexture->getShaderResourceView()
+			_shadowMapTexture ? _shadowMapTexture->getShaderResourceView() : nullptr
 		};
 
 		// Set shader texture resource in the pixel shader.

@@ -108,7 +108,7 @@ void Entity_scripting_manager::renderDebugSpheres() const
 	for (const auto entity : *_lightEntityFilter) {
 		const auto directionalLight = entity->getFirstComponentOfType<Directional_light_component>();
 		if (directionalLight && directionalLight->shadowsEnabled()) {
-			const auto shadowData = directionalLight->shadowData();
+			const auto& shadowData = directionalLight->shadowData();
 			if (shadowData) {
 				renderManager.addDebugBoundingBox(shadowData->casterVolume(), directionalLight->color());
 			}

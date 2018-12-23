@@ -11,14 +11,16 @@ namespace oe
 
 		Deferred_light_material() = default;
 
-		const std::shared_ptr<Texture>& getColor0Texture() const { return _color0Texture; }
+		const std::shared_ptr<Texture>& color0Texture() const { return _color0Texture; }
 		void setColor0Texture(const std::shared_ptr<Texture>& texture) { _color0Texture = texture; }
-		const std::shared_ptr<Texture>& getColor1Texture() const { return _color1Texture; }
+		const std::shared_ptr<Texture>& color1Texture() const { return _color1Texture; }
 		void setColor1Texture(const std::shared_ptr<Texture>& texture) { _color1Texture = texture; }
-		const std::shared_ptr<Texture>& getColor2Texture() const { return _color2Texture; }
+		const std::shared_ptr<Texture>& color2Texture() const { return _color2Texture; }
 		void setColor2Texture(const std::shared_ptr<Texture>& texture) { _color2Texture = texture; }
-		const std::shared_ptr<Texture>& getDepthTexture() const { return _depthTexture; }
+		const std::shared_ptr<Texture>& depthTexture() const { return _depthTexture; }
 		void setDepthTexture(const std::shared_ptr<Texture>& texture) { _depthTexture = texture; }
+		const std::shared_ptr<Texture>& shadowMapTexture() const { return _shadowMapTexture; }
+		void setShadowMapTexture(const std::shared_ptr<Texture>& texture) { _shadowMapTexture = texture; }
 
 		void vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const override;
 
@@ -50,8 +52,7 @@ namespace oe
 			ID3D11Buffer* buffer) override;
 
 		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
-		bool shaderResourcesRequireRecreate(const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
-
+		
 		void setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData) override;
 		void unsetContextSamplers(const DX::DeviceResources& deviceResources) override;
 
@@ -60,6 +61,7 @@ namespace oe
 		std::shared_ptr<Texture> _color1Texture;
 		std::shared_ptr<Texture> _color2Texture;
 		std::shared_ptr<Texture> _depthTexture;
+		std::shared_ptr<Texture> _shadowMapTexture;
 
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _color0SamplerState;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _color1SamplerState;

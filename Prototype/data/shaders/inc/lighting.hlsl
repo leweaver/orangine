@@ -39,10 +39,13 @@ struct BRDFLightInputs {
 struct ShadowSampleInputs {
 	float3 lightColor;
 	float3 worldPosition;
-	
-	Texture2D shadowMapTexture;
-	SamplerState shadowMapSampler;
+	//TODO:
+	//float2 viewportTopLeft;
+	//float2 viewportSize;
+	float  shadowMapArrayIndex;
 	float4x4 shadowMapViewMatrix;
+	Texture2DArray shadowMapTexture;
+	SamplerState shadowMapSampler;
 };
 
 //--------------------------------------------------------------------------------------
@@ -183,13 +186,13 @@ float3 BRDFLight(BRDFLightInputs inputs)
 float3 Shadow(ShadowSampleInputs ssi)
 {
 	float4 shadowCoord = mul(float4(ssi.worldPosition, 1), ssi.shadowMapViewMatrix);
-	shadowCoord = float4(shadowCoord.xyz / shadowCoord.w, 1.0);
+	shadowCoord = float4(shadowCoord.xy / shadowCoord.w, ssi.shadowMapArrayIndex, 1.0);
 
 	// Bring x,y from [-1, 1] to [0, 1]
 	// TODO: Why do we need to y-flip here?
-	shadowCoord = shadowCoord * float4(0.5, -0.5, 1, 1) + 0.5;
+	shadowCoord = shadowCoord * float4(0.5, -0.5, 1, 1) + float4(0.5, 0.5, 0, 0);
 
-	float shadowSample = ssi.shadowMapTexture.Sample(ssi.shadowMapSampler, shadowCoord.rg).r;
+	float shadowSample = ssi.shadowMapTexture.Sample(ssi.shadowMapSampler, shadowCoord.rgb).r;
 
 	// TODO: shadowmap max depth from light param
 	float shadowMaxDepth = 2.0f;

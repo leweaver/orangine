@@ -47,8 +47,8 @@ Texture2D depthTexture : register(t3);
 SamplerState depthSampler : register(s3);
 
 // Shadowmaps
-Texture2D shadowMapTextures[8];
-SamplerState shadowMapSamplers[8];
+Texture2DArray shadowMapTexture;
+SamplerState shadowMapSampler;
 
 // Forward declarations
 float3 worldPosFromDepth(float2 texCoord);
@@ -97,8 +97,9 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 		float3 lightColor = BRDFLight(brdf);
 		if (light.shadowMapIndex != -1) {
 			ssi.lightColor = lightColor;
-			ssi.shadowMapTexture = shadowMapTextures[0];
-			ssi.shadowMapSampler = shadowMapSamplers[0];
+			ssi.shadowMapTexture = shadowMapTexture;
+			ssi.shadowMapSampler = shadowMapSampler;
+			ssi.shadowMapArrayIndex = light.shadowMapIndex;
 			ssi.shadowMapViewMatrix = light.shadowMapViewMatrix;
 			finalColor += Shadow(ssi);
 		}

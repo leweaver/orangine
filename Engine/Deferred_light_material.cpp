@@ -3,12 +3,17 @@
 #include "Render_pass_info.h"
 #include "Render_light_data.h"
 
+#include <array>
+
 using namespace oe;
 using namespace std::literals;
 using namespace DirectX;
 using namespace SimpleMath;
 
-constexpr auto g_mrt_sampler_count = 4;
+const auto g_mrt_sampler_count = 5;
+
+const std::array<ID3D11ShaderResourceView*, g_mrt_sampler_count> g_nullShaderResourceViews = { nullptr, nullptr, nullptr, nullptr, nullptr };
+const std::array<ID3D11SamplerState*, g_mrt_sampler_count> g_nullSamplerStates = { nullptr, nullptr, nullptr, nullptr, nullptr };
 
 void Deferred_light_material::vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const
 {
@@ -18,13 +23,6 @@ void Deferred_light_material::vertexAttributes(std::vector<Vertex_attribute>& ve
 void Deferred_light_material::createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode)
 {
 	assert(blendMode == Render_pass_blend_mode::Additive);
-	_shadowMapCount = static_cast<int32_t>(renderLightData.shadowMapShaderResourceViews().size());
-}
-
-bool Deferred_light_material::shaderResourcesRequireRecreate(const Render_light_data& renderLightData, Render_pass_blend_mode blendMode)
-{
-	// If the number of shadow-maps differs from the last time this material was used, it needs a recompilation.
-	return renderLightData.shadowMapShaderResourceViews().size() != _shadowMapCount;
 }
 
 UINT Deferred_light_material::inputSlot(Vertex_attribute attribute)
@@ -118,69 +116,41 @@ void Deferred_light_material::setContextSamplers(const DX::DeviceResources& devi
 	
 	auto validSamplers = true;
 	if (!_color0SamplerState)
-		validSamplers &= ensureSamplerState(deviceResources, *_color0Texture.get(), _color0SamplerState.ReleaseAndGetAddressOf());
+		validSamplers &= ensureSamplerState(deviceResources, *_color0Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, &_color0SamplerState);
 
 	if (!_color1SamplerState)
-		validSamplers &= ensureSamplerState(deviceResources, *_color1Texture.get(), _color1SamplerState.ReleaseAndGetAddressOf());
+		validSamplers &= ensureSamplerState(deviceResources, *_color1Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, &_color1SamplerState);
 
 	if (!_color2SamplerState)
-		validSamplers &= ensureSamplerState(deviceResources, *_color2Texture.get(), _color2SamplerState.ReleaseAndGetAddressOf());
+		validSamplers &= ensureSamplerState(deviceResources, *_color2Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, &_color2SamplerState);
 
 	if (!_depthSamplerState)
-		validSamplers &= ensureSamplerState(deviceResources, *_depthTexture.get(), _depthSamplerState.ReleaseAndGetAddressOf());
+		validSamplers &= ensureSamplerState(deviceResources, *_depthTexture.get(), D3D11_TEXTURE_ADDRESS_WRAP, &_depthSamplerState);
+	
+	if (_shadowMapTexture && !_shadowMapSamplerState)
+		validSamplers &= ensureSamplerState(deviceResources, *_shadowMapTexture.get(), D3D11_TEXTURE_ADDRESS_CLAMP, &_shadowMapSamplerState);
 
 	if (validSamplers)
 	{
-		ID3D11ShaderResourceView* shaderResourceViews[] = {
+		std::array<ID3D11ShaderResourceView*, g_mrt_sampler_count> shaderResourceViews = {
 			_color0Texture->getShaderResourceView(),
 			_color1Texture->getShaderResourceView(),
 			_color2Texture->getShaderResourceView(),
-			_depthTexture->getShaderResourceView()
+			_depthTexture->getShaderResourceView(),
+			_shadowMapTexture->getShaderResourceView()
 		};
-		// Set shader texture resource in the pixel shader.
-		context->PSSetShaderResources(0, g_mrt_sampler_count, shaderResourceViews);
 
-		ID3D11SamplerState* samplerStates[] = {
+		// Set shader texture resource in the pixel shader.
+		context->PSSetShaderResources(0, g_mrt_sampler_count, shaderResourceViews.data());
+
+		std::array<ID3D11SamplerState*, g_mrt_sampler_count> samplerStates = {
 			_color0SamplerState.Get(),
 			_color1SamplerState.Get(),
 			_color2SamplerState.Get(),
 			_depthSamplerState.Get(),
+			_shadowMapSamplerState.Get()
 		};
-		context->PSSetSamplers(0, g_mrt_sampler_count, samplerStates);
-	}
-
-	const auto shadowMapSRVs = renderLightData.shadowMapShaderResourceViews();
-	if (shadowMapSRVs.size()) {
-		assert(shadowMapSRVs.size() == _shadowMapCount);
-
-		// Set shadow-map shader texture resource in the pixel shader.
-		context->PSSetShaderResources(g_mrt_sampler_count, static_cast<uint32_t>(shadowMapSRVs.size()), shadowMapSRVs.data());
-
-		// Sampler states
-		if (_shadowMapSamplerState == nullptr) {
-			D3D11_SAMPLER_DESC samplerDesc;
-			// Create a texture sampler state description.
-			samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-			samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-			samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-			samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-			samplerDesc.MipLODBias = 0.0f;
-			samplerDesc.MaxAnisotropy = 1;
-			samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-			samplerDesc.BorderColor[0] = 0;
-			samplerDesc.BorderColor[1] = 0;
-			samplerDesc.BorderColor[2] = 0;
-			samplerDesc.BorderColor[3] = 0;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-			// Create the texture sampler state.
-			ThrowIfFailed(device->CreateSamplerState(&samplerDesc, &_shadowMapSamplerState));
-		}
-
-		std::vector<ID3D11SamplerState*> shadowMapSamplerStates;
-		shadowMapSamplerStates.resize(_shadowMapCount, _shadowMapSamplerState.Get());
-		context->PSSetSamplers(g_mrt_sampler_count, _shadowMapCount, shadowMapSamplerStates.data());
+		context->PSSetSamplers(0, g_mrt_sampler_count, samplerStates.data());
 	}
 }
 
@@ -188,12 +158,6 @@ void Deferred_light_material::unsetContextSamplers(const DX::DeviceResources& de
 {
 	auto context = deviceResources.GetD3DDeviceContext();
 
-	// TODO: Heap allocation here is not pretty.
-	std::vector<ID3D11ShaderResourceView*> shaderResourceViews;
-	shaderResourceViews.resize(g_mrt_sampler_count + _shadowMapCount);
-	context->PSSetShaderResources(0, static_cast<uint32_t>(shaderResourceViews.size()), shaderResourceViews.data());
-
-	std::vector<ID3D11SamplerState*> samplerStates;
-	samplerStates.resize(g_mrt_sampler_count + _shadowMapCount);
-	context->PSSetSamplers(0, static_cast<uint32_t>(shaderResourceViews.size()), samplerStates.data());
+	context->PSSetShaderResources(0, g_mrt_sampler_count, g_nullShaderResourceViews.data());
+	context->PSSetSamplers(0, g_mrt_sampler_count, g_nullSamplerStates.data());
 }

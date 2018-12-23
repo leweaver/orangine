@@ -46,8 +46,22 @@ void Shadow_map_texture_pool::createDeviceDependentResources(DX::DeviceResources
 	ThrowIfFailed(device->CreateTexture2D(&textureDesc, nullptr, &_shadowMapArrayTexture),
 		"Creating Shadow_map_texture_pool texture2D array");
 
+	// Shader resource view for the array texture, which is shared by all of the slices.
+	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
+	shaderResourceViewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	shaderResourceViewDesc.Texture2DArray.ArraySize = 1;
+	shaderResourceViewDesc.Texture2DArray.FirstArraySlice = D3D11CalcSubresource(0, 0, 1);
+	ThrowIfFailed(device->CreateShaderResourceView(_shadowMapArrayTexture.Get(), &shaderResourceViewDesc, &_shaderResourceView),
+		"Creating Shadow_map_texture_pool shaderResourceView");
+
 	// Create the shadow maps
-	auto arrayTextureRetriever = [this]() { return _shadowMapArrayTexture.Get(); };
+	auto arrayTextureRetriever = [this]() {
+		return Shadow_map_texture_array_slice::Array_texture {
+			_shadowMapArrayTexture.Get(),
+			_shaderResourceView.Get()
+		};
+	};
 	D3D11_VIEWPORT viewport = CD3D11_VIEWPORT(
 		0.0f,
 		0.0f,
@@ -67,6 +81,7 @@ void Shadow_map_texture_pool::destroyDeviceDependentResources()
 		throw std::logic_error("Must return all borrowed textures prior to a call to destroyDeviceDependentResources");
 
 	_shadowMaps.resize(0);
+	_shaderResourceView.Reset();
 	_shadowMapArrayTexture.Reset();
 }
 
@@ -82,7 +97,7 @@ Shadow_map_texture_pool::borrowTexture()
 	return shadowMap;
 }
 
-void Shadow_map_texture_pool::returnTexture(std::unique_ptr<Shadow_map_texture_array_slice> shadowMap)
+void Shadow_map_texture_pool::returnTexture(std::unique_ptr<Shadow_map_texture> shadowMap)
 {
 	Microsoft::WRL::ComPtr<ID3D11Resource> resource;
 	shadowMap->getShaderResourceView()->GetResource(&resource);
@@ -93,5 +108,9 @@ void Shadow_map_texture_pool::returnTexture(std::unique_ptr<Shadow_map_texture_a
 	if (texture2d.Get() != _shadowMapArrayTexture.Get())
 		throw std::logic_error("Attempt to return a shadowMapTexture that doesn't belong to this pool!");
 
-	_shadowMaps.push_back(move(shadowMap));
+	auto arraySliceTexture = dynamic_cast<Shadow_map_texture_array_slice*>(shadowMap.get());
+	assert(arraySliceTexture != nullptr);
+
+	shadowMap.release();
+	_shadowMaps.push_back(std::unique_ptr<Shadow_map_texture_array_slice>(arraySliceTexture));
 }

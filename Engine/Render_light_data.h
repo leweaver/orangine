@@ -6,12 +6,10 @@ namespace oe
 {
 	class Render_light_data {
 	public:
-		ID3D11Buffer* buffer() const { return _constantBuffer.Get(); }		
-		std::vector<ID3D11ShaderResourceView*> shadowMapShaderResourceViews() const { return _shadowMapSRVs; };
+		ID3D11Buffer* buffer() const { return _constantBuffer.Get(); }
 
 	protected:
 		Microsoft::WRL::ComPtr<ID3D11Buffer> _constantBuffer;
-		std::vector<ID3D11ShaderResourceView*> _shadowMapSRVs;
 	};
 
 	template<uint8_t TMax_lights>
@@ -45,8 +43,6 @@ namespace oe
 			DX::ThrowIfFailed(device->CreateBuffer(&bufferDesc, &initData, &_constantBuffer));
 
 			DirectX::SetDebugObjectName(_constantBuffer.Get(), L"Render_light_data constant buffer");
-
-			_shadowMapSRVs.reserve(TMax_lights);
 		}
 
 		bool addPointLight(const DirectX::SimpleMath::Vector3& lightPosition, const DirectX::SimpleMath::Color& color, float intensity)
@@ -57,20 +53,17 @@ namespace oe
 		{
 			return _lightConstants.addLight({ Light_type::Directional, lightDirection, encodeColor(color, intensity), Light_constants::SHADOW_MAP_DISABLED_INDEX });
 		}
-		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, const DirectX::SimpleMath::Color& color, float intensity, const Shadow_map_texture& shadowMapTexture)
+		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, const DirectX::SimpleMath::Color& color, float intensity, const Shadow_map_texture_array_slice& shadowMapTexture)
 		{
 			typename Light_constants::Light_entry lightEntry = { 
 				Light_type::Directional, 
 				lightDirection, 
-				encodeColor(color, intensity), 
-				static_cast<int32_t>(_shadowMapSRVs.size()),
+				encodeColor(color, intensity),
+				static_cast<int32_t>(shadowMapTexture.arraySlice()),
 				XMMatrixTranspose(shadowMapTexture.worldViewProjMatrix())
 			};
 
 			if (_lightConstants.addLight(std::move(lightEntry))) {
-				auto shadowMap = shadowMapTexture.getShaderResourceView();
-				_shadowMapSRVs.push_back(shadowMap);
-				shadowMap->AddRef();
 				return true;
 			}
 			return false;
@@ -86,11 +79,6 @@ namespace oe
 		void clear()
 		{
 			_lightConstants.clear();
-			for (const auto shadowMap : _shadowMapSRVs) {
-				if (shadowMap)
-					shadowMap->Release();
-			}
-			_shadowMapSRVs.clear();
 		}
 		bool empty() const
 		{

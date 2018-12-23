@@ -27,13 +27,14 @@ namespace oe {
 
 		// once a texture has been returned to the pool, no more can be borrowed until
 		// all have been returned back to the pool.
-		void returnTexture(std::unique_ptr<Shadow_map_texture_array_slice> shadowMap);
+		void returnTexture(std::unique_ptr<Shadow_map_texture> shadowMap);
 
 	protected:
 		const uint32_t _dimension;
 		const uint32_t _textureArraySize;
 
 		Microsoft::WRL::ComPtr<ID3D11Texture2D> _shadowMapArrayTexture;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _shaderResourceView;
 
 		std::vector<std::unique_ptr<Shadow_map_texture_array_slice>> _shadowMaps;
 	};

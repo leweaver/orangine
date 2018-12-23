@@ -4,6 +4,10 @@ I prefer to use bash shell for git commands. (the ubuntu shell within windows, o
 ## OS & Visual Studio Version
 You must have Windows 10 (RS4 or later), with Visual Studio 2017 15.7.5, or later (Windows SDK 10.0.17134.0 or later)
 
+Install plugins:
+
+- [ReSharper.AutoFormatOnSave.vsix](https://marketplace.visualstudio.com/items?itemName=PedroPombeiro.ReSharperAutoFormatOnSave)
+
 ## Get the code & dependencies from GIT
 1. Install ssh keypair to your system (run `ssh-keygen`), and load the public key to your github account
 1. Clone the repository.

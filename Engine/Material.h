@@ -100,7 +100,10 @@ namespace oe {
 		virtual void setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData) {}
 		virtual void unsetContextSamplers(const DX::DeviceResources& deviceResources) {}
 
-		bool ensureSamplerState(const DX::DeviceResources& deviceResources, Texture& texture, ID3D11SamplerState** d3D11SamplerState);
+		bool ensureSamplerState(const DX::DeviceResources& deviceResources, 
+			Texture& texture, 
+			D3D11_TEXTURE_ADDRESS_MODE textureAddressMode, 
+			ID3D11SamplerState** d3D11SamplerState);
 
 	private:
 		ID3D11VertexShader* _vertexShader;

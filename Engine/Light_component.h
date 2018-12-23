@@ -27,11 +27,10 @@ namespace oe {
 		void setIntensity(float intensity) { _intensity = intensity; }
 
 		// Runtime, non-serializable
-		std::shared_ptr<Shadow_map_texture> shadowData() { return _shadowData; }
-		void setShadowData(std::shared_ptr<Shadow_map_texture> shadowData) { _shadowData = std::move(shadowData); }
+		std::unique_ptr<Shadow_map_texture>& shadowData() { return _shadowData; }
 
 	private:
-		std::shared_ptr<Shadow_map_texture> _shadowData;
+		std::unique_ptr<Shadow_map_texture> _shadowData;
 
 	};
 

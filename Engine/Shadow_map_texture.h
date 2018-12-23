@@ -43,7 +43,9 @@ namespace oe {
 
 	class Shadow_map_texture_array_slice : public Shadow_map_texture {
 	public:
-		typedef std::function<ID3D11Texture2D*()> Array_texture_source;
+		typedef std::pair<ID3D11Texture2D*, ID3D11ShaderResourceView*> Array_texture;
+		typedef std::function<Array_texture()> Array_texture_source;
+
 		Shadow_map_texture_array_slice(const D3D11_VIEWPORT& viewport, uint32_t arraySlice, Array_texture_source arrayTextureSource);
 
 		void load(ID3D11Device* device) override;

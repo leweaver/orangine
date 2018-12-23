@@ -244,7 +244,10 @@ void Entity_render_manager::destroyDeviceDependentResources()
 		// Directional light only, right now
 		const auto component = lightEntity->getFirstComponentOfType<Directional_light_component>();
 		if (component && component->shadowsEnabled()) {
-			component->setShadowData(nullptr);
+			if (component->shadowData() && _renderPass_shadowMap.data && _renderPass_shadowMap.data->texturePool)
+				_renderPass_shadowMap.data->texturePool->returnTexture(move(component->shadowData()));
+			else
+				assert(!component->shadowData());
 		}
 	}
 
@@ -285,11 +288,15 @@ bool addLightToRenderLightData(const Entity& lightEntity, Render_light_data_impl
 	if (directionalLight)
 	{
 		const auto lightDirection = Vector3::Transform(Vector3::Forward, lightEntity.worldRotation());
-		const Shadow_map_texture* shadowData = directionalLight->shadowData().get();
-		if (shadowData == nullptr) {
-			return renderLightData.addDirectionalLight(lightDirection, directionalLight->color(), directionalLight->intensity());
+		auto shadowData = dynamic_cast<Shadow_map_texture_array_slice*>(directionalLight->shadowData().get());
+
+		if (shadowData != nullptr) {
+			return renderLightData.addDirectionalLight(lightDirection, directionalLight->color(),
+				directionalLight->intensity(), *shadowData);
+		} else if (directionalLight->shadowData().get() != nullptr) {
+			throw std::logic_error("Directional lights only support texture array shadow maps.");
 		}
-		return renderLightData.addDirectionalLight(lightDirection, directionalLight->color(), directionalLight->intensity(), *shadowData);
+		return renderLightData.addDirectionalLight(lightDirection, directionalLight->color(), directionalLight->intensity());
 	}
 
 	const auto pointLight = lightEntity.getFirstComponentOfType<Point_light_component>();
@@ -315,13 +322,15 @@ void Entity_render_manager::createRenderSteps()
 			const auto component = lightEntity->getFirstComponentOfType<Directional_light_component>();
 			if (component && component->shadowsEnabled()) {
 
-				auto shadowData = component->shadowData();
-				// If this is the first time rendering, initialize.
+				Shadow_map_texture* shadowData = component->shadowData().get();
+
+				// If this is the first time rendering, initialize a new shadowmap.
 				if (!shadowData) {
-					auto shadowMap = std::make_shared<Shadow_map_texture_basic>(256, 256);
+					auto shadowMap = _renderPass_shadowMap.data->texturePool->borrowTexture();
 					shadowMap->load(_deviceResources.GetD3DDevice());
-					component->setShadowData(shadowMap);
-					shadowData = component->shadowData();
+
+					shadowData = shadowMap.get();
+					component->shadowData() = std::move(shadowMap);
 				}
 
 				// Iterate over the shadow *receivers* and build an orthographic frustum from that.

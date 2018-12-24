@@ -31,7 +31,7 @@ void Shadow_map_texture_pool::createDeviceDependentResources(DX::DeviceResources
 	textureDesc.Height = _dimension;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = _textureArraySize;
-	textureDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	textureDesc.Format = DXGI_FORMAT_R24G8_TYPELESS; 
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
 	textureDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -53,7 +53,7 @@ void Shadow_map_texture_pool::createDeviceDependentResources(DX::DeviceResources
 	shaderResourceViewDesc.Texture2DArray.ArraySize = 1;
 	shaderResourceViewDesc.Texture2DArray.MipLevels = 1;
 	shaderResourceViewDesc.Texture2DArray.MostDetailedMip = 0;
-	shaderResourceViewDesc.Texture2DArray.FirstArraySlice = D3D11CalcSubresource(0, 0, 1);
+	shaderResourceViewDesc.Texture2DArray.FirstArraySlice = 0;
 	ThrowIfFailed(device->CreateShaderResourceView(_shadowMapArrayTexture.Get(), &shaderResourceViewDesc, &_shaderResourceView),
 		"Creating Shadow_map_texture_pool shaderResourceView");
 
@@ -72,7 +72,7 @@ void Shadow_map_texture_pool::createDeviceDependentResources(DX::DeviceResources
 	);
 
 	for (uint32_t slice = 0; slice < _textureArraySize; ++slice) {
-		auto shadowMap = std::make_unique<Shadow_map_texture_array_slice>(viewport, slice, arrayTextureRetriever);
+		auto shadowMap = std::make_unique<Shadow_map_texture_array_slice>(viewport, _textureArraySize - slice - 1, arrayTextureRetriever);
 		_shadowMaps.push_back(move(shadowMap));
 	}
 }

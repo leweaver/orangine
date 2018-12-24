@@ -31,11 +31,17 @@ namespace oe {
 		virtual void vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const;
 		bool requiresRecompile() const { return _requiresRecompile; }
 
+		// Should be called prior to deletion - releases all resources.
 		void release();
 
-		// Binds material textures and buffers
+		// Compiles (if needed), binds pixel and vertex shaders, and textures
+		bool bind(const Render_pass_blend_mode blendMode,
+			const Render_light_data& renderLightData,
+			const DX::DeviceResources& deviceResources);
+
+
+		// Uploads shader constants, then renders
 		bool render(const Renderer_data& rendererData,
-			const Render_pass_blend_mode blendMode,
 			const Render_light_data& renderLightData, 
 			const DirectX::SimpleMath::Matrix& worldMatrix,
 			const DirectX::SimpleMath::Matrix& viewMatrix,

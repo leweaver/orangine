@@ -386,7 +386,7 @@ void Entity_render_manager::createRenderSteps()
 					nullptr
 				};
 				context->OMSetRenderTargets(static_cast<UINT>(renderTargetViews.size()), renderTargetViews.data(), depthStencilView);
-				context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+				context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 				Buffer_array_set bas;
 
 				context->RSSetViewports(1,  &shadowData->viewport());
@@ -517,6 +517,11 @@ void Entity_render_manager::createRenderSteps()
 
 	std::get<0>(_renderPass_debugElements.renderPasses).render = [this]() {
 		auto unlitMaterial = _renderPass_debugElements.data->_unlitMaterial;
+
+		unlitMaterial->bind(Render_pass_blend_mode::Opaque,
+			*_unlitMaterial_renderLightData,
+			_deviceResources);
+
 		Buffer_array_set bufferArraySet;
 		for (const auto& debugShape : _renderPass_debugElements.data->_debugShapes) {
 			const auto& transform = std::get<0>(debugShape);
@@ -535,6 +540,8 @@ void Entity_render_manager::createRenderSteps()
 				true,
 				bufferArraySet);
 		}
+
+		unlitMaterial->unbind(_deviceResources);
 	};
 }
 
@@ -781,7 +788,6 @@ void Entity_render_manager::renderLights()
 			_deferredLightMaterial_renderLightData->updateBuffer(context);
 			const auto renderSuccess = quad.material->render(
 				*rendererData,
-				std::get<g_entity_deferred_lights>(_renderPass_entityDeferred.renderPasses).blendMode(),
 				*_deferredLightMaterial_renderLightData,
 				Matrix::Identity,
 				_cameraData.viewMatrix,
@@ -799,6 +805,12 @@ void Entity_render_manager::renderLights()
 		deferredLightMaterial->setupEmitted(true);
 		auto renderedEmitted = false;
 
+		deferredLightMaterial->bind(
+			std::get<g_entity_deferred_lights>(_renderPass_entityDeferred.renderPasses).blendMode(),
+			*_deferredLightMaterial_renderLightData,
+			_deviceResources
+		);
+
 		// Render directional, point, ambient
 		for (auto eIter = _lightEntities->begin(); eIter != _lightEntities->end(); ++eIter)
 		{
@@ -815,7 +827,7 @@ void Entity_render_manager::renderLights()
 			renderLight();
 
 		// Unbind material
-		quad.material->unbind(_deviceResources);
+		deferredLightMaterial->unbind(_deviceResources);
 	}
 	catch (const std::runtime_error& e)
 	{
@@ -875,19 +887,23 @@ void Entity_render_manager::drawRendererData(
 	if (rendererData.vertexBuffers.empty())
 		return;
 
-	const auto deviceContext = _deviceResources.GetD3DDeviceContext();
+	const auto context = _deviceResources.GetD3DDeviceContext();
 	loadRendererDataToDeviceContext(rendererData, bufferArraySet);
 	
 	// Set the rasteriser state
 	if (wireFrame)
-		deviceContext->RSSetState(_commonStates->Wireframe());
+		context->RSSetState(_commonStates->Wireframe());
 	else
-		deviceContext->RSSetState(_commonStates->CullClockwise());
+		context->RSSetState(_commonStates->CullClockwise());
 
 	// Render the triangles
-	material.render(rendererData, blendMode, renderLightData, 
+	material.bind(blendMode, renderLightData, _deviceResources);
+
+	material.render(rendererData, renderLightData, 
 		worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, 
 		_deviceResources);
+
+	material.unbind(_deviceResources);
 }
 
 

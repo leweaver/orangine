@@ -224,17 +224,12 @@ bool Material::createPixelShader(ID3D11Device* device)
 	return true;
 }
 
-bool Material::render(const Renderer_data& rendererData,
-	const Render_pass_blend_mode blendMode,
+bool Material::bind(const Render_pass_blend_mode blendMode,
 	const Render_light_data& renderLightData,
-	const Matrix& worldMatrix, 
-	const Matrix& viewMatrix, 
-	const Matrix& projMatrix, 
 	const DX::DeviceResources& deviceResources)
 {
 	const auto device = deviceResources.GetD3DDevice();
-	auto context = deviceResources.GetD3DDeviceContext();
-	
+
 	if (_requiresRecompile) {
 		LOG(INFO) << "Recompiling shaders for material";
 
@@ -244,7 +239,7 @@ bool Material::render(const Renderer_data& rendererData,
 		_errorState = true;
 		{
 			createShaderResources(deviceResources, renderLightData, blendMode);
-			
+
 			if (!createVertexShader(device))
 				return false;
 
@@ -272,9 +267,23 @@ bool Material::render(const Renderer_data& rendererData,
 		return false;
 
 	// We have a valid shader
+	auto context = deviceResources.GetD3DDeviceContext();
 	context->IASetInputLayout(_inputLayout);
 	context->VSSetShader(_vertexShader, nullptr, 0);
 	context->PSSetShader(_pixelShader, nullptr, 0);
+
+	// Set texture samples
+	setContextSamplers(deviceResources, renderLightData);
+}
+
+bool Material::render(const Renderer_data& rendererData,
+	const Render_light_data& renderLightData,
+	const Matrix& worldMatrix, 
+	const Matrix& viewMatrix, 
+	const Matrix& projMatrix, 
+	const DX::DeviceResources& deviceResources)
+{
+	auto context = deviceResources.GetD3DDeviceContext();
 
 	// Update constant buffers
 	if (_vsConstantBuffer != nullptr) {
@@ -286,9 +295,6 @@ bool Material::render(const Renderer_data& rendererData,
 	}
 	ID3D11Buffer* psConstantBuffers[] = { _psConstantBuffer.Get(), renderLightData.buffer() };
 	context->PSSetConstantBuffers(0, 2, psConstantBuffers);
-
-	// Set texture samples
-	setContextSamplers(deviceResources, renderLightData);
 	
 	// Render the triangles
 	if (rendererData.indexBufferAccessor != nullptr)
@@ -300,15 +306,17 @@ bool Material::render(const Renderer_data& rendererData,
 		context->Draw(rendererData.vertexCount, rendererData.vertexCount);
 	}
 
-	// Clean up our mess
-	unsetContextSamplers(deviceResources);
-
 	return true;
 }
 
 void Material::unbind(const DX::DeviceResources& deviceResources)
 {
+	auto context = deviceResources.GetD3DDeviceContext();
 	unsetContextSamplers(deviceResources);
+
+	context->IASetInputLayout(nullptr);
+	context->VSSetShader(nullptr, nullptr, 0);
+	context->PSSetShader(nullptr, nullptr, 0);
 }
 
 std::string Material::createShaderError(HRESULT hr, ID3D10Blob* errorMessage, const Shader_compile_settings& compileSettings)

@@ -185,8 +185,8 @@ float3 BRDFLight(BRDFLightInputs inputs)
 }
 float3 Shadow(ShadowSampleInputs ssi)
 {
-	float4 shadowCoord = mul(float4(ssi.worldPosition, 1), ssi.shadowMapViewMatrix);
-	shadowCoord = float4(shadowCoord.xy / shadowCoord.w, ssi.shadowMapArrayIndex, 1.0);
+	float4 shadowMapPosition = mul(float4(ssi.worldPosition, 1), ssi.shadowMapViewMatrix);
+	float3 shadowCoord = float4(shadowMapPosition.xy / shadowMapPosition.w, ssi.shadowMapArrayIndex, 1.0);
 
 	// Bring x,y from [-1, 1] to [0, 1]
 	// TODO: Why do we need to y-flip here?
@@ -195,11 +195,11 @@ float3 Shadow(ShadowSampleInputs ssi)
 	float shadowSample = ssi.shadowMapTexture.Sample(ssi.shadowMapSampler, shadowCoord.rgb).r;
 
 	// TODO: shadowmap max depth from light param
-	float shadowMaxDepth = 2.0f;
+	float shadowMaxDepth = 1.0f;
 	float bias = 0.5f;
 
 	shadowSample = shadowSample * shadowMaxDepth + bias;
-	if (shadowCoord.z > shadowSample)
+	if (shadowMapPosition.z > shadowSample)
 		return float3(0, 0, 0);
 
 	return ssi.lightColor;

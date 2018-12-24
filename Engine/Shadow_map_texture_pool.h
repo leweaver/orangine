@@ -29,12 +29,15 @@ namespace oe {
 		// all have been returned back to the pool.
 		void returnTexture(std::unique_ptr<Shadow_map_texture> shadowMap);
 
+		// Return a shader resource view that can be used when sampling the shadow map
+		std::shared_ptr<Texture> shadowMapTextureArray() { return _shadowMapArrayTexture; };
+
 	protected:
 		const uint32_t _dimension;
 		const uint32_t _textureArraySize;
 
-		Microsoft::WRL::ComPtr<ID3D11Texture2D> _shadowMapArrayTexture;
-		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _shaderResourceView;
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> _shadowMapArrayTexture2D;
+		std::shared_ptr<Texture> _shadowMapArrayTexture;
 
 		std::vector<std::unique_ptr<Shadow_map_texture_array_slice>> _shadowMaps;
 	};

@@ -224,7 +224,7 @@ bool Material::createPixelShader(ID3D11Device* device)
 	return true;
 }
 
-bool Material::bind(const Render_pass_blend_mode blendMode,
+void Material::bind(const Render_pass_blend_mode blendMode,
 	const Render_light_data& renderLightData,
 	const DX::DeviceResources& deviceResources)
 {
@@ -241,16 +241,16 @@ bool Material::bind(const Render_pass_blend_mode blendMode,
 			createShaderResources(deviceResources, renderLightData, blendMode);
 
 			if (!createVertexShader(device))
-				return false;
+				throw std::runtime_error("Failed to create vertex shader");
 
 			if (!createVSConstantBuffer(device, *_vsConstantBuffer.ReleaseAndGetAddressOf()))
-				return false;
+				throw std::runtime_error("Failed to create vertex shader constant buffer");
 
 			if (!createPixelShader(device))
-				return false;
+				throw std::runtime_error("Failed to create pixel shader");
 
 			if (!createPSConstantBuffer(device, *_psConstantBuffer.ReleaseAndGetAddressOf()))
-				return false;
+				throw std::runtime_error("Failed to create pixel shader constant buffer");
 		}
 		_errorState = false;
 	}
@@ -262,9 +262,6 @@ bool Material::bind(const Render_pass_blend_mode blendMode,
 		}
 		_errorState = false;
 	}
-
-	if (_errorState)
-		return false;
 
 	// We have a valid shader
 	auto context = deviceResources.GetD3DDeviceContext();

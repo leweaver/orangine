@@ -17,7 +17,7 @@ namespace oe {
 		const D3D11_VIEWPORT& viewport() const { return _viewport; }
 		
 	protected:
-		Shadow_map_texture();
+		explicit Shadow_map_texture(const D3D11_VIEWPORT& viewport);
 
 		D3D11_VIEWPORT _viewport;
 		
@@ -43,7 +43,12 @@ namespace oe {
 
 	class Shadow_map_texture_array_slice : public Shadow_map_texture {
 	public:
-		typedef std::pair<ID3D11Texture2D*, ID3D11ShaderResourceView*> Array_texture;
+		struct Array_texture {
+			ID3D11Texture2D* texture;
+			ID3D11ShaderResourceView* srv;
+			uint32_t arraySize;
+		} ;
+
 		typedef std::function<Array_texture()> Array_texture_source;
 
 		Shadow_map_texture_array_slice(const D3D11_VIEWPORT& viewport, uint32_t arraySlice, Array_texture_source arrayTextureSource);

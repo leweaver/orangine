@@ -212,6 +212,7 @@ void Entity_render_manager::createWindowSizeDependentResources(DX::DeviceResourc
 		deferredLightMaterial->setColor1Texture(renderTargets0.at(1));
 		deferredLightMaterial->setColor2Texture(renderTargets0.at(2));
 		deferredLightMaterial->setDepthTexture(_depthTexture);
+		deferredLightMaterial->setShadowMapTexture(_renderPass_shadowMap.data->texturePool->shadowMapTextureArray());
 
 		// Give the render targets to the render pass
 		std::get<0>(_renderPass_entityDeferred.renderPasses).setRenderTargets(std::vector<std::shared_ptr<Render_target_view_texture>>(renderTargets0));
@@ -417,7 +418,7 @@ void Entity_render_manager::createRenderSteps()
 		auto renderPass = std::get<0>(_renderPass_entityDeferred.renderPasses);
 
 		// Clear the rendered textures (ignoring depth)
-		_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step0_draw");
+		_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step0");
 		const auto& quad = _renderPass_entityDeferred.data->pass0ScreenSpaceQuad;
 		if (quad.rendererData && quad.material) {
 			const auto identity = XMMatrixIdentity();
@@ -447,7 +448,7 @@ void Entity_render_manager::createRenderSteps()
 		auto renderPass = std::get<1>(_renderPass_entityDeferred.renderPasses);
 
 		if (_enableDeferredRendering) {
-			_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step1_draw");
+			_deviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step1");
 			const auto lightDataProvider = [this](const Entity&) { return _pbrMaterial_deferred_renderLightData.get(); };
 
 			_cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
@@ -779,14 +780,22 @@ void Entity_render_manager::renderLights()
 		const auto& quad = _renderPass_entityDeferred.data->pass2ScreenSpaceQuad;
 		const auto rendererData = quad.rendererData.get();
 		const auto deferredLightMaterial = _renderPass_entityDeferred.data->deferredLightMaterial;
+		assert(deferredLightMaterial == quad.material);
 
 		if (!rendererData || !rendererData->vertexCount)
 			return;
 
 		const auto renderLight = [&]() {
+			
 			++_renderStats.opaqueLightCount;
 			_deferredLightMaterial_renderLightData->updateBuffer(context);
-			const auto renderSuccess = quad.material->render(
+
+			deferredLightMaterial->bind(
+				std::get<g_entity_deferred_lights>(_renderPass_entityDeferred.renderPasses).blendMode(),
+				*_deferredLightMaterial_renderLightData,
+				_deviceResources
+			);
+			const auto renderSuccess = deferredLightMaterial->render(
 				*rendererData,
 				*_deferredLightMaterial_renderLightData,
 				Matrix::Identity,
@@ -797,6 +806,9 @@ void Entity_render_manager::renderLights()
 				throw std::runtime_error("Failed to render deferred light");
 
 			_deferredLightMaterial_renderLightData->clear();
+
+			// Unbind material
+			deferredLightMaterial->unbind(_deviceResources);
 		};
 
 		loadRendererDataToDeviceContext(*rendererData, bufferArraySet);
@@ -804,12 +816,6 @@ void Entity_render_manager::renderLights()
 		// Render emitted light sources once only.
 		deferredLightMaterial->setupEmitted(true);
 		auto renderedEmitted = false;
-
-		deferredLightMaterial->bind(
-			std::get<g_entity_deferred_lights>(_renderPass_entityDeferred.renderPasses).blendMode(),
-			*_deferredLightMaterial_renderLightData,
-			_deviceResources
-		);
 
 		// Render directional, point, ambient
 		for (auto eIter = _lightEntities->begin(); eIter != _lightEntities->end(); ++eIter)
@@ -825,9 +831,6 @@ void Entity_render_manager::renderLights()
 
 		if (!_deferredLightMaterial_renderLightData->empty() || !renderedEmitted)
 			renderLight();
-
-		// Unbind material
-		deferredLightMaterial->unbind(_deviceResources);
 	}
 	catch (const std::runtime_error& e)
 	{

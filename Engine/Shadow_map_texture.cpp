@@ -5,26 +5,26 @@
 using namespace oe;
 using namespace Microsoft::WRL;
 
-Shadow_map_texture::Shadow_map_texture()
+Shadow_map_texture::Shadow_map_texture(const D3D11_VIEWPORT& viewport)
 	: _depthStencilView({})
+	, _viewport(viewport)
 {}
 
 Shadow_map_texture_basic::Shadow_map_texture_basic(uint32_t width, uint32_t height)
-	: Shadow_map_texture()
-	, _width(width)
-	, _height(height)
-{
-	_viewport = CD3D11_VIEWPORT(
+	: Shadow_map_texture(CD3D11_VIEWPORT(
 		0.0f,
 		0.0f,
 		static_cast<float>(width),
 		static_cast<float>(height)
-	);
+	))
+	, _width(width)
+	, _height(height)
+{
 }
 
 Shadow_map_texture_array_slice::Shadow_map_texture_array_slice(const D3D11_VIEWPORT& viewport, uint32_t arraySlice,
 	Array_texture_source arrayTextureSource)
-	: Shadow_map_texture()
+	: Shadow_map_texture(viewport)
 	, _arrayTextureSource(arrayTextureSource)
 	, _arraySlice(arraySlice)
 {
@@ -91,16 +91,16 @@ void Shadow_map_texture_array_slice::load(ID3D11Device* device)
 	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
 	depthStencilViewDesc.Flags = 0;
 	depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+	depthStencilViewDesc.ViewDimension = shadowMapTexture.arraySize == 1 ? D3D11_DSV_DIMENSION_TEXTURE2D : D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
 	depthStencilViewDesc.Texture2DArray.ArraySize = 1;
 	depthStencilViewDesc.Texture2DArray.MipSlice = 0;
 	depthStencilViewDesc.Texture2DArray.FirstArraySlice = _arraySlice;
 
-	ThrowIfFailed(device->CreateDepthStencilView(shadowMapTexture.first, &depthStencilViewDesc, &_depthStencilView),
+	ThrowIfFailed(device->CreateDepthStencilView(shadowMapTexture.texture, &depthStencilViewDesc, &_depthStencilView),
 		"Creating Shadow_map_texture depthStencilView");
 
 	// Should use a shader resource view from the array texture, not the slice. Make sure that the caller assigned one.
-	_shaderResourceView = shadowMapTexture.second;
+	_shaderResourceView = shadowMapTexture.srv;
 }
 
 void Shadow_map_texture_array_slice::unload()

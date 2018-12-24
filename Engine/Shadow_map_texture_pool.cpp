@@ -3,6 +3,18 @@
 
 using namespace oe;
 
+class Shadow_map_texture_array_texture : public Texture {
+public:
+	Shadow_map_texture_array_texture(ID3D11ShaderResourceView* srv)
+	{
+		_shaderResourceView = srv;
+	}
+
+	virtual void load(ID3D11Device* device)
+	{
+	}
+};
+
 Shadow_map_texture_pool::Shadow_map_texture_pool(uint32_t maxDimension, uint32_t textureArraySize)
 	: _dimension(maxDimension)
 	, _textureArraySize(textureArraySize)
@@ -12,7 +24,7 @@ Shadow_map_texture_pool::Shadow_map_texture_pool(uint32_t maxDimension, uint32_t
 
 Shadow_map_texture_pool::~Shadow_map_texture_pool()
 {
-	if (_shadowMapArrayTexture) {
+	if (_shadowMapArrayTexture2D) {
 		LOG(WARNING) << "Shadow_map_texture_pool: Should call destroyDeviceDependentResources prior to object deletion";
 		destroyDeviceDependentResources();
 	}
@@ -43,25 +55,29 @@ void Shadow_map_texture_pool::createDeviceDependentResources(DX::DeviceResources
 	LOG(INFO) << "Creating Shadow_map_texture_pool texture2D array with ArraySize=" << _textureArraySize <<
 		", Width/Height=" << _dimension;
 
-	ThrowIfFailed(device->CreateTexture2D(&textureDesc, nullptr, &_shadowMapArrayTexture),
+	ThrowIfFailed(device->CreateTexture2D(&textureDesc, nullptr, &_shadowMapArrayTexture2D),
 		"Creating Shadow_map_texture_pool texture2D array");
 
 	// Shader resource view for the array texture, which is shared by all of the slices.
 	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
 	shaderResourceViewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+	shaderResourceViewDesc.ViewDimension = _textureArraySize == 1 ? D3D11_SRV_DIMENSION_TEXTURE2D : D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
 	shaderResourceViewDesc.Texture2DArray.ArraySize = 1;
 	shaderResourceViewDesc.Texture2DArray.MipLevels = 1;
 	shaderResourceViewDesc.Texture2DArray.MostDetailedMip = 0;
 	shaderResourceViewDesc.Texture2DArray.FirstArraySlice = 0;
-	ThrowIfFailed(device->CreateShaderResourceView(_shadowMapArrayTexture.Get(), &shaderResourceViewDesc, &_shaderResourceView),
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderResourceView;
+	ThrowIfFailed(device->CreateShaderResourceView(_shadowMapArrayTexture2D.Get(), &shaderResourceViewDesc, &shaderResourceView),
 		"Creating Shadow_map_texture_pool shaderResourceView");
 
 	// Create the shadow maps
-	auto arrayTextureRetriever = [this]() {
+	_shadowMapArrayTexture = std::make_shared<Shadow_map_texture_array_texture>(shaderResourceView.Get());
+	auto arrayTextureRetriever = [this, shaderResourceView]() {
 		return Shadow_map_texture_array_slice::Array_texture {
-			_shadowMapArrayTexture.Get(),
-			_shaderResourceView.Get()
+			_shadowMapArrayTexture2D.Get(),
+			shaderResourceView.Get(),
+			_textureArraySize
 		};
 	};
 	D3D11_VIEWPORT viewport = CD3D11_VIEWPORT(
@@ -83,8 +99,9 @@ void Shadow_map_texture_pool::destroyDeviceDependentResources()
 		throw std::logic_error("Must return all borrowed textures prior to a call to destroyDeviceDependentResources");
 
 	_shadowMaps.resize(0);
-	_shaderResourceView.Reset();
-	_shadowMapArrayTexture.Reset();
+	_shadowMapArrayTexture->unload();
+	_shadowMapArrayTexture.reset();
+	_shadowMapArrayTexture2D.Reset();
 }
 
 std::unique_ptr<Shadow_map_texture_array_slice>
@@ -107,7 +124,7 @@ void Shadow_map_texture_pool::returnTexture(std::unique_ptr<Shadow_map_texture> 
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> texture2d;
 	ThrowIfFailed(resource.As<ID3D11Texture2D>(&texture2d));
 
-	if (texture2d.Get() != _shadowMapArrayTexture.Get())
+	if (texture2d.Get() != _shadowMapArrayTexture2D.Get())
 		throw std::logic_error("Attempt to return a shadowMapTexture that doesn't belong to this pool!");
 
 	auto arraySliceTexture = dynamic_cast<Shadow_map_texture_array_slice*>(shadowMap.get());

@@ -22,6 +22,9 @@ namespace oe {
 		};
 
 	public:
+
+		static constexpr uint32_t max_lights = 8;
+
 		PBR_material();
 
 		PBR_material(const PBR_material& other) = delete;
@@ -175,6 +178,7 @@ namespace oe {
 		}
 
 		void vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const override;
+		Material_light_mode lightMode() override { return Material_light_mode::Lit; }
 
 	protected:
 		

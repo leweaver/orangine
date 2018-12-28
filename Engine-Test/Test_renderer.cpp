@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 
 #include "../Engine/Entity_render_manager.h"
+#include "../Engine/Mesh_utils.h"
+
 #include "Mock_scene.h"
 #include "Fake_entity_filter.h"
 
@@ -61,7 +63,7 @@ void testAABBForEntities(const Vector3& normal, const Vector3& expectedCenter, c
 	const std::vector<std::shared_ptr<Entity>> entities = { e1, e2 };
 	const auto filter = oe_test::Fake_entity_filter(entities);
 
-	const auto aabb = Entity_render_manager::aabbForEntities(filter, quatFromNormal(normal));
+	const auto aabb = mesh_utils::aabbForEntities(filter, quatFromNormal(normal), [](const Entity&) {return true; });
 
 	EXPECT_NEAR(aabb.Center.x, expectedCenter.x, 1e-6f);
 	EXPECT_NEAR(aabb.Center.y, expectedCenter.y, 1e-6f);

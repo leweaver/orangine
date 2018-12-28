@@ -19,11 +19,6 @@ Scene_graph_manager::Scene_graph_manager(Scene& scene, std::shared_ptr<IEntity_r
 {
 }
 
-Scene_graph_manager::~Scene_graph_manager()
-{
-	_rootEntities.clear();
-}
-
 void Scene_graph_manager::initialize()
 {
 	assert(_rootEntities.empty());

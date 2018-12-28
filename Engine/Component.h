@@ -12,10 +12,8 @@ namespace oe {
 	public:
 		using Component_type = unsigned int;
 
-	private:
-		static Component_type _maxComponentId;
+		Component(std::shared_ptr<Entity> entity) : _entity(entity) { assert(entity); }
 
-	public:
 		/** Returns a new, unique component id */
 		static Component_type createComponentTypeId();
 
@@ -23,9 +21,12 @@ namespace oe {
 		virtual ~Component() = default;
 
 		virtual Component_type getType() const = 0;
-
+		std::shared_ptr<Entity> entity() const { return _entity; }
+		
+	private:
+		static Component_type _maxComponentId;
+		std::shared_ptr<Entity> _entity;
 	};
-
 }
 
 #define DECLARE_COMPONENT_TYPE \

@@ -12,8 +12,9 @@ namespace oe
 
 	public:
 
-		Renderable_component()
-			: _visible(true)
+		Renderable_component(std::shared_ptr<Entity> entity)
+			: Component(entity)
+			, _visible(true)
 			, _wireframe(false)
 			, _castShadow(true)
 			, _rendererData(nullptr)

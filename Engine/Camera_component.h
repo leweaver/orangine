@@ -7,6 +7,11 @@ namespace oe {
 		DECLARE_COMPONENT_TYPE;
 	public:
 
+		Camera_component(std::shared_ptr<Entity> entity)
+			: Component(entity)
+			, _fov(DirectX::XMConvertToRadians(60.f))
+		{}
+
 		// Field of view, in radians
 		float fov() const { return _fov; }
 		void setFov(float fov) { _fov = fov; }
@@ -18,7 +23,7 @@ namespace oe {
 		void setFarPlane(float farPlane) { _farPlane = farPlane; }
 
 	private:
-		float _fov = DirectX::XMConvertToRadians(60.f);
+		float _fov;
 		float _nearPlane = 0.1f;
 		float _farPlane = 1000.f;
 	};

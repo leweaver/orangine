@@ -160,8 +160,10 @@
     <ClInclude Include="Clear_gbuffer_material.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="Component.h" />
+    <ClInclude Include="D3D_resources_manager.h" />
     <ClInclude Include="Deferred_light_material.h" />
     <ClInclude Include="DeviceResources.h" />
+    <ClInclude Include="Dev_tools_manager.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="Entity_filter.h" />
     <ClInclude Include="Entity_graph_loader.h" />
@@ -172,6 +174,7 @@
     <ClInclude Include="Entity_sorter.h" />
     <ClInclude Include="Input_manager.h" />
     <ClInclude Include="Light_component.h" />
+    <ClInclude Include="Light_provider.h" />
     <ClInclude Include="Manager_base.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Material_repository.h" />
@@ -182,12 +185,18 @@
     <ClInclude Include="PBR_material.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Primitive_mesh_data_factory.h" />
+    <ClInclude Include="Renderable.h" />
     <ClInclude Include="Renderable_component.h" />
     <ClInclude Include="Renderer_data.h" />
     <ClInclude Include="Renderer_enum.h" />
+    <ClInclude Include="Render_pass.h" />
+    <ClInclude Include="Render_pass_generic.h" />
+    <ClInclude Include="Render_pass_shadow.h" />
+    <ClInclude Include="Render_step_manager.h" />
+    <ClInclude Include="Shadowmap_manager.h" />
     <ClInclude Include="Shadow_map_texture.h" />
     <ClInclude Include="Render_light_data.h" />
-    <ClInclude Include="Render_pass_info.h" />
+    <ClInclude Include="Render_pass_config.h" />
     <ClInclude Include="Render_target_texture.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Scene_graph_manager.h" />
@@ -208,8 +217,10 @@
       <FileType>Document</FileType>
     </ClInclude>
     <ClCompile Include="Component.cpp" />
+    <ClCompile Include="D3D_resources_manager.cpp" />
     <ClCompile Include="Deferred_light_material.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
+    <ClCompile Include="Dev_tools_manager.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="Entity_graph_loader_gltf.cpp" />
     <ClCompile Include="Entity_render_manager.cpp" />
@@ -218,6 +229,7 @@
     <ClCompile Include="Entity_sorter.cpp" />
     <ClCompile Include="Input_manager.cpp" />
     <ClCompile Include="Light_component.cpp" />
+    <ClCompile Include="Light_provider.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Material_repository.cpp" />
     <ClCompile Include="Mesh_data.cpp" />
@@ -234,9 +246,13 @@
     <ClCompile Include="Primitive_mesh_data_factory.cpp" />
     <ClCompile Include="Renderable_component.cpp" />
     <ClCompile Include="Renderer_data.cpp" />
+    <ClCompile Include="Render_pass.cpp" />
+    <ClCompile Include="Render_pass_shadow.cpp" />
+    <ClCompile Include="Render_step_manager.cpp" />
     <ClCompile Include="Render_target_texture.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Scene_graph_manager.cpp" />
+    <ClCompile Include="Shadowmap_manager.cpp" />
     <ClCompile Include="Shadow_map_texture.cpp" />
     <ClCompile Include="Shadow_map_texture_pool.cpp" />
     <ClCompile Include="Test_component.cpp" />

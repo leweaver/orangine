@@ -164,15 +164,17 @@ void Game::CreateLights()
 
 	const auto &lightRoot = entityManager.instantiate("Light Root");
 	lightRoot->setPosition({ 0, 0, 0 });
-	//createDirLight({ 0.5, 0, -1 }, { 1, 1, 1 }, 0.35)->SetParent(*lightRoot);
 	
 	//if (true)
 	{
-		auto shadowLight = createDirLight({ 0.0f, -1.0f, 0.0f }, { 1, 1, 1 }, 2);
-		shadowLight->setParent(*lightRoot);
-		shadowLight->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
+		auto shadowLight1 = createDirLight({ 0.0f, -1.0f, 0.0f }, { 1, 1, 1 }, 2);
+		shadowLight1->setParent(*lightRoot);
+		shadowLight1->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
 
-	    createDirLight({ -0.707, 0, -0.707 }, { 1, 1, 0 }, 2.75)->setParent(*lightRoot);
+		auto shadowLight2 = createDirLight({ -0.707, -0.707, -0.707 }, { 1, 1, 0 }, 2.75);
+		shadowLight2->setParent(*lightRoot);
+		shadowLight2->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
+
 		createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 4.0)->setParent(*lightRoot);
 	}
 	//else
@@ -331,10 +333,12 @@ void Game::Render()
     // TODO: Add your rendering code here.
 	//const auto mouseState = m_scene->manager<IInput_manager>().mouseState().lock();
 	//if (IInput_manager::Mouse_state::Button_state::RELEASED == mouseState->right) {
-		m_scene->manager<IEntity_render_manager>().render();
+	if (m_scene->mainCamera()) {
+		m_scene->manager<IRender_step_manager>().render(m_scene->mainCamera());
 
 		// Show the new frame.
 		m_deviceResources->Present();
+	}
 	//}
 }
 #pragma endregion

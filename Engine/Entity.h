@@ -102,7 +102,7 @@ namespace oe {
 		* If this Entity has no parent, this equals the local transform matrix.
 		* Otherwise, this is localTransform * parent.worldTransform.
 		*/
-		// TODO: This is still a LH MAtrix... :(
+		// TODO: This is still a LH Matrix...? :(
 		const DirectX::SimpleMath::Matrix& worldTransform() const { return _worldTransform; }
 
 		const DirectX::SimpleMath::Vector3& worldScale() const;
@@ -110,6 +110,9 @@ namespace oe {
 		const DirectX::SimpleMath::Quaternion& worldRotation() const;
 		
 	private:
+
+		std::shared_ptr<Entity> verifyEntityPtr() const;
+
 		// TODO: Refactor into a public & private interface, so that friend isn't required.
 		friend class Entity_repository;
 		friend class Scene_graph_manager;
@@ -178,7 +181,7 @@ namespace oe {
 	template <typename TComponent>
 	TComponent& Entity::addComponent()
 	{
-		TComponent* component = new TComponent();
+		TComponent* component = new TComponent(verifyEntityPtr());
 		_components.push_back(std::unique_ptr<Component>(component));
 
 		this->onComponentAdded(*component);

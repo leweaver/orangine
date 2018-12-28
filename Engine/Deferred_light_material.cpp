@@ -1,6 +1,6 @@
 ﻿#include "pch.h"
 #include "Deferred_light_material.h"
-#include "Render_pass_info.h"
+#include "Render_pass_config.h"
 #include "Render_light_data.h"
 
 #include <array>

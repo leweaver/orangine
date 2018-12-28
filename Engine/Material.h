@@ -57,6 +57,8 @@ namespace oe {
 			markRequiresRecomplie();
 		}
 
+		virtual Material_light_mode lightMode() { return Material_light_mode::Unlit; }
+
 	protected:
 
 		struct Shader_compile_settings {

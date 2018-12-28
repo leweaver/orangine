@@ -29,6 +29,9 @@
     <Filter Include="Systems\Assets">
       <UniqueIdentifier>{1cf5a102-973a-476f-b4a4-8c37c8a71e3b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Systems\Renderer\Render_pass">
+      <UniqueIdentifier>{8376ce84-ba13-48c2-838a-e65f0f5e9a7b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Input_manager.h">
@@ -106,9 +109,6 @@
     <ClInclude Include="Render_target_texture.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Render_pass_info.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="Render_light_data.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
@@ -162,6 +162,36 @@
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Shadow_map_texture_pool.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Render_pass_config.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Render_pass.h">
+      <Filter>Systems\Renderer\Render_pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Render_pass_generic.h">
+      <Filter>Systems\Renderer\Render_pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Render_pass_shadow.h">
+      <Filter>Systems\Renderer\Render_pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Shadowmap_manager.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Render_step_manager.h">
+      <Filter>Systems\Renderer\Render_pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderable.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D_resources_manager.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Dev_tools_manager.h">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Light_provider.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
@@ -266,6 +296,27 @@
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Shadow_map_texture_pool.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Render_pass.cpp">
+      <Filter>Systems\Renderer\Render_pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Render_pass_shadow.cpp">
+      <Filter>Systems\Renderer\Render_pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Shadowmap_manager.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Render_step_manager.cpp">
+      <Filter>Systems\Renderer\Render_pass</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D_resources_manager.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Dev_tools_manager.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Light_provider.cpp">
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
   </ItemGroup>

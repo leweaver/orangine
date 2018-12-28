@@ -29,7 +29,11 @@ template <class TVertex_type>
 std::shared_ptr<Mesh_data> createMeshData(std::vector<TVertex_type>&& vertices, std::vector<uint16_t>&& indices)
 {
 	// Unsupported vertex type
+
+	// ReSharper disable once CppStaticAssertFailure
 	static_assert(false);
+
+	return nullptr;
 }
 
 template <>
@@ -120,12 +124,12 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNor
 	return meshData;
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2 &size) const
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2 &size)
 {
 	return createQuad(size, Vector3(-size.x * 0.5f, -size.y * 0.5f, 0.0f));
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2 &size, const Vector3 &positionOffset) const
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2 &size, const Vector3 &positionOffset)
 {
 	const auto 
 		top    = positionOffset.y + size.y,
@@ -148,7 +152,7 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2
 	return md;
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createSphere(float radius, size_t tessellation, bool invertNormals) const
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createSphere(float radius, size_t tessellation, bool invertNormals)
 {
 	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
 	std::vector<uint16_t> indices;
@@ -161,7 +165,7 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createSphere(float radiu
 	return md;
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createBox(const Vector3& size) const
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createBox(const Vector3& size)
 {
 	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
 	std::vector<uint16_t> indices;
@@ -174,7 +178,7 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createBox(const Vector3&
 	return md;
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createTeapot(size_t tessellation) const
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createTeapot(size_t tessellation)
 {
 	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
 	std::vector<uint16_t> indices;
@@ -218,7 +222,7 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createFrustumLines(const
 void Primitive_mesh_data_factory::generateNormals(
 	const Mesh_index_buffer_accessor &indexBufferAccessor, 
 	const Mesh_vertex_buffer_accessor &positionBufferAccessor,
-	Mesh_vertex_buffer_accessor &normalBufferAccessor) const
+	Mesh_vertex_buffer_accessor &normalBufferAccessor)
 {
 	if (indexBufferAccessor.count % 3 != 0)
 		throw std::logic_error("Expected index buffer to have a count that is a multiple of 3.");
@@ -293,7 +297,7 @@ void Primitive_mesh_data_factory::generateNormals(
 	}
 }
 
-void Primitive_mesh_data_factory::generateTangents(std::shared_ptr<Mesh_data> meshData) const
+void Primitive_mesh_data_factory::generateTangents(std::shared_ptr<Mesh_data> meshData)
 {
 	Mikk_tspace_triangle_mesh_interface generator(meshData);
 	SMikkTSpaceContext context;

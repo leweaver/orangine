@@ -87,21 +87,22 @@ void Entity_scripting_manager::shutdown()
 void Entity_scripting_manager::renderDebugSpheres() const
 {
 	auto& renderManager = _scene.manager<IEntity_render_manager>();
-	renderManager.clearDebugShapes();
+	auto& devToolsManager = _scene.manager<IDev_tools_manager>();
+	devToolsManager.clearDebugShapes();
 
 	for (const auto entity : *_renderableEntityFilter) {
 		const auto& boundSphere = entity->boundSphere();
-		const auto xform = Matrix::CreateTranslation(boundSphere.Center) * entity->worldTransform();
-		renderManager.addDebugSphere(xform, boundSphere.Radius, Color(Colors::Gray));
+		const auto transform = Matrix::CreateTranslation(boundSphere.Center) * entity->worldTransform();
+		devToolsManager.addDebugSphere(transform, boundSphere.Radius, Color(Colors::Gray));
 	}
 
 	const auto mainCameraEntity = _scene.mainCamera();
 	if (mainCameraEntity != nullptr) {
 		const auto cameraComponent = mainCameraEntity->getFirstComponentOfType<Camera_component>();
 		if (cameraComponent) {
-			auto frustum = renderManager.createFrustum(*mainCameraEntity, *cameraComponent);
+			auto frustum = renderManager.createFrustum(*cameraComponent);
 			frustum.Far *= 0.5;
-			renderManager.addDebugFrustum(frustum, Color(Colors::Red));
+			devToolsManager.addDebugFrustum(frustum, Color(Colors::Red));
 		}
 	}
 
@@ -110,7 +111,7 @@ void Entity_scripting_manager::renderDebugSpheres() const
 		if (directionalLight && directionalLight->shadowsEnabled()) {
 			const auto& shadowData = directionalLight->shadowData();
 			if (shadowData) {
-				renderManager.addDebugBoundingBox(shadowData->casterVolume(), directionalLight->color());
+				devToolsManager.addDebugBoundingBox(shadowData->casterVolume(), directionalLight->color());
 			}
 		}
 	}

@@ -53,14 +53,21 @@ namespace oe
 		{
 			return _lightConstants.addLight({ Light_type::Directional, lightDirection, encodeColor(color, intensity), Light_constants::SHADOW_MAP_DISABLED_INDEX });
 		}
-		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, const DirectX::SimpleMath::Color& color, float intensity, const Shadow_map_texture_array_slice& shadowMapTexture)
+		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, 
+			const DirectX::SimpleMath::Color& color, 
+			float intensity, 
+			const Shadow_map_texture_array_slice& shadowMapTexture,
+			float shadowMapDepth,
+			float shadowMapBias)
 		{
 			typename Light_constants::Light_entry lightEntry = { 
 				Light_type::Directional, 
 				lightDirection, 
 				encodeColor(color, intensity),
 				static_cast<int32_t>(shadowMapTexture.arraySlice()),
-				XMMatrixTranspose(shadowMapTexture.worldViewProjMatrix())
+				XMMatrixTranspose(shadowMapTexture.worldViewProjMatrix()),
+				shadowMapDepth,
+				shadowMapBias
 			};
 
 			if (_lightConstants.addLight(std::move(lightEntry))) {
@@ -88,6 +95,10 @@ namespace oe
 		{
 			return _lightConstants.full();
 		}
+		static uint8_t maxLights() 
+		{
+			return TMax_lights;
+		}
 
 	private:
 
@@ -103,6 +114,10 @@ namespace oe
 				DirectX::SimpleMath::Vector3 intensifiedColor;
 				int32_t shadowMapIndex = SHADOW_MAP_DISABLED_INDEX;
 				DirectX::SimpleMath::Matrix shadowViewProjMatrix;
+				float shadowMapDepth;
+				float shadowMapBias;
+
+				DirectX::SimpleMath::Vector2 notused;
 			};
 
 			Light_constants()

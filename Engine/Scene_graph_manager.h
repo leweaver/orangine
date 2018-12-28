@@ -59,7 +59,7 @@ public:
 	
 	Scene_graph_manager(Scene& scene, std::shared_ptr<IEntity_repository> entityRepository);
 	Scene_graph_manager(const Scene_graph_manager& other) = delete;
-	~Scene_graph_manager();
+	~Scene_graph_manager() = default;
 	
 	// Manager_base implementation
 	void initialize() override;

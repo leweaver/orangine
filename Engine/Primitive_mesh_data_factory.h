@@ -12,26 +12,26 @@ namespace oe {
 	{
 	public:
 		// Creates an indexed mesh with Position
-		std::shared_ptr<Mesh_data> createQuad(const DirectX::SimpleMath::Vector2& size) const;
-		std::shared_ptr<Mesh_data> createQuad(const DirectX::SimpleMath::Vector2& size, const DirectX::SimpleMath::Vector3& positionOffset) const;
+		static std::shared_ptr<Mesh_data> createQuad(const DirectX::SimpleMath::Vector2& size);
+		static std::shared_ptr<Mesh_data> createQuad(const DirectX::SimpleMath::Vector2& size, const DirectX::SimpleMath::Vector3& positionOffset);
 
 		// Creates an indexed mesh with Position, Normal, Tangent, Textcoord_0
-		std::shared_ptr<Mesh_data> createBox(const DirectX::SimpleMath::Vector3& size) const;
-		std::shared_ptr<Mesh_data> createTeapot(size_t tessellation = 8) const;
-		std::shared_ptr<Mesh_data> createSphere(float radius = 0.5f, size_t tessellation = 16, bool invertNormals = false) const;
+		static std::shared_ptr<Mesh_data> createBox(const DirectX::SimpleMath::Vector3& size);
+		static std::shared_ptr<Mesh_data> createTeapot(size_t tessellation = 8);
+		static std::shared_ptr<Mesh_data> createSphere(float radius = 0.5f, size_t tessellation = 16, bool invertNormals = false);
 
-		std::shared_ptr<Mesh_data> createFrustumLines(const BoundingFrustumRH& frustum);
+		static std::shared_ptr<Mesh_data> createFrustumLines(const BoundingFrustumRH& frustum);
 
 		/*
 		 * Generates flat normals for the given triangles (ie, does not interpolate neighbours)
 		 */
-		void generateNormals(const Mesh_index_buffer_accessor& indexBufferAccessor,
+		static void generateNormals(const Mesh_index_buffer_accessor& indexBufferAccessor,
 			const Mesh_vertex_buffer_accessor& positionBufferAccessor,
-			Mesh_vertex_buffer_accessor& normalBufferAccessor) const;
+			Mesh_vertex_buffer_accessor& normalBufferAccessor);
 
 		/*
 		 * Generates tangents, in MikktSpace
 		 */
-		void generateTangents(std::shared_ptr<Mesh_data> meshData) const;
+		static void generateTangents(std::shared_ptr<Mesh_data> meshData);
 	};
 }

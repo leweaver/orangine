@@ -9,6 +9,8 @@ namespace oe
 	{
 	public:
 
+		static constexpr uint32_t max_lights = 8;
+
 		Deferred_light_material() = default;
 
 		const std::shared_ptr<Texture>& color0Texture() const { return _color0Texture; }
@@ -25,6 +27,8 @@ namespace oe
 		void vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const override;
 
 		void setupEmitted(bool enabled);
+
+		Material_light_mode lightMode() override { return Material_light_mode::Lit; }
 
 	protected:
 

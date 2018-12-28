@@ -164,6 +164,15 @@ const Quaternion& Entity::worldRotation() const
 	return _worldRotation;
 }
 
+std::shared_ptr<Entity> Entity::verifyEntityPtr() const
+{
+	const auto thisPtr = _scene.manager<IScene_graph_manager>().getEntityPtrById(getId());
+	if (!thisPtr)
+		throw std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(getId()) + ")");
+
+	return thisPtr;
+}
+
 void Entity::onComponentAdded(Component& component)
 {
 	_scene.onComponentAdded(*this, component);

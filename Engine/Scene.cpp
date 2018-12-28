@@ -214,7 +214,11 @@ void Scene_device_resource_aware::initialize()
 
 	// Services / Managers
 	get<shared_ptr<IScene_graph_manager>>(_managers) = make_shared<Scene_graph_manager>(*this, entityRepository);
-	get<shared_ptr<IEntity_render_manager>>(_managers) = make_shared<Entity_render_manager>(*this, materialRepository, _deviceResources);
+	get<shared_ptr<IDev_tools_manager>>(_managers) = make_shared<Dev_tools_manager>(*this);
+	get<shared_ptr<ID3D_resources_manager>>(_managers) = make_shared<D3D_resources_manager>(*this, _deviceResources);
+	get<shared_ptr<IEntity_render_manager>>(_managers) = make_shared<Entity_render_manager>(*this, materialRepository);
+	get<shared_ptr<IRender_step_manager>>(_managers) = make_shared<Render_step_manager>(*this);
+	get<shared_ptr<IShadowmap_manager>>(_managers) = make_shared<Shadowmap_manager>(*this, _deviceResources);
 	get<shared_ptr<IEntity_scripting_manager>>(_managers) = make_shared<Entity_scripting_manager>(*this);
 	get<shared_ptr<IAsset_manager>>(_managers) = make_shared<Asset_manager>(*this);
 	get<shared_ptr<IInput_manager>>(_managers) = make_shared<Input_manager>(*this, _deviceResources);

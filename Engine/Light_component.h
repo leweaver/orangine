@@ -12,8 +12,9 @@ namespace oe {
 
 	public:
 		
-		Light_component()
-			: _color(DirectX::Colors::White)
+		Light_component(std::shared_ptr<Entity> entity)
+			: Component(entity)
+			, _color(DirectX::Colors::White)
 			, _intensity(1.0)
 		{
 		}
@@ -40,20 +41,40 @@ namespace oe {
 
 	public:
 
+		Directional_light_component(std::shared_ptr<Entity> entity)
+			: Light_component(entity)
+		{}
+
 		bool shadowsEnabled() const { return _shadowsEnabled; }
 		void setShadowsEnabled(bool shadowsEnabled) { _shadowsEnabled = shadowsEnabled; }
+
+		float shadowMapBias() const { return _shadowMapBias; }
+		void setShadowMapBias(float shadowMapBias) { _shadowMapBias = shadowMapBias; }
 	private:
 
 		bool _shadowsEnabled = false;
+		float _shadowMapBias = 0.1f;
 	};
 
 	class Point_light_component : public Light_component
 	{
 		DECLARE_COMPONENT_TYPE;
+
+	public:
+
+		Point_light_component(std::shared_ptr<Entity> entity)
+			: Light_component(entity)
+		{}
 	};
 
 	class Ambient_light_component : public Light_component
 	{
 		DECLARE_COMPONENT_TYPE;
+
+	public:
+
+		Ambient_light_component(std::shared_ptr<Entity> entity)
+			: Light_component(entity)
+		{}
 	};
 }

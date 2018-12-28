@@ -13,8 +13,9 @@ namespace oe {
 		DirectX::SimpleMath::Vector3 _speed;
 
 	public:
-		Test_component()
-			: _speed(DirectX::SimpleMath::Vector3::Zero)
+		Test_component(std::shared_ptr<Entity> entity)
+			: Component(entity)
+			, _speed(DirectX::SimpleMath::Vector3::Zero)
 		{			
 		}
 

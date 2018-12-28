@@ -18,6 +18,9 @@ struct Light {
 	float3   intensifiedColor;
 	int      shadowMapIndex;
 	float4x4 shadowMapViewMatrix;
+	float    shadowMapDepth;
+	float    shadowMapBias;
+	float2   notused;
 };
 
 // Input to BRDF Lighting function
@@ -46,6 +49,9 @@ struct ShadowSampleInputs {
 	float4x4 shadowMapViewMatrix;
 	Texture2DArray shadowMapTexture;
 	SamplerState shadowMapSampler;
+
+	float shadowMapDepth;
+	float shadowMapBias;
 };
 
 //--------------------------------------------------------------------------------------
@@ -194,11 +200,7 @@ float3 Shadow(ShadowSampleInputs ssi)
 
 	float shadowSample = ssi.shadowMapTexture.Sample(ssi.shadowMapSampler, shadowCoord.rgb).r;
 
-	// TODO: shadowmap max depth from light param
-	float shadowMaxDepth = 1.0f;
-	float bias = 0.5f;
-
-	shadowSample = shadowSample * shadowMaxDepth + bias;
+	shadowSample = shadowSample * ssi.shadowMapDepth + ssi.shadowMapBias;
 	if (shadowMapPosition.z > shadowSample)
 		return float3(0, 0, 0);
 

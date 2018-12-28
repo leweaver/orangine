@@ -2,6 +2,11 @@
 
 #include "Mesh_utils.h"
 #include "Mesh_data.h"
+#include "Entity_filter.h"
+#include "Entity.h"
+
+using namespace DirectX;
+using namespace DirectX::SimpleMath;
 
 namespace oe::mesh_utils {
 
@@ -70,5 +75,46 @@ namespace oe::mesh_utils {
 		}
 
 		return { meshBuffer, DXGI_FORMAT_R32_UINT };
+	}
+
+	DirectX::BoundingOrientedBox aabbForEntities(const Entity_filter& entities,
+		const DirectX::SimpleMath::Quaternion& orientation,
+		std::function<bool(const Entity&)> predicate)
+	{
+		// Extents, in light view space (as defined above)
+		XMVECTOR minExtents = Vector3::Zero;
+		XMVECTOR maxExtents = Vector3::Zero;
+
+		bool firstExtentsCalc = true;
+		const auto orientationMatrix = Matrix::CreateFromQuaternion(orientation);
+		const auto orientationMatrixInv = XMMatrixInverse(nullptr, orientationMatrix);
+		for (auto& entity : entities) {
+			if (!predicate(*entity.get()))
+				continue;
+
+			const auto& boundSphere = entity->boundSphere();
+			Vector3 boundWorldCenter = Vector3::Transform(boundSphere.Center, entity->worldTransform());
+			Vector3 boundWorldEdge = Vector3::Transform(Vector3(boundSphere.Center) + Vector3(0, 0, boundSphere.Radius), entity->worldTransform());
+
+			// Bounds, in light view space (as defined above)
+			Vector3 boundCenter = Vector3::Transform(boundWorldCenter, orientationMatrixInv);
+			Vector3 boundEdge = Vector3::Transform(boundWorldEdge, orientationMatrixInv);
+			const XMVECTOR boundRadius = XMVector3Length(XMVectorSubtract(boundEdge, boundCenter));
+
+			if (firstExtentsCalc) {
+				minExtents = XMVectorSubtract(boundCenter, boundRadius);
+				maxExtents = XMVectorAdd(boundCenter, boundRadius);
+				firstExtentsCalc = false;
+			}
+			else {
+				minExtents = XMVectorMin(minExtents, XMVectorSubtract(boundCenter, boundRadius));
+				maxExtents = XMVectorMax(maxExtents, XMVectorAdd(boundCenter, boundRadius));
+			}
+		}
+
+		const auto halfVector = XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f); // OPT: does the compiler optimize this?
+		const auto center = Vector3::Transform(XMVectorMultiply(XMVectorAdd(maxExtents, minExtents), halfVector), orientationMatrix);
+		const auto extents = XMVectorMultiply(XMVectorSubtract(maxExtents, minExtents), halfVector);
+		return BoundingOrientedBox(Vector3(center), Vector3(extents), orientation);
 	}
 }

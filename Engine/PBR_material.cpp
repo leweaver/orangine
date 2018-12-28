@@ -1,6 +1,6 @@
 ﻿#include "pch.h"
 #include "PBR_material.h"
-#include "Render_pass_info.h"
+#include "Render_pass_config.h"
 
 using namespace oe;
 using namespace DirectX;

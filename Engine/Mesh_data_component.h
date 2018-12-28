@@ -15,8 +15,12 @@ namespace oe
 		DECLARE_COMPONENT_TYPE;
 
 	public:
-		Mesh_data_component();
-		~Mesh_data_component();
+		Mesh_data_component(std::shared_ptr<Entity> entity)
+			: Component(entity)
+			, _meshData(nullptr)
+		{}
+
+		~Mesh_data_component() = default;
 
 		// TODO: Will eventually reference an asset ID here, rather than actual mesh data.
 

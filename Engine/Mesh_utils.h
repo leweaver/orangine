@@ -9,6 +9,8 @@
 
 namespace oe {
 	struct Mesh_buffer;
+	class Entity_filter;
+	class Entity;
 }
 
 namespace oe::mesh_utils {
@@ -48,4 +50,8 @@ namespace oe::mesh_utils {
 	std::shared_ptr<Mesh_buffer> create_buffer(UINT elementSize, UINT elementCount, const std::vector<uint8_t>& sourceData, UINT sourceStride, UINT sourceOffset);
 	std::shared_ptr<Mesh_buffer> create_buffer_s(size_t elementSize, size_t elementCount, const std::vector<uint8_t>& sourceData, size_t sourceStride, size_t sourceOffset);
 	std::tuple<std::shared_ptr<Mesh_buffer>, DXGI_FORMAT> create_index_buffer(const std::vector<uint8_t>& sourceData, UINT srcElementCount, DXGI_FORMAT srcFormat, UINT sourceStride, UINT sourceOffset);
+
+	DirectX::BoundingOrientedBox aabbForEntities(const Entity_filter& entities,
+		const DirectX::SimpleMath::Quaternion& orientation,
+		std::function<bool(const Entity&)> predicate);
 }

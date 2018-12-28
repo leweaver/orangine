@@ -4,19 +4,32 @@
 
 #include "..\Engine\Entity_render_manager.h"
 #include "..\Engine\Camera_component.h"
+#include "..\Engine\Renderable_component.h"
 
 namespace oe_test {
 	class Mock_entity_render_manager : public oe::IEntity_render_manager {
 	public:
 		Mock_entity_render_manager(oe::Scene& scene) : IEntity_render_manager(scene) {}
 		
-		MOCK_METHOD0(render, void());
-		MOCK_METHOD2(createFrustum, oe::BoundingFrustumRH(const oe::Entity&, const oe::Camera_component&));
+		MOCK_METHOD1(createFrustum, oe::BoundingFrustumRH(const oe::Camera_component&));
 		
-		MOCK_METHOD3(addDebugSphere, void(const DirectX::SimpleMath::Matrix&, float, const DirectX::SimpleMath::Color&));
-		MOCK_METHOD2(addDebugBoundingBox, void(const DirectX::BoundingOrientedBox& boundingOrientedBox, const DirectX::SimpleMath::Color& color));
-		MOCK_METHOD2(addDebugFrustum, void(const oe::BoundingFrustumRH&, const DirectX::SimpleMath::Color&));
-		MOCK_METHOD0(clearDebugShapes, void());
+		MOCK_METHOD7(renderRenderable, void(oe::Renderable&,
+			const DirectX::SimpleMath::Matrix&,
+			float,
+			const oe::Render_pass::Camera_data&,
+			const oe::Light_provider::Callback_type&,
+			oe::Render_pass_blend_mode,
+			bool
+			));
+		
+		MOCK_METHOD4(renderEntity, void(oe::Renderable_component&,
+			const oe::Render_pass::Camera_data&,
+			const oe::Light_provider::Callback_type&,
+			oe::Render_pass_blend_mode
+			));
+
+		MOCK_CONST_METHOD1(createScreenSpaceQuad, oe::Renderable(std::shared_ptr<oe::Material>));
+		MOCK_METHOD0(clearRenderStats, void());
 
 		// Manager_base implementation
 		MOCK_METHOD0(initialize, void());

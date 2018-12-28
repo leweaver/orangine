@@ -3,7 +3,10 @@
 #include "StepTimer.h"
 #include "Entity_graph_loader.h"
 
+#include "D3D_resources_manager.h"
 #include "Entity_render_manager.h"
+#include "Render_step_manager.h"
+#include "Shadowmap_manager.h"
 #include "Entity_repository.h"
 #include "Scene_graph_manager.h"
 #include "Entity_scripting_manager.h"
@@ -12,6 +15,7 @@
 #include <map>
 #include "Input_manager.h"
 #include <memory>
+#include "Dev_tools_manager.h"
 
 namespace oe {
 	class Entity;
@@ -77,7 +81,11 @@ namespace oe {
 
 			// Managers
 			std::shared_ptr<IScene_graph_manager>,
+			std::shared_ptr<IDev_tools_manager>,
+			std::shared_ptr<ID3D_resources_manager>,
 			std::shared_ptr<IEntity_render_manager>,
+			std::shared_ptr<IRender_step_manager>,
+			std::shared_ptr<IShadowmap_manager>,
 			std::shared_ptr<IEntity_scripting_manager>,
 			std::shared_ptr<IAsset_manager>,
 			std::shared_ptr<IInput_manager>
@@ -101,7 +109,11 @@ namespace oe {
 
 		// Templated helper methods		
 		IScene_graph_manager& sceneGraphManager() const { return *std::get<std::shared_ptr<IScene_graph_manager>>(_managers); }
+		IDev_tools_manager& devToolsmanager() const { return *std::get<std::shared_ptr<IDev_tools_manager>>(_managers); }
+		ID3D_resources_manager& d3dResourcesManager() const { return *std::get<std::shared_ptr<ID3D_resources_manager>>(_managers); }
 		IEntity_render_manager& entityRenderManger() const { return *std::get<std::shared_ptr<IEntity_render_manager>>(_managers); }
+		IRender_step_manager& renderStepManager() const { return *std::get<std::shared_ptr<IRender_step_manager>>(_managers); }
+		IShadowmap_manager& shadowmapManager() const { return *std::get<std::shared_ptr<IShadowmap_manager>>(_managers); }
 		IEntity_scripting_manager& entityScriptingManager() const { return *std::get<std::shared_ptr<IEntity_scripting_manager>>(_managers); }
 		IAsset_manager& assetManager() const { return *std::get<std::shared_ptr<IAsset_manager>>(_managers); }
 		IInput_manager& inputManager() const { return *std::get<std::shared_ptr<IInput_manager>>(_managers); }

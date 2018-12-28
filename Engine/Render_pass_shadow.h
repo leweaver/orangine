@@ -7,7 +7,6 @@
 
 namespace oe {
 
-	class IShadowmap_manager;
 	class Entity_filter;
 	class Scene;
 
@@ -15,10 +14,10 @@ namespace oe {
 	public:
 		Render_pass_shadow(
 			Scene& scene,
-			size_t max_render_maxRenderTargetViewstarget_views
+			size_t maxRenderTargetViews
 		);
 
-		virtual void render(const Camera_data& cameraData);
+		void render(const Camera_data& cameraData) override;
 
 	private:
 		Scene& _scene;

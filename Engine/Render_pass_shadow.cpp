@@ -17,6 +17,13 @@ Render_pass_shadow::Render_pass_shadow(Scene& scene, size_t maxRenderTargetViews
 	: _scene(scene)
 {
 	_renderTargetViews.resize(maxRenderTargetViews, nullptr);
+
+	_renderableEntities = _scene.manager<IScene_graph_manager>().getEntityFilter({ Renderable_component::type() });
+	_lightEntities = _scene.manager<IScene_graph_manager>().getEntityFilter({
+		Directional_light_component::type(),
+		Point_light_component::type(),
+		Ambient_light_component::type()
+		}, Entity_filter_mode::Any);
 }
 
 void Render_pass_shadow::render(const Camera_data& cameraData)

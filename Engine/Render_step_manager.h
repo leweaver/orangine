@@ -108,7 +108,7 @@ namespace oe {
 			Light_provider::Callback_type& lightProvider,
 			const Render_pass_config<TBlend_mode, TDepth_mode, TStencil_mode, TStencil_read_mask, TStencil_write_mask>& renderPassInfo);
 
-		void renderLights(Render_pass_blend_mode blendMode);
+		void renderLights(const Render_pass::Camera_data& cameraData, Render_pass_blend_mode blendMode);
 
 		// RenderStep definitions
 		struct Render_step_deferred_data {
@@ -125,7 +125,7 @@ namespace oe {
 				Render_pass_depth_mode::ReadWrite,
 				Render_pass_stencil_mode::Enabled,
 				0xFF,
-				0x1
+				0xFF
 			>
 		> _renderStep_shadowMap;
 

@@ -221,12 +221,16 @@ bool Material::createPixelShader(ID3D11Device* device)
 		return false;
 	}
 
+	auto debugName = "Material:" + utf8_encode(settings.filename);
+	_pixelShader->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(debugName.size()), debugName.c_str());
+
 	return true;
 }
 
 void Material::bind(const Render_pass_blend_mode blendMode,
 	const Render_light_data& renderLightData,
-	const DX::DeviceResources& deviceResources)
+	const DX::DeviceResources& deviceResources,
+	bool enablePixelShader)
 {
 	const auto device = deviceResources.GetD3DDevice();
 
@@ -267,10 +271,13 @@ void Material::bind(const Render_pass_blend_mode blendMode,
 	auto context = deviceResources.GetD3DDeviceContext();
 	context->IASetInputLayout(_inputLayout);
 	context->VSSetShader(_vertexShader, nullptr, 0);
-	context->PSSetShader(_pixelShader, nullptr, 0);
 
-	// Set texture samples
-	setContextSamplers(deviceResources, renderLightData);
+	if (enablePixelShader) {
+		context->PSSetShader(_pixelShader, nullptr, 0);
+
+		// Set texture samples
+		setContextSamplers(deviceResources, renderLightData);
+	}
 }
 
 bool Material::render(const Renderer_data& rendererData,

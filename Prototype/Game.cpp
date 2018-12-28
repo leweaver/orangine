@@ -45,15 +45,15 @@ Game::~Game()
 	ComPtr<ID3D11Device> device = m_deviceResources->GetD3DDevice();
 	m_deviceResources.reset();
 
-	ComPtr<ID3D11Debug> d3dDebug;
-	if (SUCCEEDED(device.As(&d3dDebug))) {
-		HRESULT hr = d3dDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+	ComPtr<ID3D11Debug> d3DDebug;
+	if (SUCCEEDED(device.As(&d3DDebug))) {
+		d3DDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 	}
 }
 
 void Game::CreateSceneCubeSatellite()
 {
-	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
+	auto& entityManager = m_scene->manager<IScene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Root 1");
 	//root1->AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
 
@@ -68,7 +68,7 @@ void Game::CreateSceneCubeSatellite()
 
 std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 {
-	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
+	auto& entityManager = m_scene->manager<IScene_graph_manager>();
 	auto root = entityManager.instantiate("Root");
 
 	if (animate)

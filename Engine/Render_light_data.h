@@ -47,11 +47,11 @@ namespace oe
 
 		bool addPointLight(const DirectX::SimpleMath::Vector3& lightPosition, const DirectX::SimpleMath::Color& color, float intensity)
 		{
-			return _lightConstants.addLight({ Light_type::Point, lightPosition, encodeColor(color, intensity), Light_constants::SHADOW_MAP_DISABLED_INDEX });
+			return _lightConstants.addLight({ Light_type::Point, lightPosition, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
 		}
 		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, const DirectX::SimpleMath::Color& color, float intensity)
 		{
-			return _lightConstants.addLight({ Light_type::Directional, lightDirection, encodeColor(color, intensity), Light_constants::SHADOW_MAP_DISABLED_INDEX });
+			return _lightConstants.addLight({ Light_type::Directional, lightDirection, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
 		}
 		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, 
 			const DirectX::SimpleMath::Color& color, 
@@ -77,7 +77,7 @@ namespace oe
 		}
 		bool addAmbientLight(const DirectX::SimpleMath::Color& color, float intensity)
 		{
-			return _lightConstants.addLight({ Light_type::Ambient, DirectX::SimpleMath::Vector3::Zero, encodeColor(color, intensity), Light_constants::SHADOW_MAP_DISABLED_INDEX });
+			return _lightConstants.addLight({ Light_type::Ambient, DirectX::SimpleMath::Vector3::Zero, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
 		}
 		void updateBuffer(ID3D11DeviceContext* context)
 		{
@@ -105,19 +105,18 @@ namespace oe
 		class alignas(16) Light_constants {
 		public:
 
-			static constexpr int32_t SHADOW_MAP_DISABLED_INDEX = -1;
+			static constexpr int32_t shadow_map_disabled_index = -1;
 
 			// sizeof must be a multiple of 16 for the shader arrays to behave correctly
 			struct Light_entry {
 				Light_type type = Light_type::Directional;
 				DirectX::SimpleMath::Vector3 lightPositionDirection;
 				DirectX::SimpleMath::Vector3 intensifiedColor;
-				int32_t shadowMapIndex = SHADOW_MAP_DISABLED_INDEX;
+				int32_t shadowMapIndex = shadow_map_disabled_index;
 				DirectX::SimpleMath::Matrix shadowViewProjMatrix;
-				float shadowMapDepth;
-				float shadowMapBias;
-
-				DirectX::SimpleMath::Vector2 notused;
+				float shadowMapDepth = 0.0f;
+				float shadowMapBias = 0.0f;
+				DirectX::SimpleMath::Vector2 notUsed;
 			};
 
 			Light_constants()

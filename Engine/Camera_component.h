@@ -7,7 +7,7 @@ namespace oe {
 		DECLARE_COMPONENT_TYPE;
 	public:
 
-		Camera_component(std::shared_ptr<Entity> entity)
+		Camera_component(Entity& entity)
 			: Component(entity)
 			, _fov(DirectX::XMConvertToRadians(60.f))
 		{}

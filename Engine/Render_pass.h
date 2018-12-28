@@ -11,6 +11,7 @@ namespace oe {
 		{
 			DirectX::SimpleMath::Matrix viewMatrix;
 			DirectX::SimpleMath::Matrix projectionMatrix;
+			bool enablePixelShader = true;
 
 			static const Camera_data identity;
 		};

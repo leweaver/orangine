@@ -37,7 +37,8 @@ namespace oe {
 		// Compiles (if needed), binds pixel and vertex shaders, and textures
 		void bind(const Render_pass_blend_mode blendMode,
 			const Render_light_data& renderLightData,
-			const DX::DeviceResources& deviceResources);
+			const DX::DeviceResources& deviceResources,
+			bool enablePixelShader);
 
 
 		// Uploads shader constants, then renders

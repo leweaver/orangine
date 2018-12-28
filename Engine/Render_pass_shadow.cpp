@@ -26,7 +26,7 @@ Render_pass_shadow::Render_pass_shadow(Scene& scene, size_t maxRenderTargetViews
 		}, Entity_filter_mode::Any);
 }
 
-void Render_pass_shadow::render(const Camera_data& cameraData)
+void Render_pass_shadow::render(const Camera_data&)
 {
 	auto& d3DDeviceResources = _scene.manager<ID3D_resources_manager>().deviceResources();
 	d3DDeviceResources.PIXBeginEvent(L"_renderPass_shadowMap_draw");
@@ -87,6 +87,7 @@ void Render_pass_shadow::render(const Camera_data& cameraData)
 				//shadowCameraData.worldMatrix = Matrix::CreateTranslation(lightNearPlaneWorldTranslation);
 				shadowCameraData.viewMatrix = Matrix::CreateLookAt(pos, pos + forward, up);
 				shadowCameraData.projectionMatrix = Matrix::CreateOrthographic(extents2.x, extents2.y, 0.01f, extents2.z);
+				shadowCameraData.enablePixelShader = false;
 			}
 			shadowData->setWorldViewProjMatrix(
 				XMMatrixMultiply(shadowCameraData.viewMatrix, shadowCameraData.projectionMatrix)

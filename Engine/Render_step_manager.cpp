@@ -67,6 +67,16 @@ void Render_step_manager::shutdown()
 	auto context = deviceResources().GetD3DDeviceContext();
 	std::array<ID3D11RenderTargetView*, g_max_render_target_views> renderTargetViews = { nullptr, nullptr, nullptr };
 	context->OMSetRenderTargets(static_cast<UINT>(renderTargetViews.size()), renderTargetViews.data(), nullptr);
+
+	_renderStep_shadowMap.renderPasses[0].reset();
+	_renderStep_entityDeferred.renderPasses[0].reset();
+	_renderStep_entityDeferred.renderPasses[1].reset();
+	_renderStep_entityDeferred.renderPasses[2].reset();
+	_renderStep_entityStandard.renderPasses[0].reset();
+	_renderStep_debugElements.renderPasses[0].reset();
+
+	_renderableEntities.reset();
+	_lightEntities.reset();
 }
 
 
@@ -139,7 +149,7 @@ void Render_step_manager::createRenderSteps()
 		{
 			if (_enableDeferredRendering) {
 				d3DDeviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step2_draw");
-				renderLights(blendMode);
+				renderLights(cameraData, blendMode);
 				d3DDeviceResources.PIXEndEvent();
 			}
 		}
@@ -331,7 +341,7 @@ void Render_step_manager::render(std::shared_ptr<Entity> cameraEntity)
 }
 
 // TODO: Move this to a Render_pass_deferred class?
-void Render_step_manager::renderLights(Render_pass_blend_mode blendMode)
+void Render_step_manager::renderLights(const Render_pass::Camera_data& cameraData, Render_pass_blend_mode blendMode)
 {
 	try
 	{
@@ -363,7 +373,7 @@ void Render_step_manager::renderLights(Render_pass_blend_mode blendMode)
 					quad,
 					Matrix::Identity,
 					0.0f,
-					Render_pass::Camera_data::identity,
+					cameraData,
 					deferredLightProvider,
 					blendMode,
 					false);
@@ -381,7 +391,7 @@ void Render_step_manager::renderLights(Render_pass_blend_mode blendMode)
 				quad,
 				Matrix::Identity,
 				0.0f,
-				Render_pass::Camera_data::identity,
+				cameraData,
 				deferredLightProvider,
 				blendMode,
 				false);
@@ -401,7 +411,7 @@ Render_pass::Camera_data Render_step_manager::createCameraData(Camera_component&
 
 
 	// Construct camera axis vectors, to create a view matrix using lookAt.
-	const auto wt = component.entity()->worldTransform();
+	const auto wt = component.entity().worldTransform();
 	const auto pos = wt.Translation();
 	const auto forward = Vector3::TransformNormal(Vector3::Forward, wt);
 	const auto up = Vector3::TransformNormal(Vector3::Up, wt);
@@ -469,8 +479,8 @@ void Render_step_manager::createRenderStepResources(Render_step<TData, TRender_p
 		ThrowIfFailed(d3DResourcesManager.deviceResources().GetD3DDevice()->CreateDepthStencilState(&desc, &pResult));
 		
 		SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilEnabled");
-
 		pass.setDepthStencilState(pResult);
+		pResult->Release();
 	}
 
 	if constexpr (TRender_pass_idx + 1 < sizeof...(TRender_passes)) {

@@ -118,7 +118,7 @@ BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& c
 		cameraComponent.nearPlane(),
 		cameraComponent.farPlane());
 	auto frustum = BoundingFrustumRH(projMatrix);
-	const auto& entity = *cameraComponent.entity();
+	const auto& entity = cameraComponent.entity();
 	frustum.Origin = entity.worldPosition();
 	frustum.Orientation = entity.worldRotation();
 
@@ -133,7 +133,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderable,
 	if (!renderable.visible())
 		return;
 
-	const auto entity = renderable.entity();
+	const auto& entity = renderable.entity();
 
 	try {
 		const auto material = renderable.material().get();
@@ -142,7 +142,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderable,
 		const Renderer_data* rendererData = renderable.rendererData().get();
 		if (rendererData == nullptr) {
 
-			const auto meshDataComponent = entity->getFirstComponentOfType<Mesh_data_component>();
+			const auto meshDataComponent = entity.getFirstComponentOfType<Mesh_data_component>();
 			if (meshDataComponent == nullptr || meshDataComponent->meshData() == nullptr)
 			{
 				// There is no mesh data (it may still be loading!), we can't render.
@@ -150,7 +150,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderable,
 			}
 			const auto& meshData = meshDataComponent->meshData();
 
-			LOG(INFO) << "Creating renderer data for entity " << entity->getName() << " (ID " << entity->getId() << ")";
+			LOG(INFO) << "Creating renderer data for entity " << entity.getName() << " (ID " << entity.getId() << ")";
 
 			std::vector<Vertex_attribute> vertexAttributes;
 			material->vertexAttributes(vertexAttributes);
@@ -168,7 +168,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderable,
 			// Ask the caller what lights are affecting this entity.
 			_renderLights.clear();
 			_renderLightData_lit->clear();
-			lightDataProvider(entity->boundSphere(), _renderLights, _renderLightData_lit->maxLights());
+			lightDataProvider(entity.boundSphere(), _renderLights, _renderLightData_lit->maxLights());
 			if (_renderLights.size() > _renderLightData_lit->maxLights()) {
 				throw std::logic_error("Light_provider::Callback_type added too many lights to entity");
 			}
@@ -187,7 +187,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderable,
 
 		drawRendererData(
 			cameraData,
-			entity->worldTransform(),
+			entity.worldTransform(),
 			*rendererData,
 			blendMode,
 			*renderLightData,
@@ -197,7 +197,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderable,
 	catch (std::runtime_error& e)
 	{
 		renderable.setVisible(false);
-		LOG(WARNING) << "Failed to render mesh on entity " << entity->getName() << " (ID " << entity->getId() << "): " << e.what();
+		LOG(WARNING) << "Failed to render mesh on entity " << entity.getName() << " (ID " << entity.getId() << "): " << e.what();
 	}
 }
 
@@ -318,8 +318,8 @@ void Entity_render_manager::drawRendererData(
 
 	loadRendererDataToDeviceContext(rendererData);
 
-	auto& d3dDeviceResources = deviceResources();
-	const auto context = d3dDeviceResources.GetD3DDeviceContext();
+	auto& d3DDeviceResources = deviceResources();
+	const auto context = d3DDeviceResources.GetD3DDeviceContext();
 
 	// Set the rasteriser state
 	if (wireFrame)
@@ -328,15 +328,14 @@ void Entity_render_manager::drawRendererData(
 		context->RSSetState(commonStates.CullClockwise());
 
 	// Render the triangles
-	material.bind(blendMode, renderLightData, d3dDeviceResources);
+	material.bind(blendMode, renderLightData, d3DDeviceResources, cameraData.enablePixelShader);
 
-	material.render(rendererData, renderLightData, 
+	material.render(rendererData, renderLightData,
 		worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, 
-		d3dDeviceResources);
+		d3DDeviceResources);
 
-	material.unbind(d3dDeviceResources);
+	material.unbind(d3DDeviceResources);
 }
-
 
 std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(const Mesh_data& meshData, const std::vector<Vertex_attribute>& vertexAttributes) const
 {

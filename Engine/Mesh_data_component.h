@@ -15,7 +15,7 @@ namespace oe
 		DECLARE_COMPONENT_TYPE;
 
 	public:
-		Mesh_data_component(std::shared_ptr<Entity> entity)
+		Mesh_data_component(Entity& entity)
 			: Component(entity)
 			, _meshData(nullptr)
 		{}

@@ -12,7 +12,7 @@ namespace oe
 
 	public:
 
-		Renderable_component(std::shared_ptr<Entity> entity)
+		Renderable_component(Entity& entity)
 			: Component(entity)
 			, _visible(true)
 			, _wireframe(false)

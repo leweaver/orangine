@@ -181,7 +181,7 @@ namespace oe {
 	template <typename TComponent>
 	TComponent& Entity::addComponent()
 	{
-		TComponent* component = new TComponent(verifyEntityPtr());
+		TComponent* component = new TComponent(*this);
 		_components.push_back(std::unique_ptr<Component>(component));
 
 		this->onComponentAdded(*component);

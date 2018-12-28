@@ -12,7 +12,7 @@ namespace oe {
 
 	public:
 		
-		Light_component(std::shared_ptr<Entity> entity)
+		Light_component(Entity& entity)
 			: Component(entity)
 			, _color(DirectX::Colors::White)
 			, _intensity(1.0)
@@ -41,7 +41,7 @@ namespace oe {
 
 	public:
 
-		Directional_light_component(std::shared_ptr<Entity> entity)
+		Directional_light_component(Entity& entity)
 			: Light_component(entity)
 		{}
 
@@ -62,7 +62,7 @@ namespace oe {
 
 	public:
 
-		Point_light_component(std::shared_ptr<Entity> entity)
+		Point_light_component(Entity& entity)
 			: Light_component(entity)
 		{}
 	};
@@ -73,7 +73,7 @@ namespace oe {
 
 	public:
 
-		Ambient_light_component(std::shared_ptr<Entity> entity)
+		Ambient_light_component(Entity& entity)
 			: Light_component(entity)
 		{}
 	};

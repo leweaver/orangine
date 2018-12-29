@@ -20,6 +20,9 @@ namespace oe
 		Texture()
 			: _shaderResourceView(nullptr)
 		{}
+		explicit Texture(ID3D11ShaderResourceView* srv)
+			: _shaderResourceView(srv)
+		{}
 
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _shaderResourceView;
 	};

@@ -47,7 +47,8 @@ struct ShadowSampleInputs {
 	//float2 viewportSize;
 	float  shadowMapArrayIndex;
 	float4x4 shadowMapViewMatrix;
-	Texture2DArray shadowMapTexture;
+	Texture2DArray shadowMapDepthTexture;
+	Texture2DArray<uint2> shadowMapStencilTexture;
 	SamplerState shadowMapSampler;
 
 	float shadowMapDepth;
@@ -198,11 +199,21 @@ float3 Shadow(ShadowSampleInputs ssi)
 	// TODO: Why do we need to y-flip here?
 	shadowCoord = shadowCoord * float3(0.5, -0.5, 1) + float3(0.5, 0.5, 0);
 
-	float shadowSample = ssi.shadowMapTexture.Sample(ssi.shadowMapSampler, shadowCoord.rgb).r;
+	uint3 mapSize;
+	ssi.shadowMapStencilTexture.GetDimensions(mapSize.x, mapSize.y, mapSize.z);
 
-	shadowSample = shadowSample * ssi.shadowMapDepth + ssi.shadowMapBias;
-	if (shadowMapPosition.z > shadowSample)
-		return float3(0, 0, 0);
+	const float depthSample = ssi.shadowMapDepthTexture.Sample(ssi.shadowMapSampler, shadowCoord.rgb).r;
+	const uint stencilSample = ssi.shadowMapStencilTexture.Load(int4(
+			shadowCoord.xy * mapSize.xy,
+			ssi.shadowMapArrayIndex,
+			0)
+		).g;
+
+	if (stencilSample != 0) {
+		float shadowSample = depthSample * ssi.shadowMapDepth + ssi.shadowMapBias;
+		if (shadowMapPosition.z > shadowSample)
+			return float3(0, 0, 0);
+	}
 
 	return ssi.lightColor;
 }

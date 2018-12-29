@@ -10,10 +10,11 @@ using namespace std::literals;
 using namespace DirectX;
 using namespace SimpleMath;
 
-const auto g_mrt_sampler_count = 5;
+const auto g_mrt_shader_resource_count = 6;
+const auto g_mrt_sampler_state_count = 5;
 
-const std::array<ID3D11ShaderResourceView*, g_mrt_sampler_count> g_nullShaderResourceViews = { nullptr, nullptr, nullptr, nullptr, nullptr };
-const std::array<ID3D11SamplerState*, g_mrt_sampler_count> g_nullSamplerStates = { nullptr, nullptr, nullptr, nullptr, nullptr };
+const std::array<ID3D11ShaderResourceView*, g_mrt_shader_resource_count> g_nullShaderResourceViews = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+const std::array<ID3D11SamplerState*, g_mrt_sampler_state_count> g_nullSamplerStates = { nullptr, nullptr, nullptr, nullptr, nullptr };
 
 void Deferred_light_material::vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const
 {
@@ -127,30 +128,43 @@ void Deferred_light_material::setContextSamplers(const DX::DeviceResources& devi
 	if (!_depthSamplerState)
 		validSamplers &= ensureSamplerState(deviceResources, *_depthTexture.get(), D3D11_TEXTURE_ADDRESS_WRAP, &_depthSamplerState);
 	
-	if (_shadowMapTexture && !_shadowMapSamplerState)
-		validSamplers &= ensureSamplerState(deviceResources, *_shadowMapTexture.get(), D3D11_TEXTURE_ADDRESS_CLAMP, &_shadowMapSamplerState);
+	if (!_shadowMapSamplerState)
+		validSamplers &= ensureSamplerState(deviceResources, *_shadowMapDepthTexture.get(), D3D11_TEXTURE_ADDRESS_CLAMP, &_shadowMapSamplerState);
+
+	if (_shadowMapStencilTexture)
+		_shadowMapStencilTexture->load(deviceResources.GetD3DDevice());
 
 	if (validSamplers)
 	{
-		std::array<ID3D11ShaderResourceView*, g_mrt_sampler_count> shaderResourceViews = {
+		std::array<ID3D11ShaderResourceView*, g_mrt_shader_resource_count> shaderResourceViews = {
 			_color0Texture->getShaderResourceView(),
 			_color1Texture->getShaderResourceView(),
 			_color2Texture->getShaderResourceView(),
 			_depthTexture->getShaderResourceView(),
-			_shadowMapTexture ? _shadowMapTexture->getShaderResourceView() : nullptr
+			_shadowMapDepthTexture ? _shadowMapDepthTexture->getShaderResourceView() : nullptr
 		};
 
-		// Set shader texture resource in the pixel shader.
-		context->PSSetShaderResources(0, g_mrt_sampler_count, shaderResourceViews.data());
+		if (_shadowMapStencilTexture) {
+			if (!_shadowMapDepthTexture) {
+				throw std::logic_error("Cannot bind a shadowmap stencil texture without a shadowmap depth texture.");
+			}
+			shaderResourceViews[5] = _shadowMapStencilTexture->getShaderResourceView();
+		}
+		else {
+			shaderResourceViews[5] = nullptr;
+		}
 
-		std::array<ID3D11SamplerState*, g_mrt_sampler_count> samplerStates = {
+		// Set shader texture resource in the pixel shader.
+		context->PSSetShaderResources(0, g_mrt_shader_resource_count, shaderResourceViews.data());
+
+		std::array<ID3D11SamplerState*, g_mrt_sampler_state_count> samplerStates = {
 			_color0SamplerState.Get(),
 			_color1SamplerState.Get(),
 			_color2SamplerState.Get(),
 			_depthSamplerState.Get(),
 			_shadowMapSamplerState.Get()
 		};
-		context->PSSetSamplers(0, g_mrt_sampler_count, samplerStates.data());
+		context->PSSetSamplers(0, g_mrt_sampler_state_count, samplerStates.data());
 	}
 }
 
@@ -158,6 +172,6 @@ void Deferred_light_material::unsetContextSamplers(const DX::DeviceResources& de
 {
 	auto context = deviceResources.GetD3DDeviceContext();
 
-	context->PSSetShaderResources(0, g_mrt_sampler_count, g_nullShaderResourceViews.data());
-	context->PSSetSamplers(0, g_mrt_sampler_count, g_nullSamplerStates.data());
+	context->PSSetShaderResources(0, g_mrt_shader_resource_count, g_nullShaderResourceViews.data());
+	context->PSSetSamplers(0, g_mrt_sampler_state_count, g_nullSamplerStates.data());
 }

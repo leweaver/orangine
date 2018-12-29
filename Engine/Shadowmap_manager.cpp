@@ -33,13 +33,19 @@ void Shadowmap_manager::returnTexture(std::unique_ptr<Shadow_map_texture> shadow
 	_texturePool->returnTexture(move(shadowMap));
 }
 
-std::shared_ptr<Texture> Shadowmap_manager::shadowMapTextureArray()
+std::shared_ptr<Texture> Shadowmap_manager::shadowMapDepthTextureArray()
 {
 	verifyTexturePool();
-	return _texturePool->shadowMapTextureArray();
+	return _texturePool->shadowMapDepthTextureArray();
 }
 
-void Shadowmap_manager::verifyTexturePool()
+std::shared_ptr<Texture> Shadowmap_manager::shadowMapStencilTextureArray()
+{
+	verifyTexturePool();
+	return _texturePool->shadowMapStencilTextureArray();
+}
+
+void Shadowmap_manager::verifyTexturePool() const
 {
 	if (!_texturePool) {
 		throw new std::logic_error("Invalid attempt to call shadowmap methods when no device is available");

@@ -84,6 +84,7 @@ void Render_step_manager::createRenderSteps()
 {
 	// Shadow maps
 	_renderStep_shadowMap.renderPasses[0] = std::make_unique<Render_pass_shadow>(_scene, g_max_render_target_views);
+	_renderStep_shadowMap.renderPasses[0]->setStencilRef(1);
 
 	// Deferred Lighting
 	_renderStep_entityDeferred.renderPasses[0] = std::make_unique<Render_pass_generic>([this](const auto& cameraData) {
@@ -234,7 +235,8 @@ void Render_step_manager::createWindowSizeDependentResources(DX::DeviceResources
 		deferredLightMaterial->setColor1Texture(renderTargets0.at(1));
 		deferredLightMaterial->setColor2Texture(renderTargets0.at(2));
 		deferredLightMaterial->setDepthTexture(depthTexture);
-		deferredLightMaterial->setShadowMapTexture(_scene.manager<IShadowmap_manager>().shadowMapTextureArray());
+		deferredLightMaterial->setShadowMapDepthTexture(_scene.manager<IShadowmap_manager>().shadowMapDepthTextureArray());
+		deferredLightMaterial->setShadowMapStencilTexture(_scene.manager<IShadowmap_manager>().shadowMapStencilTextureArray());
 
 		// Give the render targets to the render pass
 		std::get<0>(_renderStep_entityDeferred.renderPasses)->setRenderTargets(std::vector<std::shared_ptr<Render_target_view_texture>>(renderTargets0));
@@ -469,8 +471,8 @@ void Render_step_manager::createRenderStepResources(Render_step<TData, TRender_p
 		desc.StencilWriteMask = passConfig.stencilWriteMask();
 
 		desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-		desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
+		desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_REPLACE;
 		desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
 
 		desc.BackFace = desc.FrontFace;

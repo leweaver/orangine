@@ -6,8 +6,8 @@ using namespace oe;
 class Shadow_map_texture_array_texture : public Texture {
 public:
 	Shadow_map_texture_array_texture(ID3D11ShaderResourceView* srv)
+		: Texture(srv)
 	{
-		_shaderResourceView = srv;
 	}
 
 	virtual void load(ID3D11Device* device)
@@ -62,21 +62,27 @@ void Shadow_map_texture_pool::createDeviceDependentResources(DX::DeviceResources
 	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
 	shaderResourceViewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
 	shaderResourceViewDesc.ViewDimension = _textureArraySize == 1 ? D3D11_SRV_DIMENSION_TEXTURE2D : D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-	shaderResourceViewDesc.Texture2DArray.ArraySize = 1;
+	shaderResourceViewDesc.Texture2DArray.ArraySize = _textureArraySize;
 	shaderResourceViewDesc.Texture2DArray.MipLevels = 1;
 	shaderResourceViewDesc.Texture2DArray.MostDetailedMip = 0;
 	shaderResourceViewDesc.Texture2DArray.FirstArraySlice = 0;
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderResourceView;
-	ThrowIfFailed(device->CreateShaderResourceView(_shadowMapArrayTexture2D.Get(), &shaderResourceViewDesc, &shaderResourceView),
-		"Creating Shadow_map_texture_pool shaderResourceView");
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> depthShaderResourceView;
+	ThrowIfFailed(device->CreateShaderResourceView(_shadowMapArrayTexture2D.Get(), &shaderResourceViewDesc, &depthShaderResourceView),
+		"Creating Shadow_map_texture_pool depth shaderResourceView");
+
+	shaderResourceViewDesc.Format = DXGI_FORMAT_X24_TYPELESS_G8_UINT;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> stencilShaderResourceView;
+	ThrowIfFailed(device->CreateShaderResourceView(_shadowMapArrayTexture2D.Get(), &shaderResourceViewDesc, &stencilShaderResourceView),
+		"Creating Shadow_map_texture_pool stencil shaderResourceView");
 
 	// Create the shadow maps
-	_shadowMapArrayTexture = std::make_shared<Shadow_map_texture_array_texture>(shaderResourceView.Get());
-	auto arrayTextureRetriever = [this, shaderResourceView]() {
+	_shadowMapDepthArrayTexture = std::make_shared<Shadow_map_texture_array_texture>(depthShaderResourceView.Get());
+	_shadowMapStencilArrayTexture = std::make_shared<Shadow_map_texture_array_texture>(stencilShaderResourceView.Get());
+	auto arrayTextureRetriever = [this, depthShaderResourceView]() {
 		return Shadow_map_texture_array_slice::Array_texture {
 			_shadowMapArrayTexture2D.Get(),
-			shaderResourceView.Get(),
+			depthShaderResourceView.Get(),
 			_textureArraySize
 		};
 	};
@@ -99,8 +105,10 @@ void Shadow_map_texture_pool::destroyDeviceDependentResources()
 		throw std::logic_error("Must return all borrowed textures prior to a call to destroyDeviceDependentResources");
 
 	_shadowMaps.resize(0);
-	_shadowMapArrayTexture->unload();
-	_shadowMapArrayTexture.reset();
+	_shadowMapDepthArrayTexture->unload();
+	_shadowMapDepthArrayTexture.reset();
+	_shadowMapStencilArrayTexture->unload();
+	_shadowMapStencilArrayTexture.reset();
 	_shadowMapArrayTexture2D.Reset();
 }
 
@@ -127,7 +135,7 @@ void Shadow_map_texture_pool::returnTexture(std::unique_ptr<Shadow_map_texture> 
 	if (texture2d.Get() != _shadowMapArrayTexture2D.Get())
 		throw std::logic_error("Attempt to return a shadowMapTexture that doesn't belong to this pool!");
 
-	auto arraySliceTexture = dynamic_cast<Shadow_map_texture_array_slice*>(shadowMap.get());
+	const auto arraySliceTexture = dynamic_cast<Shadow_map_texture_array_slice*>(shadowMap.get());
 	assert(arraySliceTexture != nullptr);
 
 	shadowMap.release();

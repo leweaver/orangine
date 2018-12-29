@@ -17,7 +17,8 @@ namespace oe {
 		IShadowmap_manager(Scene& scene) : Manager_base(scene) {}
 		virtual std::unique_ptr<Shadow_map_texture_array_slice> borrowTexture() = 0;
 		virtual void returnTexture(std::unique_ptr<Shadow_map_texture> shadowMap) = 0;
-		virtual std::shared_ptr<Texture> shadowMapTextureArray() = 0;
+		virtual std::shared_ptr<Texture> shadowMapDepthTextureArray() = 0;
+		virtual std::shared_ptr<Texture> shadowMapStencilTextureArray() = 0;
 	};
 
 	class Shadowmap_manager : public IShadowmap_manager {
@@ -25,6 +26,7 @@ namespace oe {
 		Shadowmap_manager(Scene& scene, DX::DeviceResources& deviceResources) 
 			: IShadowmap_manager(scene)
 			, _deviceResources(deviceResources)
+			, _texturePool(nullptr)
 		{}
 		virtual ~Shadowmap_manager();
 
@@ -39,10 +41,11 @@ namespace oe {
 		// IShadowmap_manager implementation
 		std::unique_ptr<Shadow_map_texture_array_slice> borrowTexture() override;
 		void returnTexture(std::unique_ptr<Shadow_map_texture> shadowMap) override;
-		std::shared_ptr<Texture> shadowMapTextureArray() override;
+		std::shared_ptr<Texture> shadowMapDepthTextureArray() override;
+		std::shared_ptr<Texture> shadowMapStencilTextureArray() override;
 
 	private:
-		void verifyTexturePool();
+		void verifyTexturePool() const;
 
 		DX::DeviceResources& _deviceResources;
 		std::unique_ptr<Shadow_map_texture_pool> _texturePool;

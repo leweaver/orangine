@@ -97,6 +97,7 @@ void Render_pass_shadow::render(const Camera_data&)
 			auto context = d3DDeviceResources.GetD3DDeviceContext();
 			const auto depthStencilView = shadowData->depthStencilView();
 			context->OMSetRenderTargets(static_cast<UINT>(_renderTargetViews.size()), _renderTargetViews.data(), depthStencilView);
+			
 			context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 			context->RSSetViewports(1, &shadowData->viewport());

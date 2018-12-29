@@ -21,8 +21,10 @@ namespace oe
 		void setColor2Texture(const std::shared_ptr<Texture>& texture) { _color2Texture = texture; }
 		const std::shared_ptr<Texture>& depthTexture() const { return _depthTexture; }
 		void setDepthTexture(const std::shared_ptr<Texture>& texture) { _depthTexture = texture; }
-		const std::shared_ptr<Texture>& shadowMapTexture() const { return _shadowMapTexture; }
-		void setShadowMapTexture(const std::shared_ptr<Texture>& texture) { _shadowMapTexture = texture; }
+		const std::shared_ptr<Texture>& shadowMapDepthTexture() const { return _shadowMapDepthTexture; }
+		void setShadowMapDepthTexture(const std::shared_ptr<Texture>& texture) { _shadowMapDepthTexture = texture; }
+		const std::shared_ptr<Texture>& shadowMapStencilTexture() const { return _shadowMapStencilTexture; }
+		void setShadowMapStencilTexture(const std::shared_ptr<Texture>& texture) { _shadowMapStencilTexture = texture; }
 
 		void vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const override;
 
@@ -65,7 +67,8 @@ namespace oe
 		std::shared_ptr<Texture> _color1Texture;
 		std::shared_ptr<Texture> _color2Texture;
 		std::shared_ptr<Texture> _depthTexture;
-		std::shared_ptr<Texture> _shadowMapTexture;
+		std::shared_ptr<Texture> _shadowMapDepthTexture;
+		std::shared_ptr<Texture> _shadowMapStencilTexture;
 
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _color0SamplerState;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _color1SamplerState;

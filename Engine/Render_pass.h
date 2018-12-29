@@ -30,7 +30,7 @@ namespace oe {
 		void setDepthStencilState(ID3D11DepthStencilState* depthStencilState);
 		ID3D11DepthStencilState* depthStencilState() const { return _depthStencilState.Get(); }
 
-		void stencilRef(uint32_t stencilRef) { _stencilRef = stencilRef; }
+		void setStencilRef(uint32_t stencilRef) { _stencilRef = stencilRef; }
 		uint32_t stencilRef() const { return _stencilRef; }
 
 	protected:

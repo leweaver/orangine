@@ -15,13 +15,15 @@ using namespace DirectX;
 using namespace SimpleMath;
 using namespace std::literals;
 
-Material::Material()
+const std::wstring Material::shader_path = std::wstring(L"data/shaders/");
+
+Material::Material(Material_alpha_mode alphaMode)
 	: _vertexShader(nullptr)
 	, _pixelShader(nullptr)
 	, _inputLayout(nullptr)
 	, _errorState(false)
 	, _requiresRecompile(true)
-	, _alphaMode(Material_alpha_mode::Opaque)
+	, _alphaMode(alphaMode)
 {
 }
 
@@ -227,7 +229,7 @@ bool Material::createPixelShader(ID3D11Device* device)
 	return true;
 }
 
-void Material::bind(const Render_pass_blend_mode blendMode,
+void Material::bind(Render_pass_blend_mode blendMode,
 	const Render_light_data& renderLightData,
 	const DX::DeviceResources& deviceResources,
 	bool enablePixelShader)
@@ -255,14 +257,6 @@ void Material::bind(const Render_pass_blend_mode blendMode,
 
 			if (!createPSConstantBuffer(device, *_psConstantBuffer.ReleaseAndGetAddressOf()))
 				throw std::runtime_error("Failed to create pixel shader constant buffer");
-		}
-		_errorState = false;
-	}
-	else if (shaderResourcesRequireRecreate(renderLightData, blendMode)) {
-		LOG(INFO) << "Recreating shader resources for material";
-		_errorState = true;
-		{
-			createShaderResources(deviceResources, renderLightData, blendMode);
 		}
 		_errorState = false;
 	}

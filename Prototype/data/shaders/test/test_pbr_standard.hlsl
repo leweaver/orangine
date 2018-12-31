@@ -6,4 +6,4 @@
 #define MAP_OCCLUSION 1
 #define MAP_EMISSIVE 1
 
-#include "../pbr_metallic_PS.hlsl"
+#include "../PBR_material_PS.hlsl"

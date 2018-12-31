@@ -48,6 +48,45 @@ void Entity_render_manager::initialize()
 
 void Entity_render_manager::shutdown()
 {
+	_environmentMap = nullptr;
+}
+
+void Entity_render_manager::tick()
+{
+	if (_renderLightData_lit) {
+		if (_environmentMap &&
+			_environmentMap->getShaderResourceView() &&
+			_environmentMap->getShaderResourceView() != _renderLightData_lit->environmentMapSRV())
+		{
+			// Set sampler state
+			D3D11_SAMPLER_DESC samplerDesc;
+
+			// TODO: Use values from glTF?
+			// Create a texture sampler state description.
+			samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+			samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+			samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+			samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+			samplerDesc.MipLODBias = 0.0f;
+			samplerDesc.MaxAnisotropy = 1;
+			samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+			samplerDesc.BorderColor[0] = 0;
+			samplerDesc.BorderColor[1] = 0;
+			samplerDesc.BorderColor[2] = 0;
+			samplerDesc.BorderColor[3] = 0;
+			samplerDesc.MinLOD = 0;
+			samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+			// Create the texture sampler state.
+			ID3D11SamplerState* samplerState;
+			ThrowIfFailed(deviceResources().GetD3DDevice()->CreateSamplerState(&samplerDesc, &samplerState));
+			
+			_renderLightData_lit->setEnvironmentMap(_environmentMap->getShaderResourceView(), samplerState);
+			samplerState->Release();
+		} else {
+			_renderLightData_lit->setEnvironmentMap(nullptr, nullptr);
+		}
+	}
 }
 
 void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)

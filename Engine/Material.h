@@ -16,7 +16,7 @@ namespace oe {
 	class Material
 	{
 	public:
-		Material();
+		Material(Material_alpha_mode alphaMode = Material_alpha_mode::Opaque);
 
 		Material(const Material& other) = delete;
 		Material(Material&& other) = delete;
@@ -35,11 +35,10 @@ namespace oe {
 		void release();
 
 		// Compiles (if needed), binds pixel and vertex shaders, and textures
-		void bind(const Render_pass_blend_mode blendMode,
+		void bind(Render_pass_blend_mode blendMode,
 			const Render_light_data& renderLightData,
 			const DX::DeviceResources& deviceResources,
 			bool enablePixelShader);
-
 
 		// Uploads shader constants, then renders
 		bool render(const Renderer_data& rendererData,
@@ -59,6 +58,7 @@ namespace oe {
 		}
 
 		virtual Material_light_mode lightMode() { return Material_light_mode::Unlit; }
+		virtual const std::string& materialType() const = 0;
 
 	protected:
 
@@ -84,14 +84,14 @@ namespace oe {
 		bool createVertexShader(ID3D11Device* device);
 		bool createPixelShader(ID3D11Device* device);
 		
-		virtual bool createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) { return true; }
+		virtual bool createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) = 0;
 		virtual void updateVSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix, 
 			const DirectX::SimpleMath::Matrix& viewMatrix,
 			const DirectX::SimpleMath::Matrix& projMatrix, 
 			ID3D11DeviceContext* context, 
 			ID3D11Buffer* buffer) {};
 
-		virtual bool createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) { return true; }
+		virtual bool createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) = 0;
 		virtual void updatePSConstantBuffer(const Render_light_data& renderlightData, const DirectX::SimpleMath::Matrix& worldMatrix, 
 			const DirectX::SimpleMath::Matrix& viewMatrix,
 			const DirectX::SimpleMath::Matrix& projMatrix, 
@@ -101,8 +101,7 @@ namespace oe {
 		// This method is the entry point for generating the shader. It will determine the constant layout, 
 		// create the shader resource view & sampler arrays.
 		virtual void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) = 0;
-		virtual bool shaderResourcesRequireRecreate(const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) { return false; }
-
+		
 		/* 
 		 * Per Frame
 		 */ 
@@ -114,6 +113,8 @@ namespace oe {
 			D3D11_TEXTURE_ADDRESS_MODE textureAddressMode, 
 			ID3D11SamplerState** d3D11SamplerState);
 
+		static std::wstring_view shaderPath() { return shader_path; }
+
 	private:
 		ID3D11VertexShader* _vertexShader;
 		ID3D11PixelShader*  _pixelShader;
@@ -124,6 +125,8 @@ namespace oe {
 		bool _requiresRecompile;
 
 		Material_alpha_mode _alphaMode;
+
+		static const std::wstring shader_path;
 	};
 
 }

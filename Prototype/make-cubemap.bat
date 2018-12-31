@@ -1,0 +1,1 @@
+..\..\DirectXTex\Texassemble\bin\Desktop_2017\x64\Debug\texassemble.exe cube -o data\textures\park-cubemap.dds data\textures\park-cubemap\face0.jpg data\textures\park-cubemap\face1.jpg data\textures\park-cubemap\face2.jpg data\textures\park-cubemap\face3.jpg data\textures\park-cubemap\face4.jpg data\textures\park-cubemap\face5.jpg

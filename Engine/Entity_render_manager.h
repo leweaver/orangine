@@ -30,6 +30,7 @@ namespace oe {
 
 	class IEntity_render_manager :
 		public Manager_base,
+		public Manager_tickable,
 		public Manager_deviceDependent,
 		public Manager_windowDependent
 	{
@@ -56,6 +57,8 @@ namespace oe {
 
 		virtual Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) const = 0;
 		virtual void clearRenderStats() = 0;
+
+		virtual void setEnvironmentMap(std::shared_ptr<Texture> environmentMap) = 0;
 	};
 
 	class Entity_render_manager : public IEntity_render_manager
@@ -75,6 +78,9 @@ namespace oe {
 		// Manager_base implementation
 		void initialize() override;
 		void shutdown() override;
+
+		// Manager_tickable implementation
+		void tick() override;
 		
 		// Manager_windowDependent implementation
 		void createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND window, int width, int height) override;
@@ -100,6 +106,11 @@ namespace oe {
 			) override;
 		Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) const override;
 		void clearRenderStats() override;
+		
+		void setEnvironmentMap(std::shared_ptr<Texture> environmentMap) override
+		{
+			_environmentMap = environmentMap;
+		}
 
 	protected:
 
@@ -136,6 +147,7 @@ namespace oe {
 		Render_stats _renderStats;
 		Buffer_array_set _bufferArraySet;
 		std::vector<Entity*> _renderLights;
+		std::shared_ptr<Texture> _environmentMap;
 
 		// The template arguments here must match the size of the lights array in the shader constant buffer files.
 		std::unique_ptr<Render_light_data_impl<0>> _renderLightData_unlit;

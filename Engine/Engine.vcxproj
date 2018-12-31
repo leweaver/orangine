@@ -177,6 +177,7 @@
     <ClInclude Include="Light_provider.h" />
     <ClInclude Include="Manager_base.h" />
     <ClInclude Include="Material.h" />
+    <ClInclude Include="Material_base.h" />
     <ClInclude Include="Material_repository.h" />
     <ClInclude Include="Mesh_data.h" />
     <ClInclude Include="Mesh_data_component.h" />
@@ -202,6 +203,7 @@
     <ClInclude Include="Scene_graph_manager.h" />
     <ClInclude Include="Shadow_map_texture_pool.h" />
     <ClInclude Include="Simple_types.h" />
+    <ClInclude Include="Skybox_material.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Test_component.h" />
@@ -255,6 +257,7 @@
     <ClCompile Include="Shadowmap_manager.cpp" />
     <ClCompile Include="Shadow_map_texture.cpp" />
     <ClCompile Include="Shadow_map_texture_pool.cpp" />
+    <ClCompile Include="Skybox_material.cpp" />
     <ClCompile Include="Test_component.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Unlit_material.cpp" />

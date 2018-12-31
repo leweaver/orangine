@@ -47,7 +47,7 @@ Game::~Game()
 
 	ComPtr<ID3D11Debug> d3DDebug;
 	if (SUCCEEDED(device.As(&d3DDebug))) {
-		d3DDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+		//d3DDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 	}
 }
 
@@ -280,6 +280,10 @@ void Game::Initialize(HWND window, int width, int height)
 		CreateCamera(false);
 		CreateLights();
 		CreateGeometricPrimitives();
+
+		// Load the skybox
+		//auto skyBoxTexure = std::make_shared<File_texture>(std::wstring(L"data/textures/park-cubemap.dds"));
+		//m_scene->manager<IEntity_render_manager>().setEnvironmentMap(skyBoxTexure);
 	}
 	catch (const std::exception &e)
 	{

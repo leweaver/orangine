@@ -16,9 +16,11 @@ const auto g_mrt_sampler_state_count = 5;
 const std::array<ID3D11ShaderResourceView*, g_mrt_shader_resource_count> g_nullShaderResourceViews = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 const std::array<ID3D11SamplerState*, g_mrt_sampler_state_count> g_nullSamplerStates = { nullptr, nullptr, nullptr, nullptr, nullptr };
 
-void Deferred_light_material::vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const
+const std::string g_material_type = "Deferred_light_material";
+
+const std::string& Deferred_light_material::materialType() const
 {
-	vertexAttributes.push_back(Vertex_attribute::Position);
+	return g_material_type;
 }
 
 void Deferred_light_material::createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode)
@@ -26,23 +28,9 @@ void Deferred_light_material::createShaderResources(const DX::DeviceResources& d
 	assert(blendMode == Render_pass_blend_mode::Additive);
 }
 
-UINT Deferred_light_material::inputSlot(Vertex_attribute attribute)
-{
-	(void)attribute;
-	return 0;
-}
-
-Material::Shader_compile_settings Deferred_light_material::vertexShaderSettings() const
-{
-	Shader_compile_settings settings = Material::vertexShaderSettings();
-	settings.filename = L"data/shaders/deferred_light_VS.hlsl"s;
-	return settings;
-}
-
 Material::Shader_compile_settings Deferred_light_material::pixelShaderSettings() const
 {
-	Shader_compile_settings settings = Material::pixelShaderSettings();
-	settings.filename = L"data/shaders/deferred_light_PS.hlsl"s;
+	Shader_compile_settings settings = Base_type::pixelShaderSettings();
 	//settings.defines["DEBUG_DISPLAY_METALLIC_ROUGHNESS"] = "1";
 	//settings.defines["DEBUG_LIGHTING_ONLY"] = "1";
 	//settings.defines["DEBUG_NO_LIGHTING"] = "1";
@@ -52,60 +40,33 @@ Material::Shader_compile_settings Deferred_light_material::pixelShaderSettings()
 
 void Deferred_light_material::setupEmitted(bool enabled)
 {
-	_constants.emittedEnabled = enabled;
+	_emittedEnabled = enabled;
 }
 
-bool Deferred_light_material::createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer)
-{
-	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.ByteWidth = sizeof(Deferred_light_material_constants);
-	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
-
-	_constants.viewMatrixInv = Matrix::Identity;
-	_constants.projMatrixInv = Matrix::Identity;
-
-	D3D11_SUBRESOURCE_DATA initData;
-	initData.pSysMem = &_constants;
-	initData.SysMemPitch = 0;
-	initData.SysMemSlicePitch = 0;
-
-	device->CreateBuffer(&bufferDesc, &initData, &buffer);
-
-	std::string name("DeferredLightMaterial Constant Buffer");
-	buffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
-
-	return true;
-}
-
-void Deferred_light_material::updatePSConstantBuffer(const Render_light_data& renderlightData, 
-	const Matrix& worldMatrix,
-	const Matrix& viewMatrix, 
-	const Matrix& projMatrix, 
-	ID3D11DeviceContext* context,
-	ID3D11Buffer* buffer)
+void Deferred_light_material::updatePSConstantBufferValues(Deferred_light_material_constant_buffer& constants,
+	const Render_light_data& renderlightData,
+	const DirectX::SimpleMath::Matrix& worldMatrix,
+	const DirectX::SimpleMath::Matrix& viewMatrix,
+	const DirectX::SimpleMath::Matrix& projMatrix)
 {
 	const auto viewMatrixInv = viewMatrix.Invert();
 
 	// Convert to LH, for DirectX. 
-	_constants.viewMatrixInv = XMMatrixTranspose(viewMatrixInv);
-	_constants.projMatrixInv = XMMatrixTranspose(XMMatrixInverse(nullptr, projMatrix));
+	constants.viewMatrixInv = XMMatrixTranspose(viewMatrixInv);
+	constants.projMatrixInv = XMMatrixTranspose(XMMatrixInverse(nullptr, projMatrix));
 	/*
 	LOG(DEBUG) <<
 		"\n{" <<
 		"\n  " << worldMatrix._11 << ", " << worldMatrix._12 << ", " << worldMatrix._13 << ", " << worldMatrix._14 <<
 		"\n  " << worldMatrix._21 << ", " << worldMatrix._22 << ", " << worldMatrix._23 << ", " << worldMatrix._24 <<
 		"\n  " << worldMatrix._31 << ", " << worldMatrix._32 << ", " << worldMatrix._33 << ", " << worldMatrix._34 <<
-		"\n  " << worldMatrix._41 << ", " << worldMatrix._42 << ", " << worldMatrix._43 << ", " << worldMatrix._44 << 
+		"\n  " << worldMatrix._41 << ", " << worldMatrix._42 << ", " << worldMatrix._43 << ", " << worldMatrix._44 <<
 		"\n}";
 		*/
 
-	// Inverse of the view matrix is the camera transform matrix
-	_constants.eyePosition = Vector4(viewMatrixInv._41, viewMatrixInv._42, viewMatrixInv._43, 0.0);
-
-	context->UpdateSubresource(buffer, 0, nullptr, &_constants, 0, 0);
+		// Inverse of the view matrix is the camera transform matrix
+	constants.eyePosition = Vector4(viewMatrixInv._41, viewMatrixInv._42, viewMatrixInv._43, 0.0);
+	constants.emittedEnabled = _emittedEnabled;
 }
 
 void Deferred_light_material::setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData)

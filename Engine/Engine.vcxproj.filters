@@ -194,6 +194,12 @@
     <ClInclude Include="Light_provider.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Skybox_material.h">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="Material_base.h">
+      <Filter>Systems\Renderer\Materials</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Input_manager.cpp">
@@ -318,6 +324,9 @@
     </ClCompile>
     <ClCompile Include="Light_provider.cpp">
       <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Skybox_material.cpp">
+      <Filter>Systems\Renderer\Materials</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

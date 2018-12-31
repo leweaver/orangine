@@ -1,15 +1,48 @@
 ﻿#pragma once
 
 #include "Material.h"
-#include "Material_repository.h"
 #include "Texture.h"
 
 #include <memory>
 #include <array>
 #include "SimpleMath.h"
+#include "Material_base.h"
 
 namespace oe {
-	class PBR_material : public Material {
+
+
+	struct PBR_material_vs_constant_buffer : Vertex_constant_buffer_base
+	{
+		DirectX::XMMATRIX worldView; // for debugging only
+		DirectX::XMMATRIX world;
+		DirectX::XMMATRIX worldInvTranspose;
+	};
+
+	struct PBR_material_ps_constant_buffer : Pixel_constant_buffer_base
+	{
+		DirectX::XMMATRIX world;
+		DirectX::XMFLOAT4 baseColor;
+		DirectX::XMFLOAT4 metallicRoughness; // metallic, roughness
+		DirectX::XMFLOAT4 emissive; // emissive color (RGB)
+		DirectX::XMFLOAT4 eyePosition;
+	};
+
+	class PBR_material : public Material_base<
+		PBR_material_vs_constant_buffer,
+		PBR_material_ps_constant_buffer,
+		Vertex_attribute::Position,
+		Vertex_attribute::Normal,
+		Vertex_attribute::Tangent,
+		Vertex_attribute::Texcoord_0>
+	{
+		using Base_type = Material_base<
+			PBR_material_vs_constant_buffer,
+			PBR_material_ps_constant_buffer,
+			Vertex_attribute::Position,
+			Vertex_attribute::Normal,
+			Vertex_attribute::Tangent,
+			Vertex_attribute::Texcoord_0>;
+
 		enum Texture_type
 		{
 			BaseColor,
@@ -39,7 +72,7 @@ namespace oe {
 		 * The alphaMode property specifies how alpha is interpreted. These values are linear.
 		 * If a baseColorTexture is specified, this value is multiplied with the texel values.
 		 */
-		DirectX::SimpleMath::Color baseColor() const 
+		DirectX::SimpleMath::Color baseColor() const
 		{
 			return _baseColor;
 		}
@@ -49,9 +82,9 @@ namespace oe {
 		}
 
 		/*
-		 * The base color texture. This texture contains RGB(A) components in sRGB color space. 
-		 * The first three components (RGB) specify the base color of the material. If the fourth component (A) is present, it represents the alpha coverage of the material. 
-		 * Otherwise, an alpha of 1.0 is assumed. The alphaMode property specifies how alpha is interpreted. 
+		 * The base color texture. This texture contains RGB(A) components in sRGB color space.
+		 * The first three components (RGB) specify the base color of the material. If the fourth component (A) is present, it represents the alpha coverage of the material.
+		 * Otherwise, an alpha of 1.0 is assumed. The alphaMode property specifies how alpha is interpreted.
 		 * The stored texels must not be premultiplied.
 		 */
 		const std::shared_ptr<Texture>& baseColorTexture() const
@@ -68,9 +101,9 @@ namespace oe {
 		}
 
 		/*
-		 * The metalness of the material. A value of 1.0 means the material is a metal. 
-		 * A value of 0.0 means the material is a dielectric. 
-		 * Values in between are for blending between metals and dielectrics such as dirty metallic surfaces. This value is linear. 
+		 * The metalness of the material. A value of 1.0 means the material is a metal.
+		 * A value of 0.0 means the material is a dielectric.
+		 * Values in between are for blending between metals and dielectrics such as dirty metallic surfaces. This value is linear.
 		 * If a metallicRoughnessTexture is specified, this value is multiplied with the metallic texel values.
 		 */
 		float metallicFactor() const
@@ -84,15 +117,15 @@ namespace oe {
 		}
 
 		/*
-		 * The roughness of the material. A value of 1.0 means the material is completely rough. 
-		 * A value of 0.0 means the material is completely smooth. This value is linear. 
+		 * The roughness of the material. A value of 1.0 means the material is completely rough.
+		 * A value of 0.0 means the material is completely smooth. This value is linear.
 		 * If a metallicRoughnessTexture is specified, this value is multiplied with the roughness texel values.
 		 */
 		float roughnessFactor() const
 		{
 			return _roughness;
 		}
-		 
+
 		void setRoughnessFactor(float roughness)
 		{
 			_roughness = roughness;
@@ -120,9 +153,9 @@ namespace oe {
 		}
 
 		/*
-		 * The metallic-roughness texture. 
-		 * The metalness values are sampled from the B channel. The roughness values are sampled from the G channel. 
-		 * These values are linear. 
+		 * The metallic-roughness texture.
+		 * The metalness values are sampled from the B channel. The roughness values are sampled from the G channel.
+		 * These values are linear.
 		 * If other channels are present (R or A), they are ignored for metallic-roughness calculations.
 		 */
 		const std::shared_ptr<Texture>& metallicRoughnessTexture() const
@@ -177,48 +210,24 @@ namespace oe {
 			}
 		}
 
-		void vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const override;
 		Material_light_mode lightMode() override { return Material_light_mode::Lit; }
+		const std::string& materialType() const override;
 
 	protected:
-		
-		struct PBR_constants_vs
-		{
-			DirectX::XMMATRIX worldView; // for debugging only
-			DirectX::XMMATRIX worldViewProjection;
-			DirectX::XMMATRIX world;
-			DirectX::XMMATRIX worldInvTranspose;
-		} _constantsVs{};
 
-		struct PBR_constants_ps
-		{
-			DirectX::XMMATRIX world;
-			DirectX::XMFLOAT4 baseColor;
-			DirectX::XMFLOAT4 metallicRoughness; // metallic, roughness
-			DirectX::XMFLOAT4 emissive; // emissive color (RGB)
-			DirectX::XMFLOAT4 eyePosition;
-		} _constantsPs{};
-
-		uint32_t inputSlot(Vertex_attribute attribute) override;
-
-		Shader_compile_settings vertexShaderSettings() const override;
 		Shader_compile_settings pixelShaderSettings() const override;
 
-		bool createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) override;
-		void updateVSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix, 
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix,
-			ID3D11DeviceContext* context, 
-			ID3D11Buffer* buffer) override;
-
-		bool createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) override;
-		void updatePSConstantBuffer(const Render_light_data& renderlightData, 
+		void updateVSConstantBufferValues(PBR_material_vs_constant_buffer& constants,
 			const DirectX::SimpleMath::Matrix& worldMatrix,
 			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix,
-			ID3D11DeviceContext* context,
-			ID3D11Buffer* buffer) override;
-		
+			const DirectX::SimpleMath::Matrix& projMatrix) override;
+
+		void updatePSConstantBufferValues(PBR_material_ps_constant_buffer& constants,
+			const Render_light_data& renderlightData,
+			const DirectX::SimpleMath::Matrix& worldMatrix,
+			const DirectX::SimpleMath::Matrix& viewMatrix,
+			const DirectX::SimpleMath::Matrix& projMatrix) override;
+
 		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
 		void releaseShaderResources();
 

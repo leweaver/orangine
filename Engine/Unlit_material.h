@@ -1,9 +1,13 @@
 ﻿#pragma once
 
-#include "Material.h"
+#include "Material_base.h"
 
 namespace oe {
-	class Unlit_material : public Material {
+	struct Unlit_material_vs_constant_buffer : Vertex_constant_buffer_base {
+		DirectX::SimpleMath::Color baseColor;
+	};
+
+	class Unlit_material : public Material_base<Unlit_material_vs_constant_buffer, Pixel_constant_buffer_base, Vertex_attribute::Position> {
 	public:
 		Unlit_material();
 
@@ -16,31 +20,19 @@ namespace oe {
 
 		DirectX::SimpleMath::Color baseColor() const { return _baseColor; }
 		void setBaseColor(const DirectX::SimpleMath::Color& baseColor) { _baseColor = baseColor; }
-
-		void vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const override;
+		
+		const std::string& materialType() const override;
 
 	protected:
-		struct Unlit_constants_vs {
-			DirectX::SimpleMath::Matrix worldViewProjection;
-			DirectX::SimpleMath::Color baseColor;
-		};
-
-		uint32_t inputSlot(Vertex_attribute attribute) override;
-
-		Shader_compile_settings vertexShaderSettings() const override;
-		Shader_compile_settings pixelShaderSettings() const override;
-
-		bool createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) override;
-		void updateVSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix,
+		
+		void updateVSConstantBufferValues(Unlit_material_vs_constant_buffer& constants, 
+			const DirectX::SimpleMath::Matrix& worldMatrix,
 			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix,
-			ID3D11DeviceContext* context,
-			ID3D11Buffer* buffer) override;
+			const DirectX::SimpleMath::Matrix& projMatrix) override;
 
 		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
 
 	private:
 		DirectX::SimpleMath::Color _baseColor;
-		Unlit_constants_vs _constantsVs;
 	};
 }

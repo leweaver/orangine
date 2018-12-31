@@ -8,8 +8,18 @@ namespace oe
 	public:
 		ID3D11Buffer* buffer() const { return _constantBuffer.Get(); }
 
+		ID3D11ShaderResourceView* environmentMapSRV() const
+		{
+			return _environmentMapSRV.Get();
+		}
+		ID3D11SamplerState* environmentMapSamplerState() const {
+			return _environmentMapSamplerState.Get();
+		}
+
 	protected:
 		Microsoft::WRL::ComPtr<ID3D11Buffer> _constantBuffer;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _environmentMapSRV;
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> _environmentMapSamplerState;
 	};
 
 	template<uint8_t TMax_lights>
@@ -78,6 +88,11 @@ namespace oe
 		bool addAmbientLight(const DirectX::SimpleMath::Color& color, float intensity)
 		{
 			return _lightConstants.addLight({ Light_type::Ambient, DirectX::SimpleMath::Vector3::Zero, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
+		}
+		void setEnvironmentMap(ID3D11ShaderResourceView* srv, ID3D11SamplerState* samplerState)
+		{
+			_environmentMapSRV = srv;
+			_environmentMapSamplerState = samplerState;
 		}
 		void updateBuffer(ID3D11DeviceContext* context)
 		{

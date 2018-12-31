@@ -1,19 +1,13 @@
 ﻿#pragma once
 #include "Material.h"
+#include "Material_base.h"
 
 namespace oe {
-	class Clear_gbuffer_material : public Material
-	{
+	class Clear_gbuffer_material : public Material_base<Vertex_constant_buffer_empty, Pixel_constant_buffer_base, Vertex_attribute::Position> {
 	public:
 
-		void vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const override;
-
+		const std::string& materialType() const override;
 	protected:
-		uint32_t inputSlot(Vertex_attribute attribute) override;
-
-		Shader_compile_settings vertexShaderSettings() const override;
-		Shader_compile_settings pixelShaderSettings() const override;
-
 		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
 	};
 }

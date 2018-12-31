@@ -1,12 +1,24 @@
 ﻿#pragma once
 #include "Material.h"
+#include "Material_base.h"
 
 namespace oe
 {
 	class Render_target_texture;
 
-	class Deferred_light_material : public Material
+	// This constant buffer contains data that is shared across each light that is rendered, such as the camera data.
+	// Individual light parameters are stored in the constant buffer managed by the Render_light_data_impl class.
+	struct Deferred_light_material_constant_buffer : Pixel_constant_buffer_base
 	{
+		DirectX::XMMATRIX viewMatrixInv;
+		DirectX::XMMATRIX projMatrixInv;
+		DirectX::XMFLOAT4 eyePosition;
+		bool emittedEnabled = false;
+	};
+
+	class Deferred_light_material : public Material_base<Vertex_constant_buffer_empty, Deferred_light_material_constant_buffer, Vertex_attribute::Position>
+	{
+		using Base_type = Material_base<Vertex_constant_buffer_empty, Deferred_light_material_constant_buffer, Vertex_attribute::Position>;
 	public:
 
 		static constexpr uint32_t max_lights = 8;
@@ -25,37 +37,21 @@ namespace oe
 		void setShadowMapDepthTexture(const std::shared_ptr<Texture>& texture) { _shadowMapDepthTexture = texture; }
 		const std::shared_ptr<Texture>& shadowMapStencilTexture() const { return _shadowMapStencilTexture; }
 		void setShadowMapStencilTexture(const std::shared_ptr<Texture>& texture) { _shadowMapStencilTexture = texture; }
-
-		void vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const override;
-
+		
 		void setupEmitted(bool enabled);
 
 		Material_light_mode lightMode() override { return Material_light_mode::Lit; }
+		const std::string& materialType() const override;
 
 	protected:
-
-		// This constant buffer contains data that is shared across each light that is rendered, such as the camera data.
-		// Individual light parameters are stored in the constant buffer managed by the Render_light_data_impl class.
-		struct Deferred_light_material_constants
-		{
-			DirectX::XMMATRIX viewMatrixInv;
-			DirectX::XMMATRIX projMatrixInv;
-			DirectX::XMFLOAT4 eyePosition;
-			bool emittedEnabled = false;
-		} _constants;
-
-		UINT inputSlot(Vertex_attribute attribute) override;
-
-		Shader_compile_settings vertexShaderSettings() const override;
+		
 		Shader_compile_settings pixelShaderSettings() const override;
 
-		bool createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) override;
-		void updatePSConstantBuffer(const Render_light_data& renderlightData, 
-			const DirectX::SimpleMath::Matrix& worldMatrix, 
+		void updatePSConstantBufferValues(Deferred_light_material_constant_buffer& constants,
+			const Render_light_data& renderlightData,
+			const DirectX::SimpleMath::Matrix& worldMatrix,
 			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix, 
-			ID3D11DeviceContext* context, 
-			ID3D11Buffer* buffer) override;
+			const DirectX::SimpleMath::Matrix& projMatrix) override;
 
 		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
 		
@@ -77,5 +73,6 @@ namespace oe
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _shadowMapSamplerState;
 
 		int32_t _shadowMapCount = 0;
+		bool _emittedEnabled = false;
 	};
 }

@@ -9,6 +9,8 @@ using namespace std::literals;
 const std::array<ID3D11ShaderResourceView*, 5> g_nullShaderResourceViews = { nullptr, nullptr, nullptr, nullptr, nullptr };
 const std::array<ID3D11SamplerState*, 5> g_nullSamplerStates = { nullptr, nullptr, nullptr, nullptr, nullptr };
 
+const std::string g_material_type = "PBR_material";
+
 PBR_material::PBR_material()
 	: _enableDeferred(false)
 	, _baseColor(SimpleMath::Vector4::One)
@@ -28,42 +30,15 @@ PBR_material::~PBR_material()
 	releaseShaderResources();
 }
 
-void PBR_material::vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const {
-	vertexAttributes.push_back(Vertex_attribute::Position);
-	vertexAttributes.push_back(Vertex_attribute::Normal);
-	vertexAttributes.push_back(Vertex_attribute::Tangent);
-	vertexAttributes.push_back(Vertex_attribute::Texcoord_0);
-}
-
-UINT PBR_material::inputSlot(Vertex_attribute attribute)
+const std::string& PBR_material::materialType() const
 {
-	switch (attribute)
-	{
-	case Vertex_attribute::Position:
-		return 0;
-	case Vertex_attribute::Normal:
-		return 1;
-	case Vertex_attribute::Tangent:
-		return 2;
-	case Vertex_attribute::Texcoord_0:
-		return 3;
-	default:
-		throw std::runtime_error("Unsupported attribute");
-	}
-}
-
-Material::Shader_compile_settings PBR_material::vertexShaderSettings() const
-{
-	auto settings = Material::vertexShaderSettings();
-	settings.filename = L"data/shaders/pbr_metallic_VS.hlsl"s;
-	return settings;
+	return g_material_type;
 }
 
 Material::Shader_compile_settings PBR_material::pixelShaderSettings() const
 {
-	auto settings = Material::pixelShaderSettings();
-	settings.filename = L"data/shaders/pbr_metallic_PS.hlsl"s;
-	
+	auto settings = Base_type::pixelShaderSettings();
+
 	if (_textures[BaseColor])
 		settings.defines["MAP_BASECOLOR"] = "1";
 	if (_textures[MetallicRoughness])
@@ -77,7 +52,7 @@ Material::Shader_compile_settings PBR_material::pixelShaderSettings() const
 
 	if (_enableDeferred)
 		settings.defines["PS_PIPELINE_DEFERRED"] = "1";
-	else 
+	else
 		settings.defines["PS_PIPELINE_STANDARD"] = "1";
 
 	if (getAlphaMode() == Material_alpha_mode::Mask)
@@ -86,89 +61,30 @@ Material::Shader_compile_settings PBR_material::pixelShaderSettings() const
 	return settings;
 }
 
-bool PBR_material::createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer)
-{
-	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.ByteWidth = sizeof(PBR_constants_vs);
-	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
-
-	_constantsVs.worldViewProjection = SimpleMath::Matrix::Identity;
-	_constantsVs.world = SimpleMath::Matrix::Identity;
-	_constantsVs.worldInvTranspose = SimpleMath::Matrix::Identity;
-
-	D3D11_SUBRESOURCE_DATA initData;
-	initData.pSysMem = &_constantsVs;
-	initData.SysMemPitch = 0;
-	initData.SysMemSlicePitch = 0;
-
-	DX::ThrowIfFailed(device->CreateBuffer(&bufferDesc, &initData, &buffer));
-
-	std::string name("PBR_Material Constant Buffer");
-	DX::ThrowIfFailed(buffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str()));
-
-	return true;
-}
-
-void PBR_material::updateVSConstantBuffer(const SimpleMath::Matrix& worldMatrix, 
-	const SimpleMath::Matrix& viewMatrix, 
-	const SimpleMath::Matrix& projMatrix, 
-	ID3D11DeviceContext* context, 
-	ID3D11Buffer* buffer)
-{
-	// Note that HLSL matrices are Column Major (as opposed to Row Major in DirectXMath) - so we need to transpose everything.
-	_constantsVs.worldView = XMMatrixMultiplyTranspose(worldMatrix, viewMatrix);
-	_constantsVs.worldViewProjection = XMMatrixMultiplyTranspose(worldMatrix, XMMatrixMultiply(viewMatrix, projMatrix));
-
-	_constantsVs.world = XMMatrixTranspose(worldMatrix);
-	_constantsVs.worldInvTranspose = XMMatrixInverse(nullptr, worldMatrix);
-
-	context->UpdateSubresource(buffer, 0, nullptr, &_constantsVs, 0, 0);
-}
-
-bool PBR_material::createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer)
-{
-	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.ByteWidth = sizeof(PBR_constants_ps);
-	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
-
-	_constantsPs.world = SimpleMath::Matrix::Identity;
-	_constantsPs.baseColor = SimpleMath::Color(Colors::White);
-	_constantsPs.metallicRoughness = SimpleMath::Vector4::One;
-
-	D3D11_SUBRESOURCE_DATA initData;
-	initData.pSysMem = &_constantsPs;
-	initData.SysMemPitch = 0;
-	initData.SysMemSlicePitch = 0;
-
-	DX::ThrowIfFailed(device->CreateBuffer(&bufferDesc, &initData, &buffer));
-
-	std::string name("PBR_Material Constant Buffer");
-	DX::ThrowIfFailed(buffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str()));
-
-	return true;
-}
-
-void PBR_material::updatePSConstantBuffer(const Render_light_data& renderlightData, 
+void PBR_material::updateVSConstantBufferValues(PBR_material_vs_constant_buffer& constants,
 	const SimpleMath::Matrix& worldMatrix,
 	const SimpleMath::Matrix& viewMatrix,
-	const SimpleMath::Matrix& projMatrix,
-	ID3D11DeviceContext* context,
-	ID3D11Buffer* buffer)
+	const SimpleMath::Matrix& projMatrix)
+{
+	// Note that HLSL matrices are Column Major (as opposed to Row Major in DirectXMath) - so we need to transpose everything.
+	constants.worldView = XMMatrixMultiplyTranspose(worldMatrix, viewMatrix);
+
+	constants.world = XMMatrixTranspose(worldMatrix);
+	constants.worldInvTranspose = XMMatrixInverse(nullptr, worldMatrix);
+}
+
+void PBR_material::updatePSConstantBufferValues(PBR_material_ps_constant_buffer& constants,
+	const Render_light_data& renderlightData,
+	const SimpleMath::Matrix& worldMatrix,
+	const SimpleMath::Matrix& viewMatrix,
+	const SimpleMath::Matrix& projMatrix)
 {
 	// Convert to LH, for DirectX.
-	_constantsPs.world = XMMatrixTranspose(worldMatrix);
-	_constantsPs.baseColor = _baseColor;
-	_constantsPs.metallicRoughness = SimpleMath::Vector4(_metallic, _roughness, 0.0, 0.0);
-	_constantsPs.emissive = SimpleMath::Vector4(_emissive.x, _emissive.y, _emissive.z, 0.0);
-	_constantsPs.eyePosition = SimpleMath::Vector4(worldMatrix._41, worldMatrix._42, worldMatrix._43, 0.0);
-
-	context->UpdateSubresource(buffer, 0, nullptr, &_constantsPs, 0, 0);
+	constants.world = XMMatrixTranspose(worldMatrix);
+	constants.baseColor = _baseColor;
+	constants.metallicRoughness = SimpleMath::Vector4(_metallic, _roughness, 0.0, 0.0);
+	constants.emissive = SimpleMath::Vector4(_emissive.x, _emissive.y, _emissive.z, 0.0);
+	constants.eyePosition = SimpleMath::Vector4(worldMatrix._41, worldMatrix._42, worldMatrix._43, 0.0);
 }
 
 void PBR_material::createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode)
@@ -182,7 +98,7 @@ void PBR_material::createShaderResources(const DX::DeviceResources& deviceResour
 
 	// Release any previous samplerState and shaderResourceView objects
 	releaseShaderResources();
-	
+
 	for (auto t = 0; t < NumTextureTypes; ++t)
 	{
 		// Only initialize if a texture has been bound to this slot.
@@ -271,7 +187,7 @@ void PBR_material::releaseShaderResources()
 void PBR_material::setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData)
 {
 	auto context = deviceResources.GetD3DDeviceContext();
-	
+
 	// Set shader texture resources in the pixel shader.
 	context->PSSetShaderResources(0, _boundTextureCount, _shaderResourceViews.data());
 	context->PSSetSamplers(0, _boundTextureCount, _samplerStates.data());
@@ -280,7 +196,7 @@ void PBR_material::setContextSamplers(const DX::DeviceResources& deviceResources
 void PBR_material::unsetContextSamplers(const DX::DeviceResources& deviceResources)
 {
 	auto context = deviceResources.GetD3DDeviceContext();
-	
+
 	static_assert(g_nullShaderResourceViews.size() == NumTextureTypes);
 	static_assert(g_nullSamplerStates.size() == NumTextureTypes);
 

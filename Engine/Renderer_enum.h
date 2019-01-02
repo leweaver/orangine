@@ -8,6 +8,12 @@ namespace oe {
 		Blend
 	};
 
+	enum class Material_face_cull_mode {
+		Backface,
+		Frontface,
+		None
+	};
+
 	enum class Material_light_mode {
 		Unlit,
 		Lit

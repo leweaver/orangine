@@ -88,6 +88,7 @@ namespace oe {
 		// Scale, in local space
 		const DirectX::SimpleMath::Vector3 &scale() const { return _localScale; }
 		void setScale(const DirectX::SimpleMath::Vector3 &xmvector) { _localScale = xmvector; }
+		void setScale(float scale) { _localScale = DirectX::SimpleMath::Vector3(scale, scale, scale); }
 
 		bool calculateBoundSphereFromChildren() const { return _calculateBoundSphereFromChildren; }
 		void setCalculateBoundSphereFromChildren(bool calculateBoundSphereFromChildren) { _calculateBoundSphereFromChildren = calculateBoundSphereFromChildren; }

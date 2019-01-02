@@ -200,6 +200,9 @@
     <ClInclude Include="Material_base.h">
       <Filter>Systems\Renderer\Materials</Filter>
     </ClInclude>
+    <ClInclude Include="Render_pass_skybox.h">
+      <Filter>Systems\Renderer\Render_pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Input_manager.cpp">
@@ -327,6 +330,9 @@
     </ClCompile>
     <ClCompile Include="Skybox_material.cpp">
       <Filter>Systems\Renderer\Materials</Filter>
+    </ClCompile>
+    <ClCompile Include="Render_pass_skybox.cpp">
+      <Filter>Systems\Renderer\Render_pass</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -16,7 +16,6 @@
 #include "GeometricPrimitive.h"
 
 #include <set>
-#include <array>
 #include <functional>
 #include <optional>
 #include "Render_pass.h"
@@ -48,15 +47,14 @@ void Entity_render_manager::initialize()
 
 void Entity_render_manager::shutdown()
 {
-	_environmentMap = nullptr;
 }
 
 void Entity_render_manager::tick()
 {
 	if (_renderLightData_lit) {
-		if (_environmentMap &&
-			_environmentMap->getShaderResourceView() &&
-			_environmentMap->getShaderResourceView() != _renderLightData_lit->environmentMapSRV())
+		const auto& environmentMap = _scene.skyboxTexture();
+		const auto environmentMapSrv = environmentMap ? environmentMap->getShaderResourceView() : nullptr;
+		if (environmentMapSrv && environmentMapSrv != _renderLightData_lit->environmentMapSRV())
 		{
 			// Set sampler state
 			D3D11_SAMPLER_DESC samplerDesc;
@@ -81,7 +79,7 @@ void Entity_render_manager::tick()
 			ID3D11SamplerState* samplerState;
 			ThrowIfFailed(deviceResources().GetD3DDevice()->CreateSamplerState(&samplerDesc, &samplerState));
 			
-			_renderLightData_lit->setEnvironmentMap(_environmentMap->getShaderResourceView(), samplerState);
+			_renderLightData_lit->setEnvironmentMap(environmentMapSrv, samplerState);
 			samplerState->Release();
 		} else {
 			_renderLightData_lit->setEnvironmentMap(nullptr, nullptr);
@@ -178,7 +176,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderable,
 		const auto material = renderable.material().get();
 		assert(material != nullptr);
 	
-		const Renderer_data* rendererData = renderable.rendererData().get();
+		Renderer_data* rendererData = renderable.rendererData().get();
 		if (rendererData == nullptr) {
 
 			const auto meshDataComponent = entity.getFirstComponentOfType<Mesh_data_component>();
@@ -344,13 +342,13 @@ void Entity_render_manager::loadRendererDataToDeviceContext(const Renderer_data&
 void Entity_render_manager::drawRendererData(
 	const Render_pass::Camera_data& cameraData,
 	const Matrix& worldTransform,
-	const Renderer_data& rendererData,
+	Renderer_data& rendererData,
 	Render_pass_blend_mode blendMode,
 	const Render_light_data& renderLightData,
 	Material& material,
 	bool wireFrame)
 {
-	if (rendererData.vertexBuffers.empty())
+	if (rendererData.failedRendering || rendererData.vertexBuffers.empty())
 		return;
 
 	auto& commonStates = _scene.manager<ID3D_resources_manager>().commonStates();
@@ -363,17 +361,27 @@ void Entity_render_manager::drawRendererData(
 	// Set the rasteriser state
 	if (wireFrame)
 		context->RSSetState(commonStates.Wireframe());
-	else
+	else if (material.faceCullMode() == Material_face_cull_mode::Backface)
 		context->RSSetState(commonStates.CullClockwise());
+	else if (material.faceCullMode() == Material_face_cull_mode::Frontface)
+		context->RSSetState(commonStates.CullCounterClockwise());
+	else if (material.faceCullMode() == Material_face_cull_mode::None)
+		context->RSSetState(commonStates.CullNone());
 
 	// Render the triangles
-	material.bind(blendMode, renderLightData, d3DDeviceResources, cameraData.enablePixelShader);
+	try {
 
-	material.render(rendererData, renderLightData,
-		worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, 
-		d3DDeviceResources);
+		material.bind(blendMode, renderLightData, d3DDeviceResources, cameraData.enablePixelShader);
 
-	material.unbind(d3DDeviceResources);
+		material.render(rendererData, renderLightData,
+			worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix,
+			d3DDeviceResources);
+
+		material.unbind(d3DDeviceResources);
+	} catch (std::exception& ex) {
+		rendererData.failedRendering = true;
+		LOG(WARNING) << "Failed to drawRendererData, marking failedRendering to true. (" << ex.what() << ")";
+	}
 }
 
 std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(const Mesh_data& meshData, const std::vector<Vertex_attribute>& vertexAttributes) const

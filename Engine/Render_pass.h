@@ -11,6 +11,8 @@ namespace oe {
 		{
 			DirectX::SimpleMath::Matrix viewMatrix;
 			DirectX::SimpleMath::Matrix projectionMatrix;
+			float fov;
+			float aspectRatio;
 			bool enablePixelShader = true;
 
 			static const Camera_data identity;
@@ -32,6 +34,9 @@ namespace oe {
 
 		void setStencilRef(uint32_t stencilRef) { _stencilRef = stencilRef; }
 		uint32_t stencilRef() const { return _stencilRef; }
+		
+		virtual void createDeviceDependentResources() {}
+		virtual void destroyDeviceDependentResources() {}
 
 	protected:
 		std::vector<std::shared_ptr<Render_target_view_texture>> _renderTargets = {};

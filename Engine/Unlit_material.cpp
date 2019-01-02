@@ -7,6 +7,7 @@ using namespace oe;
 
 const std::string g_material_type = "Unlit_material";
 
+// Uses blended alpha, to ensure standard rendering pipeline (not deferred)
 Unlit_material::Unlit_material()
 	: Material_base(Material_alpha_mode::Blend)
 	, _baseColor(SimpleMath::Color(Colors::White))

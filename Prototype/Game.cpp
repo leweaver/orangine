@@ -229,10 +229,12 @@ void Game::CreateGeometricPrimitives()
 	createTeapot({  0.0f,  1.0f, 1.5f }, Color(Colors::Cyan));
 	createTeapot({  1.5f,  1.0f, 0.0f }, Color(Colors::Yellow));
 
+	if (false)
 	{
 		const auto &child2 = entityManager.instantiate("Primitive Child 2", *root1);
 		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
 		material->setBaseColor(Color(0,1,0));
+
 		auto& renderable = child2->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 		renderable.setCastShadow(false);
@@ -244,7 +246,6 @@ void Game::CreateGeometricPrimitives()
 		child2->setPosition({ 0.0f, 0.0f, 0.0f });
 		child2->setBoundSphere(BoundingSphere(Vector3::Zero, 0.01f));
 	}
-
 }
 
 // Initialize the Direct3D resources required to run.
@@ -282,8 +283,8 @@ void Game::Initialize(HWND window, int width, int height)
 		CreateGeometricPrimitives();
 
 		// Load the skybox
-		//auto skyBoxTexure = std::make_shared<File_texture>(std::wstring(L"data/textures/park-cubemap.dds"));
-		//m_scene->manager<IEntity_render_manager>().setEnvironmentMap(skyBoxTexure);
+		auto skyBoxTexture = std::make_shared<File_texture>(std::wstring(L"data/textures/park-cubemap.dds"));
+		m_scene->setSkyboxTexture(skyBoxTexture);
 	}
 	catch (const std::exception &e)
 	{

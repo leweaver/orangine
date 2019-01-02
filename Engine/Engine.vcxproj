@@ -193,6 +193,7 @@
     <ClInclude Include="Render_pass.h" />
     <ClInclude Include="Render_pass_generic.h" />
     <ClInclude Include="Render_pass_shadow.h" />
+    <ClInclude Include="Render_pass_skybox.h" />
     <ClInclude Include="Render_step_manager.h" />
     <ClInclude Include="Shadowmap_manager.h" />
     <ClInclude Include="Shadow_map_texture.h" />
@@ -250,6 +251,7 @@
     <ClCompile Include="Renderer_data.cpp" />
     <ClCompile Include="Render_pass.cpp" />
     <ClCompile Include="Render_pass_shadow.cpp" />
+    <ClCompile Include="Render_pass_skybox.cpp" />
     <ClCompile Include="Render_step_manager.cpp" />
     <ClCompile Include="Render_target_texture.cpp" />
     <ClCompile Include="Scene.cpp" />

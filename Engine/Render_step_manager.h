@@ -145,6 +145,11 @@ namespace oe {
 			Render_step_empty_data,
 			Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::ReadWrite>
 		> _renderStep_debugElements;
+
+		Render_step<
+			Render_step_empty_data,
+			Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::ReadWrite>
+		> _renderStep_skybox;
 		
 		// Broad rendering
 		std::unique_ptr<Entity_alpha_sorter> _alphaSorter;

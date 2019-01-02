@@ -15,8 +15,11 @@ namespace oe {
 	template<class TVertex_shader_constants, class TPixel_shader_constants, Vertex_attribute... TVertex_attr>
 	class Material_base : public Material {
 	public:
-		Material_base(Material_alpha_mode alphaMode = Material_alpha_mode::Opaque)
-			: Material(alphaMode)
+		Material_base(
+			Material_alpha_mode alphaMode = Material_alpha_mode::Opaque,
+			Material_face_cull_mode faceCullMode = Material_face_cull_mode::Backface
+		)
+			: Material(alphaMode, faceCullMode)
 		{
 			static_assert(std::is_same_v<TVertex_shader_constants, Vertex_constant_buffer_empty> || sizeof(TVertex_shader_constants) % 16 == 0);
 			static_assert(std::is_same_v<TPixel_shader_constants, Pixel_constant_buffer_empty> || sizeof(TPixel_shader_constants) % 16 == 0);

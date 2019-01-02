@@ -2,13 +2,11 @@
 #include "Material_base.h"
 
 namespace oe {
-	struct Skybox_material_vs_constant_buffer : Vertex_constant_buffer_base {
-		DirectX::SimpleMath::Matrix worldViewProjection;
-	};
+	using Skybox_material_vs_constant_buffer = Vertex_constant_buffer_base;
 
 	class Skybox_material : public Material_base<Skybox_material_vs_constant_buffer, Pixel_constant_buffer_base, Vertex_attribute::Position> {
 	public:
-		Skybox_material() = default;
+		Skybox_material();
 
 		Skybox_material(const Skybox_material& other) = delete;
 		Skybox_material(Skybox_material&& other) = delete;
@@ -21,9 +19,18 @@ namespace oe {
 		void setCubemapTexture(std::shared_ptr<Texture> cubemapTexture) { _cubemapTexture = cubemapTexture; }
 
 		const std::string& materialType() const override;
+		void releaseShaderResources();
+		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData,
+		                           Render_pass_blend_mode blendMode) override;
+
+		void setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData) override;
+		void unsetContextSamplers(const DX::DeviceResources& deviceResources) override;
 
 	private:
 		std::shared_ptr<Texture> _cubemapTexture;
+
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _shaderResourceView;
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> _samplerState;
 
 	};
 }

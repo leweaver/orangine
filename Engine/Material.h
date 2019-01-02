@@ -16,7 +16,7 @@ namespace oe {
 	class Material
 	{
 	public:
-		Material(Material_alpha_mode alphaMode = Material_alpha_mode::Opaque);
+		Material(Material_alpha_mode alphaMode, Material_face_cull_mode faceCullMode);
 
 		Material(const Material& other) = delete;
 		Material(Material&& other) = delete;
@@ -59,6 +59,8 @@ namespace oe {
 
 		virtual Material_light_mode lightMode() { return Material_light_mode::Unlit; }
 		virtual const std::string& materialType() const = 0;
+
+		Material_face_cull_mode faceCullMode() { return _faceCullMode; }
 
 	protected:
 
@@ -125,6 +127,7 @@ namespace oe {
 		bool _requiresRecompile;
 
 		Material_alpha_mode _alphaMode;
+		Material_face_cull_mode _faceCullMode;
 
 		static const std::wstring shader_path;
 	};

@@ -14,6 +14,7 @@
 #include "Shadow_map_texture_pool.h"
 #include "CommonStates.h"
 #include "Dev_tools_manager.h"
+#include "Render_pass_skybox.h"
 
 using namespace oe;
 using namespace DirectX;
@@ -27,6 +28,7 @@ Render_step_manager::Render_step_manager(Scene & scene)
 	, _renderStep_entityDeferred({})
 	, _renderStep_entityStandard({})
 	, _renderStep_debugElements({})
+	, _renderStep_skybox({})
 	, _fatalError(false)
 	, _enableDeferredRendering(true)
 {
@@ -74,6 +76,7 @@ void Render_step_manager::shutdown()
 	_renderStep_entityDeferred.renderPasses[2].reset();
 	_renderStep_entityStandard.renderPasses[0].reset();
 	_renderStep_debugElements.renderPasses[0].reset();
+	_renderStep_skybox.renderPasses[0].reset();
 
 	_renderableEntities.reset();
 	_lightEntities.reset();
@@ -182,6 +185,8 @@ void Render_step_manager::createRenderSteps()
 	_renderStep_debugElements.renderPasses[0] = std::make_unique<Render_pass_generic>([this](const auto& cameraData) {
 		_scene.manager<IDev_tools_manager>().renderDebugShapes(cameraData);
 	});
+
+	_renderStep_skybox.renderPasses[0] = std::make_unique<Render_pass_skybox>(_scene);
 }
 
 void Render_step_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
@@ -208,6 +213,7 @@ void Render_step_manager::createDeviceDependentResources(DX::DeviceResources& /*
 	createRenderStepResources(_renderStep_entityDeferred);
 	createRenderStepResources(_renderStep_entityStandard);
 	createRenderStepResources(_renderStep_debugElements);
+	createRenderStepResources(_renderStep_skybox);
 }
 
 void Render_step_manager::createWindowSizeDependentResources(DX::DeviceResources& /*deviceResources*/, HWND /*window*/, int width, int height)
@@ -281,11 +287,13 @@ void Render_step_manager::destroyDeviceDependentResources()
 	destroyRenderStepResources(_renderStep_entityDeferred);
 	destroyRenderStepResources(_renderStep_entityStandard);
 	destroyRenderStepResources(_renderStep_debugElements);
+	destroyRenderStepResources(_renderStep_skybox);
 
 	_renderStep_shadowMap.data.reset();
 	_renderStep_entityDeferred.data.reset();
 	_renderStep_entityStandard.data.reset();
 	_renderStep_debugElements.data.reset();
+	_renderStep_skybox.data.reset();
 
 	_fatalError = false;
 }
@@ -298,6 +306,7 @@ void Render_step_manager::destroyWindowSizeDependentResources()
 	std::get<2>(_renderStep_entityDeferred.renderPasses)->clearRenderTargets();
 	std::get<0>(_renderStep_entityStandard.renderPasses)->clearRenderTargets();
 	std::get<0>(_renderStep_debugElements.renderPasses)->clearRenderTargets();
+	std::get<0>(_renderStep_skybox.renderPasses)->clearRenderTargets();
 }
 
 void Render_step_manager::clearDepthStencil(float depth, uint8_t stencil) const
@@ -339,6 +348,7 @@ void Render_step_manager::render(std::shared_ptr<Entity> cameraEntity)
 		renderStep(_renderStep_entityDeferred, cameraData);
 		renderStep(_renderStep_entityStandard, cameraData);
 		renderStep(_renderStep_debugElements, cameraData);
+		renderStep(_renderStep_skybox, cameraData);
 	});
 }
 
@@ -426,10 +436,12 @@ Render_pass::Camera_data Render_step_manager::createCameraData(Camera_component&
 	return {
 		Matrix::CreateLookAt(pos, pos + forward, up),
 		Matrix::CreatePerspectiveFieldOfView(
+			component.fov(),
+			aspectRatio,
+			component.nearPlane(),
+			component.farPlane()),
 		component.fov(),
-		aspectRatio,
-		component.nearPlane(),
-		component.farPlane())
+		aspectRatio
 	};
 }
 
@@ -485,6 +497,8 @@ void Render_step_manager::createRenderStepResources(Render_step<TData, TRender_p
 		pResult->Release();
 	}
 
+	pass.createDeviceDependentResources();
+
 	if constexpr (TRender_pass_idx + 1 < sizeof...(TRender_passes)) {
 		createRenderStepResources<TRender_pass_idx + 1, TData, TRender_passes...>(step);
 	}
@@ -496,6 +510,7 @@ void Render_step_manager::destroyRenderStepResources(Render_step<TData, TRender_
 	auto& pass = std::get<TRender_pass_idx>(step.renderPasses);
 	pass->setBlendState(nullptr);
 	pass->setDepthStencilState(nullptr);
+	pass->destroyDeviceDependentResources();
 
 	if constexpr (TRender_pass_idx + 1 < sizeof...(TRender_passes)) {
 		destroyRenderStepResources<TRender_pass_idx + 1, TData, TRender_passes...>(step);

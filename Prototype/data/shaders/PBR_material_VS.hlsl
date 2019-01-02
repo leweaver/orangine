@@ -39,9 +39,7 @@ struct VS_OUTPUT
 VS_OUTPUT VSMain(VS_INPUT Input)
 {
 	VS_OUTPUT Output;
-	Output.vPosition = mul(Input.vPosition, g_mWorldViewProjection);
-	Output.vPosition = float4(Output.vPosition.xyz / Output.vPosition.w, 1);
-
+	Output.vPosition = mul(float4(Input.vPosition.xyz, 1), g_mWorldViewProjection);
 	Output.vClipPosition = mul(Input.vPosition, g_mWorldView);
 
 	/*

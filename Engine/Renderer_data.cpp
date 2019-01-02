@@ -35,6 +35,7 @@ Renderer_data::Renderer_data()
 	, indexFormat(DXGI_FORMAT_UNKNOWN)
 	, indexCount(0)
 	, topology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
+	, failedRendering(false)
 {
 }
 

@@ -41,5 +41,6 @@ namespace oe
 		unsigned int indexCount;
 
 		D3D11_PRIMITIVE_TOPOLOGY topology;
+		bool failedRendering;
 	};
 }

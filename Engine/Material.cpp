@@ -17,13 +17,14 @@ using namespace std::literals;
 
 const std::wstring Material::shader_path = std::wstring(L"data/shaders/");
 
-Material::Material(Material_alpha_mode alphaMode)
+Material::Material(Material_alpha_mode alphaMode, Material_face_cull_mode faceCullMode)
 	: _vertexShader(nullptr)
 	, _pixelShader(nullptr)
 	, _inputLayout(nullptr)
 	, _errorState(false)
 	, _requiresRecompile(true)
 	, _alphaMode(alphaMode)
+	, _faceCullMode(faceCullMode)
 {
 }
 

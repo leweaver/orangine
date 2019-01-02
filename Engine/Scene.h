@@ -20,6 +20,7 @@
 namespace oe {
 	class Entity;
 	class Component;
+	class Texture;
 
 	class Scene
 	{
@@ -67,8 +68,11 @@ namespace oe {
 			return ml;
 		}
 
-		std::shared_ptr<Entity> mainCamera() const { return _mainCamera; };
+		std::shared_ptr<Entity> mainCamera() const { return _mainCamera; }
 		void setMainCamera(const std::shared_ptr<Entity>& cameraEntity);
+
+		std::shared_ptr<Texture> skyboxTexture() const { return _skyBoxTexture; }
+		void setSkyboxTexture(std::shared_ptr<Texture> skyBoxTexture) { _skyBoxTexture = skyBoxTexture; }
 
 	protected:
 		using Manager_tuple = std::tuple<
@@ -94,6 +98,7 @@ namespace oe {
 		Scene() = default;
 
 		Manager_tuple _managers;
+		std::shared_ptr<Texture> _skyBoxTexture;
 
 	private:
 
@@ -137,7 +142,7 @@ namespace oe {
 		void createDeviceDependentResources();
 		void destroyDeviceDependentResources();
 		void processMessage(UINT message, WPARAM wParam, LPARAM lParam) const;
-		
+
 	private:
 		DX::DeviceResources& _deviceResources;
 	};

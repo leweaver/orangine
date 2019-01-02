@@ -9,7 +9,7 @@ namespace oe {
 
 		Camera_component(Entity& entity)
 			: Component(entity)
-			, _fov(DirectX::XMConvertToRadians(60.f))
+			, _fov(DirectX::XMConvertToRadians(75.f))
 		{}
 
 		// Field of view, in radians

@@ -186,6 +186,8 @@ void Scene_device_resource_aware::destroyDeviceDependentResources()
 	forEachOfType<Manager_deviceDependent>(_managers, [](Manager_deviceDependent* manager) {
 		manager->destroyDeviceDependentResources();
 	});
+	if (_skyBoxTexture)
+		_skyBoxTexture->unload();
 }
 
 void Scene_device_resource_aware::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const

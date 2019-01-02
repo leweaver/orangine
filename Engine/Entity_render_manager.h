@@ -57,8 +57,6 @@ namespace oe {
 
 		virtual Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) const = 0;
 		virtual void clearRenderStats() = 0;
-
-		virtual void setEnvironmentMap(std::shared_ptr<Texture> environmentMap) = 0;
 	};
 
 	class Entity_render_manager : public IEntity_render_manager
@@ -106,18 +104,13 @@ namespace oe {
 			) override;
 		Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) const override;
 		void clearRenderStats() override;
-		
-		void setEnvironmentMap(std::shared_ptr<Texture> environmentMap) override
-		{
-			_environmentMap = environmentMap;
-		}
 
 	protected:
 
 		void drawRendererData(
 			const Render_pass::Camera_data& cameraData,
 			const DirectX::SimpleMath::Matrix& worldTransform,
-			const Renderer_data& rendererData,
+			Renderer_data& rendererData,
 			Render_pass_blend_mode blendMode,
 			const Render_light_data& renderLightData,
 			Material& material,
@@ -147,7 +140,6 @@ namespace oe {
 		Render_stats _renderStats;
 		Buffer_array_set _bufferArraySet;
 		std::vector<Entity*> _renderLights;
-		std::shared_ptr<Texture> _environmentMap;
 
 		// The template arguments here must match the size of the lights array in the shader constant buffer files.
 		std::unique_ptr<Render_light_data_impl<0>> _renderLightData_unlit;

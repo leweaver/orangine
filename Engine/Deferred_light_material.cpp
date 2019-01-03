@@ -10,11 +10,18 @@ using namespace std::literals;
 using namespace DirectX;
 using namespace SimpleMath;
 
-const auto g_mrt_shader_resource_count = 6;
-const auto g_mrt_sampler_state_count = 5;
+const auto g_mrt_shader_resource_count = 9;
+const auto g_mrt_sampler_state_count = 6;
 
-const std::array<ID3D11ShaderResourceView*, g_mrt_shader_resource_count> g_nullShaderResourceViews = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
-const std::array<ID3D11SamplerState*, g_mrt_sampler_state_count> g_nullSamplerStates = { nullptr, nullptr, nullptr, nullptr, nullptr };
+const std::array<ID3D11ShaderResourceView*, g_mrt_shader_resource_count> g_nullShaderResourceViews = { 
+	nullptr, nullptr, nullptr,
+	nullptr, nullptr, nullptr, 
+	nullptr, nullptr, nullptr 
+};
+const std::array<ID3D11SamplerState*, g_mrt_sampler_state_count> g_nullSamplerStates = { 
+	nullptr, nullptr, nullptr, 
+	nullptr, nullptr 
+};
 
 const std::string g_material_type = "Deferred_light_material";
 
@@ -30,7 +37,14 @@ void Deferred_light_material::createShaderResources(const DX::DeviceResources& d
 
 Material::Shader_compile_settings Deferred_light_material::pixelShaderSettings() const
 {
-	Shader_compile_settings settings = Base_type::pixelShaderSettings();
+	auto settings = Base_type::pixelShaderSettings();
+
+	if (_iblEnabled)
+		settings.defines["MAP_IBL"] = "1";
+
+	if (_shadowArrayEnabled)
+		settings.defines["MAP_SHADOWMAP_ARRAY"] = "1";
+
 	//settings.defines["DEBUG_DISPLAY_METALLIC_ROUGHNESS"] = "1";
 	//settings.defines["DEBUG_LIGHTING_ONLY"] = "1";
 	//settings.defines["DEBUG_NO_LIGHTING"] = "1";
@@ -45,9 +59,9 @@ void Deferred_light_material::setupEmitted(bool enabled)
 
 void Deferred_light_material::updatePSConstantBufferValues(Deferred_light_material_constant_buffer& constants,
 	const Render_light_data& renderlightData,
-	const DirectX::SimpleMath::Matrix& worldMatrix,
-	const DirectX::SimpleMath::Matrix& viewMatrix,
-	const DirectX::SimpleMath::Matrix& projMatrix)
+	const Matrix& worldMatrix,
+	const Matrix& viewMatrix,
+	const Matrix& projMatrix)
 {
 	const auto viewMatrixInv = viewMatrix.Invert();
 
@@ -102,30 +116,42 @@ void Deferred_light_material::setContextSamplers(const DX::DeviceResources& devi
 			_color1Texture->getShaderResourceView(),
 			_color2Texture->getShaderResourceView(),
 			_depthTexture->getShaderResourceView(),
-			_shadowMapDepthTexture ? _shadowMapDepthTexture->getShaderResourceView() : nullptr
 		};
-
-		if (_shadowMapStencilTexture) {
-			if (!_shadowMapDepthTexture) {
-				throw std::logic_error("Cannot bind a shadowmap stencil texture without a shadowmap depth texture.");
-			}
-			shaderResourceViews[5] = _shadowMapStencilTexture->getShaderResourceView();
-		}
-		else {
-			shaderResourceViews[5] = nullptr;
-		}
-
-		// Set shader texture resource in the pixel shader.
-		context->PSSetShaderResources(0, g_mrt_shader_resource_count, shaderResourceViews.data());
-
 		std::array<ID3D11SamplerState*, g_mrt_sampler_state_count> samplerStates = {
 			_color0SamplerState.Get(),
 			_color1SamplerState.Get(),
 			_color2SamplerState.Get(),
 			_depthSamplerState.Get(),
-			_shadowMapSamplerState.Get()
 		};
-		context->PSSetSamplers(0, g_mrt_sampler_state_count, samplerStates.data());
+
+		auto srvCount = 4;
+		auto ssCount = 4;
+		assert(shaderResourceViews[srvCount] == nullptr && samplerStates[ssCount] == nullptr);
+
+		if (_iblEnabled) {
+			if (!(renderLightData.environmentMapDiffuseSRV() && renderLightData.environmentMapSpecularSRV() && renderLightData.environmentMapSamplerState())) {
+				throw std::runtime_error("Deferred_light_material requires a valid environment map be provided in the Render_light_data");
+			}
+
+			shaderResourceViews[srvCount++] = renderLightData.environmentMapBrdfSRV();
+			shaderResourceViews[srvCount++] = renderLightData.environmentMapDiffuseSRV();
+			shaderResourceViews[srvCount++] = renderLightData.environmentMapSpecularSRV();
+			samplerStates[ssCount++] = renderLightData.environmentMapSamplerState();
+		}
+
+		if (_shadowArrayEnabled) {
+			if (!(_shadowMapStencilTexture && _shadowMapDepthTexture)) {
+				throw std::logic_error("Cannot bind a shadowmap stencil texture without a shadowmap depth texture.");
+			}
+			
+			shaderResourceViews[srvCount++] = _shadowMapDepthTexture->getShaderResourceView();
+			shaderResourceViews[srvCount++] = _shadowMapStencilTexture->getShaderResourceView();
+			samplerStates[ssCount++] = _shadowMapSamplerState.Get();
+		}
+
+		// Set shader texture resource in the pixel shader.
+		context->PSSetShaderResources(0, srvCount, shaderResourceViews.data());
+		context->PSSetSamplers(0, ssCount, samplerStates.data());
 	}
 }
 

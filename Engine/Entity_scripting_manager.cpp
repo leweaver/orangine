@@ -50,7 +50,7 @@ void Entity_scripting_manager::tick() {
 		entity.setRotation(Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));
 	}
 	
-	const auto mouseSpeed = 1.0f / 300.0f;
+	const auto mouseSpeed = 1.0f / 600.0f;
 	const auto mouseState = _scene.manager<IInput_manager>().mouseState().lock();
 	if (mouseState) {
 		if (mouseState->left == Input_manager::Mouse_state::Button_state::HELD) {

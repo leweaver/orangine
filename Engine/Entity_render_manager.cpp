@@ -20,6 +20,8 @@
 #include <optional>
 #include "Render_pass.h"
 
+#include <Shlwapi.h>
+
 using namespace oe;
 using namespace DirectX;
 using namespace SimpleMath;
@@ -51,39 +53,67 @@ void Entity_render_manager::shutdown()
 
 void Entity_render_manager::tick()
 {
-	if (_renderLightData_lit) {
-		const auto& environmentMap = _scene.skyboxTexture();
-		const auto environmentMapSrv = environmentMap ? environmentMap->getShaderResourceView() : nullptr;
-		if (environmentMapSrv && environmentMapSrv != _renderLightData_lit->environmentMapSRV())
-		{
-			// Set sampler state
-			D3D11_SAMPLER_DESC samplerDesc;
+	const auto& environmentMap = _scene.skyboxTexture();
+	if (environmentMap.get() != _environmentIbl.skyboxTexture.get()) {
+		const auto skyboxFileTexture = dynamic_cast<File_texture*>(environmentMap.get());
+		if (!skyboxFileTexture)
+			throw std::runtime_error("Skybox texture isn't a file texture!");
 
-			// TODO: Use values from glTF?
-			// Create a texture sampler state description.
-			samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-			samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-			samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-			samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-			samplerDesc.MipLODBias = 0.0f;
-			samplerDesc.MaxAnisotropy = 1;
-			samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-			samplerDesc.BorderColor[0] = 0;
-			samplerDesc.BorderColor[1] = 0;
-			samplerDesc.BorderColor[2] = 0;
-			samplerDesc.BorderColor[3] = 0;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-			// Create the texture sampler state.
-			ID3D11SamplerState* samplerState;
-			ThrowIfFailed(deviceResources().GetD3DDevice()->CreateSamplerState(&samplerDesc, &samplerState));
-			
-			_renderLightData_lit->setEnvironmentMap(environmentMapSrv, samplerState);
-			samplerState->Release();
-		} else {
-			_renderLightData_lit->setEnvironmentMap(nullptr, nullptr);
+		const auto& skyboxFileTextureFilename = skyboxFileTexture->filename();
+		if (skyboxFileTextureFilename.find_last_of(L".dds") != skyboxFileTextureFilename.length() - 1) {
+			throw std::runtime_error("Skybox texture must be a .dds file");
 		}
+
+		const auto filenamePrefix = skyboxFileTextureFilename.substr(0, skyboxFileTextureFilename.length() - 4);
+
+		_environmentIbl.skyboxTexture = environmentMap;
+		_environmentIbl.iblBrdfTexture = std::make_shared<File_texture>(filenamePrefix + L"Brdf.dds");
+		_environmentIbl.iblDiffuseTexture = std::make_shared<File_texture>(filenamePrefix + L"DiffuseHDR.dds");
+		_environmentIbl.iblSpecularTexture = std::make_shared<File_texture>(filenamePrefix + L"SpecularHDR.dds");
+
+		if (_renderLightData_lit) {
+			_renderLightData_lit->setEnvironmentIblMap(nullptr, nullptr, nullptr, nullptr);
+		}
+	}
+
+	if (_renderLightData_lit &&
+		_environmentIbl.iblDiffuseTexture &&
+		!_renderLightData_lit->environmentMapDiffuseSRV()) 
+	{
+		// Set sampler state
+		D3D11_SAMPLER_DESC samplerDesc;
+
+		// TODO: Use values from glTF?
+		// Create a texture sampler state description.
+		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.MipLODBias = 0.0f;
+		samplerDesc.MaxAnisotropy = 1;
+		samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+		samplerDesc.BorderColor[0] = 0;
+		samplerDesc.BorderColor[1] = 0;
+		samplerDesc.BorderColor[2] = 0;
+		samplerDesc.BorderColor[3] = 0;
+		samplerDesc.MinLOD = 0;
+		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+		// Create the texture sampler state.
+		ID3D11SamplerState* samplerState;
+		ThrowIfFailed(deviceResources().GetD3DDevice()->CreateSamplerState(&samplerDesc, &samplerState));
+
+		_environmentIbl.iblBrdfTexture->load(deviceResources().GetD3DDevice());
+		_environmentIbl.iblDiffuseTexture->load(deviceResources().GetD3DDevice());
+		_environmentIbl.iblSpecularTexture->load(deviceResources().GetD3DDevice());
+
+		_renderLightData_lit->setEnvironmentIblMap(
+			_environmentIbl.iblBrdfTexture->getShaderResourceView(),
+			_environmentIbl.iblDiffuseTexture->getShaderResourceView(),
+			_environmentIbl.iblSpecularTexture->getShaderResourceView(),
+			samplerState);
+
+		samplerState->Release();
 	}
 }
 

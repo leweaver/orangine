@@ -23,38 +23,6 @@ struct Light {
 	float2   notused;
 };
 
-// Input to BRDF Lighting function
-struct BRDFLightInputs {
-	int lightType;
-	float3 lightIntensifiedColor;
-	float3 lightPosition;
-
-	float3 baseColor;
-	float metallic;
-	float roughness;
-	float occlusion;
-
-	float3 worldPosition;
-	float3 worldNormal;
-	float3 eyeVectorW;
-};
-
-struct ShadowSampleInputs {
-	float3 lightColor;
-	float3 worldPosition;
-	//TODO:
-	//float2 viewportTopLeft;
-	//float2 viewportSize;
-	float  shadowMapArrayIndex;
-	float4x4 shadowMapViewMatrix;
-	Texture2DArray shadowMapDepthTexture;
-	Texture2DArray<uint2> shadowMapStencilTexture;
-	SamplerState shadowMapSampler;
-
-	float shadowMapDepth;
-	float shadowMapBias;
-};
-
 //--------------------------------------------------------------------------------------
 // Lighting Term Calculation Methods
 //--------------------------------------------------------------------------------------
@@ -107,8 +75,11 @@ float microfacedDistribution(float alphaSqr, float NdotH)
 // BRDF
 // bidirectional reflectance distribution function
 //--------------------------------------------------------------------------------------
-
-float3 BRDF(in float metallic, in float roughness, in float3 baseColor, 
+struct LightingInputs
+{
+	float NdotV;// = abs(dot(normalW, eyeVectorW)) + 0.001;
+};
+float3 BRDF(in LightingInputs inputs, in float metallic, in float roughness, in float3 baseColor,
 	in float3 eyeVectorW, in float3 lightVectorW, in float3 normalW)
 {
 	// BRDF inputs, as per glTF specification
@@ -123,35 +94,82 @@ float3 BRDF(in float metallic, in float roughness, in float3 baseColor,
 	float alphaSqr = alpha * alpha;
 	
 	float3 halfVectorW = normalize(eyeVectorW + lightVectorW);
-
-	//float invNdotL = -clamp(dot(normalW, lightVectorW), 0.0, 1.0);
+	
 	float NdotL = clamp(dot(normalW, lightVectorW), 0.001, 1.0);
-	float NdotV = abs(dot(normalW, eyeVectorW)) + 0.001;
 	float NdotH = clamp(dot(normalW, halfVectorW), 0.0, 1.0);
 	float LdotH = clamp(dot(lightVectorW, halfVectorW), 0.0, 1.0);
 	float VdotH = LdotH;
-	//float VdotH = clamp(dot(eyeVectorW, halfVectorW), 0.0, 1.0);
 
 	// BRDF Calculation (using Schlick BRDF model)
 	// https://www.cs.virginia.edu/%7Ejdl/bib/appearance/analytic%20models/schlick94b.pdf
 
 	// BDRF terms
 	float3 F = surfaceReflectionRatio(F0, VdotH);
-	float G = geometricOcclusion(roughness, NdotL, NdotV);
+	float G = geometricOcclusion(roughness, NdotL, inputs.NdotV);
 	float D = microfacedDistribution(alphaSqr, NdotH);
 	float3 diffuse = c / g_PI;
 
 	// BDRF Calculation
 	float3 fDiffuse = (1 - F) * diffuse;
-	float3 fSpecular = (F * G * D) / (4 * NdotL * NdotV);
+	float3 fSpecular = (F * G * D) / (4 * NdotL * inputs.NdotV);
 
 	return NdotL * (fDiffuse + fSpecular);
-	return fSpecular;
-	//return F0;
 }
 
 // -----------------------
-float3 BRDFLight(BRDFLightInputs inputs) 
+struct BRDFEnvInputs
+{
+	float3 surfaceNormal;
+	float3 reflection;
+
+	// PBR Common
+	float roughness;
+	float3 diffuseColor;
+	float3 specularColor;
+
+	// Constants
+	float2 scaleIBLAmbient;
+};
+float3 BRDFEnv(BRDFEnvInputs inputs, LightingInputs li)
+{
+	float mipCount = 9.0; // resolution of 512x512
+	float lod = (inputs.roughness * mipCount);
+
+	// retrieve a scale and bias to F0. See [1], Figure 3
+	// g_shadowMapDepthTexture.Sample(g_shadowMapSampler
+	float3 brdf = 
+		SRGBtoLINEAR(g_envBrdfLUTexture.Sample(g_envSampler, float2(li.NdotV, 1.0 - inputs.roughness)).rgb);
+	float3 diffuseLight =
+		SRGBtoLINEAR(g_envDiffuseTexture.Sample(g_envSampler, inputs.surfaceNormal).rgb);
+	float3 specularLight =
+		SRGBtoLINEAR(g_envSpecularTexture.Sample(g_envSampler, inputs.reflection, lod).rgb);
+
+	float3 diffuse = diffuseLight * inputs.diffuseColor;
+	float3 specular = specularLight * (inputs.specularColor * brdf.x + brdf.y);
+
+	// For presentation, this allows us to disable IBL terms
+	diffuse *= inputs.scaleIBLAmbient.x;
+	specular *= inputs.scaleIBLAmbient.y;
+
+	return diffuse + specular;
+}
+
+// -----------------------
+struct BRDFLightInputs {
+	int lightType;
+	float3 lightIntensifiedColor;
+	float3 lightPosition;
+
+	float3 baseColor;
+	float metallic;
+	float roughness;
+	float occlusion;
+
+	float3 worldPosition;
+	float3 worldNormal;
+	float3 eyeVectorW;
+};
+float3 BRDFLight(BRDFLightInputs inputs, LightingInputs li)
 {
 	// Vector from surface point to light
 	float3 lightVector;
@@ -180,6 +198,7 @@ float3 BRDFLight(BRDFLightInputs inputs)
 
 		// BRDF lighting calculations
 		finalColor = inputs.lightIntensifiedColor * BRDF(
+			li,
 			inputs.metallic,
 			inputs.roughness,
 			inputs.baseColor,
@@ -190,30 +209,45 @@ float3 BRDFLight(BRDFLightInputs inputs)
 
 	return finalColor;
 }
+
+// -----------------------
+struct ShadowSampleInputs {
+	float3 lightColor;
+	float3 worldPosition;
+	//TODO:
+	//float2 viewportTopLeft;
+	//float2 viewportSize;
+	float  shadowMapArrayIndex;
+	float4x4 shadowMapViewMatrix;
+
+	float shadowMapDepth;
+	float shadowMapBias;
+};
 float3 Shadow(ShadowSampleInputs ssi)
 {
 	float4 shadowMapPosition = mul(float4(ssi.worldPosition, 1), ssi.shadowMapViewMatrix);
 	float3 shadowCoord = float3(shadowMapPosition.xy / shadowMapPosition.w, ssi.shadowMapArrayIndex);
-
+	
 	// Bring x,y from [-1, 1] to [0, 1]
 	// TODO: Why do we need to y-flip here?
 	shadowCoord = shadowCoord * float3(0.5, -0.5, 1) + float3(0.5, 0.5, 0);
 
 	uint3 mapSize;
-	ssi.shadowMapStencilTexture.GetDimensions(mapSize.x, mapSize.y, mapSize.z);
+	g_shadowMapStencilTexture.GetDimensions(mapSize.x, mapSize.y, mapSize.z);
 
-	const float depthSample = ssi.shadowMapDepthTexture.Sample(ssi.shadowMapSampler, shadowCoord.rgb).r;
-	const uint stencilSample = ssi.shadowMapStencilTexture.Load(int4(
+	const float depthSample = g_shadowMapDepthTexture.Sample(g_shadowMapSampler, shadowCoord.rgb).r;
+	const uint stencilSample = g_shadowMapStencilTexture.Load(int4(
 			shadowCoord.xy * mapSize.xy,
 			ssi.shadowMapArrayIndex,
 			0)
 		).g;
-
+	
+	float3 outputColor = ssi.lightColor;
 	if (stencilSample != 0) {
 		float shadowSample = depthSample * ssi.shadowMapDepth + ssi.shadowMapBias;
 		if (shadowMapPosition.z > shadowSample)
-			return float3(0, 0, 0);
+			outputColor = float3(0, 0, 0);
 	}
 
-	return ssi.lightColor;
+	return outputColor;
 }

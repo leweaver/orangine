@@ -1,3 +1,12 @@
+Texture2D g_envBrdfLUTexture;
+Texture2D g_envDiffuseTexture;
+TextureCube g_envSpecularTexture;
+SamplerState g_envSampler;
+
+Texture2DArray g_shadowMapDepthTexture;
+Texture2DArray<uint2> g_shadowMapStencilTexture;
+SamplerState g_shadowMapSampler;
+
 #include "inc/lighting.hlsl"
 
 cbuffer cb_lights : register(b1)
@@ -37,6 +46,9 @@ PS_OUTPUT EncodeOutput(
 	// Vector from surface point to camera
 	brdf.eyeVectorW = normalize(g_eyePosition.xyz - brdf.worldPosition);
 
+	LightingInputs li;
+	li.NdotV = abs(dot(brdf.worldNormal, brdf.eyeVectorW)) + 0.001;
+
 	// Iterate over the lights
 	float3 finalColor = float3(0, 0, 0);
 	for (uint lightIdx = 0; lightIdx < g_lightCount; ++lightIdx)
@@ -47,7 +59,7 @@ PS_OUTPUT EncodeOutput(
 		brdf.lightIntensifiedColor = light.intensifiedColor.rgb;
 		brdf.lightPosition = light.directionPosition;
 
-		finalColor += BRDFLight(brdf);
+		finalColor += BRDFLight(brdf, li);
 	}
 	
 	// Emitted light

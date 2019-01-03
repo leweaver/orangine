@@ -95,6 +95,9 @@
     <FxCompile Include="data\shaders\Unlit_material_PS.hlsl">
       <Filter>Assets\shaders</Filter>
     </FxCompile>
+    <FxCompile Include="data\shaders\test\test_deferred_light.hlsl">
+      <Filter>Assets\shaders\test</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="NatvisFile.natvis" />

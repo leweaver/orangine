@@ -206,40 +206,59 @@ void Game::CreateGeometricPrimitives()
 	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Primitives");
 
-
-	Primitive_mesh_data_factory pmdf;
-	auto createTeapot = [&pmdf, &entityManager, &root1](const Vector3& center, const Color& color)
+	auto createTeapot = [&entityManager, &root1](const Vector3& center, const Color& color, float metallic, float roughness)
 	{
 		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
 		child1->setPosition(center);
 
 		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
 		material->setBaseColor(color);
-		material->setMetallicFactor(0.5f);
-		material->setRoughnessFactor(0.5f);
+		material->setMetallicFactor(metallic);
+		material->setRoughnessFactor(roughness);
 		
 		auto& renderable = child1->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 		renderable.setWireframe(false);
 
-		const auto meshData = pmdf.createTeapot();
+		const auto meshData = Primitive_mesh_data_factory::createTeapot();
+		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
+		child1->setBoundSphere(BoundingSphere(Vector3::Zero, 1.0f));
+		child1->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
+	};
+	auto createSphere = [&entityManager, &root1](const Vector3& center, const Color& color, float metallic, float roughness)
+	{
+		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
+		child1->setPosition(center);
+
+		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
+		material->setBaseColor(color);
+		material->setMetallicFactor(metallic);
+		material->setRoughnessFactor(roughness);
+
+		auto& renderable = child1->addComponent<Renderable_component>();
+		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
+		renderable.setWireframe(false);
+
+		const auto meshData = Primitive_mesh_data_factory::createSphere();
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
 		child1->setBoundSphere(BoundingSphere(Vector3::Zero, 1.0f));
 	};
-	createTeapot({  0.0f,  1.0f, 1.5f }, Color(Colors::Cyan));
-	createTeapot({  1.5f,  1.0f, 0.0f }, Color(Colors::Yellow));
 
-	if (false)
+	createTeapot({ 0.0f,  1.0f, 1.5f }, Color(Colors::Cyan), 0.5f, 0.5f);
+	createTeapot({ 1.5f,  1.0f, 0.0f }, Color(Colors::White), 1.0f, 0.0f);
+	createSphere({ 1.5f,  1.0f, 1.5f }, Color(Colors::White), 1.0f, 0.0f);
+
+	if (true)
 	{
 		const auto &child2 = entityManager.instantiate("Primitive Child 2", *root1);
-		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
+		auto material = std::make_unique<PBR_material>();
 		material->setBaseColor(Color(0,1,0));
 
 		auto& renderable = child2->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 		renderable.setCastShadow(false);
 
-		const auto meshData = pmdf.createQuad({ 6, 6 });
+		const auto meshData = Primitive_mesh_data_factory::createQuad({ 10, 10 });
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
 		child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
@@ -275,8 +294,8 @@ void Game::Initialize(HWND window, int width, int height)
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
 		//LoadGLTF("FlightHelmet", true)->setScale({ 14, 14, 14 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
-		
-		//CreateSceneMetalRoughSpheres(true);
+		//LoadGLTF("MetalRoughSpheres", false);
+		//CreateSceneMetalRoughSpheres(false);
 
 		CreateCamera(false);
 		CreateLights();
@@ -432,9 +451,9 @@ void Game::GetDefaultSize(int& width, int& height) const
 	RECT rc;
 	GetWindowRect(GetDesktopWindow(), &rc);
 
-	// Set window to 75% of the desktop size
-    width = std::max(320l, rc.right >> 1);
-    height = std::max(200l, rc.bottom >> 1);
+	// Set window to 50% of the desktop size
+    width = std::max(320l, (rc.right * 3) / 4);
+    height = std::max(200l, (rc.bottom * 3) / 4);
 }
 #pragma endregion
 

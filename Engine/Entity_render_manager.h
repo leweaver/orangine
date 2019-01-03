@@ -141,6 +141,13 @@ namespace oe {
 		Buffer_array_set _bufferArraySet;
 		std::vector<Entity*> _renderLights;
 
+		struct EnvironmentIBL {
+			std::shared_ptr<Texture> skyboxTexture;
+			std::shared_ptr<Texture> iblBrdfTexture;
+			std::shared_ptr<Texture> iblDiffuseTexture;
+			std::shared_ptr<Texture> iblSpecularTexture;
+		} _environmentIbl;
+
 		// The template arguments here must match the size of the lights array in the shader constant buffer files.
 		std::unique_ptr<Render_light_data_impl<0>> _renderLightData_unlit;
 		std::unique_ptr<Render_light_data_impl<8>> _renderLightData_lit;

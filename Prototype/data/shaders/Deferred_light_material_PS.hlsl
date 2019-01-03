@@ -1,3 +1,40 @@
+// rgb: Diffuse           
+// a:   Specular intensity
+Texture2D color0Texture;
+SamplerState color0Sampler;
+
+// rgb: World normals     
+// a:   Specular power
+Texture2D color1Texture;
+SamplerState color1Sampler;
+
+// rgb: Emissive color
+// a:   Occlusion
+Texture2D color2Texture;
+SamplerState color2Sampler;
+
+// r:   normalized depth
+Texture2D depthTexture;
+SamplerState depthSampler;
+
+#ifdef MAP_IBL
+Texture2D g_envBrdfLUTexture;
+TextureCube g_envDiffuseTexture;
+TextureCube g_envSpecularTexture;
+SamplerState g_envSampler;
+#endif
+
+#ifdef MAP_SHADOWMAP_ARRAY
+// Shadowmaps
+// r: depth
+Texture2DArray g_shadowMapDepthTexture;
+// r: unused
+// g: stencil
+Texture2DArray<uint2> g_shadowMapStencilTexture;
+SamplerState g_shadowMapSampler;
+#endif
+
+#include "inc\utils.hlsl"
 #include "inc\lighting.hlsl"
 
 //--------------------------------------------------------------------------------------
@@ -26,31 +63,6 @@ struct PS_INPUT
 	float2 vTexCoord0   : TEXCOORD0;
 };
 
-// rgb: Diffuse           
-// a:   Specular intensity
-Texture2D color0Texture : register(t0);
-SamplerState color0Sampler : register(s0);
-
-// rgb: World normals     
-// a:   Specular power
-Texture2D color1Texture : register(t1);
-SamplerState color1Sampler : register(s1);
-
-// rgb: Emissive color
-// a:   Occlusion
-Texture2D color2Texture : register(t2);
-SamplerState color2Sampler : register(s2);
-
-// r:   normalized depth    
-// g:   Stencil
-Texture2D depthTexture : register(t3);
-SamplerState depthSampler : register(s3);
-
-// Shadowmaps
-Texture2DArray shadowMapDepthTexture : register(t4);
-Texture2DArray<uint2> shadowMapStencilTexture : register(t5);
-SamplerState shadowMapSampler : register(s4);
-
 // Forward declarations
 float3 worldPosFromDepth(float2 texCoord);
 float3 PointLightVector(float3 lightPosition, float3 lightIntensifiedColor, float3 pixelPosition, float3 surfaceNormal_n);
@@ -75,6 +87,11 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	brdf.baseColor = color0.rgb;
 	float3 emissive = color2.rgb;
 
+	float3 f0 = float3(0.04, 0.04, 0.04);
+	float3 diffuseColor = brdf.baseColor.rgb * (float3(1.0, 1.0, 1.0) - f0);
+	diffuseColor *= 1.0 - brdf.metallic;
+	float3 specularColor = lerp(f0, brdf.baseColor.rgb, brdf.metallic);
+
 #ifdef DEBUG_LIGHTING_ONLY
 	brdf.baseColor = float3(1, 1, 1);
 #endif
@@ -86,6 +103,22 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	ShadowSampleInputs ssi;
 	ssi.worldPosition = brdf.worldPosition;
 
+	LightingInputs li;
+	li.NdotV = abs(dot(brdf.worldNormal, brdf.eyeVectorW)) + 0.001;
+
+	// Environment map
+#ifdef MAP_IBL
+	BRDFEnvInputs brdfEnvInputs;
+	brdfEnvInputs.surfaceNormal = brdf.worldNormal;
+	brdfEnvInputs.reflection = -normalize(reflect(brdf.eyeVectorW, brdfEnvInputs.surfaceNormal));
+	brdfEnvInputs.roughness = brdf.roughness;
+	brdfEnvInputs.diffuseColor = diffuseColor;
+	brdfEnvInputs.specularColor = specularColor;
+	brdfEnvInputs.scaleIBLAmbient = float2(1.0, 1.0);
+
+	float3 envContribution = BRDFEnv(brdfEnvInputs, li);
+#endif
+
 	// Iterate over the lights
 	for (uint lightIdx = 0; lightIdx < g_lightCount; ++lightIdx)
 	{
@@ -95,12 +128,10 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 		brdf.lightIntensifiedColor = light.intensifiedColor.rgb;
 		brdf.lightPosition = light.directionPosition;
 		
-		float3 lightColor = BRDFLight(brdf);
+		float3 lightColor = BRDFLight(brdf, li);
+#ifdef MAP_SHADOWMAP_ARRAY
 		if (light.shadowMapIndex != -1) {
 			ssi.lightColor = lightColor;
-			ssi.shadowMapDepthTexture = shadowMapDepthTexture;
-			ssi.shadowMapStencilTexture = shadowMapStencilTexture;
-			ssi.shadowMapSampler = shadowMapSampler;
 			ssi.shadowMapArrayIndex = light.shadowMapIndex;
 			ssi.shadowMapViewMatrix = light.shadowMapViewMatrix;
 			ssi.shadowMapDepth = light.shadowMapDepth;
@@ -110,6 +141,9 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 		else {
 			finalColor += lightColor;
 		}
+#else
+		finalColor += lightColor;
+#endif
 	}
 
 	// TODO: turn into an ifdef?
@@ -117,6 +151,8 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	{
 		finalColor += emissive;
 	}
+
+	finalColor += envContribution;
 
 #ifdef DEBUG_NO_LIGHTING
 	return float4(color0.rgb, 1);

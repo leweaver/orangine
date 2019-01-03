@@ -37,7 +37,11 @@ namespace oe
 		void setShadowMapDepthTexture(const std::shared_ptr<Texture>& texture) { _shadowMapDepthTexture = texture; }
 		const std::shared_ptr<Texture>& shadowMapStencilTexture() const { return _shadowMapStencilTexture; }
 		void setShadowMapStencilTexture(const std::shared_ptr<Texture>& texture) { _shadowMapStencilTexture = texture; }
-		
+		bool iblEnabled() const { return _iblEnabled; }
+		void setIblEnabled(bool iblEnabled) { _iblEnabled = iblEnabled; }
+		bool shadowArrayEnabled() const { return _shadowArrayEnabled; }
+		void setShadowArrayEnabled(bool shadowArrayEnabled) { _shadowArrayEnabled = shadowArrayEnabled; }
+				
 		void setupEmitted(bool enabled);
 
 		Material_light_mode lightMode() override { return Material_light_mode::Lit; }
@@ -74,5 +78,7 @@ namespace oe
 
 		int32_t _shadowMapCount = 0;
 		bool _emittedEnabled = false;
+		bool _iblEnabled = true;
+		bool _shadowArrayEnabled = true;
 	};
 }

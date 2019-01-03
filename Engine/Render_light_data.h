@@ -8,18 +8,28 @@ namespace oe
 	public:
 		ID3D11Buffer* buffer() const { return _constantBuffer.Get(); }
 
-		ID3D11ShaderResourceView* environmentMapSRV() const
+		ID3D11ShaderResourceView* environmentMapBrdfSRV() const
 		{
-			return _environmentMapSRV.Get();
+			return _environmentIblMapBrdfSRV.Get();
+		}
+		ID3D11ShaderResourceView* environmentMapDiffuseSRV() const
+		{
+			return _environmentIblMapDiffuseSRV.Get();
+		}
+		ID3D11ShaderResourceView* environmentMapSpecularSRV() const
+		{
+			return _environmentIblMapSpecularSRV.Get();
 		}
 		ID3D11SamplerState* environmentMapSamplerState() const {
-			return _environmentMapSamplerState.Get();
+			return _environmentIblMapSamplerState.Get();
 		}
 
 	protected:
 		Microsoft::WRL::ComPtr<ID3D11Buffer> _constantBuffer;
-		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _environmentMapSRV;
-		Microsoft::WRL::ComPtr<ID3D11SamplerState> _environmentMapSamplerState;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _environmentIblMapBrdfSRV;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _environmentIblMapDiffuseSRV;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _environmentIblMapSpecularSRV;
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> _environmentIblMapSamplerState;
 	};
 
 	template<uint8_t TMax_lights>
@@ -89,10 +99,16 @@ namespace oe
 		{
 			return _lightConstants.addLight({ Light_type::Ambient, DirectX::SimpleMath::Vector3::Zero, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
 		}
-		void setEnvironmentMap(ID3D11ShaderResourceView* srv, ID3D11SamplerState* samplerState)
+		void setEnvironmentIblMap(
+			ID3D11ShaderResourceView* brdfSRV,
+			ID3D11ShaderResourceView* diffuseSRV, 
+			ID3D11ShaderResourceView* specularSRV, 
+			ID3D11SamplerState* samplerState)
 		{
-			_environmentMapSRV = srv;
-			_environmentMapSamplerState = samplerState;
+			_environmentIblMapBrdfSRV = brdfSRV;
+			_environmentIblMapDiffuseSRV = diffuseSRV;
+			_environmentIblMapSpecularSRV = specularSRV;
+			_environmentIblMapSamplerState = samplerState;
 		}
 		void updateBuffer(ID3D11DeviceContext* context)
 		{

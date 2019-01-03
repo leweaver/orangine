@@ -59,6 +59,7 @@ namespace oe
 
 		void load(ID3D11Device* device) override;
 		void unload() override;
+		const std::wstring& filename() const { return _filename; }
 	};
 
 	class Depth_texture : public Texture

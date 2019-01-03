@@ -25,7 +25,10 @@ void File_texture::load(ID3D11Device* device)
 		hr = DirectX::CreateDDSTextureFromFile(device, _filename.c_str(), _textureResource.ReleaseAndGetAddressOf(), &_shaderResourceView);
 	else
 		hr = DirectX::CreateWICTextureFromFile(device, _filename.c_str(), _textureResource.ReleaseAndGetAddressOf(), &_shaderResourceView);
-	
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC desc;
+	_shaderResourceView->GetDesc(&desc);
+
 	ThrowIfFailed(hr, utf8_encode(_filename));
 }
 

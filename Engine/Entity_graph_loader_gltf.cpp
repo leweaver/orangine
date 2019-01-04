@@ -17,6 +17,7 @@
 #include "Texture.h"
 #include "Primitive_mesh_data_factory.h"
 #include "Mesh_utils.h"
+#include "FileUtils.h"
 
 using namespace std;
 using namespace tinygltf;
@@ -95,8 +96,10 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filena
 	string err;
 
 	const auto filenameStr = string(filename);
-	const auto ret = loader.LoadASCIIFromFile(&model, &err, filenameStr);
-	//bool ret = loader.LoadBinaryFromFile(&model, &err, argv[1]); // for binary glTF(.glb) 
+	auto gltfAscii = get_file_contents(filenameStr.c_str());
+	auto baseDir = GetBaseDir(filenameStr.c_str());
+
+	const auto ret = loader.LoadASCIIFromString(&model, &err, gltfAscii.c_str(), gltfAscii.length(), baseDir);
 	if (!err.empty()) {
 		throw runtime_error(err);
 	}
@@ -109,7 +112,6 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filena
 		throw runtime_error("Failed to parse glTF: defaultScene points to an invalid scene index");
 
 	const auto& scene = model.scenes[model.defaultScene];
-	auto baseDir = tinygltf::GetBaseDir(filenameStr);
 	if (baseDir.empty())
 		baseDir = ".";
 	LoaderData loaderData(model, string(baseDir), _imagingFactory.Get(), meshDataFactory, calculateBounds);

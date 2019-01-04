@@ -25,6 +25,8 @@ namespace oe {
 	{
 		return (i != 0u) && ((i - 1u) & i) == 0u;
 	}
+
+	std::string errno_to_str();
 	
 	// Helper class for COM exceptions
 	class com_exception : public std::exception {

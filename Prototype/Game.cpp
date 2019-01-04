@@ -244,26 +244,27 @@ void Game::CreateGeometricPrimitives()
 		child1->setBoundSphere(BoundingSphere(Vector3::Zero, 1.0f));
 	};
 
-	createTeapot({ 0.0f,  1.0f, 1.5f }, Color(Colors::Cyan), 0.5f, 0.5f);
-	createTeapot({ 1.5f,  1.0f, 0.0f }, Color(Colors::White), 1.0f, 0.0f);
-	createSphere({ 1.5f,  1.0f, 1.5f }, Color(Colors::White), 1.0f, 0.0f);
+	//createTeapot({ 0.0f,  1.0f, 1.5f }, Color(Colors::Cyan),  0.0f, 0.5f);
+	//createTeapot({ 1.5f,  1.0f, 0.0f }, Color(Colors::White), 1.0f, 0.0f);
+	//createSphere({ 0   ,  1.0f, 0    }, Color(Colors::Cyan),  0.0f, 0.75f);
+	//createSphere({ 1.5f,  1.0f, 1.5f }, Color(Colors::White), 0.7f, 1.0f);
 
 	if (true)
 	{
 		const auto &child2 = entityManager.instantiate("Primitive Child 2", *root1);
 		auto material = std::make_unique<PBR_material>();
-		material->setBaseColor(Color(0,1,0));
+		material->setBaseColor(Color(0.7,0.7,0.7));
 
 		auto& renderable = child2->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 		renderable.setCastShadow(false);
 
-		const auto meshData = Primitive_mesh_data_factory::createQuad({ 10, 10 });
+		const auto meshData = Primitive_mesh_data_factory::createQuad({ 15, 15 });
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
 		child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
-		child2->setPosition({ 0.0f, 0.0f, 0.0f });
-		child2->setBoundSphere(BoundingSphere(Vector3::Zero, 0.01f));
+		child2->setPosition({ 0.0f, -3.5f, 0.0f });
+		child2->setBoundSphere(BoundingSphere(Vector3::Zero, 10.0f));
 	}
 }
 
@@ -292,14 +293,14 @@ void Game::Initialize(HWND window, int width, int height)
 		
 		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
-		//LoadGLTF("FlightHelmet", true)->setScale({ 14, 14, 14 });
+		//LoadGLTF("FlightHelmet", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
-		//LoadGLTF("MetalRoughSpheres", false);
+		LoadGLTF("MetalRoughSpheres", false);
 		//CreateSceneMetalRoughSpheres(false);
 
 		CreateCamera(false);
 		CreateLights();
-		CreateGeometricPrimitives();
+		//CreateGeometricPrimitives();
 
 		// Load the skybox
 		auto skyBoxTexture = std::make_shared<File_texture>(std::wstring(L"data/textures/park-cubemap.dds"));

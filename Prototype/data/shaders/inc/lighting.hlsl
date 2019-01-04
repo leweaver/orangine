@@ -132,7 +132,7 @@ struct BRDFEnvInputs
 };
 float3 BRDFEnv(BRDFEnvInputs inputs, LightingInputs li)
 {
-	float mipCount = 9.0; // resolution of 512x512
+	float mipCount = 10.0; // resolution of 512x512
 	float lod = (inputs.roughness * mipCount);
 
 	// retrieve a scale and bias to F0. See [1], Figure 3

@@ -203,6 +203,9 @@
     <ClInclude Include="Render_pass_skybox.h">
       <Filter>Systems\Renderer\Render_pass</Filter>
     </ClInclude>
+    <ClInclude Include="FileUtils.h">
+      <Filter>Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Input_manager.cpp">

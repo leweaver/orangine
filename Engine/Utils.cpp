@@ -74,6 +74,13 @@ std::wstring oe::hr_to_wstring(const HRESULT hr)
 	return err.ErrorMessage();
 }
 
+std::string oe::errno_to_str()
+{
+	char errmsg[94];
+	strerror_s(errmsg, sizeof(errmsg), errno);
+	return std::string(errmsg);
+}
+
 com_exception::com_exception(HRESULT hr)
 	: com_exception(hr, hr_to_string(hr))
 {

@@ -172,6 +172,7 @@
     <ClInclude Include="Entity_repository.h" />
     <ClInclude Include="Entity_scripting_manager.h" />
     <ClInclude Include="Entity_sorter.h" />
+    <ClInclude Include="FileUtils.h" />
     <ClInclude Include="Input_manager.h" />
     <ClInclude Include="Light_component.h" />
     <ClInclude Include="Light_provider.h" />

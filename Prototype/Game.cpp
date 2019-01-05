@@ -244,10 +244,10 @@ void Game::CreateGeometricPrimitives()
 		child1->setBoundSphere(BoundingSphere(Vector3::Zero, 1.0f));
 	};
 
-	//createTeapot({ 0.0f,  1.0f, 1.5f }, Color(Colors::Cyan),  0.0f, 0.5f);
-	//createTeapot({ 1.5f,  1.0f, 0.0f }, Color(Colors::White), 1.0f, 0.0f);
-	//createSphere({ 0   ,  1.0f, 0    }, Color(Colors::Cyan),  0.0f, 0.75f);
-	//createSphere({ 1.5f,  1.0f, 1.5f }, Color(Colors::White), 0.7f, 1.0f);
+	createTeapot({ 0.0f,  1.0f, 1.5f }, Color(Colors::Cyan),  0.0f, 0.5f);
+	createTeapot({ 1.5f,  1.0f, 0.0f }, Color(Colors::White), 1.0f, 0.0f);
+	createSphere({ 0   ,  1.0f, 0    }, Color(Colors::Cyan),  0.0f, 0.75f);
+	createSphere({ 1.5f,  1.0f, 1.5f }, Color(Colors::White), 0.7f, 1.0f);
 
 	if (true)
 	{
@@ -295,12 +295,12 @@ void Game::Initialize(HWND window, int width, int height)
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
 		//LoadGLTF("FlightHelmet", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
-		LoadGLTF("MetalRoughSpheres", false);
+		//LoadGLTF("MetalRoughSpheres", false);
 		//CreateSceneMetalRoughSpheres(false);
 
 		CreateCamera(false);
 		CreateLights();
-		//CreateGeometricPrimitives();
+		CreateGeometricPrimitives();
 
 		// Load the skybox
 		auto skyBoxTexture = std::make_shared<File_texture>(std::wstring(L"data/textures/park-cubemap.dds"));
@@ -400,10 +400,10 @@ void Game::OnWindowMoved()
 
 void Game::OnWindowSizeChanged(int width, int height)
 {
-    if (!m_deviceResources->WindowSizeChanged(width, height))
-        return;
-
 	m_scene->destroyWindowSizeDependentResources();
+
+    if (!m_deviceResources->WindowSizeChanged(width, height))
+      return;
 
     createWindowSizeDependentResources();
 

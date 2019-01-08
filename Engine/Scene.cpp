@@ -162,6 +162,7 @@ void Scene::setMainCamera(const std::shared_ptr<Entity>& cameraEntity)
 
 void Scene_device_resource_aware::createWindowSizeDependentResources(HWND window, int width, int height)
 {
+    LOG(INFO) << "Creating window size dependent resources";
 	forEachOfType<Manager_windowDependent>(_managers, [=](Manager_windowDependent* manager) {
 		manager->createWindowSizeDependentResources(_deviceResources, window, width, height);
 	});
@@ -169,6 +170,7 @@ void Scene_device_resource_aware::createWindowSizeDependentResources(HWND window
 
 void Scene_device_resource_aware::destroyWindowSizeDependentResources()
 {
+    LOG(INFO) << "Destroying window size dependent resources";
 	forEachOfType<Manager_windowDependent>(_managers, [](Manager_windowDependent* manager) {
 		manager->destroyWindowSizeDependentResources();
 	});
@@ -176,6 +178,7 @@ void Scene_device_resource_aware::destroyWindowSizeDependentResources()
 
 void Scene_device_resource_aware::createDeviceDependentResources()
 {
+    LOG(INFO) << "Creating device dependent resources";
 	forEachOfType<Manager_deviceDependent>(_managers, [this](Manager_deviceDependent* manager) {
 		manager->createDeviceDependentResources(_deviceResources);
 	});
@@ -183,6 +186,7 @@ void Scene_device_resource_aware::createDeviceDependentResources()
 
 void Scene_device_resource_aware::destroyDeviceDependentResources()
 {
+    LOG(INFO) << "Destroying device dependent resources";
 	forEachOfType<Manager_deviceDependent>(_managers, [](Manager_deviceDependent* manager) {
 		manager->destroyDeviceDependentResources();
 	});

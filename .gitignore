@@ -7,3 +7,5 @@ Prototype/data/meshes/
 *.TMP
 packages/
 *.user
+bin/
+obj/

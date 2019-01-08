@@ -91,21 +91,11 @@ void Deferred_light_material::setContextSamplers(const DX::DeviceResources& devi
 		return;
 	
 	auto validSamplers = true;
-	if (!_color0SamplerState)
-		validSamplers &= ensureSamplerState(deviceResources, *_color0Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, &_color0SamplerState);
-
-	if (!_color1SamplerState)
-		validSamplers &= ensureSamplerState(deviceResources, *_color1Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, &_color1SamplerState);
-
-	if (!_color2SamplerState)
-		validSamplers &= ensureSamplerState(deviceResources, *_color2Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, &_color2SamplerState);
-
-	if (!_depthSamplerState)
-		validSamplers &= ensureSamplerState(deviceResources, *_depthTexture.get(), D3D11_TEXTURE_ADDRESS_WRAP, &_depthSamplerState);
-	
-	if (!_shadowMapSamplerState)
-		validSamplers &= ensureSamplerState(deviceResources, *_shadowMapDepthTexture.get(), D3D11_TEXTURE_ADDRESS_CLAMP, &_shadowMapSamplerState);
-
+	validSamplers &= ensureSamplerState(deviceResources, *_color0Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, _color0SamplerState.GetAddressOf());
+	validSamplers &= ensureSamplerState(deviceResources, *_color1Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, _color1SamplerState.GetAddressOf());
+	validSamplers &= ensureSamplerState(deviceResources, *_color2Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, _color2SamplerState.GetAddressOf());
+	validSamplers &= ensureSamplerState(deviceResources, *_depthTexture.get(), D3D11_TEXTURE_ADDRESS_WRAP, _depthSamplerState.GetAddressOf());	
+	validSamplers &= ensureSamplerState(deviceResources, *_shadowMapDepthTexture.get(), D3D11_TEXTURE_ADDRESS_CLAMP, _shadowMapSamplerState.GetAddressOf());
 	if (_shadowMapStencilTexture)
 		_shadowMapStencilTexture->load(deviceResources.GetD3DDevice());
 

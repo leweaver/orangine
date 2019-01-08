@@ -24,8 +24,6 @@ using namespace oe;
 
 using Microsoft::WRL::ComPtr;
 
-std::shared_ptr<Entity> g_debugEntity;
-
 Game::Game()
 	: m_fatalError(false)
 {
@@ -35,7 +33,6 @@ Game::Game()
 
 Game::~Game()
 {
-	g_debugEntity.reset();
 	if (m_scene) {
 		m_scene->destroyWindowSizeDependentResources();
 		m_scene->destroyDeviceDependentResources();
@@ -394,55 +391,27 @@ void Game::OnResuming()
 
 void Game::OnWindowMoved()
 {
-    auto r = m_deviceResources->GetOutputSize();
+    const auto r = m_deviceResources->GetOutputSize();
+    LOG(INFO) << "Window moved. new size: " << r.right << ", " << r.bottom;
+
     m_deviceResources->WindowSizeChanged(r.right, r.bottom);
 }
 
 void Game::OnWindowSizeChanged(int width, int height)
 {
+    const auto oldSize = m_deviceResources->GetOutputSize();
+    if (oldSize.right == width && oldSize.bottom == height)
+        return;
+
+    LOG(INFO) << "Window size changed: " << width << ", " << height;
+
 	m_scene->destroyWindowSizeDependentResources();
 
-    if (!m_deviceResources->WindowSizeChanged(width, height))
-      return;
+    if (!m_deviceResources->WindowSizeChanged(width, height)) {
+        LOG(WARNING) << "Device resources failed to handle WindowSizeChanged event.";
+    }
 
     createWindowSizeDependentResources();
-
-	const auto mainCamera = m_scene->mainCamera();
-	if (mainCamera) {
-		auto& entityManager = m_scene->manager<IScene_graph_manager>();
-		const auto camera = mainCamera->getFirstComponentOfType<Camera_component>();
-
-		if (g_debugEntity) {
-			entityManager.destroy(g_debugEntity->getId());
-			g_debugEntity.reset();
-		}
-
-		if (camera != nullptr && width > 0 && height > 0) {
-			const auto &child3 = entityManager.instantiate("Primitive Child 3");
-			std::unique_ptr<Unlit_material> material = std::make_unique<Unlit_material>();
-			material->setBaseColor(Color(Colors::White));
-
-			auto& renderable = child3->addComponent<Renderable_component>();
-			renderable.setMaterial(std::unique_ptr<Material>(material.release()));
-
-			const auto projMatrixRH = XMMatrixPerspectiveFovRH(
-				camera->fov(),
-				static_cast<float>(width) / static_cast<float>(height),
-				camera->nearPlane(),
-				camera->farPlane() * 0.5f);
-			
-			// DirectX BoundingFrustum's are LH.
-			auto frustum = BoundingFrustumRH(projMatrixRH);
-
-			frustum.Origin = mainCamera->worldPosition();
-			frustum.Orientation = mainCamera->worldRotation();
-
-			Primitive_mesh_data_factory pmdf;
-			const auto meshData = pmdf.createFrustumLines(frustum);
-			child3->addComponent<Mesh_data_component>().setMeshData(meshData);
-
-		}
-	}
 }
 
 // Properties

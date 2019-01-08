@@ -11,7 +11,7 @@ public:
 
 	void tick()
 	{
-		if (mouse->IsConnected()) {
+		if (mouse && mouse->IsConnected()) {
 			const auto state = mouse->GetState();
 			buttonStateTracker.Update(state);
 

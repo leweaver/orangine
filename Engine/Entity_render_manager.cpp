@@ -126,14 +126,14 @@ void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& 
 	_renderLightData_lit = std::make_unique<decltype(_renderLightData_lit)::element_type>(device);
 }
 
-void Entity_render_manager::createWindowSizeDependentResources(DX::DeviceResources& /*deviceResources*/, HWND /*window*/, int width, int height)
-{
-}
-
 void Entity_render_manager::destroyDeviceDependentResources()
 {
 	_renderLightData_unlit.reset();
 	_renderLightData_lit.reset();
+}
+
+void Entity_render_manager::createWindowSizeDependentResources(DX::DeviceResources& /*deviceResources*/, HWND /*window*/, int width, int height)
+{
 }
 
 void Entity_render_manager::destroyWindowSizeDependentResources()

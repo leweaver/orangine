@@ -303,7 +303,7 @@ unique_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_reposi
 
 	// Numeric/Color Parameters
 	withScalarParam(g_pbrPropertyName_MetallicFactor, 1.0f, bind(&PBR_material::setMetallicFactor, material.get(), std::placeholders::_1));
-	withScalarParam(g_pbrPropertyName_RoughnessFactor, 0.0f, bind(&PBR_material::setRoughnessFactor, material.get(), std::placeholders::_1));
+	withScalarParam(g_pbrPropertyName_RoughnessFactor, 1.0f, bind(&PBR_material::setRoughnessFactor, material.get(), std::placeholders::_1));
 	withScalarParam(g_pbrPropertyName_AlphaCutoff, 0.5f, bind(&PBR_material::setAlphaCutoff, material.get(), std::placeholders::_1));
 	withColorParam(g_pbrPropertyName_BaseColorFactor, DirectX::SimpleMath::Color(DirectX::Colors::White), bind(&PBR_material::setBaseColor, material.get(), std::placeholders::_1));
 	withColorParam(g_pbrPropertyName_EmissiveFactor, DirectX::SimpleMath::Color(DirectX::Colors::Black), bind(&PBR_material::setEmissiveFactor, material.get(), std::placeholders::_1));

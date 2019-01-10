@@ -83,7 +83,10 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	brdf.roughness = color1.w;
 	brdf.occlusion = color2.a;
 	brdf.worldPosition = worldPosFromDepth(input.vTexCoord0);
+    // Transform normal map sample from [0, -1] to [-1, 1] space
 	brdf.worldNormal = color1.xyz * 2 - 1;
+    // TODO: In theory, the normal coming in here should be normalized. But, for some reason, it isn't.
+    brdf.worldNormal = normalize(brdf.worldNormal);
 	brdf.baseColor = color0.rgb;
 	float3 emissive = color2.rgb;
 
@@ -110,7 +113,7 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 #ifdef MAP_IBL
 	BRDFEnvInputs brdfEnvInputs;
 	brdfEnvInputs.surfaceNormal = brdf.worldNormal;
-	brdfEnvInputs.reflection = -normalize(reflect(brdf.eyeVectorW, brdfEnvInputs.surfaceNormal));
+	brdfEnvInputs.reflection = -normalize(reflect(brdf.eyeVectorW, brdf.worldNormal));
 	brdfEnvInputs.roughness = brdf.roughness;
 	brdfEnvInputs.diffuseColor = diffuseColor;
 	brdfEnvInputs.specularColor = specularColor;

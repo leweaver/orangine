@@ -118,6 +118,7 @@ PS_OUTPUT PSMain(PS_INPUT input)
 	PS_OUTPUT output = EncodeOutput(
 		baseColor,
 		metallicRoughness.x,
+        // Transform normal map sample from [-1, -1] to [0, 1] space
 		worldNormal * 0.5 + 0.5,
 		metallicRoughness.y,
 		emissiveColor.rgb,

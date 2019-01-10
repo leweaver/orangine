@@ -235,16 +235,20 @@ void Game::CreateGeometricPrimitives()
 		auto& renderable = child1->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 		renderable.setWireframe(false);
+        renderable.setCastShadow(false);
 
 		const auto meshData = Primitive_mesh_data_factory::createSphere();
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
 		child1->setBoundSphere(BoundingSphere(Vector3::Zero, 1.0f));
 	};
 
-	createTeapot({ 0.0f,  1.0f, 1.5f }, Color(Colors::Cyan),  0.0f, 0.5f);
-	createTeapot({ 1.5f,  1.0f, 0.0f }, Color(Colors::White), 1.0f, 0.0f);
-	createSphere({ 0   ,  1.0f, 0    }, Color(Colors::Cyan),  0.0f, 0.75f);
-	createSphere({ 1.5f,  1.0f, 1.5f }, Color(Colors::White), 0.7f, 1.0f);
+    int created = 0;
+    for (float metallic = 0.0f; metallic <= 1.0f; metallic += 0.2f) {
+        for (float roughness = 0.0f; roughness <= 1.0f; roughness += 0.2f) {
+            createSphere({ metallic * 10.0f - 5.0f,  roughness * 10.0f - 5.0f, 0 }, Color(Colors::White), 1.0f - metallic, 1.0f - roughness);
+            created++;
+        }
+    }
 
 	if (true)
 	{
@@ -254,13 +258,13 @@ void Game::CreateGeometricPrimitives()
 
 		auto& renderable = child2->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
-		renderable.setCastShadow(false);
+		renderable.setCastShadow(true);
 
 		const auto meshData = Primitive_mesh_data_factory::createQuad({ 15, 15 });
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
 		child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
-		child2->setPosition({ 0.0f, -3.5f, 0.0f });
+		child2->setPosition({ 0.0f, -6.0f, 0.0f });
 		child2->setBoundSphere(BoundingSphere(Vector3::Zero, 10.0f));
 	}
 }

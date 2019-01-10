@@ -139,10 +139,13 @@ float3 BRDFEnv(BRDFEnvInputs inputs, LightingInputs li)
 	// g_shadowMapDepthTexture.Sample(g_shadowMapSampler
 	float3 brdf = 
 		SRGBtoLINEAR(g_envBrdfLUTexture.Sample(g_envSampler, float2(li.NdotV, 1.0 - inputs.roughness)).rgb);
-	float3 diffuseLight =
-		SRGBtoLINEAR(g_envDiffuseTexture.Sample(g_envSampler, inputs.surfaceNormal).rgb);
+
+    // TODO: No idea why this line is throwing a warning:
+    // warning X3206: 'SampleLevel': implicit truncation of vector type
+	float3 diffuseLight = 
+        SRGBtoLINEAR(g_envDiffuseTexture.SampleLevel(g_envSampler, inputs.surfaceNormal.xyz, 0.0f).rgb);
 	float3 specularLight =
-		SRGBtoLINEAR(g_envSpecularTexture.Sample(g_envSampler, inputs.reflection, lod).rgb);
+		SRGBtoLINEAR(g_envSpecularTexture.SampleLevel(g_envSampler, inputs.reflection, lod).rgb);
 
 	float3 diffuse = diffuseLight * inputs.diffuseColor;
 	float3 specular = specularLight * (inputs.specularColor * brdf.x + brdf.y);

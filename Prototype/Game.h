@@ -43,11 +43,11 @@ public:
     void Tick();
 
     // IDeviceNotify
-    virtual void OnDeviceLost() override;
-    virtual void OnDeviceRestored() override;
+    void OnDeviceLost() override;
+    void OnDeviceRestored() override;
 
     // Messages
-	inline void processMessage(UINT message, WPARAM wParam, LPARAM lParam) const;
+	inline bool processMessage(UINT message, WPARAM wParam, LPARAM lParam) const;
     void OnActivated();
     void OnDeactivated();
     void OnSuspending();
@@ -81,9 +81,10 @@ private:
 	HWND									_window;
 };
 
-void Game::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const
+bool Game::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const
 {
 	if (m_scene != nullptr) {
-		m_scene->processMessage(message, wParam, lParam);
+		return m_scene->processMessage(message, wParam, lParam);
 	}
+    return false;
 }

@@ -158,7 +158,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	// Give the game managers a change to process messages (for mouse input etc)
 	if (game != nullptr) {
-		game->processMessage(message, wParam, lParam);
+		if (game->processMessage(message, wParam, lParam)) {
+            return true;
+		}
 	}
 
     switch (message)

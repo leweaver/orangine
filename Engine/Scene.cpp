@@ -48,15 +48,20 @@ constexpr void forEach_tick(TTuple& managers)
 }
 
 template<typename TTuple, int TIdx = 0>
-constexpr void forEach_processMessage(TTuple& managers, UINT message, WPARAM wParam, LPARAM lParam)
+constexpr bool forEach_processMessage(TTuple& managers, UINT message, WPARAM wParam, LPARAM lParam, bool handled = false)
 {
 	// Tick only types that derive from Manager_windowsMessageProcessor
-	if constexpr (std::is_base_of_v<Manager_windowsMessageProcessor, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
-		std::get<TIdx>(managers)->processMessage(message, wParam, lParam);
+    if constexpr (std::is_base_of_v<Manager_windowsMessageProcessor, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>) {
+        if (!handled) {
+            handled |= (std::get<TIdx>(managers)->processMessage(message, wParam, lParam));
+        }
+    }
 
 	// Recursively iterate to the next tuple index
 	if constexpr (TIdx + 1 < std::tuple_size_v<TTuple>)
-		forEach_processMessage<TTuple, TIdx + 1>(managers, message, wParam, lParam);
+		return forEach_processMessage<TTuple, TIdx + 1>(managers, message, wParam, lParam, handled);
+
+    return handled;
 }
 
 void Scene::initialize()
@@ -108,7 +113,7 @@ void Scene::loadEntities(const std::string& filename, Entity *parentEntity)
 			entity->setParent(*parentEntity);
 	}
 
-	sceneGraphManager().handleEntitiesLoaded(newRootEntities);
+	manager<IScene_graph_manager>().handleEntitiesLoaded(newRootEntities);
 }
 
 void Scene::tick(DX::StepTimer const& timer)
@@ -128,22 +133,22 @@ void Scene::shutdown()
 
 void Scene::onComponentAdded(Entity& entity, Component& component) const
 {
-	sceneGraphManager().handleEntityComponentAdd(entity, component);
+	manager<IScene_graph_manager>().handleEntityComponentAdd(entity, component);
 }
 
 void Scene::onComponentRemoved(Entity& entity, Component& component) const
 {
-	sceneGraphManager().handleEntityComponentAdd(entity, component);
+	manager<IScene_graph_manager>().handleEntityComponentAdd(entity, component);
 }
 
 void Scene::onEntityAdded(Entity& entity) const
 {
-	sceneGraphManager().handleEntityAdd(entity);
+	manager<IScene_graph_manager>().handleEntityAdd(entity);
 }
 
 void Scene::onEntityRemoved(Entity& entity) const
 {
-	sceneGraphManager().handleEntityRemove(entity);
+	manager<IScene_graph_manager>().handleEntityRemove(entity);
 }
 
 void Scene::setMainCamera(const std::shared_ptr<Entity>& cameraEntity)
@@ -194,14 +199,13 @@ void Scene_device_resource_aware::destroyDeviceDependentResources()
 		_skyBoxTexture->unload();
 }
 
-void Scene_device_resource_aware::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const
+bool Scene_device_resource_aware::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const
 {
-	forEach_processMessage(_managers, message, wParam, lParam);
+	return forEach_processMessage(_managers, message, wParam, lParam);
 }
 
 Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& deviceResources)
-	: Scene()
-	, _deviceResources(deviceResources)
+	: _deviceResources(deviceResources)
 {
 }
 
@@ -228,6 +232,7 @@ void Scene_device_resource_aware::initialize()
 	get<shared_ptr<IEntity_scripting_manager>>(_managers) = make_shared<Entity_scripting_manager>(*this);
 	get<shared_ptr<IAsset_manager>>(_managers) = make_shared<Asset_manager>(*this);
 	get<shared_ptr<IInput_manager>>(_managers) = make_shared<Input_manager>(*this, _deviceResources);
+    get<shared_ptr<IUser_interface_manager>>(_managers) = make_shared<User_interface_manager>(*this);
 
 	Scene::initialize();
 }

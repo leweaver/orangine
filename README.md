@@ -37,6 +37,8 @@ We need to create the appropriate visual studio projects, using CMake. In the `D
 1. Execute command: `.\create-thirdparty-projects.bat`
 
 ### DEPRECATED INSTRUCTIONS: googlemock
+Don't do this any more.
+
 Download the Visual Studio 2015 Build Tools, in visual studio 2017 Installer:
 1. Install "VC++ 2015.3 v140 toolset(x86,x64)" component Under Desktop development with C++ workload.
 
@@ -44,6 +46,23 @@ In the `Developer Command Prompt for VS 2017`:
 1. Change directory to the root of the GIT repository
 1. Change directory to `thirdparty\googletest\googlemock\msvc\2015`
 1. Execute command: `msbuild gmock.sln /p:Platform="x64"`
+
+# Overall Architecture
+Here is a quick non-exhaustive overview of how the main object instances are instantiated. Each item creates and owns the items below it in the tree. Each item below is the name of a class, which is located in a CPP/H file of the same name. 
+
+- oe::Main
+  - DX::DeviceResources
+  - oe::Game
+    - oe::Scene
+	  - oe::Entity_graph_loader_gltf
+	  - oe::IManager_base derived classes:
+		- oe::Entity_render_manager
+		- oe::Scene_graph_manager
+			- oe::Entity
+			- oe::Entity_filter
+		- oe::Render_step_manager
+			- oe::Render_step
+		- ...
 
 # Running unit tests
 Tests are executed via the `Test Explorer` window in visual studio. Projects that contain tests are suffixed with `-Test` and compile to an x64 executable. To run them;
@@ -56,7 +75,9 @@ Tests are executed via the `Test Explorer` window in visual studio. Projects tha
 
 > Tip: Optionally you can unload the `Prototype` solution to make runs faster, since it doesn't contain any tests.
 
-# Maths
+
+
+# Maths Conventions
 Matrix conventions are as in SimpleMath: Right Handed, Row Major.
 
 Some notes on libraries that are in use:

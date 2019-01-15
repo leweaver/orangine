@@ -243,12 +243,12 @@ void Game::CreateGeometricPrimitives()
 	};
 
     int created = 0;
-    for (float metallic = 0.0f; metallic <= 1.0f; metallic += 0.2f) {
-        for (float roughness = 0.0f; roughness <= 1.0f; roughness += 0.2f) {
-            createSphere({ metallic * 10.0f - 5.0f,  roughness * 10.0f - 5.0f, 0 }, Color(Colors::White), 1.0f - metallic, 1.0f - roughness);
-            created++;
-        }
-    }
+    //for (float metallic = 0.0f; metallic <= 1.0f; metallic += 0.2f) {
+    //    for (float roughness = 0.0f; roughness <= 1.0f; roughness += 0.2f) {
+    //        createSphere({ metallic * 10.0f - 5.0f,  roughness * 10.0f - 5.0f, 0 }, Color(Colors::White), 1.0f - metallic, 1.0f - roughness);
+    //        created++;
+    //    }
+    //}
 
 	if (true)
 	{
@@ -361,6 +361,7 @@ void Game::Render()
 	//if (IInput_manager::Mouse_state::Button_state::RELEASED == mouseState->right) {
 	if (m_scene->mainCamera()) {
 		m_scene->manager<IRender_step_manager>().render(m_scene->mainCamera());
+        m_scene->manager<IUser_interface_manager>().render();
 
 		// Show the new frame.
 		m_deviceResources->Present();

@@ -32,6 +32,9 @@
     <Filter Include="Systems\Renderer\Render_pass">
       <UniqueIdentifier>{8376ce84-ba13-48c2-838a-e65f0f5e9a7b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Systems\UI">
+      <UniqueIdentifier>{ba7e269a-086d-414f-b22d-e43ec56b1c72}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Input_manager.h">
@@ -206,6 +209,9 @@
     <ClInclude Include="FileUtils.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="User_interface_manager.h">
+      <Filter>Systems\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Input_manager.cpp">
@@ -336,6 +342,9 @@
     </ClCompile>
     <ClCompile Include="Render_pass_skybox.cpp">
       <Filter>Systems\Renderer\Render_pass</Filter>
+    </ClCompile>
+    <ClCompile Include="User_interface_manager.cpp">
+      <Filter>Systems\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

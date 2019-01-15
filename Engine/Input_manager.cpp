@@ -2,6 +2,7 @@
 #include "Input_manager.h"
 
 #include "DeviceResources.h"
+#include "Scene.h"
 #include <Mouse.h>
 
 using namespace oe;
@@ -67,9 +68,12 @@ void Input_manager::destroyWindowSizeDependentResources()
 	_impl->mouse = std::unique_ptr<DirectX::Mouse>();
 }
 
-void Input_manager::processMessage(UINT message, WPARAM wParam, LPARAM lParam)
+bool Input_manager::processMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
-	_impl->mouse->ProcessMessage(message, wParam, lParam);
+    if (!_scene.manager<IUser_interface_manager>().mouseCaptured())
+	    _impl->mouse->ProcessMessage(message, wParam, lParam);
+
+    return false;
 }
 
 std::weak_ptr<Input_manager::Mouse_state> Input_manager::mouseState() const

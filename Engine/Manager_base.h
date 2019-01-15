@@ -24,7 +24,8 @@ namespace oe {
 
 	class Manager_windowsMessageProcessor {
 	public:
-		virtual void processMessage(UINT message, WPARAM wParam, LPARAM lParam) = 0;
+        // Return true if the processor handled the message, and no further processing should occur.
+		virtual bool processMessage(UINT message, WPARAM wParam, LPARAM lParam) = 0;
 	};
 
 	class Manager_base {

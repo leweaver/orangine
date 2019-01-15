@@ -54,7 +54,7 @@ public:
 	void destroyWindowSizeDependentResources() override;
 
 	// Manager_windowsMessageProcessor implementation
-	void processMessage(UINT message, WPARAM wParam, LPARAM lParam) override;
+	bool processMessage(UINT message, WPARAM wParam, LPARAM lParam) override;
 
 	// Mouse functions
 	std::weak_ptr<Mouse_state> mouseState() const override;

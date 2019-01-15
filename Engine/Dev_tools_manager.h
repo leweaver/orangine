@@ -13,7 +13,7 @@ namespace oe {
 		public Manager_base,
 		public Manager_deviceDependent {
 	public:
-		IDev_tools_manager(Scene& scene) : Manager_base(scene) {}
+		explicit IDev_tools_manager(Scene& scene) : Manager_base(scene) {}
 
 		virtual void addDebugSphere(const DirectX::SimpleMath::Matrix& worldTransform, float radius, const DirectX::SimpleMath::Color& color) = 0;
 		virtual void addDebugBoundingBox(const DirectX::BoundingOrientedBox& boundingOrientedBox, const DirectX::SimpleMath::Color& color) = 0;

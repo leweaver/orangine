@@ -33,10 +33,10 @@ namespace oe {
 		DirectX::CommonStates& commonStates() const override { return *_commonStates.get(); }
 		DX::DeviceResources& deviceResources() const override { return _deviceResources; }
 
-
 	private:
 
 		DX::DeviceResources& _deviceResources;
 		std::unique_ptr<DirectX::CommonStates> _commonStates;
+        HWND _window;
 	};
 }

@@ -16,6 +16,7 @@
 #include "Input_manager.h"
 #include <memory>
 #include "Dev_tools_manager.h"
+#include "User_interface_manager.h"
 
 namespace oe {
 	class Entity;
@@ -83,7 +84,8 @@ namespace oe {
 			// Factories
 			std::shared_ptr<Primitive_mesh_data_factory>,
 
-			// Managers
+			// Managers. IUser_interface_manager should always be first, so it can handle windows messages first.
+            std::shared_ptr<IUser_interface_manager>,
 			std::shared_ptr<IScene_graph_manager>,
 			std::shared_ptr<IDev_tools_manager>,
 			std::shared_ptr<ID3D_resources_manager>,
@@ -111,17 +113,6 @@ namespace oe {
 		// Values as of the last call to Tick.
 		double _deltaTime = 0;
 		double _elapsedTime = 0;
-
-		// Templated helper methods		
-		IScene_graph_manager& sceneGraphManager() const { return *std::get<std::shared_ptr<IScene_graph_manager>>(_managers); }
-		IDev_tools_manager& devToolsmanager() const { return *std::get<std::shared_ptr<IDev_tools_manager>>(_managers); }
-		ID3D_resources_manager& d3dResourcesManager() const { return *std::get<std::shared_ptr<ID3D_resources_manager>>(_managers); }
-		IEntity_render_manager& entityRenderManger() const { return *std::get<std::shared_ptr<IEntity_render_manager>>(_managers); }
-		IRender_step_manager& renderStepManager() const { return *std::get<std::shared_ptr<IRender_step_manager>>(_managers); }
-		IShadowmap_manager& shadowmapManager() const { return *std::get<std::shared_ptr<IShadowmap_manager>>(_managers); }
-		IEntity_scripting_manager& entityScriptingManager() const { return *std::get<std::shared_ptr<IEntity_scripting_manager>>(_managers); }
-		IAsset_manager& assetManager() const { return *std::get<std::shared_ptr<IAsset_manager>>(_managers); }
-		IInput_manager& inputManager() const { return *std::get<std::shared_ptr<IInput_manager>>(_managers); }
 	};
 
 	template <typename TMgr>
@@ -141,7 +132,7 @@ namespace oe {
 		void destroyWindowSizeDependentResources();
 		void createDeviceDependentResources();
 		void destroyDeviceDependentResources();
-		void processMessage(UINT message, WPARAM wParam, LPARAM lParam) const;
+		bool processMessage(UINT message, WPARAM wParam, LPARAM lParam) const;
 
 	private:
 		DX::DeviceResources& _deviceResources;

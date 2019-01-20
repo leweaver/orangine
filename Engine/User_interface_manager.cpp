@@ -53,8 +53,8 @@ void oe::User_interface_manager::render()
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin("Test");
-    ImGui::End();
+    _scene.manager<IEntity_scripting_manager>().renderImGui();
+    _scene.manager<IDev_tools_manager>().renderImGui();
 
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

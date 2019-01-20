@@ -14,6 +14,8 @@
 #include <cmath>
 #include <set>
 
+#include "imgui/imgui.h"
+
 using namespace DirectX;
 using namespace SimpleMath;
 using namespace oe;
@@ -78,6 +80,18 @@ void Entity_scripting_manager::tick() {
 			entity->lookAt(Vector3::Zero, Vector3::Up);
 		}
 	}
+}
+
+void Entity_scripting_manager::renderImGui()
+{
+    ImGui::Begin("Scene");
+
+    static float color[] = { 1,0.5f,0 };
+    if (ImGui::ColorPicker3("Test", color)) {
+        LOG(DEBUG) << "Changed color to: " << color[0] << ", " << color[1] << ", " << color[2];
+    }
+
+    ImGui::End();
 }
 
 void Entity_scripting_manager::shutdown()

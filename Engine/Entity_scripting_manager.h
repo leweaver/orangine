@@ -8,6 +8,8 @@ namespace oe {
 	class IEntity_scripting_manager : public Manager_base, public Manager_tickable {
 	public:
 		explicit IEntity_scripting_manager(Scene& scene) : Manager_base(scene) {}
+
+	    virtual void renderImGui() = 0;
 	};
 
 	class Entity_scripting_manager : public IEntity_scripting_manager {
@@ -15,11 +17,14 @@ namespace oe {
 		explicit Entity_scripting_manager(Scene &scene);
 
 		// Manager_base implementation
-		void initialize();
-		void shutdown();
-
+		void initialize() override;
+		void shutdown() override;
+        
 		// Manager_tickable implementation
-		void tick();
+		void tick() override;
+
+        // IEntity_scripting_manager implementation
+        void renderImGui() override;
 
 	private:
 		std::shared_ptr<Entity_filter> _scriptableEntityFilter;

@@ -27,6 +27,7 @@
     <ClInclude Include="data\shaders\inc\lighting.hlsl">
       <Filter>Assets\shaders\inc</Filter>
     </ClInclude>
+    <ClInclude Include="VectorLogSink.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -35,6 +36,7 @@
     <ClCompile Include="LogFileSink.cpp">
       <Filter>Common</Filter>
     </ClCompile>
+    <ClCompile Include="VectorLogSink.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

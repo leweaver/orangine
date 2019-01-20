@@ -5,6 +5,7 @@
 #include "Renderer_data.h"
 #include "Unlit_material.h"
 #include "Scene.h"
+#include "imgui.h"
 
 using namespace oe;
 
@@ -84,4 +85,20 @@ void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& camera
 		_unlitMaterial->setBaseColor(color);
 		entityRenderManager.renderRenderable(renderable, transform, 0.0f, cameraData, _noLightProvider, Render_pass_blend_mode::Opaque, true);
 	}
+}
+
+void Dev_tools_manager::renderImGui()
+{
+    // Display contents in a scrolling region
+    ImGui::Begin("Console");
+    {
+        ImGui::TextColored(ImVec4(1, 1, 0, 1), "Logs");
+        ImGui::BeginChild("Scrolling");
+        {
+            for (auto n = 0; n < 50; n++)
+                ImGui::Text("%04d: Some text", n);
+        }
+        ImGui::EndChild();
+    }
+    ImGui::End();
 }

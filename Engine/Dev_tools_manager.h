@@ -21,6 +21,7 @@ namespace oe {
 		virtual void clearDebugShapes() = 0;
 
 		virtual void renderDebugShapes(const Render_pass::Camera_data& cameraData) = 0;
+	    virtual void renderImGui() = 0;
 	};
 
 	class Dev_tools_manager : public IDev_tools_manager {
@@ -44,6 +45,7 @@ namespace oe {
 		void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const DirectX::SimpleMath::Color& color) override;
 		void clearDebugShapes() override;
 		void renderDebugShapes(const Render_pass::Camera_data& cameraData) override;
+        void renderImGui() override;
 
 	private:
 

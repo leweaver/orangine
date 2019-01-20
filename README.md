@@ -26,26 +26,15 @@ git submodule update --recursive --remote
 [More submodule tips](https://gist.github.com/gitaarik/8735255)
 
 ## Build dependencies
-The following third party libraries should be build from the `Developer Command Prompt for VS 2017`, which can be found in the start menu.
+The following third party libraries should be built first.
 
 - g3log
 - googletest
 - googlemock
 
-We need to create the appropriate visual studio projects, using CMake. In the `Developer Command Prompt for VS 2017`:
+We need to create the appropriate visual studio projects, using CMake. In a regular command prompt (cmd.exe),
 1. Change directory to the root of the GIT repository
 1. Execute command: `.\create-thirdparty-projects.bat`
-
-### DEPRECATED INSTRUCTIONS: googlemock
-Don't do this any more.
-
-Download the Visual Studio 2015 Build Tools, in visual studio 2017 Installer:
-1. Install "VC++ 2015.3 v140 toolset(x86,x64)" component Under Desktop development with C++ workload.
-
-In the `Developer Command Prompt for VS 2017`:
-1. Change directory to the root of the GIT repository
-1. Change directory to `thirdparty\googletest\googlemock\msvc\2015`
-1. Execute command: `msbuild gmock.sln /p:Platform="x64"`
 
 # Overall Architecture
 Here is a quick non-exhaustive overview of how the main object instances are instantiated. Each item creates and owns the items below it in the tree. Each item below is the name of a class, which is located in a CPP/H file of the same name. 

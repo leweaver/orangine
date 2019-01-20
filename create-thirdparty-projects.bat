@@ -1,15 +1,20 @@
-echo off
+@echo off
 setlocal enableextensions
 
 set "OE_ROOT=%cd%"
 
+rem This line MUST be run at root scope. otherwise weirdness.
+FOR /f "tokens=1-2* delims= " %%a in ( 'reg query "HKLM\Software\WOW6432Node\Microsoft\VisualStudio\SxS\VS7" /V 15.0 ^| find "REG_SZ" ' ) do set OE_VS15DIR=%%c
+
 if not defined VSINSTALLDIR (
-    echo You should run this command from the "Developer Command Prompt for VS 2017"
-    goto:eof
+    echo "OE_VS15DIR=%OE_VS15DIR%"
+    IF EXIST "%OE_VS15DIR%VC\Auxiliary\Build\vcvarsall.bat" (
+        call "%OE_VS15DIR%VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
+    ) ELSE (
+        echo "Could not find vcvarsall.bat. Is visual studio 2017 community edition installed?"
+        goto:eof
+    )
 )
-"%VSINSTALLDIR%COMMON7\IDE\COMMONEXTENSIONS\MICROSOFT\CMAKE\CMake\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 15 2017" -A x64
-msbuild g3log.sln /p:Configuration=Debug /t:g3logger /p:Platform="x64"
-msbuild g3log.sln /p:Configuration=Release /t:g3logger /p:Platform="x64"
 
 echo Creating and building g3log solution
 set G3LOG_BUILD_PATH=%OE_ROOT%\thirdparty\g3log
@@ -19,6 +24,10 @@ IF EXIST %G3LOG_BUILD_PATH% (
     md %G3LOG_BUILD_PATH%
 )
 cd %G3LOG_BUILD_PATH% 
+
+"%VSINSTALLDIR%COMMON7\IDE\COMMONEXTENSIONS\MICROSOFT\CMAKE\CMake\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 15 2017" -A x64
+msbuild g3log.sln /p:Configuration=Debug /t:g3logger /p:Platform="x64"
+msbuild g3log.sln /p:Configuration=Release /t:g3logger /p:Platform="x64"
 
 echo Creating and building googletest solution
 set GOOGLETEST_BUILD_PATH=%OE_ROOT%\thirdparty\googletest\googletest

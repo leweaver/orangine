@@ -213,11 +213,13 @@
     <ClInclude Include="Unlit_material.h" />
     <ClInclude Include="User_interface_manager.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="VectorLog.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Asset_manager.cpp" />
     <ClCompile Include="Camera_component.cpp" />
     <ClCompile Include="Clear_gbuffer_material.cpp" />
+    <ClCompile Include="VectorLog.cpp" />
     <ClInclude Include="Collision.inl">
       <FileType>Document</FileType>
     </ClInclude>

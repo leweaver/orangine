@@ -212,6 +212,9 @@
     <ClInclude Include="User_interface_manager.h">
       <Filter>Systems\UI</Filter>
     </ClInclude>
+    <ClInclude Include="VectorLog.h">
+      <Filter>Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Input_manager.cpp">
@@ -345,6 +348,9 @@
     </ClCompile>
     <ClCompile Include="User_interface_manager.cpp">
       <Filter>Systems\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="VectorLog.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

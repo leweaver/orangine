@@ -9,6 +9,7 @@
 
 #include <g3log/logworker.hpp>
 #include "LogFileSink.h"
+#include "VectorLogSink.h"
 
 using namespace DirectX;
 
@@ -51,9 +52,12 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	}
 
 	// Create a sink with a non-timebased filename
-	auto sink = std::make_unique<oe::LogFileSink>(logFileName, path_to_log_file, "game", false);
-	sink->fileInit();
-	auto logFileSinkHandle = logWorker->addSink(move(sink), &oe::LogFileSink::fileWrite);
+    auto fileLogSink = std::make_unique<oe::LogFileSink>(logFileName, path_to_log_file, "game", false);
+    fileLogSink->fileInit();
+    logWorker->addSink(move(fileLogSink), &oe::LogFileSink::fileWrite);
+    auto vectorLog = std::make_shared<oe::VectorLog>(100);
+    auto vectorLogSink = std::make_unique<oe::VectorLogSink>(vectorLog);
+    logWorker->addSink(move(vectorLogSink), &oe::VectorLogSink::append);
 
 	g3::initializeLogging(logWorker.get());
 
@@ -118,6 +122,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         GetClientRect(hwnd, &rc);
 
         g_game->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
+        g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(vectorLog.get());
     }
 
     // Main message loop
@@ -135,6 +140,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         }
     }
 
+    g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(nullptr);
     g_game.reset();
 
     CoUninitialize();

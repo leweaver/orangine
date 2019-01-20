@@ -3,7 +3,8 @@
 #include "Render_pass.h"
 
 namespace oe {
-	class Entity;
+    class VectorLog;
+    class Entity;
 	class Unlit_material;
 	class Primitive_mesh_data_factory;
 	struct Renderable;
@@ -22,6 +23,8 @@ namespace oe {
 
 		virtual void renderDebugShapes(const Render_pass::Camera_data& cameraData) = 0;
 	    virtual void renderImGui() = 0;
+
+        virtual void setVectorLog(VectorLog* logSink) = 0;
 	};
 
 	class Dev_tools_manager : public IDev_tools_manager {
@@ -46,6 +49,7 @@ namespace oe {
 		void clearDebugShapes() override;
 		void renderDebugShapes(const Render_pass::Camera_data& cameraData) override;
         void renderImGui() override;
+        void setVectorLog(VectorLog* vectorLog) override { _vectorLog = vectorLog; }
 
 	private:
 
@@ -54,5 +58,6 @@ namespace oe {
 		std::shared_ptr<Unlit_material> _unlitMaterial;
 		std::vector<std::tuple<DirectX::SimpleMath::Matrix, DirectX::SimpleMath::Color, Renderable>> _debugShapes;
 		LightProvider _noLightProvider;
+        VectorLog* _vectorLog;
 	};
 }

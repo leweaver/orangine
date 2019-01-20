@@ -37,7 +37,7 @@ public:
 	void InitRasterizer();
 
 	// Signal that the game can no longer run and should exit.
-	bool hasFatalError() const { return m_fatalError; };
+	bool hasFatalError() const { return m_fatalError; }
 
     // Basic game loop
     void Tick();
@@ -57,6 +57,7 @@ public:
 
     // Properties
     void GetDefaultSize( int& width, int& height ) const;
+    oe::Scene& scene() const { return *m_scene; }
 
 private:
 

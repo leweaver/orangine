@@ -6,6 +6,7 @@
 #include "Unlit_material.h"
 #include "Scene.h"
 #include "imgui.h"
+#include "VectorLog.h"
 
 using namespace oe;
 
@@ -93,12 +94,26 @@ void Dev_tools_manager::renderImGui()
     ImGui::Begin("Console");
     {
         ImGui::TextColored(ImVec4(1, 1, 0, 1), "Logs");
-        ImGui::BeginChild("Scrolling");
+        ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
         {
-            for (auto n = 0; n < 50; n++)
-                ImGui::Text("%04d: Some text", n);
+            ImGuiListClipper clipper;
+            const auto numLines = _vectorLog->messageCount();
+            clipper.Begin(numLines);
+            while (clipper.Step())
+            {
+                for (auto line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
+                {
+                    auto& logMessage = _vectorLog->getMessageAt(line_no);
+                    const auto cStr = logMessage.message.c_str();
+                    ImGui::TextUnformatted(cStr, cStr + logMessage.message.size());
+                }
+            }
+            clipper.End();
         }
+        ImGui::PopStyleVar();
         ImGui::EndChild();
     }
     ImGui::End();
 }
+

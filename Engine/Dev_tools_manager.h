@@ -32,6 +32,8 @@ namespace oe {
 		explicit Dev_tools_manager(Scene& scene)
 			: IDev_tools_manager(scene)
 			, _unlitMaterial(nullptr)
+            , _vectorLog(nullptr)
+            , _scrollLogToBottom(true)
 		{}
 
 		// Manager_base implementation
@@ -58,6 +60,10 @@ namespace oe {
 		std::shared_ptr<Unlit_material> _unlitMaterial;
 		std::vector<std::tuple<DirectX::SimpleMath::Matrix, DirectX::SimpleMath::Color, Renderable>> _debugShapes;
 		LightProvider _noLightProvider;
+
         VectorLog* _vectorLog;
+        std::string _consoleInput;
+        bool _scrollLogToBottom;
+        std::vector<std::string> _commandSuggestions;
 	};
 }

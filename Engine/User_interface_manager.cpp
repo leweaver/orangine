@@ -15,6 +15,7 @@ void oe::User_interface_manager::initialize()
 {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImGui::GetIO().FontGlobalScale = _uiScale;
 }
 
 void oe::User_interface_manager::shutdown()

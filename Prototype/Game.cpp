@@ -270,12 +270,13 @@ void Game::CreateGeometricPrimitives()
 }
 
 // Initialize the Direct3D resources required to run.
-void Game::Initialize(HWND window, int width, int height)
+void Game::Initialize(HWND window, int dpi, int width, int height)
 {
 	_window = window;
     m_deviceResources->SetWindow(window, width, height);
 
 	m_scene = std::make_unique<Scene_device_resource_aware>(*(m_deviceResources.get()));
+    m_scene->manager<IUser_interface_manager>().setUIScale(static_cast<float>(dpi) / 96.0f);
 	m_scene->initialize();
 
 	try

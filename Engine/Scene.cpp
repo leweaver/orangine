@@ -207,32 +207,31 @@ bool Scene_device_resource_aware::processMessage(UINT message, WPARAM wParam, LP
 Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& deviceResources)
 	: _deviceResources(deviceResources)
 {
+    using namespace std;
+
+    // Repositories
+    const auto entityRepository = make_shared<Entity_repository>(*this);
+    const auto materialRepository = make_shared<Material_repository>();
+    get<shared_ptr<IEntity_repository>>(_managers) = entityRepository;
+    get<shared_ptr<IMaterial_repository>>(_managers) = materialRepository;
+
+    // Factories
+    get<shared_ptr<Primitive_mesh_data_factory>>(_managers) = make_shared<Primitive_mesh_data_factory>();
+
+    // Services / Managers
+    get<shared_ptr<IScene_graph_manager>>(_managers) = make_shared<Scene_graph_manager>(*this, entityRepository);
+    get<shared_ptr<IDev_tools_manager>>(_managers) = make_shared<Dev_tools_manager>(*this);
+    get<shared_ptr<ID3D_resources_manager>>(_managers) = make_shared<D3D_resources_manager>(*this, _deviceResources);
+    get<shared_ptr<IEntity_render_manager>>(_managers) = make_shared<Entity_render_manager>(*this, materialRepository);
+    get<shared_ptr<IRender_step_manager>>(_managers) = make_shared<Render_step_manager>(*this);
+    get<shared_ptr<IShadowmap_manager>>(_managers) = make_shared<Shadowmap_manager>(*this, _deviceResources);
+    get<shared_ptr<IEntity_scripting_manager>>(_managers) = make_shared<Entity_scripting_manager>(*this);
+    get<shared_ptr<IAsset_manager>>(_managers) = make_shared<Asset_manager>(*this);
+    get<shared_ptr<IInput_manager>>(_managers) = make_shared<Input_manager>(*this, _deviceResources);
+    get<shared_ptr<IUser_interface_manager>>(_managers) = make_shared<User_interface_manager>(*this);
 }
 
 void Scene_device_resource_aware::initialize()
 {
-	using namespace std;
-
-	// Repositories
-	const auto entityRepository = make_shared<Entity_repository>(*this);
-	const auto materialRepository = make_shared<Material_repository>();
-	get<shared_ptr<IEntity_repository>>(_managers) = entityRepository;
-	get<shared_ptr<IMaterial_repository>>(_managers) = materialRepository;
-
-	// Factories
-	get<shared_ptr<Primitive_mesh_data_factory>>(_managers) = make_shared<Primitive_mesh_data_factory>();
-
-	// Services / Managers
-	get<shared_ptr<IScene_graph_manager>>(_managers) = make_shared<Scene_graph_manager>(*this, entityRepository);
-	get<shared_ptr<IDev_tools_manager>>(_managers) = make_shared<Dev_tools_manager>(*this);
-	get<shared_ptr<ID3D_resources_manager>>(_managers) = make_shared<D3D_resources_manager>(*this, _deviceResources);
-	get<shared_ptr<IEntity_render_manager>>(_managers) = make_shared<Entity_render_manager>(*this, materialRepository);
-	get<shared_ptr<IRender_step_manager>>(_managers) = make_shared<Render_step_manager>(*this);
-	get<shared_ptr<IShadowmap_manager>>(_managers) = make_shared<Shadowmap_manager>(*this, _deviceResources);
-	get<shared_ptr<IEntity_scripting_manager>>(_managers) = make_shared<Entity_scripting_manager>(*this);
-	get<shared_ptr<IAsset_manager>>(_managers) = make_shared<Asset_manager>(*this);
-	get<shared_ptr<IInput_manager>>(_managers) = make_shared<Input_manager>(*this, _deviceResources);
-    get<shared_ptr<IUser_interface_manager>>(_managers) = make_shared<User_interface_manager>(*this);
-
 	Scene::initialize();
 }

@@ -33,7 +33,7 @@ public:
 	void CreateCamera(bool animate);
 
 	// Initialization and management
-    void Initialize(HWND window, int width, int height);
+    void Initialize(HWND window, int dpi, int width, int height);
 	void InitRasterizer();
 
 	// Signal that the game can no longer run and should exit.

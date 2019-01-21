@@ -14,6 +14,7 @@ namespace oe {
         virtual void render() = 0;
         virtual bool keyboardCaptured() = 0;
         virtual bool mouseCaptured() = 0;
+        virtual void setUIScale(float scale) = 0;
     };
 
     class User_interface_manager : public IUser_interface_manager {
@@ -35,8 +36,10 @@ namespace oe {
         void render() override;
         bool keyboardCaptured() override;
         bool mouseCaptured() override;
+        void setUIScale(float uiScale) override { _uiScale = uiScale; }
 
     private:
         HWND _window = nullptr;
+        float _uiScale = 1.0f;
     };
 }

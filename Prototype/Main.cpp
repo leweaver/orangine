@@ -11,6 +11,8 @@
 #include "LogFileSink.h"
 #include "VectorLogSink.h"
 
+#include <wrl/wrappers/corewrappers.h>
+
 using namespace DirectX;
 
 namespace
@@ -120,8 +122,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()) );
 
         GetClientRect(hwnd, &rc);
-
-        g_game->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
+        g_game->Initialize(hwnd, GetDpiForWindow(hwnd), rc.right - rc.left, rc.bottom - rc.top);
         g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(vectorLog.get());
     }
 

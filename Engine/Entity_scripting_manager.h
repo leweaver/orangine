@@ -10,6 +10,8 @@ namespace oe {
 		explicit IEntity_scripting_manager(Scene& scene) : Manager_base(scene) {}
 
 	    virtual void renderImGui() = 0;
+	    virtual void execute(const std::string& command) = 0;
+        virtual bool commandSuggestions(const std::string& command, std::vector<std::string>& suggestions) = 0;
 	};
 
 	class Entity_scripting_manager : public IEntity_scripting_manager {
@@ -25,6 +27,8 @@ namespace oe {
 
         // IEntity_scripting_manager implementation
         void renderImGui() override;
+        void execute(const std::string& command) override;
+        bool commandSuggestions(const std::string& command, std::vector<std::string>& suggestions) override;
 
 	private:
 		std::shared_ptr<Entity_filter> _scriptableEntityFilter;

@@ -7,6 +7,7 @@
 #include "Scene.h"
 #include "imgui.h"
 #include "VectorLog.h"
+#include <imgui/misc/cpp/imgui_stdlib.h>
 
 using namespace oe;
 
@@ -91,12 +92,14 @@ void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& camera
 void Dev_tools_manager::renderImGui()
 {
     // Display contents in a scrolling region
-    ImGui::Begin("Console");
+    auto scrollAmount = 0.0f;
+    if (ImGui::Begin("Console"))
     {
+        auto uiScale = ImGui::GetIO().FontGlobalScale;
         ImGui::TextColored(ImVec4(1, 1, 0, 1), "Logs");
-        ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+        if (ImGui::BeginChild("scrolling", ImVec2(0, -25.0f * uiScale), false, ImGuiWindowFlags_HorizontalScrollbar))
         {
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
             ImGuiListClipper clipper;
             const auto numLines = _vectorLog->messageCount();
             clipper.Begin(numLines);
@@ -110,8 +113,29 @@ void Dev_tools_manager::renderImGui()
                 }
             }
             clipper.End();
+            if (_scrollLogToBottom)
+                ImGui::SetScrollHereY(1.0f);
+
+            ImGui::PopStyleVar();
         }
-        ImGui::PopStyleVar();
+        ImGui::EndChild();
+
+        if (ImGui::BeginChild("commands", ImVec2(0, 20.0f * uiScale), false))
+        {
+            if (ImGui::InputText(">", &_consoleInput)) {
+                if (_consoleInput.size()) {
+                    if (_scene.manager<IEntity_scripting_manager>().commandSuggestions(_consoleInput, _commandSuggestions)) {
+                        // TODO: Show suggestions
+                    }
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Make some log!")) {
+                _scene.manager<IEntity_scripting_manager>().execute(_consoleInput);
+            }
+            ImGui::SameLine(ImGui::GetWindowWidth() - 30 * uiScale);
+            ImGui::Checkbox("Auto Scroll", &_scrollLogToBottom);
+        }
         ImGui::EndChild();
     }
     ImGui::End();

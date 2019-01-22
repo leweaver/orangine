@@ -2,7 +2,7 @@
 
 #include <gmock/gmock.h>
 
-#include "..\Engine\Entity_render_manager.h"
+#include "..\Engine\IEntity_render_manager.h"
 #include "..\Engine\Camera_component.h"
 #include "..\Engine\Renderable_component.h"
 

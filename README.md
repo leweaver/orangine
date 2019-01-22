@@ -54,11 +54,24 @@ Here is a quick non-exhaustive overview of how the main object instances are ins
 		- ...
 
 # Running unit tests
-Tests are executed via the `Test Explorer` window in visual studio. Projects that contain tests are suffixed with `-Test` and compile to an x64 executable. To run them;
+First, make sure tests are set to run in x64.
 
 1. Test -> Test Settings -> Select Test Settings File 
-1. Open `.\Engine-Test\x64.runsettings`
-1. Click the Run All button in the test explorer window.
+1. Choose `.\Engine-Test\x64.runsettings`
+
+Try one of these two methods... stick to the one that works for you!
+
+## Unit Test Sessions
+1. Build the solution
+1. Right click on the `Engine-Test` project, and select `Run Tests`
+
+## Test Explorer
+> Note - running the tests in visual studio can be a real pain. The test explorer sometimes just refuses to find them.
+
+Tests are executed via the `Test Explorer` window in visual studio. Projects that contain tests are suffixed with `-Test` and compile to an x64 executable. To run them;
+
+1. Click the Run All button in the test explorer window. 
+    - If not visible, Test -> Windows -> Test Explorer
 
 > NOTE: Don't try to run individual tests; this seems to break the Test Explorer window. If in doubt, `Run All` makes things work again :) 
 

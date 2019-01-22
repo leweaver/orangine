@@ -75,8 +75,8 @@ void Scene::initialize()
 	addMeshLoader<Entity_graph_loader_gltf>();
 
 	forEachOfType<Manager_base>(_managers, [](auto* manager) { 
-		assert(manager != nullptr);
-		manager->initialize(); 
+		if (manager)
+		    manager->initialize(); 
 	});
 }
 
@@ -128,7 +128,7 @@ void Scene::tick(DX::StepTimer const& timer)
 
 void Scene::shutdown()
 {
-	forEachOfTypeReverse<Manager_base>(_managers, [](Manager_base* manager) { manager->shutdown(); });
+	forEachOfTypeReverse<Manager_base>(_managers, [](Manager_base* manager) { if (manager) manager->shutdown(); });
 
 	_managers = decltype(_managers)();
 }

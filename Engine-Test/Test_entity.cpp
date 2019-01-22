@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "Mock_scene.h"
+#include "../Engine/Scene_graph_manager.h"
 
 #include <string>
 
@@ -34,7 +35,7 @@ protected:
 TEST_F(Scene_graph_manager_tests, instantiateEntity) 
 {
 	auto mockScene = Mock_scene::createInit();
-	auto sceneGraphManager = std::make_shared<Scene_graph_manager>(*mockScene, mockScene->mockEntityRepository);
+	auto sceneGraphManager = std::make_shared<internal::Scene_graph_manager>(*mockScene, mockScene->mockEntityRepository);
 	
 	{
 		EXPECT_CALL(*mockScene->mockEntityRepository, instantiate(testing::Eq(std::string_view(CHILD_ENTITY_1_NAME))))
@@ -56,7 +57,7 @@ TEST_F(Scene_graph_manager_tests, entityTransformFromParent)
 	using namespace DirectX::SimpleMath;
 
 	auto mockScene = Mock_scene::createInit();
-	auto sceneGraphManager = std::make_shared<Scene_graph_manager>(*mockScene, mockScene->mockEntityRepository);
+	auto sceneGraphManager = std::make_shared<internal::Scene_graph_manager>(*mockScene, mockScene->mockEntityRepository);
 
 	// Set up mocks
 	{

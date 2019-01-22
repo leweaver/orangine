@@ -2,7 +2,7 @@
 
 #include <gmock/gmock.h>
 
-#include "..\Engine\Asset_manager.h"
+#include "..\Engine\IAsset_manager.h"
 
 namespace oe_test {
 	class Mock_asset_manager : public oe::IAsset_manager {

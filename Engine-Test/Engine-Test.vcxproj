@@ -114,7 +114,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Debug\gtest_maind.lib;$(SolutionDir)thirdparty\googletest\googletest\Debug\gtestd.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmock_maind.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmockd.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Debug\gtest_maind.lib;$(SolutionDir)thirdparty\googletest\googletest\Debug\gtestd.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmock_maind.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmockd.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;imgui.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
     </Link>
@@ -135,7 +135,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Debug\gtest_maind.lib;$(SolutionDir)thirdparty\googletest\googletest\Debug\gtestd.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmock_maind.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmockd.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Debug\gtest_maind.lib;$(SolutionDir)thirdparty\googletest\googletest\Debug\gtestd.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmock_maind.lib;$(SolutionDir)thirdparty\googletest\googlemock\Debug\gmockd.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;imgui.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
     </Link>
@@ -168,7 +168,7 @@ xcopy /D /Y $(SolutionDir)thirdparty\googletest\googlemock\$(Configuration)\gmoc
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Release\gtest_main.lib;$(SolutionDir)thirdparty\googletest\googletest\Release\gtest.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock_main.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Release\gtest_main.lib;$(SolutionDir)thirdparty\googletest\googletest\Release\gtest.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock_main.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;imgui.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>$(MSBuildThisFileDirectory)..\..\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x86\Debug\gtest_main.lib;$(MSBuildThisFileDirectory)..\..\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x86\Debug\gtest.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
@@ -188,7 +188,7 @@ xcopy /D /Y $(SolutionDir)thirdparty\googletest\googlemock\$(Configuration)\gmoc
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Release\gtest_main.lib;$(SolutionDir)thirdparty\googletest\googletest\Release\gtest.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock_main.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)thirdparty\googletest\googletest\Release\gtest_main.lib;$(SolutionDir)thirdparty\googletest\googletest\Release\gtest.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock_main.lib;$(SolutionDir)thirdparty\googletest\googlemock\Release\gmock.lib;$(SolutionDir)thirdparty\g3log\$(Configuration)\g3logger.lib;Engine.lib;d3d11.lib;D3DCompiler.lib;dxgi.lib;dxguid.lib;MikktSpace.lib;imgui.lib;$(SolutionDir)thirdparty\DirectXTK\Bin\Desktop_2017_Win10\$(PlatformName)\$(ConfigurationName)\DirectXTK.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>$(MSBuildThisFileDirectory)..\..\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x86\Debug\gtest_main.lib;$(MSBuildThisFileDirectory)..\..\lib\native\v140\windesktop\msvcstl\static\rt-dyn\x86\Debug\gtest.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>

@@ -2,7 +2,7 @@
 
 #include <gmock/gmock.h>
 
-#include "..\Engine\Entity_scripting_manager.h"
+#include "..\Engine\IEntity_scripting_manager.h"
 
 namespace oe_test {
 	class Mock_entity_scripting_manager : public oe::IEntity_scripting_manager {
@@ -15,5 +15,10 @@ namespace oe_test {
 
 		// Manager_tickable implementation
 		MOCK_METHOD0(tick, void());
+
+        // IEntity_scripting_manager implementation
+        MOCK_METHOD0(renderImGui, void());
+        MOCK_METHOD1(execute, void(const std::string& command));
+        MOCK_METHOD2(commandSuggestions, bool(const std::string& command, std::vector<std::string>& suggestions));
 	};
 }

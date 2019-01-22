@@ -33,18 +33,16 @@ map<Vertex_attribute, string> g_gltfMappingToAttributeMap = {
 
 struct LoaderData
 {
-	LoaderData(Model& model, string&& baseDir, IWICImagingFactory *imagingFactory, Primitive_mesh_data_factory& meshDataFactory, bool calculateBounds)
+	LoaderData(Model& model, string&& baseDir, IWICImagingFactory *imagingFactory, bool calculateBounds)
 		: model(model)
 		, baseDir(std::move(baseDir))
 		, imagingFactory(imagingFactory)
-		, meshDataFactory(meshDataFactory)
 		, calculateBounds(calculateBounds)
 	{}
 
 	Model& model;
 	string baseDir;
 	IWICImagingFactory* imagingFactory;
-	Primitive_mesh_data_factory& meshDataFactory;
 	map<size_t, shared_ptr<Mesh_buffer>> accessorIdxToMeshBuffers;
 	bool calculateBounds;
 };
@@ -87,7 +85,6 @@ void Entity_graph_loader_gltf::getSupportedFileExtensions(vector<string>& extens
 vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filename, 
 	IEntity_repository& entityRepository, 
 	IMaterial_repository& materialRepository,
-	Primitive_mesh_data_factory& meshDataFactory,
 	bool calculateBounds) const
 {
 	vector<shared_ptr<Entity>> entities;
@@ -114,7 +111,7 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filena
 	const auto& scene = model.scenes[model.defaultScene];
 	if (baseDir.empty())
 		baseDir = ".";
-	LoaderData loaderData(model, string(baseDir), _imagingFactory.Get(), meshDataFactory, calculateBounds);
+	LoaderData loaderData(model, string(baseDir), _imagingFactory.Get(), calculateBounds);
 	
 	for (auto nodeIdx : scene.nodes) 
 	{
@@ -491,7 +488,7 @@ shared_ptr<Entity> create_entity(const Node& node, IEntity_repository& entityRep
 				if (generateNormals)
 				{
 					LOG(WARNING) << "Generating missing normals";
-					loaderData.meshDataFactory.generateNormals(
+					Primitive_mesh_data_factory::generateNormals(
 						*meshData->indexBufferAccessor, 
 						*meshData->vertexBufferAccessors[Vertex_attribute::Position],
 						*meshData->vertexBufferAccessors[Vertex_attribute::Normal]);
@@ -500,7 +497,7 @@ shared_ptr<Entity> create_entity(const Node& node, IEntity_repository& entityRep
 				if (generateTangents || generateBitangents)
 				{
 					LOG(WARNING) << "Generating missing Tangents and/or Bitangents";
-					loaderData.meshDataFactory.generateTangents(meshData);
+                    Primitive_mesh_data_factory::generateTangents(meshData);
 				}
 
 				// Add this component last, to make sure there wasn't an error loading!

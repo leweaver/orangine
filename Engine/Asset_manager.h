@@ -1,19 +1,11 @@
 ﻿#pragma once
 
-#include "Manager_base.h"
 #include "Simple_types.h"
+#include "IAsset_manager.h"
 #include <map>
 #include <string>
 
-namespace oe {
-	
-	class IAsset_manager : public Manager_base {
-	public:
-		explicit IAsset_manager(Scene& scene) : Manager_base(scene) {}
-		
-		virtual bool getFilePath(FAsset_id assetId, std::wstring& path) const = 0;
-	};
-
+namespace oe::internal {
 	class Asset_manager : public IAsset_manager
 	{
 		struct Asset_info

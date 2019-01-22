@@ -173,7 +173,17 @@
     <ClInclude Include="Entity_scripting_manager.h" />
     <ClInclude Include="Entity_sorter.h" />
     <ClInclude Include="FileUtils.h" />
+    <ClInclude Include="IAsset_manager.h" />
+    <ClInclude Include="ID3D_resources_manager.h" />
+    <ClInclude Include="IDev_tools_manager.h" />
+    <ClInclude Include="IEntity_render_manager.h" />
+    <ClInclude Include="IEntity_scripting_manager.h" />
+    <ClInclude Include="IInput_manager.h" />
     <ClInclude Include="Input_manager.h" />
+    <ClInclude Include="IRender_step_manager.h" />
+    <ClInclude Include="IScene_graph_manager.h" />
+    <ClInclude Include="IShadowmap_manager.h" />
+    <ClInclude Include="IUser_interface_manager.h" />
     <ClInclude Include="Light_component.h" />
     <ClInclude Include="Light_provider.h" />
     <ClInclude Include="Manager_base.h" />

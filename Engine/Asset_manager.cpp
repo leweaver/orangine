@@ -2,6 +2,13 @@
 #include "Asset_manager.h"
 
 using namespace oe;
+using namespace internal;
+
+template<>
+IAsset_manager* oe::create_manager(Scene& scene)
+{
+    return new Asset_manager(scene);
+}
 
 Asset_manager::Asset_manager(Scene& scene)
 	: IAsset_manager(scene)

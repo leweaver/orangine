@@ -6,40 +6,19 @@
 #include <Mouse.h>
 
 using namespace oe;
+using namespace internal;
 
-class Input_manager::Impl {
-public:
-
-	void tick()
-	{
-		if (mouse && mouse->IsConnected()) {
-			const auto state = mouse->GetState();
-			buttonStateTracker.Update(state);
-
-			mouseState->left = static_cast<Mouse_state::Button_state>(buttonStateTracker.leftButton);
-			mouseState->right = static_cast<Mouse_state::Button_state>(buttonStateTracker.rightButton);
-			mouseState->middle = static_cast<Mouse_state::Button_state>(buttonStateTracker.middleButton);
-
-			const auto lastPosition = mouseState->absolutePosition;
-			mouseState->absolutePosition.x = state.x;
-			mouseState->absolutePosition.y = state.y;
-			mouseState->deltaPosition.x = state.x - lastPosition.x;
-			mouseState->deltaPosition.y = state.y - lastPosition.y;
-
-			mouseState->scrollWheelDelta = state.scrollWheelValue;
-			mouse->ResetScrollWheelValue();
-		}
-	}
-
-	DirectX::Mouse::ButtonStateTracker buttonStateTracker;
-	std::unique_ptr<DirectX::Mouse> mouse;
-	std::shared_ptr<Mouse_state> mouseState = std::make_shared<Mouse_state>();
-};
+template<>
+IInput_manager* oe::create_manager(Scene& scene)
+{
+    return new Input_manager(scene);
+}
 
 // DirectX Singletons
-Input_manager::Input_manager(Scene& scene, DX::DeviceResources& deviceResources)
+Input_manager::Input_manager(Scene& scene)
 	: IInput_manager(scene)
-	, _impl(std::make_unique<Impl>())
+    , _mouse(nullptr)
+    , _mouseState(std::make_shared<Mouse_state>())
 {
 }
 
@@ -49,35 +28,52 @@ void Input_manager::initialize()
 
 void Input_manager::shutdown()
 {
-	_impl->mouse.reset();
+	_mouse.reset();
 }
 
 void Input_manager::tick()
 {
-	_impl->tick();
+    if (_mouse && _mouse->IsConnected()) {
+        const auto state = _mouse->GetState();
+        _buttonStateTracker.Update(state);
+
+        auto& mouseState = *_mouseState;
+        mouseState.left = static_cast<Mouse_state::Button_state>(_buttonStateTracker.leftButton);
+        mouseState.right = static_cast<Mouse_state::Button_state>(_buttonStateTracker.rightButton);
+        mouseState.middle = static_cast<Mouse_state::Button_state>(_buttonStateTracker.middleButton);
+
+        const auto lastPosition = mouseState.absolutePosition;
+        mouseState.absolutePosition.x = state.x;
+        mouseState.absolutePosition.y = state.y;
+        mouseState.deltaPosition.x = state.x - lastPosition.x;
+        mouseState.deltaPosition.y = state.y - lastPosition.y;
+
+        mouseState.scrollWheelDelta = state.scrollWheelValue;
+        _mouse->ResetScrollWheelValue();
+    }
 }
 
 void Input_manager::createWindowSizeDependentResources(DX::DeviceResources& /*deviceResources*/, HWND window, int /*width*/, int /*height*/)
 {
-	_impl->mouse = std::make_unique<DirectX::Mouse>();
-	_impl->mouse->SetWindow(window);
+	_mouse = std::make_unique<DirectX::Mouse>();
+	_mouse->SetWindow(window);
 }
 
 void Input_manager::destroyWindowSizeDependentResources()
 {
-	_impl->mouse = std::unique_ptr<DirectX::Mouse>();
+	_mouse = std::unique_ptr<DirectX::Mouse>();
 }
 
 bool Input_manager::processMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (!_scene.manager<IUser_interface_manager>().mouseCaptured())
-	    _impl->mouse->ProcessMessage(message, wParam, lParam);
+	    _mouse->ProcessMessage(message, wParam, lParam);
 
     return false;
 }
 
 std::weak_ptr<Input_manager::Mouse_state> Input_manager::mouseState() const
 {
-	return std::weak_ptr<Mouse_state>(_impl->mouseState);
+	return std::weak_ptr<Mouse_state>(_mouseState);
 }
 

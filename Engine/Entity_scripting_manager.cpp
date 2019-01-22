@@ -19,6 +19,13 @@
 using namespace DirectX;
 using namespace SimpleMath;
 using namespace oe;
+using namespace internal;
+
+template<>
+IEntity_scripting_manager* oe::create_manager(Scene & scene)
+{
+    return new Entity_scripting_manager(scene);
+}
 
 Entity_scripting_manager::Entity_scripting_manager(Scene &scene)
 	: IEntity_scripting_manager(scene)

@@ -10,7 +10,9 @@ namespace oe {
 
 	class Entity_repository;
 	class Scene;
-	class Scene_graph_manager;
+    namespace internal {
+        class Scene_graph_manager;
+    }
 
 	enum class Entity_state : uint8_t
 	{
@@ -116,7 +118,7 @@ namespace oe {
 
 		// TODO: Refactor into a public & private interface, so that friend isn't required.
 		friend class Entity_repository;
-		friend class Scene_graph_manager;
+		friend class internal::Scene_graph_manager;
 
 		////
 		// Persisted State Variables

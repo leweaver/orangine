@@ -1,34 +1,17 @@
 ﻿#pragma once
 
-#include "Manager_base.h"
+#include "IShadowmap_manager.h"
 #include "Shadow_map_texture_pool.h"
 #include <memory>
 
-namespace oe {
-	class Texture;
-	class Shadow_map_texture;
-	class Shadow_map_texture_array_slice;
-
-	class IShadowmap_manager :
-		public Manager_base,
-		public Manager_deviceDependent
-	{
-	public:
-		IShadowmap_manager(Scene& scene) : Manager_base(scene) {}
-		virtual std::unique_ptr<Shadow_map_texture_array_slice> borrowTexture() = 0;
-		virtual void returnTexture(std::unique_ptr<Shadow_map_texture> shadowMap) = 0;
-		virtual std::shared_ptr<Texture> shadowMapDepthTextureArray() = 0;
-		virtual std::shared_ptr<Texture> shadowMapStencilTextureArray() = 0;
-	};
-
+namespace oe::internal {
 	class Shadowmap_manager : public IShadowmap_manager {
 	public:
-		Shadowmap_manager(Scene& scene, DX::DeviceResources& deviceResources) 
+		Shadowmap_manager(Scene& scene) 
 			: IShadowmap_manager(scene)
-			, _deviceResources(deviceResources)
 			, _texturePool(nullptr)
 		{}
-		virtual ~Shadowmap_manager();
+        virtual ~Shadowmap_manager() = default;
 
 		// Manager_base implementation
 		void initialize() override {}
@@ -46,8 +29,6 @@ namespace oe {
 
 	private:
 		void verifyTexturePool() const;
-
-		DX::DeviceResources& _deviceResources;
 		std::unique_ptr<Shadow_map_texture_pool> _texturePool;
 	};
 }

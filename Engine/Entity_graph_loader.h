@@ -30,7 +30,6 @@ namespace oe
 		virtual std::vector<std::shared_ptr<Entity>> loadFile(std::string_view filename,
 			IEntity_repository& entityRepository, 
 			IMaterial_repository& materialRepository, 
-			Primitive_mesh_data_factory& meshDataFactory,
 			bool calculateBounds) const = 0;
 	};
 }

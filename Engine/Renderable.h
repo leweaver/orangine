@@ -11,6 +11,6 @@ namespace oe {
 	{
 		std::shared_ptr<Mesh_data> meshData;
 		std::shared_ptr<Material> material;
-		std::unique_ptr<Renderer_data> rendererData{};
+		std::unique_ptr<Renderer_data> rendererData;
 	};
 }

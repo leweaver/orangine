@@ -35,14 +35,32 @@
     <Filter Include="Systems\UI">
       <UniqueIdentifier>{ba7e269a-086d-414f-b22d-e43ec56b1c72}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Systems\UI\internal">
+      <UniqueIdentifier>{24a44fa0-56d0-43e2-8c53-510a9d971cc2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems\Scripting\internal">
+      <UniqueIdentifier>{d06712d4-582e-4f82-a158-6a58b998e9d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems\Tools">
+      <UniqueIdentifier>{7511f942-e460-4f42-ae0b-a140b7a9273c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems\Tools\internal">
+      <UniqueIdentifier>{1d5c6e9a-c43c-4356-bca1-4a98cd703c3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems\Renderer\internal">
+      <UniqueIdentifier>{fc60f4e7-803d-4892-be09-cb6c6f7ea89d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems\SceneGraph\internal">
+      <UniqueIdentifier>{48f20246-ae2b-4eb2-8945-f23efa9fdd8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems\Input\internal">
+      <UniqueIdentifier>{87e28e58-8e94-4be3-bcf6-ad2aa1a9c2d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems\Assets\internal">
+      <UniqueIdentifier>{a5f6f1f8-1809-416f-8025-66bda22fa55d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Input_manager.h">
-      <Filter>Systems\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene_graph_manager.h">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClInclude>
     <ClInclude Include="Entity.h">
       <Filter>Systems\SceneGraph</Filter>
     </ClInclude>
@@ -77,9 +95,6 @@
       <Filter>Systems\Renderer\Materials</Filter>
     </ClInclude>
     <ClInclude Include="Test_component.h">
-      <Filter>Systems\Scripting</Filter>
-    </ClInclude>
-    <ClInclude Include="Entity_scripting_manager.h">
       <Filter>Systems\Scripting</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
@@ -139,14 +154,8 @@
     <ClInclude Include="Entity_repository.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Entity_render_manager.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="Camera_component.h">
       <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Asset_manager.h">
-      <Filter>Systems\Assets</Filter>
     </ClInclude>
     <ClInclude Include="Primitive_mesh_data_factory.h">
       <Filter>Systems\Assets</Filter>
@@ -179,20 +188,8 @@
     <ClInclude Include="Render_pass_shadow.h">
       <Filter>Systems\Renderer\Render_pass</Filter>
     </ClInclude>
-    <ClInclude Include="Shadowmap_manager.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Render_step_manager.h">
-      <Filter>Systems\Renderer\Render_pass</Filter>
-    </ClInclude>
     <ClInclude Include="Renderable.h">
       <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="D3D_resources_manager.h">
-      <Filter>Systems\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Dev_tools_manager.h">
-      <Filter>Systems</Filter>
     </ClInclude>
     <ClInclude Include="Light_provider.h">
       <Filter>Systems\Renderer</Filter>
@@ -209,20 +206,71 @@
     <ClInclude Include="FileUtils.h">
       <Filter>Common</Filter>
     </ClInclude>
-    <ClInclude Include="User_interface_manager.h">
-      <Filter>Systems\UI</Filter>
-    </ClInclude>
     <ClInclude Include="VectorLog.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="IUser_interface_manager.h">
+      <Filter>Systems\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="User_interface_manager.h">
+      <Filter>Systems\UI\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity_scripting_manager.h">
+      <Filter>Systems\Scripting\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="IEntity_scripting_manager.h">
+      <Filter>Systems\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="Dev_tools_manager.h">
+      <Filter>Systems\Tools\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="IDev_tools_manager.h">
+      <Filter>Systems\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="IRender_step_manager.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Render_step_manager.h">
+      <Filter>Systems\Renderer\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D_resources_manager.h">
+      <Filter>Systems\Renderer\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="ID3D_resources_manager.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene_graph_manager.h">
+      <Filter>Systems\SceneGraph\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="IScene_graph_manager.h">
+      <Filter>Systems\SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity_render_manager.h">
+      <Filter>Systems\Renderer\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="IEntity_render_manager.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Shadowmap_manager.h">
+      <Filter>Systems\Renderer\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="IShadowmap_manager.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Input_manager.h">
+      <Filter>Systems\Input\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="IInput_manager.h">
+      <Filter>Systems\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset_manager.h">
+      <Filter>Systems\Assets\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="IAsset_manager.h">
+      <Filter>Systems\Assets</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Input_manager.cpp">
-      <Filter>Systems\Input</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene_graph_manager.cpp">
-      <Filter>Systems\SceneGraph</Filter>
-    </ClCompile>
     <ClCompile Include="Entity.cpp">
       <Filter>Systems\SceneGraph</Filter>
     </ClCompile>
@@ -251,9 +299,6 @@
       <Filter>Systems\Renderer\Materials</Filter>
     </ClCompile>
     <ClCompile Include="Test_component.cpp">
-      <Filter>Systems\Scripting</Filter>
-    </ClCompile>
-    <ClCompile Include="Entity_scripting_manager.cpp">
       <Filter>Systems\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
@@ -298,14 +343,8 @@
     <ClCompile Include="Entity_repository.cpp">
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Entity_render_manager.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="Camera_component.cpp">
       <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Asset_manager.cpp">
-      <Filter>Systems\Assets</Filter>
     </ClCompile>
     <ClCompile Include="Primitive_mesh_data_factory.cpp">
       <Filter>Systems\Assets</Filter>
@@ -325,18 +364,6 @@
     <ClCompile Include="Render_pass_shadow.cpp">
       <Filter>Systems\Renderer\Render_pass</Filter>
     </ClCompile>
-    <ClCompile Include="Shadowmap_manager.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Render_step_manager.cpp">
-      <Filter>Systems\Renderer\Render_pass</Filter>
-    </ClCompile>
-    <ClCompile Include="D3D_resources_manager.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Dev_tools_manager.cpp">
-      <Filter>Systems</Filter>
-    </ClCompile>
     <ClCompile Include="Light_provider.cpp">
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
@@ -346,11 +373,38 @@
     <ClCompile Include="Render_pass_skybox.cpp">
       <Filter>Systems\Renderer\Render_pass</Filter>
     </ClCompile>
-    <ClCompile Include="User_interface_manager.cpp">
-      <Filter>Systems\UI</Filter>
-    </ClCompile>
     <ClCompile Include="VectorLog.cpp">
       <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="User_interface_manager.cpp">
+      <Filter>Systems\UI\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity_scripting_manager.cpp">
+      <Filter>Systems\Scripting\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="Dev_tools_manager.cpp">
+      <Filter>Systems\Tools\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="Render_step_manager.cpp">
+      <Filter>Systems\Renderer\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D_resources_manager.cpp">
+      <Filter>Systems\Renderer\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene_graph_manager.cpp">
+      <Filter>Systems\SceneGraph\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity_render_manager.cpp">
+      <Filter>Systems\Renderer\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="Shadowmap_manager.cpp">
+      <Filter>Systems\Renderer\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="Input_manager.cpp">
+      <Filter>Systems\Input\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset_manager.cpp">
+      <Filter>Systems\Assets\internal</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

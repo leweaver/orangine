@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "Renderer_data.h"
 #include "Render_pass_skybox.h"
 #include "Scene.h"
 #include "Skybox_material.h"

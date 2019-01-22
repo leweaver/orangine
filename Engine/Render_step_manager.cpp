@@ -16,9 +16,16 @@
 #include "Dev_tools_manager.h"
 #include "Render_pass_skybox.h"
 
-using namespace oe;
 using namespace DirectX;
 using namespace SimpleMath;
+using namespace oe;
+using namespace internal;
+
+template<>
+IRender_step_manager* oe::create_manager(Scene & scene)
+{
+    return new Render_step_manager(scene);
+}
 
 constexpr size_t g_max_render_target_views = 3;
 

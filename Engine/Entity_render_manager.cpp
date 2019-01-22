@@ -14,20 +14,26 @@
 #include "Entity_sorter.h"
 #include "CommonStates.h"
 #include "GeometricPrimitive.h"
+#include "Render_pass.h"
 
 #include <set>
 #include <functional>
 #include <optional>
-#include "Render_pass.h"
-
-#include <Shlwapi.h>
 
 using namespace oe;
+using namespace internal;
+
 using namespace DirectX;
 using namespace SimpleMath;
 using namespace std::literals;
 
 using namespace std;
+
+template<>
+IEntity_render_manager* oe::create_manager(Scene & scene, std::shared_ptr<IMaterial_repository>& materialRepository)
+{
+    return new Entity_render_manager(scene, materialRepository);
+}
 
 inline DX::DeviceResources& Entity_render_manager::deviceResources() const
 {

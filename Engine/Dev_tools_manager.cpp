@@ -9,11 +9,16 @@
 #include "VectorLog.h"
 #include <imgui/misc/cpp/imgui_stdlib.h>
 
-using namespace oe;
-
 using namespace DirectX;
 using namespace SimpleMath;
+using namespace oe;
+using namespace internal;
 
+template<>
+IDev_tools_manager* oe::create_manager(Scene & scene)
+{
+    return new Dev_tools_manager(scene);
+}
 
 void Dev_tools_manager::initialize()
 {

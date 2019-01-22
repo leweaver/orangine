@@ -1,18 +1,22 @@
 ﻿#include "pch.h"
 #include "Shadowmap_manager.h"
 #include "Shadow_map_texture_pool.h"
+#include "Scene.h"
 
 using namespace oe;
+using namespace internal;
 
-Shadowmap_manager::~Shadowmap_manager()
+template<>
+IShadowmap_manager* oe::create_manager(Scene& scene)
 {
-	_texturePool.reset();
+    return new Shadowmap_manager(scene);
 }
 
-void Shadowmap_manager::createDeviceDependentResources(DX::DeviceResources& deviceResources)
+void Shadowmap_manager::createDeviceDependentResources(DX::DeviceResources&)
 {
 	_texturePool = std::make_unique<Shadow_map_texture_pool>(256, 8);
-	_texturePool->createDeviceDependentResources(_deviceResources);
+    auto& deviceResources = _scene.manager<ID3D_resources_manager>().deviceResources();
+	_texturePool->createDeviceDependentResources(deviceResources);
 }
 
 void Shadowmap_manager::destroyDeviceDependentResources()
@@ -48,6 +52,6 @@ std::shared_ptr<Texture> Shadowmap_manager::shadowMapStencilTextureArray()
 void Shadowmap_manager::verifyTexturePool() const
 {
 	if (!_texturePool) {
-		throw new std::logic_error("Invalid attempt to call shadowmap methods when no device is available");
+		throw std::logic_error("Invalid attempt to call shadowmap methods when no device is available");
 	}
 }

@@ -3,25 +3,28 @@
 #include "StepTimer.h"
 #include "Entity_graph_loader.h"
 
-#include "D3D_resources_manager.h"
-#include "Entity_render_manager.h"
-#include "Render_step_manager.h"
-#include "Shadowmap_manager.h"
-#include "Entity_repository.h"
-#include "Scene_graph_manager.h"
-#include "Entity_scripting_manager.h"
-#include "Asset_manager.h"
+#include "ID3D_resources_manager.h"
+#include "IEntity_render_manager.h"
+#include "IRender_step_manager.h"
+#include "IShadowmap_manager.h"
+#include "IScene_graph_manager.h"
+#include "IEntity_scripting_manager.h"
+#include "IAsset_manager.h"
+#include "IInput_manager.h"
+#include "IDev_tools_manager.h"
+#include "IUser_interface_manager.h"
 
 #include <map>
-#include "Input_manager.h"
 #include <memory>
-#include "Dev_tools_manager.h"
-#include "User_interface_manager.h"
+#include "Manager_base.h"
 
 namespace oe {
 	class Entity;
 	class Component;
 	class Texture;
+
+    class IEntity_repository;
+    class IMaterial_repository;
 
 	class Scene
 	{
@@ -81,9 +84,6 @@ namespace oe {
 			std::shared_ptr<IEntity_repository>,
 			std::shared_ptr<IMaterial_repository>,
 
-			// Factories
-			std::shared_ptr<Primitive_mesh_data_factory>,
-
 			// Managers. IUser_interface_manager should always be first, so it can handle windows messages first.
             std::shared_ptr<IUser_interface_manager>,
 			std::shared_ptr<IScene_graph_manager>,
@@ -135,6 +135,11 @@ namespace oe {
 		bool processMessage(UINT message, WPARAM wParam, LPARAM lParam) const;
 
 	private:
+        template<class TManager, class... TDependencies>
+        void createManager(TDependencies&... dependencies)
+        {
+            std::get<std::shared_ptr<TManager>>(_managers) = std::unique_ptr<TManager>(create_manager<TManager, TDependencies...>(*this, dependencies...));
+        }
 		DX::DeviceResources& _deviceResources;
 	};
 }

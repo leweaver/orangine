@@ -19,3 +19,6 @@
 [submodule "thirdparty/imgui"]
 	path = thirdparty/imgui
 	url = git@github.com:ocornut/imgui.git
+[submodule "thirdparty/glTF-Sample-Models"]
+	path = thirdparty/glTF-Sample-Models
+	url = git@github.com:KhronosGroup/glTF-Sample-Models.git

@@ -72,7 +72,7 @@ std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 		root->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 
 	//m_scene->loadEntities("data/meshes/" + gltfName + "/" + gltfName + ".gltf", *root);
-	m_scene->loadEntities("../../glTF-Sample-Models/2.0/" + gltfName + "/glTF/" + gltfName + ".gltf", *root);
+	m_scene->loadEntities("../thirdparty/glTF-Sample-Models/2.0/" + gltfName + "/glTF/" + gltfName + ".gltf", *root);
 
 	return root;
 }
@@ -296,7 +296,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
 		//LoadGLTF("FlightHelmet", false)->setScale({ 7, 7, 7 });
-		//LoadGLTF("WaterBottle", true)->setScale({ 80, 80, 80 });
+		LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
 		//LoadGLTF("MetalRoughSpheres", false);
 		//CreateSceneMetalRoughSpheres(false);
 

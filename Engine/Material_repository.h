@@ -1,19 +1,20 @@
 ﻿#pragma once
 
-#include "Material.h"
-
 namespace oe {
 
-	class IMaterial_repository {
-	public:
-		virtual std::unique_ptr<Material> instantiate(const std::string& materialName) const = 0;
+    enum class Material_type_index : uint8_t{
+        PBR,
+        Unlit,
+        Deferred_Light,
+        Skybox,
+        Clear_G_Buffer,
+
+        Num_Material_Type_Index
+    };
+
+    class IMaterial_repository {
 	};
 
 	class Material_repository : public IMaterial_repository {
-	public:
-		/**
-		 * Will return a new Error Material if the given material doesn't exist.
-		 */
-		std::unique_ptr<Material> instantiate(const std::string& materialName) const override;
 	};
 }

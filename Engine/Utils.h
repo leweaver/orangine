@@ -4,6 +4,20 @@
 #include <string_view>
 
 namespace oe {
+    template <typename T, size_t N>
+    constexpr size_t array_size(const T(&)[N])
+    {
+        return N;
+    }
+
+    // From boost
+    template <class T>
+    void hash_combine(std::size_t& seed, const T& v)
+    {
+        std::hash<T> hasher;
+        seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+
 	// Convert a wide Unicode string to an UTF8 string
 	std::string utf8_encode(const std::wstring& wstr);
 

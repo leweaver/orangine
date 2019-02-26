@@ -10,7 +10,7 @@ const std::string g_color_str("VA_COLOR");
 const std::string g_normal_str("VA_NORMAL");
 const std::string g_tangent_str("VA_TANGENT");
 const std::string g_bi_tangent_str("VA_BITANGENT");
-const std::string g_texcoord_0_str("VA_TEXCOORD_0");
+const std::string g_texcoord_str("VA_TEXCOORD");
 const std::string g_invalid_str("VA_INVALID");
 
 std::vector<std::string> g_va_semantic_names = {
@@ -34,40 +34,47 @@ uint32_t Mesh_data::getVertexCount() const
 	return vertexBufferAccessors.begin()->second->count;
 }
 
-std::string_view Vertex_attribute_meta::str(Vertex_attribute attribute)
+std::string Vertex_attribute_meta::vsInputName(Vertex_attribute_semantic attribute)
 {
-	switch (attribute) {
-		case Vertex_attribute::Position: return g_position_str;
-		case Vertex_attribute::Color: return g_color_str;
-		case Vertex_attribute::Normal: return g_normal_str;
-		case Vertex_attribute::Tangent: return g_tangent_str;
-		case Vertex_attribute::Bi_Tangent: return g_bi_tangent_str;
-		case Vertex_attribute::Texcoord_0: return g_texcoord_0_str;
+    const auto& str = [](Vertex_attribute_semantic& attribute) {
+        switch (attribute.attribute) {
+        case Vertex_attribute::Position: return g_position_str;
+        case Vertex_attribute::Color: return g_color_str;
+        case Vertex_attribute::Normal: return g_normal_str;
+        case Vertex_attribute::Tangent: return g_tangent_str;
+        case Vertex_attribute::Bi_Tangent: return g_bi_tangent_str;
+        case Vertex_attribute::Tex_Coord: return g_texcoord_str;
 
-		case Vertex_attribute::Invalid:
-		default:
-			return g_invalid_str;
-	}
+        case Vertex_attribute::Num_Vertex_Attribute:
+        default:
+            return g_invalid_str;
+        }
+    }(attribute);
+
+    if (attribute.semanticIndex != 0) {
+        return str + "_"s + std::to_string(attribute.semanticIndex);
+    }
+    return str;
 }
 
-size_t Vertex_attribute_meta::elementSize(Vertex_attribute attribute)
+size_t Vertex_attribute_meta::numComponents(Vertex_attribute attribute)
 {
 	switch (attribute)
 	{
-	case Vertex_attribute::Texcoord_0:
-		return sizeof(float) * 2;
+	case Vertex_attribute::Tex_Coord:
+		return 2;
 
 	case Vertex_attribute::Position:
 	case Vertex_attribute::Color:
 	case Vertex_attribute::Normal:
-		return sizeof(float) * 3;
+		return 3;
 
 	case Vertex_attribute::Tangent:
 	case Vertex_attribute::Bi_Tangent:
-		return sizeof(float) * 4;
+		return 4;
 
 	default:
-		throw std::logic_error("Cannot determine element size for VertexAttribute: "s.append(str(attribute)));
+		throw std::logic_error("Cannot determine element size for VertexAttribute: "s.append(vertexAttributeToString(attribute)));
 	}
 }
 
@@ -116,7 +123,7 @@ Mesh_buffer_accessor::~Mesh_buffer_accessor()
 	buffer = nullptr;
 }
 
-Mesh_vertex_buffer_accessor::Mesh_vertex_buffer_accessor(const std::shared_ptr<Mesh_buffer> &buffer, Vertex_attribute attribute, uint32_t count, uint32_t stride, uint32_t offset)
+Mesh_vertex_buffer_accessor::Mesh_vertex_buffer_accessor(const std::shared_ptr<Mesh_buffer> &buffer, Vertex_attribute_semantic attribute, uint32_t count, uint32_t stride, uint32_t offset)
 	: Mesh_buffer_accessor(buffer, count, stride, offset)
 	, attribute(attribute)
 {

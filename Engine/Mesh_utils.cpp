@@ -14,20 +14,20 @@ namespace oe::mesh_utils {
 	{
 		assert(sourceOffset <= sourceData.size());
 
-		UINT byteWidth = elementCount * elementSize;
+		auto byteWidth = elementCount * elementSize;
 		assert(sourceOffset + byteWidth <= sourceData.size());
 
 		auto meshBuffer = std::make_shared<Mesh_buffer>(byteWidth);
 		{
-			uint8_t *dest = meshBuffer->data;
-			const uint8_t *src = sourceData.data() + sourceOffset;
+			auto* dest = meshBuffer->data;
+			const auto* src = sourceData.data() + sourceOffset;
 
 			if (sourceStride == elementSize) {
 				memcpy_s(dest, byteWidth, src, byteWidth);
 			}
 			else {
 				size_t destSize = byteWidth;
-				for (UINT i = 0; i < elementCount; ++i) {
+				for (auto i = 0u; i < elementCount; ++i) {
 					memcpy_s(dest, byteWidth, src, elementSize);
 					dest += elementSize;
 					destSize -= elementSize;
@@ -69,7 +69,7 @@ namespace oe::mesh_utils {
 			auto *dest = reinterpret_cast<uint32_t*>(meshBuffer->data);
 			const auto *src = sourceData.data() + sourceOffset;
 			for (UINT i = 0; i < srcElementCount; ++i) {
-				dest[i] = convertIndexValue(srcFormat, src);
+				dest[i] = convert_index_value(srcFormat, src);
 				src += sourceStride;
 			}
 		}
@@ -77,7 +77,7 @@ namespace oe::mesh_utils {
 		return { meshBuffer, DXGI_FORMAT_R32_UINT };
 	}
 
-	DirectX::BoundingOrientedBox aabbForEntities(const Entity_filter& entities,
+	BoundingOrientedBox aabbForEntities(const Entity_filter& entities,
 		const DirectX::SimpleMath::Quaternion& orientation,
 		std::function<bool(const Entity&)> predicate)
 	{
@@ -85,7 +85,7 @@ namespace oe::mesh_utils {
 		XMVECTOR minExtents = Vector3::Zero;
 		XMVECTOR maxExtents = Vector3::Zero;
 
-		bool firstExtentsCalc = true;
+		auto firstExtentsCalc = true;
 		const auto orientationMatrix = Matrix::CreateFromQuaternion(orientation);
 		const auto orientationMatrixInv = XMMatrixInverse(nullptr, orientationMatrix);
 		for (auto& entity : entities) {
@@ -93,13 +93,14 @@ namespace oe::mesh_utils {
 				continue;
 
 			const auto& boundSphere = entity->boundSphere();
-			Vector3 boundWorldCenter = Vector3::Transform(boundSphere.Center, entity->worldTransform());
-			Vector3 boundWorldEdge = Vector3::Transform(Vector3(boundSphere.Center) + Vector3(0, 0, boundSphere.Radius), entity->worldTransform());
+            assert(boundSphere.Radius < INFINITY && boundSphere.Radius >= 0.0f);
+			const auto boundWorldCenter = Vector3::Transform(boundSphere.Center, entity->worldTransform());
+			const auto boundWorldEdge = Vector3::Transform(Vector3(boundSphere.Center) + Vector3(0, 0, boundSphere.Radius), entity->worldTransform());
 
 			// Bounds, in light view space (as defined above)
-			Vector3 boundCenter = Vector3::Transform(boundWorldCenter, orientationMatrixInv);
-			Vector3 boundEdge = Vector3::Transform(boundWorldEdge, orientationMatrixInv);
-			const XMVECTOR boundRadius = XMVector3Length(XMVectorSubtract(boundEdge, boundCenter));
+			const auto boundCenter = Vector3::Transform(boundWorldCenter, orientationMatrixInv);
+			const auto boundEdge = Vector3::Transform(boundWorldEdge, orientationMatrixInv);
+			const auto boundRadius = XMVector3Length(XMVectorSubtract(boundEdge, boundCenter));
 
 			if (firstExtentsCalc) {
 				minExtents = XMVectorSubtract(boundCenter, boundRadius);

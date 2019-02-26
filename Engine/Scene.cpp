@@ -11,6 +11,7 @@
 #include "Material_repository.h"
 
 #include <type_traits>
+#include "IMaterial_manager.h"
 
 using namespace oe;
 
@@ -226,6 +227,8 @@ Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& de
     createManager<IAsset_manager>();
     createManager<IInput_manager>();
     createManager<IUser_interface_manager>();
+    createManager<IAnimation_manager>();
+    createManager<IMaterial_manager>();
 }
 
 void Scene_device_resource_aware::initialize()

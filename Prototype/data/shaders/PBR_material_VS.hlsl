@@ -9,6 +9,8 @@ cbuffer constants : register(b0)
 	matrix        g_mWorldView            : packoffset(c4);
 	matrix        g_mWorld                : packoffset(c8);
 	matrix        g_mWorldInvTranspose    : packoffset(c12);
+    float4        g_morphWeights0         : packoffset(c16);
+    float4        g_morphWeights1         : packoffset(c17);
 };
 
 //--------------------------------------------------------------------------------------
@@ -17,19 +19,34 @@ cbuffer constants : register(b0)
 struct VS_INPUT
 {
 	float4 vPosition    : POSITION;
+#if VB_NORMAL
 	float3 vNormal      : NORMAL;
+#endif
+#if VB_TANGENT
 	float4 vTangent     : TANGENT;
+#endif
+#if VB_TEXCOORD0
 	float2 vTexCoord0   : TEXCOORD0;
+#endif
+#if VB_MORPH
+    VB_MORPH_INPUTS
+#endif
 };
 
 struct VS_OUTPUT
 {
+#if VB_NORMAL
 	float3 vNormal      : NORMAL0;
 	float3 vWorldNormal : NORMAL1;
+#endif
+#if VB_TANGENT
 	float4 vTangent     : TANGENT0;
 	float3 vWorldTangent: TANGENT1;
-	float2 vTexCoord0   : TEXCOORD0;
-	float4 vClipPosition: TEXCOORD1;
+#endif
+    float4 vClipPosition: TEXCOORD0;
+#if VB_TEXCOORD0
+    float2 vTexCoord0   : TEXCOORD1;
+#endif
 	float4 vPosition    : SV_POSITION;
 };
 
@@ -39,8 +56,21 @@ struct VS_OUTPUT
 VS_OUTPUT VSMain(VS_INPUT Input)
 {
 	VS_OUTPUT Output;
-	Output.vPosition = mul(float4(Input.vPosition.xyz, 1), g_mWorldViewProjection);
-	Output.vClipPosition = mul(Input.vPosition, g_mWorldView);
+
+#if VB_MORPH
+    VB_MORPH_WEIGHTS_CALC
+#else
+    float3 morphedPosition = Input.vPosition.xyz;
+#if VB_NORMAL
+    float3 morphedNormal = Input.vNormal;
+#endif
+#if VB_TANGENT
+    float4 morphedTangent = Input.vTangent;
+#endif
+#endif
+
+	Output.vPosition = mul(float4(morphedPosition.xyz, 1), g_mWorldViewProjection);
+	Output.vClipPosition = mul(float4(morphedPosition.xyz, 1), g_mWorldView);
 
 	/*
 	// Remove any scaling from the world matrix by normalizing each column
@@ -54,15 +84,21 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	};
 	*/
 
-	Output.vNormal = Input.vNormal;
-	Output.vTangent = Input.vTangent;
+#if VB_NORMAL
+	Output.vNormal = morphedNormal;
+    // Normalize as the world matrix may have scaling applied.
+    Output.vWorldNormal = normalize(mul(morphedNormal, g_mWorldInvTranspose));
+#endif
 
-	// Normalize as the world matrix may have scaling applied.
-	// TODO: does this work with non uniform scaling, or do we need to remove scaling from the matrix?
-	Output.vWorldNormal = normalize(mul(Input.vNormal, g_mWorldInvTranspose));
-	Output.vWorldTangent = normalize(mul(Input.vTangent.xyz, g_mWorld));
+#if VB_TANGENT
+	Output.vTangent = morphedTangent;
+    // Normalize as the world matrix may have scaling applied.
+    Output.vWorldTangent = normalize(mul(morphedTangent.xyz, g_mWorld));
+#endif
 
+#if VB_TEXCOORD0
 	Output.vTexCoord0 = Input.vTexCoord0;
+#endif
 
 	return Output;
 }

@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\DirectXTK\Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)thirdparty\g3log\src;$(SolutionDir)thirdparty\g3log\include;$(SolutionDir)thirdparty\DirectXTK\Inc;$(SolutionDir)thirdparty\tinygltf;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />

@@ -29,6 +29,7 @@ namespace oe {
 
         virtual std::shared_ptr<Entity> instantiate(const std::string& name) = 0;
         virtual std::shared_ptr<Entity> instantiate(const std::string& name, Entity& parentEntity) = 0;
+        virtual void renderImGui() = 0;
 
         /**
         * Will do nothing if no entity exists with the given ID.

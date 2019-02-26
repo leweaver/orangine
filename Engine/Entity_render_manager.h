@@ -15,6 +15,10 @@
 #include <memory>
 #include "Light_provider.h"
 
+namespace oe {
+    class Material_context;
+}
+
 namespace oe::internal {
 	class Entity_render_manager : public IEntity_render_manager
 	{
@@ -59,7 +63,10 @@ namespace oe::internal {
 			const Light_provider::Callback_type& lightDataProvider,
 			Render_pass_blend_mode blendMode
 			) override;
+
+        // Be warned - YOU are responsible for cleaning up this Renderable's D3D data on a device reset.
 		Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) const override;
+
 		void clearRenderStats() override;
 
 	protected:
@@ -70,17 +77,32 @@ namespace oe::internal {
 			Renderer_data& rendererData,
 			Render_pass_blend_mode blendMode,
 			const Render_light_data& renderLightData,
-			Material& material,
+            std::shared_ptr<Material>,
+            const Mesh_vertex_layout& meshVertexLayout,
+            Material_context& materialContext,
+            Renderer_animation_data& rendererAnimationData,
 			bool wireframe);
 
 	private:
 
-		std::unique_ptr<Material> loadMaterial(const std::string& materialName) const;
-
 		std::shared_ptr<D3D_buffer> createBufferFromData(const Mesh_buffer& buffer, UINT bindFlags) const;
-		std::unique_ptr<Renderer_data> createRendererData(const Mesh_data& meshData, const std::vector<Vertex_attribute>& vertexAttributes) const;
 
-		void loadRendererDataToDeviceContext(const Renderer_data& rendererData);
+	    /**
+		 * \brief Creates a new Renderer_data instance from the given mesh data, in a format
+		 *        that satisfies the given vertex attributes (normally generated from a material)
+		 * \param meshData 
+		 * \param vertexAttributes Semantics that the material requested for vertices.
+		 *        Normally you should get this from Material::vertexInputs
+		 * \param vertexMorphAttributes Semantics that the material requested for morph streams. 
+		 *        Normally you should get this from Shader_compile_settings::morphAttributes
+		 * \return new Renderer_data instance.
+		 */
+		std::unique_ptr<Renderer_data> createRendererData(std::shared_ptr<Mesh_data> meshData, 
+            const std::vector<Vertex_attribute_semantic>& vertexAttributes,
+            const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const;
+
+        // Loads the buffers to the device in the order specified by the material context.
+		void loadRendererDataToDeviceContext(const Renderer_data& rendererData, const Material_context& context);
 
 		DX::DeviceResources& deviceResources() const;
 

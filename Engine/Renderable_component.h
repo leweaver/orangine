@@ -3,6 +3,7 @@
 #include "Component.h"
 #include "Renderer_data.h"
 #include "Material.h"
+#include "Material_context.h"
 
 namespace oe 
 {
@@ -18,6 +19,7 @@ namespace oe
 			, _wireframe(false)
 			, _castShadow(true)
 			, _rendererData(nullptr)
+            , _materialContext(nullptr)
 			, _material(nullptr)
 		{}
 		~Renderable_component();
@@ -32,11 +34,14 @@ namespace oe
 		void setCastShadow(bool castShadow) { _castShadow = castShadow; }
 
 		// Runtime, non-serializable
-		const std::unique_ptr<Material>	& material() const { return _material; }
-		void setMaterial(std::unique_ptr<Material>&& material) { _material = std::move(material); }
+		const std::shared_ptr<Material>	& material() const { return _material; }
+		void setMaterial(std::shared_ptr<Material> material) { _material = material; }
 
 		const std::unique_ptr<Renderer_data>& rendererData() const { return _rendererData; }
 		void setRendererData(std::unique_ptr<Renderer_data>&& rendererData) { _rendererData = std::move(rendererData); }
+
+        const std::unique_ptr<Material_context>& materialContext() const { return _materialContext; }
+        void setMaterialContext(std::unique_ptr<Material_context>&& materialContext) { _materialContext = std::move(materialContext); }
 
 	private:
 
@@ -46,7 +51,8 @@ namespace oe
 
 		// Runtime, non-serializable
 		std::unique_ptr<Renderer_data> _rendererData;
-		std::unique_ptr<Material> _material;
+        std::unique_ptr<Material_context> _materialContext;
+		std::shared_ptr<Material> _material;
 	};
 
 }

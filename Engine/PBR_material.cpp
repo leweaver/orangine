@@ -2,6 +2,11 @@
 #include "PBR_material.h"
 #include "Render_pass_config.h"
 
+#include "JsonUtils.h"
+
+#include "Material_repository.h"
+#include "Mesh_vertex_layout.h"
+
 using namespace oe;
 using namespace DirectX;
 using namespace std::literals;
@@ -10,10 +15,27 @@ const std::array<ID3D11ShaderResourceView*, 5> g_nullShaderResourceViews = { nul
 const std::array<ID3D11SamplerState*, 5> g_nullSamplerStates = { nullptr, nullptr, nullptr, nullptr, nullptr };
 
 const std::string g_material_type = "PBR_material";
+const std::string g_json_baseColor = "baseColor";
+const std::string g_json_metallic = "metallic";
+const std::string g_json_roughness = "roughness";
+const std::string g_json_emissive = "emissive";
+const std::string g_json_alphaCutoff = "alpha_cutoff";
+const std::string g_json_baseColorTexture = "base_color_texture";
+const std::string g_json_metallicRoughnessTexture = "metallic_roughness_texture";
+const std::string g_json_normalTexture = "normal_texture";
+const std::string g_json_occlusionTexture = "occlusion_texture";
+const std::string g_json_emissiveTexture = "emissive_texture";
+
+const std::string g_flag_enableDeferred = "enable_deferred";
+const std::string g_flag_morphTargetCount_prefix = "morph_target_count_";
+// Position in the layout of each morph attribute
+const std::string g_flag_morphTargetLayout_Position_prefix = "morph_target_vertex_position_";
+const std::string g_flag_morphTargetLayout_Normal_prefix = "morph_target_vertex_normal_";
+const std::string g_flag_morphTargetLayout_Tangent_prefix = "morph_target_vertex_tangent_";
 
 PBR_material::PBR_material()
-	: _enableDeferred(false)
-	, _baseColor(SimpleMath::Vector4::One)
+	: Base_type(static_cast<uint8_t>(Material_type_index::PBR))
+    , _baseColor(SimpleMath::Vector4::One)
 	, _metallic(1.0)
 	, _roughness(1.0)
 	, _emissive(0, 0, 0)
@@ -25,32 +47,267 @@ PBR_material::PBR_material()
 	std::fill(_samplerStates.begin(), _samplerStates.end(), nullptr);
 }
 
-PBR_material::~PBR_material()
-{
-	releaseShaderResources();
-}
-
 const std::string& PBR_material::materialType() const
 {
 	return g_material_type;
 }
 
-Material::Shader_compile_settings PBR_material::pixelShaderSettings() const
+nlohmann::json PBR_material::serialize(bool compilerPropertiesOnly) const
 {
-	auto settings = Base_type::pixelShaderSettings();
+    auto j = Base_type::serialize(compilerPropertiesOnly);
 
-	if (_textures[BaseColor])
-		settings.defines["MAP_BASECOLOR"] = "1";
-	if (_textures[MetallicRoughness])
-		settings.defines["MAP_METALLIC_ROUGHNESS"] = "1";
-	if (_textures[Normal])
-		settings.defines["MAP_NORMAL"] = "1";
-	if (_textures[Emissive])
-		settings.defines["MAP_EMISSIVE"] = "1";
-	if (_textures[Occlusion])
-		settings.defines["MAP_OCCLUSION"] = "1";
+    if (!compilerPropertiesOnly) {
+        j[g_json_baseColor] = _baseColor;
+        j[g_json_metallic] = _metallic;
+        j[g_json_roughness] = _roughness;
+        j[g_json_emissive] = _emissive;
+        j[g_json_alphaCutoff] = _alphaCutoff;
+        j[g_json_baseColorTexture] = serializeTexture(compilerPropertiesOnly, _textures[BaseColor]);
+        j[g_json_metallicRoughnessTexture] = serializeTexture(compilerPropertiesOnly, _textures[MetallicRoughness]);
+        j[g_json_normalTexture] = serializeTexture(compilerPropertiesOnly, _textures[Normal]);
+        j[g_json_occlusionTexture] = serializeTexture(compilerPropertiesOnly, _textures[Occlusion]);
+        j[g_json_emissiveTexture] = serializeTexture(compilerPropertiesOnly, _textures[Emissive]);
+    }
 
-	if (_enableDeferred)
+    return j;
+}
+
+std::set<std::string> PBR_material::configFlags(Render_pass_blend_mode blendMode, const Mesh_vertex_layout& meshVertexLayout) const
+{
+    auto flags = Base_type::configFlags(blendMode, meshVertexLayout);
+
+    // TODO: This is a hacky way of finding this information out.
+    if (blendMode == Render_pass_blend_mode::Opaque) {
+        flags.insert(g_flag_enableDeferred);
+    }
+    if (meshVertexLayout.morphTargetCount()) {
+        flags.insert(g_flag_morphTargetCount_prefix + std::to_string(meshVertexLayout.morphTargetCount()));
+
+        const auto& morphTargetLayout = meshVertexLayout.morphTargetLayout();
+        for (auto i = 0; i < morphTargetLayout.size(); ++i) {
+            if (morphTargetLayout[i] == Vertex_attribute_semantic{ Vertex_attribute::Position, 0 }) {
+                flags.insert(g_flag_morphTargetLayout_Position_prefix + std::to_string(i));
+            } 
+            else if (morphTargetLayout[i] == Vertex_attribute_semantic{ Vertex_attribute::Normal, 0 }) {
+                flags.insert(g_flag_morphTargetLayout_Normal_prefix + std::to_string(i));
+            }
+            else if (morphTargetLayout[i] == Vertex_attribute_semantic{ Vertex_attribute::Tangent, 0 }) {
+                flags.insert(g_flag_morphTargetLayout_Tangent_prefix + std::to_string(i));
+            }
+        }
+    }
+
+    return flags;
+}
+
+void PBR_material::decodeMorphTargetConfig(const std::set<std::string>& flags,
+    uint8_t& targetCount,
+    int8_t& positionPosition,
+    int8_t& normalPosition,
+    int8_t& tangentPosition)
+{
+    targetCount = 0;
+    positionPosition = -1;
+    normalPosition = -1;
+    tangentPosition = -1;
+    for (const auto& flag : flags) {
+        uint16_t convert;
+        if (str_starts(flag, g_flag_morphTargetCount_prefix)) {
+            std::stringstream ss(flag.substr(g_flag_morphTargetCount_prefix.size()));
+            ss >> convert;
+            assert(convert >= 0 && convert <= 255);
+            targetCount = static_cast<uint8_t>(convert);
+        }
+        else if (str_starts(flag, g_flag_morphTargetLayout_Position_prefix)) {
+            std::stringstream ss(flag.substr(g_flag_morphTargetLayout_Position_prefix.size()));
+            ss >> convert;
+            assert(convert >= 0 && convert <= 255);
+            positionPosition = static_cast<int8_t>(convert);
+        }
+        else if (str_starts(flag, g_flag_morphTargetLayout_Normal_prefix)) {
+            std::stringstream ss(flag.substr(g_flag_morphTargetLayout_Normal_prefix.size()));
+            ss >> convert;
+            assert(convert >= 0 && convert <= 255);
+            normalPosition = static_cast<int8_t>(convert);
+        }
+        else if (str_starts(flag, g_flag_morphTargetLayout_Tangent_prefix)) {
+            std::stringstream ss(flag.substr(g_flag_morphTargetLayout_Tangent_prefix.size()));
+            ss >> convert;
+            assert(convert >= 0 && convert <= 255);
+            tangentPosition = static_cast<int8_t>(convert);
+        }
+    }
+}
+
+int PBR_material::getMorphPositionAttributeIndexOffset() { return 1; }
+
+int PBR_material::getMorphNormalAttributeIndexOffset() { return 1; }
+
+int PBR_material::getMorphTangentAttributeIndexOffset() const { return requiresTangents() ? 1 : 0; }
+
+std::vector<Vertex_attribute_semantic> PBR_material::vertexInputs(const std::set<std::string>& flags) const
+{
+    auto vertexAttributes = Base_type::vertexInputs(flags);
+
+    if (requiresTangents())
+    {
+        vertexAttributes.push_back({ Vertex_attribute::Tangent, 0 });
+    }
+
+    if (requiresTexCoord0())
+    {
+        vertexAttributes.push_back({ Vertex_attribute::Tex_Coord, 0 });
+    }
+
+    // Vertex attributes for morph targets.
+    uint8_t targetCount;
+    int8_t positionPosition;
+    int8_t normalPosition;
+    int8_t tangentPosition;
+    decodeMorphTargetConfig(flags, targetCount, positionPosition, normalPosition, tangentPosition);
+
+    if (targetCount > 8)
+        throw std::domain_error("Does not support more than 8 morph targets");
+
+    uint8_t morphPositionSemanticOffset = getMorphPositionAttributeIndexOffset();
+    uint8_t morphNormalSemanticOffset = getMorphNormalAttributeIndexOffset();
+    uint8_t morphTangentSemanticOffset = getMorphTangentAttributeIndexOffset();
+    for (auto i = 0; i < targetCount; ++i) {
+        if (positionPosition >= 0) {
+            vertexAttributes.push_back({ Vertex_attribute::Position, morphPositionSemanticOffset++ });
+        }
+        if (normalPosition >= 0) {
+            vertexAttributes.push_back({ Vertex_attribute::Normal, morphNormalSemanticOffset++ });
+        }
+        if (requiresTangents() && tangentPosition >= 0) {
+            vertexAttributes.push_back({ Vertex_attribute::Tangent, morphTangentSemanticOffset++ });
+        }
+    }
+
+    return vertexAttributes;
+}
+
+Material::Shader_resources PBR_material::shaderResources(const Render_light_data& renderLightData) const
+{
+    auto sr = Base_type::shaderResources(renderLightData);
+
+    const auto samplerDesc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
+    for (auto i = 0; i < _textures.size(); ++i) {
+        const auto& texture = _textures[i];
+        if (!texture)
+            continue;
+
+        sr.textures.push_back(texture);
+        
+        // TODO: Use values from glTF
+        sr.samplerDescriptors.push_back(samplerDesc);
+    }
+
+    return sr;
+}
+
+Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::set<std::string>& flags) const
+{
+    auto settings = Base_type::vertexShaderSettings(flags);
+    applyVertexLayoutShaderCompileSettings(settings);
+    
+    uint8_t targetCount;
+    int8_t positionPosition;
+    int8_t normalPosition;
+    int8_t tangentPosition;
+    decodeMorphTargetConfig(flags, targetCount, positionPosition, normalPosition, tangentPosition);
+
+    // Add morph inputs to the vertex input struct
+    if (targetCount > 0) {
+        uint8_t morphPositionSemanticOffset = getMorphPositionAttributeIndexOffset();
+        uint8_t morphNormalSemanticOffset = getMorphNormalAttributeIndexOffset();
+        uint8_t morphTangentSemanticOffset = getMorphTangentAttributeIndexOffset();
+
+        std::array<std::stringstream, 3> vbMorphWeightsCalcParts;
+        vbMorphWeightsCalcParts[0] << "float4 morphedPosition = float4(Input.vPosition.xyz";
+        vbMorphWeightsCalcParts[1] << "float3 morphedNormal = float3(Input.vNormal";
+        vbMorphWeightsCalcParts[2] << "float4 morphedTangent = float4(Input.vTangent.xyz";
+
+        // Build inputs.
+        std::array<std::stringstream, 3> vbMorphInputsArr;
+
+        for (auto morphTargetIdx = 0; morphTargetIdx < targetCount; ++morphTargetIdx) {
+            const auto morphTargetIdxStr = std::to_string(static_cast<int16_t>(morphTargetIdx));
+            if (positionPosition != -1) {
+                const auto semanticIdx = static_cast<uint8_t>(morphPositionSemanticOffset++);
+                const auto semanticIdxStr = std::to_string(static_cast<int16_t>(semanticIdx));
+                vbMorphInputsArr.at(positionPosition) <<
+                    "float3 vMorphPosition" << morphTargetIdxStr << 
+                    " : POSITION" << semanticIdxStr <<
+                    ";";
+                vbMorphWeightsCalcParts[0] << " + g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]" << " * Input.vMorphPosition" << morphTargetIdxStr;
+                settings.morphAttributes.push_back(
+                    { Vertex_attribute::Position, semanticIdx }
+                );
+            }
+            if (normalPosition != -1) {
+                const auto semanticIdx = static_cast<uint8_t>(morphNormalSemanticOffset++);
+                const auto semanticIdxStr = std::to_string(static_cast<int16_t>(semanticIdx));
+                vbMorphInputsArr.at(normalPosition) <<
+                    "float3 vMorphNormal" << morphTargetIdxStr <<
+                    " : NORMAL" << semanticIdxStr <<
+                    ";";
+                vbMorphWeightsCalcParts[1] << " + g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]" << " * Input.vMorphNormal" << morphTargetIdxStr;
+                settings.morphAttributes.push_back(
+                    { Vertex_attribute::Normal, semanticIdx }
+                );
+            }
+            if (requiresTangents() && tangentPosition != -1) {
+                const auto semanticIdx = static_cast<uint8_t>(morphTangentSemanticOffset++);
+                const auto semanticIdxStr = std::to_string(static_cast<int16_t>(semanticIdx));
+                vbMorphInputsArr.at(tangentPosition) <<
+                    "float3 vMorphTangent" << morphTargetIdxStr <<
+                    " : TANGENT" << semanticIdxStr <<
+                    ";";
+                vbMorphWeightsCalcParts[2] << " + g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]" << " * Input.vMorphTangent" << morphTargetIdxStr;
+                settings.morphAttributes.push_back(
+                    { Vertex_attribute::Tangent, semanticIdx }
+                );
+            }
+        }
+        
+        vbMorphWeightsCalcParts[0] << ", Input.vPosition.w);";
+        vbMorphWeightsCalcParts[1] << ");";
+        vbMorphWeightsCalcParts[2] << ", Input.vTangent.w); ";
+
+        std::stringstream vbMorphWeightsCalc;
+        vbMorphWeightsCalc << vbMorphWeightsCalcParts[0].str();
+        vbMorphWeightsCalc << vbMorphWeightsCalcParts[1].str();
+
+        if (requiresTangents())
+            vbMorphWeightsCalc << vbMorphWeightsCalcParts[2].str();
+
+        settings.defines["VB_MORPH"] = "1";
+        settings.defines["VB_MORPH_INPUTS"] = vbMorphInputsArr[0].str() + 
+            vbMorphInputsArr[1].str() +
+            vbMorphInputsArr[2].str();
+        settings.defines["VB_MORPH_WEIGHTS_CALC"] = vbMorphWeightsCalc.str();
+    }
+
+    return settings;
+}
+
+Material::Shader_compile_settings PBR_material::pixelShaderSettings(const std::set<std::string>& flags) const
+{
+	auto settings = Base_type::pixelShaderSettings(flags);
+
+    if (_textures[BaseColor])
+        settings.defines["MAP_BASECOLOR"] = "1";
+    if (_textures[MetallicRoughness])
+        settings.defines["MAP_METALLIC_ROUGHNESS"] = "1";
+    if (_textures[Normal])
+        settings.defines["MAP_NORMAL"] = "1";
+    if (_textures[Emissive])
+        settings.defines["MAP_EMISSIVE"] = "1";
+    if (_textures[Occlusion])
+        settings.defines["MAP_OCCLUSION"] = "1";
+
+	if (flags.find(g_flag_enableDeferred) != flags.end())
 		settings.defines["PS_PIPELINE_DEFERRED"] = "1";
 	else
 		settings.defines["PS_PIPELINE_STANDARD"] = "1";
@@ -58,26 +315,44 @@ Material::Shader_compile_settings PBR_material::pixelShaderSettings() const
 	if (getAlphaMode() == Material_alpha_mode::Mask)
 		settings.defines["ALPHA_MASK_VALUE"] = std::to_string(alphaCutoff());
 
+    applyVertexLayoutShaderCompileSettings(settings);
+
 	return settings;
+}
+
+void PBR_material::applyVertexLayoutShaderCompileSettings(Shader_compile_settings& settings) const
+{
+    settings.defines["VB_NORMAL"] = "1";
+    if (requiresTexCoord0()) {
+        settings.defines["VB_TEXCOORD0"] = "1";
+    }
+    if (requiresTangents()) {
+        settings.defines["VB_TANGENT"] = "1";
+    }
 }
 
 void PBR_material::updateVSConstantBufferValues(PBR_material_vs_constant_buffer& constants,
 	const SimpleMath::Matrix& worldMatrix,
 	const SimpleMath::Matrix& viewMatrix,
-	const SimpleMath::Matrix& projMatrix)
+	const SimpleMath::Matrix& /* projMatrix */,
+    const Renderer_animation_data& rendererAnimationData) const
 {
 	// Note that HLSL matrices are Column Major (as opposed to Row Major in DirectXMath) - so we need to transpose everything.
 	constants.worldView = XMMatrixMultiplyTranspose(worldMatrix, viewMatrix);
 
 	constants.world = XMMatrixTranspose(worldMatrix);
 	constants.worldInvTranspose = XMMatrixInverse(nullptr, worldMatrix);
+    memcpy_s(&constants.morphWeights[0].x,
+        sizeof(XMFLOAT4) * array_size(constants.morphWeights),
+        rendererAnimationData.morphWeights.data(),
+        sizeof(decltype(rendererAnimationData.morphWeights)::value_type) * rendererAnimationData.morphWeights.size()
+    );
 }
 
 void PBR_material::updatePSConstantBufferValues(PBR_material_ps_constant_buffer& constants,
-	const Render_light_data& renderlightData,
 	const SimpleMath::Matrix& worldMatrix,
-	const SimpleMath::Matrix& viewMatrix,
-	const SimpleMath::Matrix& projMatrix)
+	const SimpleMath::Matrix& /* viewMatrix */,
+	const SimpleMath::Matrix& /* projMatrix */) const
 {
 	// Convert to LH, for DirectX.
 	constants.world = XMMatrixTranspose(worldMatrix);
@@ -85,121 +360,4 @@ void PBR_material::updatePSConstantBufferValues(PBR_material_ps_constant_buffer&
 	constants.metallicRoughness = SimpleMath::Vector4(_metallic, _roughness, 0.0, 0.0);
 	constants.emissive = SimpleMath::Vector4(_emissive.x, _emissive.y, _emissive.z, 0.0);
 	constants.eyePosition = SimpleMath::Vector4(worldMatrix._41, worldMatrix._42, worldMatrix._43, 0.0);
-}
-
-void PBR_material::createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode)
-{
-	// TODO: This is a hacky way of finding this information out.
-	_enableDeferred = blendMode == Render_pass_blend_mode::Opaque;
-
-	static_assert(sizeof(_shaderResourceViews) == (sizeof(ID3D11SamplerState*) * NumTextureTypes));
-
-	auto device = deviceResources.GetD3DDevice();
-
-	// Release any previous samplerState and shaderResourceView objects
-	releaseShaderResources();
-
-	for (auto t = 0; t < NumTextureTypes; ++t)
-	{
-		// Only initialize if a texture has been bound to this slot.
-		const auto& texture = _textures[t];
-		if (texture == nullptr)
-			continue;
-
-		if (!texture->isValid())
-		{
-			try
-			{
-				texture->load(device);
-			}
-			catch (std::exception& e)
-			{
-				LOG(WARNING) << "PBR_Material: Failed to load texture (type " + std::to_string(t) + "): "s + e.what();
-			}
-
-			if (!texture->isValid()) {
-				// TODO: Set to error texture?
-				_textures[t] = nullptr;
-				continue;
-			}
-		}
-
-		// Set sampler state
-		D3D11_SAMPLER_DESC samplerDesc;
-
-		// TODO: Use values from glTF?
-		// Create a texture sampler state description.
-		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-		samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-		samplerDesc.MipLODBias = 0.0f;
-		samplerDesc.MaxAnisotropy = 1;
-		samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-		samplerDesc.BorderColor[0] = 0;
-		samplerDesc.BorderColor[1] = 0;
-		samplerDesc.BorderColor[2] = 0;
-		samplerDesc.BorderColor[3] = 0;
-		samplerDesc.MinLOD = 0;
-		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-		// Create the texture sampler state.
-		// This call makes an AddRef call.
-		const auto hr = device->CreateSamplerState(&samplerDesc, &_samplerStates[t]);
-		if (SUCCEEDED(hr))
-		{
-			_shaderResourceViews[t] = texture->getShaderResourceView();
-			assert(_shaderResourceViews[t]);
-
-			_shaderResourceViews[t]->AddRef();
-			_boundTextureCount++;
-		}
-		else
-		{
-			LOG(WARNING) << "PBR_Material: Failed to create samplerState with error code: "s + hr_to_string(hr);
-
-			// TODO: Set to error texture?
-			_textures[t] = nullptr;
-		}
-	}
-
-	LOG(G3LOG_DEBUG) << "Created PBR_Material shader resources. Texture Count: " << std::to_string(_boundTextureCount);
-}
-
-void PBR_material::releaseShaderResources()
-{
-	for (unsigned int i = 0; i < NumTextureTypes; ++i)
-	{
-		if (_shaderResourceViews[i]) {
-			_shaderResourceViews[i]->Release();
-			_shaderResourceViews[i] = nullptr;
-		}
-
-		if (_samplerStates[i]) {
-			_samplerStates[i]->Release();
-			_samplerStates[i] = nullptr;
-		}
-	}
-
-	_boundTextureCount = 0;
-}
-
-void PBR_material::setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData)
-{
-	auto context = deviceResources.GetD3DDeviceContext();
-
-	// Set shader texture resources in the pixel shader.
-	context->PSSetShaderResources(0, _boundTextureCount, _shaderResourceViews.data());
-	context->PSSetSamplers(0, _boundTextureCount, _samplerStates.data());
-}
-
-void PBR_material::unsetContextSamplers(const DX::DeviceResources& deviceResources)
-{
-	auto context = deviceResources.GetD3DDeviceContext();
-
-	static_assert(g_nullShaderResourceViews.size() == NumTextureTypes);
-	static_assert(g_nullSamplerStates.size() == NumTextureTypes);
-
-	context->PSSetShaderResources(0, NumTextureTypes, g_nullShaderResourceViews.data());
-	context->PSSetSamplers(0, NumTextureTypes, g_nullSamplerStates.data());
 }

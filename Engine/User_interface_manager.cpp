@@ -60,6 +60,7 @@ void User_interface_manager::render()
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
+    _scene.manager<IScene_graph_manager>().renderImGui();
     _scene.manager<IEntity_scripting_manager>().renderImGui();
     _scene.manager<IDev_tools_manager>().renderImGui();
 

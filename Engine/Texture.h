@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "DeviceResources.h"
+#include <json.hpp>
 
 namespace oe
 {
@@ -70,4 +71,8 @@ namespace oe
 		explicit Depth_texture(const DX::DeviceResources& deviceResources);
 		void load(ID3D11Device* device) override;
 	};
+
+    void to_json(nlohmann::json& j, const std::shared_ptr<Texture> texture);
+
+    void from_json(const nlohmann::json& j, std::shared_ptr<Texture>& texture);
 }

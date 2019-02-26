@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 
 #define TINYGLTF_IMPLEMENTATION
+#define TINYGLTF_NO_STB_IMAGE_WRITE
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <tiny_gltf.h>
@@ -18,22 +19,119 @@
 #include "Primitive_mesh_data_factory.h"
 #include "Mesh_utils.h"
 #include "FileUtils.h"
+#include "Animation_controller_component.h"
+#include "Morph_weights_component.h"
 
 using namespace std;
 using namespace tinygltf;
 using namespace oe;
 
-map<Vertex_attribute, string> g_gltfMappingToAttributeMap = {
-	{ Vertex_attribute::Position, "POSITION" },
-	{ Vertex_attribute::Normal, "NORMAL" },
-	{ Vertex_attribute::Tangent, "TANGENT" },
-	{ Vertex_attribute::Color, "COLOR" },
-	{ Vertex_attribute::Texcoord_0, "TEXCOORD_0" }
+string s_primAttrName_position = "POSITION";
+string s_primAttrName_normal = "NORMAL";
+string s_primAttrName_tangent = "TANGENT";
+string s_primAttrName_color = "COLOR_";
+string s_primAttrName_texCoord = "TEXCOORD_";
+string s_primAttrName_joints = "JOINTS_";
+string s_primAttrName_weights = "WEIGHTS_";
+
+const map<string, Vertex_attribute_semantic> g_gltfAttributeToVertexAttributeMap = {
+	{ s_primAttrName_position, {Vertex_attribute::Position, 0}},
+	{ s_primAttrName_normal, {Vertex_attribute::Normal, 0}},
+    { s_primAttrName_tangent, {Vertex_attribute::Tangent, 0}},
+    { s_primAttrName_color + "0", {Vertex_attribute::Color, 0}},
+    { s_primAttrName_texCoord + "0", {Vertex_attribute::Tex_Coord, 0}},
+    { s_primAttrName_joints + "0", {Vertex_attribute::Joints, 0}},
+    { s_primAttrName_weights + "0", {Vertex_attribute::Weights, 0}}
 };
 
-struct LoaderData
+const map<string, Vertex_attribute_semantic> g_gltfMorphAttributeMapping = {
+    { s_primAttrName_position, {Vertex_attribute::Position, 0}},
+    { s_primAttrName_normal, {Vertex_attribute::Normal, 0}},
+    { s_primAttrName_tangent, {Vertex_attribute::Tangent, 0}}
+};
+
+const map<string, Animation_interpolation> g_animationSamplerInterpolationToTypeMap = {
+    { "LINEAR", Animation_interpolation::Linear },
+    { "STEP", Animation_interpolation::Step },
+    { "CUBICSPLINE", Animation_interpolation::Cubic_Spline },
+};
+
+const map<string, Animation_type> g_animationChannelTargetPathToTypeMap = {
+    { "translation", Animation_type::Translation },
+    { "rotation", Animation_type::Rotation },
+    { "scale", Animation_type::Scale },
+    { "weights", Animation_type::Morph }
+};
+
+const std::map<int, std::set<int>> g_anim_translation_allowedAccessorTypes = {
+    { TINYGLTF_TYPE_VEC3, {TINYGLTF_COMPONENT_TYPE_FLOAT} }
+};
+const std::map<int, std::set<int>>& g_anim_scale_allowedAccessorTypes = g_anim_translation_allowedAccessorTypes;
+const std::map<int, std::set<int>> g_anim_rotation_allowedAccessorTypes = {
+    { TINYGLTF_TYPE_VEC4, 
+        {
+            TINYGLTF_COMPONENT_TYPE_FLOAT, 
+            TINYGLTF_COMPONENT_TYPE_BYTE, 
+            TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, 
+            TINYGLTF_COMPONENT_TYPE_SHORT, 
+            TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT 
+        } 
+    }
+};
+const std::map<int, std::set<int>> g_anim_morph_allowedAccessorTypes = {
+    { TINYGLTF_TYPE_SCALAR,
+        {
+            TINYGLTF_COMPONENT_TYPE_FLOAT,
+            TINYGLTF_COMPONENT_TYPE_BYTE,
+            TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE,
+            TINYGLTF_COMPONENT_TYPE_SHORT,
+            TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT
+        }
+    }
+};
+const std::array<const std::map<int, std::set<int>>*,4> g_animTypeToAllowedAccessorTypes = {
+    &g_anim_translation_allowedAccessorTypes,
+    &g_anim_rotation_allowedAccessorTypes,
+    &g_anim_scale_allowedAccessorTypes,
+    &g_anim_morph_allowedAccessorTypes
+};
+static_assert(
+    g_animTypeToAllowedAccessorTypes.size() == 
+    static_cast<unsigned>(Animation_type::Num_Animation_Type)
+    );
+const std::map<int, std::set<int>> g_index_allowedAccessorTypes = {
+    {TINYGLTF_TYPE_SCALAR, 
+        {
+            TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE,
+            TINYGLTF_COMPONENT_TYPE_BYTE,
+            TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT,
+            TINYGLTF_COMPONENT_TYPE_SHORT,
+            TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT,
+            TINYGLTF_COMPONENT_TYPE_INT,
+        }
+    },
+};
+const auto g_createSimpleMeshAccessor = [](shared_ptr<Mesh_buffer> meshBuffer, DXGI_FORMAT /* format */, size_t count, size_t stride, size_t offset) {
+    return make_unique<Mesh_buffer_accessor>(
+        meshBuffer,
+        static_cast<uint32_t>(count),
+        static_cast<uint32_t>(stride),
+        static_cast<uint32_t>(offset)
+        );
+};
+const std::map<int, std::set<int>> g_vertex_allowedAccessorTypes = {
+    {TINYGLTF_TYPE_SCALAR, { /* all */ }},
+    {TINYGLTF_TYPE_VEC2, { /* all */ }},
+    {TINYGLTF_TYPE_VEC3, { /* all */ }},
+    {TINYGLTF_TYPE_VEC4, { /* all */ }}
+};
+const std::map<int, std::set<int>> g_morphTarget_allowedAccessorTypes = {
+    {TINYGLTF_TYPE_VEC3, { TINYGLTF_COMPONENT_TYPE_FLOAT }},
+};
+
+struct Loader_data
 {
-	LoaderData(Model& model, string&& baseDir, IWICImagingFactory *imagingFactory, bool calculateBounds)
+	Loader_data(Model& model, string&& baseDir, IWICImagingFactory *imagingFactory, bool calculateBounds)
 		: model(model)
 		, baseDir(std::move(baseDir))
 		, imagingFactory(imagingFactory)
@@ -44,32 +142,26 @@ struct LoaderData
 	string baseDir;
 	IWICImagingFactory* imagingFactory;
 	map<size_t, shared_ptr<Mesh_buffer>> accessorIdxToMeshBuffers;
+    vector<shared_ptr<Entity>> nodeIdxToEntity;
 	bool calculateBounds;
+    shared_ptr<Entity> rootEntity;
 };
 
-unique_ptr<Mesh_vertex_buffer_accessor> read_vertex_buffer(const Model& model,
-	Vertex_attribute vertexAttribute,
-	vector<Accessor>::size_type accessorIndex,
-	LoaderData& loaderData);
+shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_repository& entityRepository, IMaterial_repository& materialRepository, Loader_data& loaderData);
+void create_animation(int animIdx, Loader_data loaderData);
 
-unique_ptr<Mesh_index_buffer_accessor> read_index_buffer(const Model& model,
-	vector<Accessor>::size_type accessorIndex,
-	LoaderData& loaderData);
+string g_pbrPropertyName_baseColorFactor = "baseColorFactor";
+string g_pbrPropertyName_baseColorTexture = "baseColorTexture";
+string g_pbrPropertyName_metallicFactor = "metallicFactor";
+string g_pbrPropertyName_roughnessFactor = "roughnessFactor";
+string g_pbrPropertyName_emissiveFactor = "emissiveFactor";
+string g_pbrPropertyName_metallicRoughnessTexture = "metallicRoughnessTexture";
+string g_pbrPropertyName_alphaMode = "alphaMode";
+string g_pbrPropertyName_alphaCutoff = "alphaCutoff";
 
-shared_ptr<Entity> create_entity(const Node& node, IEntity_repository& entityRepository, IMaterial_repository& materialRepository, LoaderData& loaderData);
-
-string g_pbrPropertyName_BaseColorFactor = "baseColorFactor";
-string g_pbrPropertyName_BaseColorTexture = "baseColorTexture";
-string g_pbrPropertyName_MetallicFactor = "metallicFactor";
-string g_pbrPropertyName_RoughnessFactor = "roughnessFactor";
-string g_pbrPropertyName_EmissiveFactor = "emissiveFactor";
-string g_pbrPropertyName_MetallicRoughnessTexture = "metallicRoughnessTexture";
-string g_pbrPropertyName_AlphaMode = "alphaMode";
-string g_pbrPropertyName_AlphaCutoff = "alphaCutoff";
-
-string g_pbrPropertyValue_AlphaMode_Opaque = "OPAQUE";
-string g_pbrPropertyValue_AlphaMode_Mask = "MASK";
-string g_pbrPropertyValue_AlphaMode_Blend = "BLEND";
+string g_pbrPropertyValue_alphaMode_opaque = "OPAQUE";
+string g_pbrPropertyValue_alphaMode_mask = "MASK";
+string g_pbrPropertyValue_alphaMode_blend = "BLEND";
 
 Entity_graph_loader_gltf::Entity_graph_loader_gltf()
 {
@@ -82,7 +174,161 @@ void Entity_graph_loader_gltf::getSupportedFileExtensions(vector<string>& extens
 	extensions.emplace_back("gltf");
 }
 
-vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filename, 
+template<class TMesh_buffer_accessor>
+unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(size_t accessorIndex,
+    Loader_data& loaderData,
+    const std::map<int, std::set<int>> allowedAccessorTypes,
+    int expectedBufferViewTarget,
+    std::function<unique_ptr<TMesh_buffer_accessor>(shared_ptr<Mesh_buffer>, DXGI_FORMAT format, size_t count, size_t stride, size_t offset)> accessorFactory)
+{
+    if (accessorIndex >= loaderData.model.accessors.size())
+        throw domain_error("accessor[" + to_string(accessorIndex) + "] out of range.");
+
+    const auto& accessor = loaderData.model.accessors[accessorIndex];
+
+    // is this accessor using one of the types that are allowed?
+    const auto allowedAccessorTypePos = allowedAccessorTypes.find(accessor.type);
+    if (allowedAccessorTypePos == allowedAccessorTypes.end())
+        throw domain_error("Unexpected accessor type: " + to_string(accessor.type));
+
+    if (!allowedAccessorTypePos->second.empty() && allowedAccessorTypePos->second.find(accessor.componentType) == allowedAccessorTypePos->second.end()) {
+        throw domain_error("Unexpected accessor component type: " + to_string(accessor.componentType));
+    }
+    
+    const auto componentSizeInBytes = GetComponentSizeInBytes(accessor.componentType);
+    const auto typeSizeInBytes = GetTypeSizeInBytes(accessor.type);
+    const auto sourceElementSize = componentSizeInBytes * typeSizeInBytes;
+    if (sourceElementSize <= 0) {
+        throw domain_error("missing or unsupported accessor field: "s + 
+            (typeSizeInBytes == -1 ? "type" : "componentType")
+        );
+    }
+
+    // Get the buffer view
+    if (accessor.bufferView >= static_cast<int>(loaderData.model.bufferViews.size()))
+        throw domain_error("bufferView[" + to_string(accessor.bufferView) + "] out of range.");
+    const auto& bufferView = loaderData.model.bufferViews.at(accessor.bufferView);
+
+    if (expectedBufferViewTarget != 0 && bufferView.target != 0 && bufferView.target != expectedBufferViewTarget) {
+        throw domain_error(string("Index bufferView must have type ") +
+            (expectedBufferViewTarget == TINYGLTF_TARGET_ARRAY_BUFFER ? "TARGET_ARRAY_BUFFER(" : "ARRAY_BUFFER(") +
+            to_string(expectedBufferViewTarget) + ")");
+    }
+
+    // Determine the stride - if none is provided, default to sourceElementSize.
+    auto sourceStride = accessor.ByteStride(bufferView);
+    if (sourceStride == -1)
+        throw std::domain_error("Invalid glTF parameters for byte stride");
+    if (sourceStride == 0)
+        sourceStride = sourceElementSize;
+
+    // does the data range defined by the accessor fit into the bufferView?
+    if (accessor.byteOffset + accessor.count * sourceStride > bufferView.byteLength)
+        throw domain_error("Accessor " + to_string(accessorIndex) + " exceeds maximum size of bufferView " + to_string(accessor.bufferView));
+
+    // does the data range defined by the accessor and buffer view fit into the buffer?
+    const auto bufferOffset = bufferView.byteOffset + accessor.byteOffset;
+
+    if (bufferView.buffer >= static_cast<int>(loaderData.model.buffers.size()))
+        throw domain_error("buffer[" + to_string(bufferView.buffer) + "] out of range.");
+    const auto& buffer = loaderData.model.buffers.at(bufferView.buffer);
+
+    if (bufferOffset + accessor.count * sourceStride > buffer.data.size())
+        throw domain_error("BufferView " + to_string(accessor.bufferView) + " exceeds maximum size of buffer " + to_string(bufferView.buffer));
+
+    auto dxgiFormat = DXGI_FORMAT_UNKNOWN;
+    if (accessor.componentType) {
+        if (accessor.type == TINYGLTF_TYPE_SCALAR) {
+            switch (accessor.componentType) {
+            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+                dxgiFormat = DXGI_FORMAT_R8_UINT;
+                break;
+            case TINYGLTF_COMPONENT_TYPE_BYTE:
+                dxgiFormat = DXGI_FORMAT_R8_SINT;
+                break;
+            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+                dxgiFormat = DXGI_FORMAT_R16_UINT;
+                break;
+            case TINYGLTF_COMPONENT_TYPE_SHORT:
+                dxgiFormat = DXGI_FORMAT_R16_SINT;
+                break;
+            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+                dxgiFormat = DXGI_FORMAT_R32_UINT;
+                break;
+            case TINYGLTF_COMPONENT_TYPE_INT:
+                dxgiFormat = DXGI_FORMAT_R32_SINT;
+                break;
+            case TINYGLTF_COMPONENT_TYPE_FLOAT:
+                dxgiFormat = DXGI_FORMAT_R32_FLOAT;
+                break;
+            default:
+                throw domain_error("Unsupported componentType for scalar: " + to_string(accessor.componentType));
+            }
+        }
+    }
+
+    // Does the mesh buffer exist in the cache?
+    const auto pos = loaderData.accessorIdxToMeshBuffers.find(accessorIndex);
+    shared_ptr<Mesh_buffer> meshBuffer;
+    if (pos == loaderData.accessorIdxToMeshBuffers.end()) {
+
+        if (dxgiFormat == DXGI_FORMAT_R8_UINT || dxgiFormat == DXGI_FORMAT_R8_SINT) {
+            // Transform the data to a known format
+            auto[indexMeshBuffer, indexFormat] = mesh_utils::create_index_buffer(
+                buffer.data,
+                static_cast<uint32_t>(accessor.count),
+                dxgiFormat,
+                static_cast<uint32_t>(sourceStride),
+                static_cast<uint32_t>(bufferOffset)
+            );
+            meshBuffer = indexMeshBuffer;
+            dxgiFormat = indexFormat;
+        }
+        else {
+            // Copy the data.
+            meshBuffer = mesh_utils::create_buffer(
+                static_cast<uint32_t>(sourceElementSize),
+                static_cast<uint32_t>(accessor.count),
+                buffer.data,
+                static_cast<uint32_t>(sourceStride),
+                static_cast<uint32_t>(bufferOffset));
+        }
+        loaderData.accessorIdxToMeshBuffers[accessorIndex] = meshBuffer;
+    }
+    else {
+        meshBuffer = pos->second;
+    }
+
+    // Note that the buffer we created above contains ONLY this element, thus has offset of zero, and stride of elementSize.
+    return accessorFactory(meshBuffer, dxgiFormat, accessor.count, sourceElementSize, 0);
+
+    /*
+         // Output stream data to the log
+        if (accessor.type == TINYGLTF_TYPE_VEC2)
+        {
+            float *floatData = reinterpret_cast<float*>(meshBuffer->m_data);
+            for (size_t i = 0; i < accessor.count; i++)
+            {
+                LOG(G3LOG_DEBUG) << to_string(i) << ": " << floatData[0] << ", " << floatData[1];
+                floatData += 2;
+            }
+        }
+        */
+
+        /*
+        if (vertexAttribute == VertexAttribute::VA_POSITION && elementSize == 3 * sizeof(float))
+        {
+            float *vec3data = reinterpret_cast<float *>(meshBuffer->m_data);
+            for (UINT i = 0; i < accessor.count; ++i) {
+                // Invert the Z axis
+                vec3data[2] *= -1;
+                vec3data += 3;
+            }
+        }
+        */
+}
+
+vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filePath,
 	IEntity_repository& entityRepository, 
 	IMaterial_repository& materialRepository,
 	bool calculateBounds) const
@@ -91,40 +337,67 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filena
 	Model model;
 	TinyGLTF loader;
 	string err;
+    string warn;
 
-	const auto filenameStr = string(filename);
-	auto gltfAscii = get_file_contents(filenameStr.c_str());
-	auto baseDir = GetBaseDir(filenameStr.c_str());
+	const auto filePathStr = string(filePath);
+	auto gltfAscii = get_file_contents(filePathStr.c_str());
+    auto baseDir = GetBaseDir(filePathStr.c_str());
 
-	const auto ret = loader.LoadASCIIFromString(&model, &err, gltfAscii.c_str(), gltfAscii.length(), baseDir);
+    const auto filename = filePathStr.substr(baseDir.size());
+
+	const auto ret = loader.LoadASCIIFromString(
+        &model,
+        &err,
+        &warn,
+        gltfAscii.c_str(),
+        static_cast<unsigned>(gltfAscii.length()),
+        baseDir);
 	if (!err.empty()) {
-		throw runtime_error(err);
+		throw domain_error(err);
 	}
+    if (!warn.empty()) {
+        LOG(WARNING) << filename << ": " << warn;
+    }
 
 	if (!ret) {
-		throw runtime_error("Failed to parse glTF: unknown error.");
+		throw domain_error("Failed to parse glTF: unknown error.");
 	}
 
 	if (model.defaultScene >= static_cast<int>(model.scenes.size()) || model.defaultScene < 0)
-		throw runtime_error("Failed to parse glTF: defaultScene points to an invalid scene index");
+		throw domain_error("Failed to parse glTF: defaultScene points to an invalid scene index");
 
 	const auto& scene = model.scenes[model.defaultScene];
 	if (baseDir.empty())
 		baseDir = ".";
-	LoaderData loaderData(model, string(baseDir), _imagingFactory.Get(), calculateBounds);
-	
+	Loader_data loaderData(model, string(baseDir), _imagingFactory.Get(), calculateBounds);
+
+    // Load Entities
+    loaderData.rootEntity = entityRepository.instantiate(filename);
 	for (auto nodeIdx : scene.nodes) 
 	{
-		const auto& rootNode = model.nodes.at(nodeIdx);
-		entities.push_back(create_entity(rootNode, entityRepository, materialRepository, loaderData));
+        auto entity = create_entity(nodeIdx, entityRepository, materialRepository, loaderData);
+        entity->setParent(*loaderData.rootEntity);
+		entities.push_back(entity);
 	}
+
+    // Load Animations
+    if (!model.animations.empty()) {
+        loaderData.rootEntity->addComponent<Animation_controller_component>();
+        for (auto animIdx = 0u; animIdx < model.animations.size(); ++animIdx) {
+            try {
+                create_animation(animIdx, loaderData);
+            } catch (std::exception& ex) {
+                throw std::domain_error("Animation[" + to_string(animIdx) + "]: "s + ex.what());
+            }
+        }
+    }
 
 	return entities;
 }
 
-shared_ptr<oe::Texture> try_create_texture(const LoaderData& loaderData, const tinygltf::Material& gltfMaterial, const std::string& textureName)
+shared_ptr<oe::Texture> try_create_texture(const Loader_data& loaderData, const tinygltf::Material& gltfMaterial, const std::string& textureName)
 {
-	int gltfTextureIndex = -1;
+	int gltfTextureIndex;
 
 	// Look for PBR textures in 'values'
 	auto paramPos = gltfMaterial.values.find(textureName);
@@ -132,7 +405,7 @@ shared_ptr<oe::Texture> try_create_texture(const LoaderData& loaderData, const t
 		const auto& param = paramPos->second;
 		const auto indexPos = param.json_double_value.find("index");
 		if (indexPos == param.json_double_value.end())
-			throw runtime_error("missing property 'index' from " + textureName);
+			throw domain_error("missing property 'index' from " + textureName);
 
 		gltfTextureIndex = static_cast<int>(indexPos->second);
 	}
@@ -145,14 +418,14 @@ shared_ptr<oe::Texture> try_create_texture(const LoaderData& loaderData, const t
 		const auto& param = paramPos->second;
 		const auto indexPos = param.json_double_value.find("index");
 		if (indexPos == param.json_double_value.end())
-			throw runtime_error("missing property 'index' from " + textureName);
+			throw domain_error("missing property 'index' from " + textureName);
 
 		gltfTextureIndex = static_cast<int>(indexPos->second);
 	}
 
 	assert(loaderData.model.textures.size() < INT_MAX);
 	if (gltfTextureIndex < 0 || gltfTextureIndex >= static_cast<int>(loaderData.model.textures.size()))
-		throw runtime_error("invalid texture index '"+to_string(gltfTextureIndex)+"' for " + textureName);
+		throw domain_error("invalid texture index '"+to_string(gltfTextureIndex)+"' for " + textureName);
 
 	const auto& gltfTexture = loaderData.model.textures.at(gltfTextureIndex);
 	if (gltfTexture.sampler >= 0) {
@@ -171,77 +444,18 @@ shared_ptr<oe::Texture> try_create_texture(const LoaderData& loaderData, const t
 		const auto filename = utf8_decode(loaderData.baseDir + "\\" + gltfImage.uri);
 
 		return make_shared<File_texture>(wstring(filename));
-		/*
-		Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
-		HRESULT hr = loaderData.imagingFactory->CreateDecoderFromFilename(
-			filename.c_str(),				 // Image to be decoded 
-			nullptr,                         // Do not prefer a particular vendor 
-			GENERIC_READ,                    // Desired read access to the file 
-			WICDecodeMetadataCacheOnDemand,  // Cache metadata when needed 
-			&decoder                         // Pointer to the decoder 
-		);
-
-		// Retrieve the first frame of the image from the decoder 
-		IWICBitmapFrameDecode *pFrame = nullptr;
-		if (SUCCEEDED(hr))
-		{
-			hr = decoder->GetFrame(0, &pFrame);
-		}
-
-		//Step 3: Format convert the frame to 32bppPBGRA 
-		Microsoft::WRL::ComPtr<IWICFormatConverter> formatConverter;
-		if (SUCCEEDED(hr))
-		{
-			hr = loaderData.imagingFactory->CreateFormatConverter(&formatConverter);
-		}
-		if (SUCCEEDED(hr))
-		{
-			hr = formatConverter->Initialize(
-				pFrame,                          // Input bitmap to convert 
-				GUID_WICPixelFormat32bppPBGRA,   // Destination pixel format 
-				WICBitmapDitherTypeNone,         // Specified dither pattern 
-				nullptr,                         // Specify a particular palette  
-				0.f,                             // Alpha threshold 
-				WICBitmapPaletteTypeCustom       // Palette translation type 
-			);
-		}
-
-		UINT width, height;
-		if (SUCCEEDED(hr))
-		{
-			hr = pFrame->GetSize(&width, &height);
-		}
-		if (SUCCEEDED(hr))
-		{
-			UINT stride = 4 * sizeof(uint8_t);
-			UINT rowStride = stride * width;
-			UINT bufferSize = rowStride * height;
-			unique_ptr<uint8_t> buffer = unique_ptr<uint8_t>(new uint8_t[bufferSize]);
-			
-			// Not really required; null should be equivolent
-			hr = formatConverter->CopyPixels(nullptr, rowStride, bufferSize, buffer.get());
-			if (SUCCEEDED(hr))
-			{
-				return make_shared<OE::Texture>(width, height, stride, bufferSize, buffer);
-			}
-		}
-		*/
 	}
-	else if (!gltfImage.mimeType.empty())
+	if (!gltfImage.mimeType.empty())
 	{
 		throw runtime_error("not implemented");
 	}
-	else
-	{
-		throw runtime_error("image " + to_string(gltfTexture.source) + "must have either a uri or mimeType");
-	}
+    throw domain_error("image " + to_string(gltfTexture.source) + "must have either a uri or mimeType");
 }
 
-unique_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_repository& materialRepository, LoaderData& loaderData)
+shared_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_repository& materialRepository, Loader_data& loaderData)
 {
-	const tinygltf::Material& gltfMaterial = loaderData.model.materials.at(prim.material);
-	//auto material = materialRepository.instantiate(std::string("PBR_material"));
-	auto material = std::make_unique<PBR_material>();
+	const auto& gltfMaterial = loaderData.model.materials.at(prim.material);
+	auto material = std::make_shared<PBR_material>();
 
 	const auto withParam = [gltfMaterial](const string& name, std::function<void(const string&, const Parameter&)> found, std::function<void(const string&)> notFound) {
 		auto paramPos = gltfMaterial.values.find(name);
@@ -262,12 +476,9 @@ unique_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_reposi
 
 	const auto withScalarParam = [&withParam, &material](const string& name, float defaultValue, function<void(float)> setter) {
 		withParam(name, [&setter](auto name, auto param) {
-			if (param.number_array.size() == 1) {
-				setter(static_cast<float>(param.number_array[0]));
-			}
-			else {
-				throw runtime_error("Failed to parse glTF: expected material " + name + " to be scalar");
-			}
+			if (!param.has_number_value)
+                throw domain_error("Failed to parse glTF: expected material " + name + " to be scalar");
+			setter(static_cast<float>(param.number_value));
 		}, [&setter, defaultValue](auto) {
 			setter(defaultValue);
 		});
@@ -292,32 +503,32 @@ unique_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_reposi
 				));
 			}
 			else
-				throw runtime_error("Failed to parse glTF: expected material " + name + " to be a 3 or 4 element array");
+				throw domain_error("Failed to parse glTF: expected material " + name + " to be a 3 or 4 element array");
 		}, [&setter, defaultValue](auto) {
 			setter(defaultValue);
 		});
 	};
 
 	// Numeric/Color Parameters
-	withScalarParam(g_pbrPropertyName_MetallicFactor, 1.0f, bind(&PBR_material::setMetallicFactor, material.get(), std::placeholders::_1));
-	withScalarParam(g_pbrPropertyName_RoughnessFactor, 1.0f, bind(&PBR_material::setRoughnessFactor, material.get(), std::placeholders::_1));
-	withScalarParam(g_pbrPropertyName_AlphaCutoff, 0.5f, bind(&PBR_material::setAlphaCutoff, material.get(), std::placeholders::_1));
-	withColorParam(g_pbrPropertyName_BaseColorFactor, DirectX::SimpleMath::Color(DirectX::Colors::White), bind(&PBR_material::setBaseColor, material.get(), std::placeholders::_1));
-	withColorParam(g_pbrPropertyName_EmissiveFactor, DirectX::SimpleMath::Color(DirectX::Colors::Black), bind(&PBR_material::setEmissiveFactor, material.get(), std::placeholders::_1));
+	withScalarParam(g_pbrPropertyName_metallicFactor, 1.0f, bind(&PBR_material::setMetallicFactor, material.get(), std::placeholders::_1));
+	withScalarParam(g_pbrPropertyName_roughnessFactor, 1.0f, bind(&PBR_material::setRoughnessFactor, material.get(), std::placeholders::_1));
+	withScalarParam(g_pbrPropertyName_alphaCutoff, 0.5f, bind(&PBR_material::setAlphaCutoff, material.get(), std::placeholders::_1));
+	withColorParam(g_pbrPropertyName_baseColorFactor, DirectX::SimpleMath::Color(DirectX::Colors::White), bind(&PBR_material::setBaseColor, material.get(), std::placeholders::_1));
+	withColorParam(g_pbrPropertyName_emissiveFactor, DirectX::SimpleMath::Color(DirectX::Colors::Black), bind(&PBR_material::setEmissiveFactor, material.get(), std::placeholders::_1));
 	
 	// Alpha Mode
-	withParam(g_pbrPropertyName_AlphaMode, [&material](const string& name, const Parameter& param) {
-		if (param.string_value == g_pbrPropertyValue_AlphaMode_Mask)
+	withParam(g_pbrPropertyName_alphaMode, [&material](const string& name, const Parameter& param) {
+		if (param.string_value == g_pbrPropertyValue_alphaMode_mask)
 			material->setAlphaMode(Material_alpha_mode::Mask);
-		else if (param.string_value == g_pbrPropertyValue_AlphaMode_Blend)
+		else if (param.string_value == g_pbrPropertyValue_alphaMode_blend)
 			material->setAlphaMode(Material_alpha_mode::Blend);
-		else if (param.string_value == g_pbrPropertyValue_AlphaMode_Opaque)
+		else if (param.string_value == g_pbrPropertyValue_alphaMode_opaque)
 			material->setAlphaMode(Material_alpha_mode::Opaque);
 		else {
-			throw runtime_error("Failed to parse glTF: expected material " + name + " to be one of:" +
-				g_pbrPropertyValue_AlphaMode_Mask + ", " +
-				g_pbrPropertyValue_AlphaMode_Blend + ", " + 
-				g_pbrPropertyValue_AlphaMode_Opaque
+			throw domain_error("Failed to parse glTF: expected material " + name + " to be one of:" +
+				g_pbrPropertyValue_alphaMode_mask + ", " +
+				g_pbrPropertyValue_alphaMode_blend + ", " + 
+				g_pbrPropertyValue_alphaMode_opaque
 			);
 		}
 	}, [&material](const string&) {
@@ -327,11 +538,11 @@ unique_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_reposi
 	// PBR Textures
 	material->setBaseColorTexture(try_create_texture(loaderData, gltfMaterial, "baseColorTexture"));
 	material->setMetallicRoughnessTexture(try_create_texture(loaderData, gltfMaterial, "metallicRoughnessTexture"));
-	material->setOcclusionTexture(try_create_texture(loaderData, gltfMaterial, "occlusionTexture"));
-	material->setEmissiveTexture(try_create_texture(loaderData, gltfMaterial, "emissiveTexture"));
 
 	// Material Textures
 	material->setNormalTexture(try_create_texture(loaderData, gltfMaterial, "normalTexture"));
+    material->setOcclusionTexture(try_create_texture(loaderData, gltfMaterial, "occlusionTexture"));
+    material->setEmissiveTexture(try_create_texture(loaderData, gltfMaterial, "emissiveTexture"));
 
 	return material;
 }
@@ -384,258 +595,414 @@ void setEntityTransform(Entity&  entity, const Node&  node)
 	}
 }
 
-shared_ptr<Entity> create_entity(const Node& node, IEntity_repository& entityRepository, IMaterial_repository& materialRepository, LoaderData& loaderData)
+bool loadWeights(int index, const Primitive& prim, Loader_data& loaderData, Mesh_data& meshData)
 {
+    const auto jointsAttrName = s_primAttrName_joints + "_" + to_string(index);
+    const auto weightsAttrName = s_primAttrName_weights + "_" + to_string(index);
+
+    const auto& animJointAttrPos = prim.attributes.find(jointsAttrName);
+    const auto& animWeightsAttrPos = prim.attributes.find(weightsAttrName);
+    if (animJointAttrPos != prim.attributes.end() &&
+        animWeightsAttrPos != prim.attributes.end())
+    {
+        const auto loadAccessor = [&loaderData, &meshData](
+            Vertex_attribute_semantic vertexAttribute, 
+            const std::map<int, std::set<int>>& allowedTypes, 
+            decltype(prim.attributes.find(string())) pos, 
+            const string& attrName) 
+        {
+            try {
+                // Animation Joints
+                auto accessor = useOrCreateBufferForAccessor<Mesh_vertex_buffer_accessor>(
+                    pos->second,
+                    loaderData,
+                    allowedTypes,
+                    0,
+                    [vertexAttribute](shared_ptr<Mesh_buffer> meshBuffer, DXGI_FORMAT /* format */, size_t count, size_t stride, size_t offset) {
+                        return make_unique<Mesh_vertex_buffer_accessor>(
+                            meshBuffer,
+                            vertexAttribute,
+                            static_cast<uint32_t>(count),
+                            static_cast<uint32_t>(stride),
+                            static_cast<uint32_t>(offset)
+                            );
+                    }
+                );
+                meshData.vertexBufferAccessors[vertexAttribute] = move(accessor);
+            }
+            catch (const exception& e)
+            {
+                throw domain_error("Error in attribute " + attrName + ": " + e.what());
+            }
+        };
+
+        loadAccessor(
+            { Vertex_attribute::Joints, 0 },
+            { {TINYGLTF_TYPE_VEC4, { TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT } } },
+            animJointAttrPos,
+            jointsAttrName);
+        loadAccessor(
+            { Vertex_attribute::Weights, 0 },
+            { {TINYGLTF_TYPE_VEC4, {TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT} } },
+            animWeightsAttrPos,
+            weightsAttrName);
+
+        return true;
+    }
+    return false;
+}
+
+shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_repository& entityRepository, IMaterial_repository& materialRepository, Loader_data& loaderData)
+{
+    const auto& node = loaderData.model.nodes.at(nodeIdx);
 	auto rootEntity = entityRepository.instantiate(node.name);
+    if (loaderData.nodeIdxToEntity.size() <= nodeIdx)
+        loaderData.nodeIdxToEntity.resize(nodeIdx + 1);
+    loaderData.nodeIdxToEntity[nodeIdx] = rootEntity;
 
 	LOG(G3LOG_DEBUG) << "Creating entity for glTF node '" << node.name << "'";
 
 	// Transform
 	setEntityTransform(*rootEntity, node);
-	
+    
 	// Create MeshData
 	if (node.mesh > -1) {
 		const auto& mesh = loaderData.model.meshes.at(node.mesh);
 		const auto primitiveCount = mesh.primitives.size();
 		for (size_t primIdx = 0; primIdx < primitiveCount; ++primIdx)
 		{
+            const auto& prim = mesh.primitives.at(primIdx);
 			const auto primitiveName = mesh.name + " primitive " + to_string(primIdx);
 			LOG(G3LOG_DEBUG) << "Creating entity for glTF mesh " << primitiveName;
 			auto primitiveEntity = entityRepository.instantiate(primitiveName);
 
 			primitiveEntity->setParent(*rootEntity.get());
 			auto& meshDataComponent = primitiveEntity->addComponent<Mesh_data_component>();
-			auto meshData = std::make_shared<Mesh_data>();
+
+            // Determine the vertex layout
+            vector<Vertex_attribute_semantic> meshLayoutAttributes;
+            for (const auto& attr : prim.attributes) {
+                const auto vaPos = g_gltfAttributeToVertexAttributeMap.find(attr.first);
+                if (vaPos == g_gltfAttributeToVertexAttributeMap.end()) {
+                    LOG(WARNING) << "Skipping unsupported attribute: " << attr.first;
+                    continue;
+                }
+                meshLayoutAttributes.push_back(vaPos->second);
+            }
+
+            vector<Vertex_attribute_semantic> morphTargetLayout;
+            if (!prim.targets.empty()) {
+                for (const auto& morphTargetEntry : prim.targets[0]) {
+                    const auto attrPos = g_gltfMorphAttributeMapping.find(morphTargetEntry.first);
+                    if (attrPos == g_gltfMorphAttributeMapping.end()) {
+                        throw std::domain_error("Unknown morph attribute: " + morphTargetEntry.first);
+                    }
+                    morphTargetLayout.push_back(attrPos->second);
+                }
+            }
+
+            if (prim.targets.size() > UINT8_MAX) {
+                throw std::domain_error("Too many morph targets");
+            }
+			auto meshData = std::make_shared<Mesh_data>(
+                Mesh_vertex_layout(meshLayoutAttributes, morphTargetLayout, static_cast<uint8_t>(prim.targets.size()))
+                );
 			meshDataComponent.setMeshData(meshData);
 
 			try {
-				const auto& prim = mesh.primitives.at(primIdx);
-
-				auto material = create_material(prim, materialRepository, loaderData);
-
+				const auto material = create_material(prim, materialRepository, loaderData);
+                
 				// Read Index
 				try
 				{
-					auto accessor = read_index_buffer(loaderData.model, prim.indices, loaderData);
-					meshData->indexBufferAccessor = move(accessor);
+                    // Index
+                    auto indexBufferAccessor = useOrCreateBufferForAccessor<Mesh_index_buffer_accessor>(
+                        prim.indices,
+                        loaderData,
+                        g_index_allowedAccessorTypes,
+                        TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER,
+                        [](shared_ptr<Mesh_buffer> meshBuffer, DXGI_FORMAT format, size_t count, size_t stride, size_t offset) {
+                            return make_unique<Mesh_index_buffer_accessor>(
+                                meshBuffer,
+                                format,
+                                static_cast<uint32_t>(count),
+                                static_cast<uint32_t>(stride),
+                                static_cast<uint32_t>(offset)
+                                );
+                        }
+                    );
+					meshData->indexBufferAccessor = move(indexBufferAccessor);
 				}
 				catch (const exception& e)
 				{
-					throw runtime_error(string("Error in index buffer: ") + e.what());
+					throw domain_error(string("Error in index buffer: ") + e.what());
 				}
 
-				// First, look though the attributes and extract accessor information
-				// Look for the things that the material requires
-				vector<Vertex_attribute> materialAttributes;
-				material->vertexAttributes(materialAttributes);
-
-				// First, we need to see how many vertices there are.
-				uint32_t vertexCount;
-				{
-					const auto& gltfPositionAttributeName = g_gltfMappingToAttributeMap[Vertex_attribute::Position];
-					const auto gltfAttributePos = prim.attributes.find(gltfPositionAttributeName);
-					if (gltfAttributePos == prim.attributes.end())
-						throw logic_error("Missing " + gltfPositionAttributeName + " attribute");
-
-					const auto dataLen = loaderData.model.accessors.at(gltfAttributePos->second).count;
-					assert(dataLen < UINT32_MAX);
-
-					vertexCount = static_cast<UINT>(dataLen);
-				}
-
-				// TODO: We could consider interleaving things in a single buffer? Not sure if there is a benefit?
-
-				bool generateNormals = false,
+				auto generateNormals = false,
 					generateTangents = false,
-					generateBitangents = false;
-				for (const auto& requiredAttr : materialAttributes) {
-					const auto& mappingPos = g_gltfMappingToAttributeMap.find(requiredAttr);
-					if (mappingPos == g_gltfMappingToAttributeMap.end()) {
-						throw logic_error("gltf loader does not support attribute: "s.append(Vertex_attribute_meta::str(requiredAttr)));
-					}
-					
-					const auto& gltfAttributeName = mappingPos->second;
-					const auto& primAttrPos = prim.attributes.find(gltfAttributeName);
-					if (primAttrPos == prim.attributes.end()) {
-						// We only support generation of normals, tangents, bitangent
-						if (requiredAttr == Vertex_attribute::Normal)
-							generateNormals = true;
-						else if (requiredAttr == Vertex_attribute::Tangent)
-							generateTangents = true; 
-						else if (requiredAttr == Vertex_attribute::Bi_Tangent)
-							generateBitangents = true;
-						else
-							throw logic_error("glTF Mesh does not have required attribute: "s.append(gltfAttributeName));
+					generateBiTangents = false;
+				for (const auto& attr : prim.attributes) {
+                    const auto vaPos = g_gltfAttributeToVertexAttributeMap.find(attr.first);
+                    if (vaPos == g_gltfAttributeToVertexAttributeMap.end()) {
+                        throw std::domain_error("Unexpected attribute: " + attr.first);
+                    }
 
-						// Create the missing accessor
-						const auto elementStride = Vertex_attribute_meta::elementSize(requiredAttr);
-						meshData->vertexBufferAccessors[requiredAttr] = make_unique<Mesh_vertex_buffer_accessor>(
-							make_shared<Mesh_buffer>(elementStride * vertexCount), requiredAttr,
-							static_cast<uint32_t>(vertexCount), static_cast<uint32_t>(elementStride), 0);
+                    const auto& vertexAttribute = vaPos->second;
+					try {
+
+                        // Vertex
+                        auto vertexBufferAccessor = useOrCreateBufferForAccessor<Mesh_vertex_buffer_accessor>(
+                            attr.second,
+                            loaderData,
+                            g_vertex_allowedAccessorTypes,
+                            TINYGLTF_TARGET_ARRAY_BUFFER,
+                            [vertexAttribute](shared_ptr<Mesh_buffer> meshBuffer, DXGI_FORMAT /* format */, size_t count, size_t stride, size_t offset) {
+                                return make_unique<Mesh_vertex_buffer_accessor>(
+                                    meshBuffer,
+                                    vertexAttribute,
+                                    static_cast<uint32_t>(count),
+                                    static_cast<uint32_t>(stride),
+                                    static_cast<uint32_t>(offset)
+                                    );
+                            }
+                        );
+
+                        meshData->vertexBufferAccessors[vertexAttribute] = move(vertexBufferAccessor);
 					}
-					else {
-						try {
-							auto accessor = read_vertex_buffer(loaderData.model, requiredAttr, primAttrPos->second, loaderData);
-							meshData->vertexBufferAccessors[requiredAttr] = move(accessor);
-						}
-						catch (const exception& e)
-						{
-							throw runtime_error("Error in attribute " + gltfAttributeName + ": " + e.what());
-						}
+					catch (const exception& e)
+					{
+						throw domain_error("Error in attribute " + 
+                            Vertex_attribute_meta::vsInputName(vertexAttribute) + 
+                            ": " + e.what());
 					}
 				}
 
-				if (generateNormals)
-				{
-					LOG(WARNING) << "Generating missing normals";
-					Primitive_mesh_data_factory::generateNormals(
-						*meshData->indexBufferAccessor, 
-						*meshData->vertexBufferAccessors[Vertex_attribute::Position],
-						*meshData->vertexBufferAccessors[Vertex_attribute::Normal]);
-				}
-
-				if (generateTangents || generateBitangents)
-				{
-					LOG(WARNING) << "Generating missing Tangents and/or Bitangents";
-                    Primitive_mesh_data_factory::generateTangents(meshData);
-				}
+                // Animation data
+                if (loadWeights(0, prim, loaderData, *meshData)) {
+                    if (loadWeights(1, prim, loaderData, *meshData)) {
+                        throw std::exception("loader does not support more than one weights stream");
+                    }
+                }
 
 				// Add this component last, to make sure there wasn't an error loading!
 				auto& renderableComponent = primitiveEntity->addComponent<Renderable_component>();
-				renderableComponent.setMaterial(move(material));
+				renderableComponent.setMaterial(material);
 
 				// Calculate bounds?
 				if (loaderData.calculateBounds) {
 					DirectX::BoundingSphere boundingSphere;
 
-					const auto& vertexBufferAccessor = meshData->vertexBufferAccessors[Vertex_attribute::Position];
+                    const auto& vertexBufferAccessor = meshData->vertexBufferAccessors.at({Vertex_attribute::Position, 0});
+                    assert(vertexBufferAccessor->stride >= sizeof(DirectX::SimpleMath::Vector3));
 					DirectX::BoundingSphere::CreateFromPoints(boundingSphere,
 						vertexBufferAccessor->count,
-						reinterpret_cast<DirectX::XMFLOAT3*>(vertexBufferAccessor->buffer->data),
+						reinterpret_cast<DirectX::SimpleMath::Vector3*>(vertexBufferAccessor->buffer->data),
 						vertexBufferAccessor->stride);
 
 					primitiveEntity->setBoundSphere(boundingSphere);
 				}
+
+                // Morph Targets
+                if (!prim.targets.empty()) {
+                    auto morphWeights = node.weights;
+                    if (morphWeights.empty())
+                        morphWeights = mesh.weights;
+                    if (morphWeights.empty())
+                        morphWeights.resize(prim.targets.size(), 0.0);
+
+                    if (morphWeights.size() != prim.targets.size())
+                        throw std::domain_error("Size of weights must equal size of targets, or be unset.");
+
+                    // Check the morph targets length
+                    const auto targetSize = prim.targets[0].size();
+                    for (const auto& target : prim.targets) {
+                        if (targetSize != target.size())
+                            throw std::domain_error("Size of each target must be the same.");
+
+                        std::vector<std::unique_ptr<Mesh_vertex_buffer_accessor>> morphBufferAccessors;
+                        for (const auto &targetAttributeAccessor : target) {
+                            const auto vertexAttribute = g_gltfMorphAttributeMapping.at(targetAttributeAccessor.first);
+                            auto accessor = useOrCreateBufferForAccessor<Mesh_vertex_buffer_accessor>(
+                                targetAttributeAccessor.second,
+                                loaderData,
+                                g_morphTarget_allowedAccessorTypes,
+                                0,
+                                [vertexAttribute](shared_ptr<Mesh_buffer> meshBuffer, DXGI_FORMAT /* format */, size_t count, size_t stride, size_t offset) {
+                                    return make_unique<Mesh_vertex_buffer_accessor>(
+                                        meshBuffer,
+                                        vertexAttribute,
+                                        static_cast<uint32_t>(count),
+                                        static_cast<uint32_t>(stride),
+                                        static_cast<uint32_t>(offset)
+                                        );
+                                }
+                            );
+                            morphBufferAccessors.push_back(move(accessor));
+                        }
+
+                        meshData->attributeMorphBufferAccessors.push_back(move(morphBufferAccessors));
+                    }
+
+                    auto& morphWeightsComponent = primitiveEntity->addComponent<Morph_weights_component>();
+                    assert(prim.targets.size() <= Morph_weights_component::maxMorphTargetCount());
+
+                    morphWeightsComponent.setMorphTargetCount(static_cast<uint8_t>(prim.targets.size()));
+                    std::copy(morphWeights.begin(), morphWeights.end(), morphWeightsComponent.morphWeights().begin());
+                }
 			}
 			catch (const exception& e)
 			{
-				throw runtime_error(string("Primitive[") + to_string(primIdx) + "] is malformed. (" + e.what() + ")");
+				throw domain_error(string("Primitive[") + to_string(primIdx) + "] is malformed. (" + e.what() + ")");
 			}
 		}
 	}
 
-	for (auto childIdx : node.children)
-	{
-		const auto& childNode = loaderData.model.nodes.at(childIdx);
-		auto childEntity = create_entity(childNode, entityRepository, materialRepository, loaderData);
+    for (auto childIdx : node.children) {
+		auto childEntity = create_entity(childIdx, entityRepository, materialRepository, loaderData);
 		childEntity->setParent(*rootEntity.get());
 	}
 
 	return rootEntity;
 }
 
-unique_ptr<Mesh_vertex_buffer_accessor> read_vertex_buffer(const Model& model,
-	Vertex_attribute vertexAttribute,
-	const vector<Accessor>::size_type accessorIndex,
-	LoaderData& loaderData)
+void create_animation(int animIdx, Loader_data loaderData)
 {
-	if (accessorIndex >= model.accessors.size())
-		throw domain_error("accessor[" + to_string(accessorIndex) + "] out of range.");
-	const auto& accessor = model.accessors[accessorIndex];
+    const auto& gltfAnimation = loaderData.model.animations[animIdx];
+    auto animationController = loaderData.rootEntity->getFirstComponentOfType<Animation_controller_component>();
 
-	if (accessor.bufferView >= static_cast<int>(model.bufferViews.size()))
-		throw domain_error("bufferView[" + to_string(accessor.bufferView) + "] out of range.");
-	const auto& bufferView = model.bufferViews.at(accessor.bufferView);
+    if (gltfAnimation.channels.empty())
+        return;
 
-	if (bufferView.target != 0 && bufferView.target != TINYGLTF_TARGET_ARRAY_BUFFER)
-		throw runtime_error("Index bufferView must have type ARRAY_BUFFER (" + to_string(TINYGLTF_TARGET_ARRAY_BUFFER) + ")");
+    std::map<int, std::shared_ptr<std::vector<float>>> samplerInputToKeyframeTimes;
+    const auto populateSamplerInputKeyframeTimes = [&gltfAnimation, &loaderData](int accessorIdx, std::vector<float>& keyframeTimes) {
+        // Animation sampler
+        const auto accessor = useOrCreateBufferForAccessor<Mesh_buffer_accessor>(
+            accessorIdx, 
+            loaderData, 
+            { {TINYGLTF_TYPE_SCALAR, {TINYGLTF_COMPONENT_TYPE_FLOAT} } }, 
+            0, 
+            g_createSimpleMeshAccessor
+            );
+        keyframeTimes.clear();
+        keyframeTimes.reserve(accessor->count);
+        for (auto i = 0u; i < accessor->count; i++) {
+            const auto offset = accessor->offset + accessor->stride * i;
+            const auto timeArray = reinterpret_cast<float*>(accessor->buffer->data + offset);
+            keyframeTimes.push_back(*timeArray);
+        }
+    };
 
-	if (bufferView.buffer >= static_cast<int>(model.buffers.size()))
-		throw domain_error("buffer[" + to_string(bufferView.buffer) + "] out of range.");
-	const auto& buffer = model.buffers.at(bufferView.buffer);
+    // Load the channel configurations
+    auto animation = std::make_unique<Animation_controller_component::Animation>();
+    auto animationName = gltfAnimation.name;
+    if (animationName.empty() || animationController->containsAnimationByName(animationName)) {
+        animationName = "glTF animation " + to_string(animIdx);
+    }
 
-	// Read data from the glTF buffer into a new buffer.
-	const auto expectedElementSize = Vertex_attribute_meta::elementSize(vertexAttribute);
+    auto& states = animationController->activeAnimations.insert({ animationName, {} }).first->second;
+    for (auto channelIdx = 0; channelIdx < gltfAnimation.channels.size(); ++channelIdx) {
+        const auto& channel = gltfAnimation.channels[channelIdx];
+        if (channel.target_node <= -1) {
+            LOG(DEBUG) << "Missing target node on animation channel at index " + to_string(channelIdx) + " - ignoring.";
+            continue;
+        }
 
-	// Validate the elementSize and buffer size
-	size_t sourceElementSize;
-	if (accessor.type == TINYGLTF_TYPE_SCALAR)
-		sourceElementSize = sizeof(unsigned int);
-	else if (accessor.type == TINYGLTF_TYPE_VEC2)
-		sourceElementSize = sizeof(float) * 2;
-	else if (accessor.type == TINYGLTF_TYPE_VEC3)
-		sourceElementSize = sizeof(float) * 3;
-	else if (accessor.type == TINYGLTF_TYPE_VEC4)
-		sourceElementSize = sizeof(float) * 4;
-	else
-		throw runtime_error("Unknown accessor type: " + to_string(accessor.type));
+        if (channel.target_node >= loaderData.nodeIdxToEntity.size())
+            throw std::domain_error("Invalid animation channel at index " + to_string(channelIdx) + " - references unknown node " + to_string(channel.target_node));
 
-	if (expectedElementSize != sourceElementSize)
-	{
-		throw runtime_error("cannot process attribute " +
-			g_gltfMappingToAttributeMap[vertexAttribute] +
-			", element size must be " + to_string(expectedElementSize) +
-			" but was " + to_string(sourceElementSize) + ".");
-	}
-	
-	// Determine the stride - if none is provided, default to sourceElementSize.
-	const size_t sourceStride = bufferView.byteStride == 0 ? sourceElementSize : bufferView.byteStride;
+        const auto& targetEntity = loaderData.nodeIdxToEntity[channel.target_node];
+        if (!targetEntity)
+            throw std::domain_error("Invalid animation channel at index " + to_string(channelIdx) + " - references node " + to_string(channel.target_node) + " that doesn't belong to the scene.");
 
-	// does the data range defined by the accessor fit into the bufferView?
-	if (accessor.byteOffset + accessor.count * sourceStride > bufferView.byteLength)
-		throw runtime_error("Accessor " + to_string(accessorIndex) + " exceeds maximum size of bufferView " + to_string(accessor.bufferView));
+        assert(animationController);
+        
+        const auto& sampler = gltfAnimation.samplers[channel.sampler];
 
-	// does the data range defined by the accessor and bufferview fit into the buffer?
-	const size_t bufferOffset = bufferView.byteOffset + accessor.byteOffset;
-	if (bufferOffset + accessor.count * sourceStride > buffer.data.size())
-		throw runtime_error("BufferView " + to_string(accessor.bufferView) + " exceeds maximum size of buffer " + to_string(bufferView.buffer));
-		
-	// Have we already created an identical buffer? If so, re-use it.
-	shared_ptr<Mesh_buffer> meshBuffer;
-	const auto pos = loaderData.accessorIdxToMeshBuffers.find(accessorIndex);
+        // Interpolation type
+        const auto interpolationTypePos = g_animationSamplerInterpolationToTypeMap.find(sampler.interpolation);
+        if (interpolationTypePos == g_animationSamplerInterpolationToTypeMap.end())
+            throw std::domain_error("Unknown animation sampler interpolation type: " + sampler.interpolation);
+        const auto interpolationType = interpolationTypePos->second;
 
-	if (pos != loaderData.accessorIdxToMeshBuffers.end())
-		meshBuffer = pos->second;
-	else
-	{
-		// Copy the data.
-		LOG(G3LOG_DEBUG) << "Reading vertex buffer data: " << g_gltfMappingToAttributeMap[vertexAttribute];
-		meshBuffer = mesh_utils::create_buffer_s(sourceElementSize, accessor.count, buffer.data, sourceStride, bufferOffset);
-		loaderData.accessorIdxToMeshBuffers[accessorIndex] = meshBuffer;
-		/*
-		 // Output stream data to the log
-		if (accessor.type == TINYGLTF_TYPE_VEC2)
-		{
-			float *floatData = reinterpret_cast<float*>(meshBuffer->m_data);
-			for (size_t i = 0; i < accessor.count; i++)
-			{
-				LOG(G3LOG_DEBUG) << to_string(i) << ": " << floatData[0] << ", " << floatData[1];
-				floatData += 2;
-			}			
-		}
-		*/
+        // Animation property
+        const auto animationTypePos = g_animationChannelTargetPathToTypeMap.find(channel.target_path);
+        if (animationTypePos == g_animationChannelTargetPathToTypeMap.end())
+            throw std::domain_error("Unknown animation channel target_path: " + channel.target_path);
+        const auto animationType = animationTypePos->second;
 
-		/*
-		if (vertexAttribute == VertexAttribute::VA_POSITION && elementSize == 3 * sizeof(float))
-		{
-			float *vec3data = reinterpret_cast<float *>(meshBuffer->m_data);
-			for (UINT i = 0; i < accessor.count; ++i) {
-				// Invert the Z axis
-				vec3data[2] *= -1;
-				vec3data += 3;
-			}			
-		}
-		*/
-	}
+        // Keyframe Times
+        const auto samplerInputToKeyframeTimesPos = samplerInputToKeyframeTimes.find(sampler.input);
+        decltype(samplerInputToKeyframeTimesPos->second) keyframeTimes;
+        if (samplerInputToKeyframeTimesPos == samplerInputToKeyframeTimes.end()) {
+            try {
+                keyframeTimes = std::make_shared<std::vector<float>>();
+                populateSamplerInputKeyframeTimes(sampler.input, *keyframeTimes);
+                samplerInputToKeyframeTimes[sampler.input] = keyframeTimes;
+            }
+            catch (std::exception& ex) {
+                throw std::domain_error("Failed to load sampler " + to_string(channel.sampler) + ". " + ex.what());
+            }
+;       } else {
+            keyframeTimes = samplerInputToKeyframeTimesPos->second;
+        }
 
-	LOG(G3LOG_DEBUG) << "Creating Vertex Buffer Accessor.   type: " << Vertex_attribute_meta::semanticName(vertexAttribute) << "   count: " << accessor.count;
+        // Keyframe Values
+        const auto allowedAccessorTypes =
+            g_animTypeToAllowedAccessorTypes[static_cast<unsigned>(animationType)];
+        std::unique_ptr<Mesh_buffer_accessor> keyframeValues;
+        try {
+            keyframeValues = useOrCreateBufferForAccessor<Mesh_buffer_accessor>(
+                sampler.output,
+                loaderData,
+                *allowedAccessorTypes,
+                0,
+                g_createSimpleMeshAccessor
+                );
+        } catch (std::exception& ex) {
+            throw std::domain_error("Failed to create animation keyframe values accessor: "s + ex.what());
+        }
 
-	return make_unique<Mesh_vertex_buffer_accessor>(meshBuffer, vertexAttribute, static_cast<UINT>(accessor.count), static_cast<UINT>(sourceElementSize), 0);
+        uint8_t valuesPerKeyFrame = 1;
+        if (interpolationType == Animation_interpolation::Cubic_Spline)
+            valuesPerKeyFrame *= 3;
+
+        // For morph animations, need to add a single channel per primitive as the Morph_weights_component
+        // is on the child entities.
+        std::vector<std::shared_ptr<Entity>> targetEntities;
+        if (animationType == Animation_type::Morph) {
+            if (targetEntity->children().empty()) {
+                LOG(WARNING) << "glTF Morph animation node must have at least 1 primitive.";
+                continue;
+            }
+            const auto morphComponent = targetEntity->children().at(0)->getFirstComponentOfType<Morph_weights_component>();
+            assert(morphComponent->morphTargetCount() <= 8 && morphComponent->morphTargetCount() >= 1);
+            valuesPerKeyFrame *= morphComponent->morphTargetCount();
+
+            std::copy(targetEntity->children().begin(), targetEntity->children().end(), std::back_inserter(targetEntities));
+        }
+        else {
+            targetEntities.push_back(targetEntity);
+        }
+
+        for (const auto channelTargetEntity : targetEntities) {
+            auto animationChannel = std::make_unique<Animation_controller_component::Animation_channel>();
+            animationChannel->animationType = animationType;
+            animationChannel->interpolationType = interpolationType;
+            animationChannel->valuesPerKeyFrame = valuesPerKeyFrame;
+            animationChannel->targetNode = channelTargetEntity;
+            animationChannel->keyframeTimes = keyframeTimes;
+            animationChannel->keyframeValues = move(keyframeValues);
+            animation->channels.push_back(move(animationChannel));
+            states.push_back({});
+        }
+    }
+
+    animationController->addAnimation(animationName, move(animation));
 }
 
 unique_ptr<Mesh_index_buffer_accessor> read_index_buffer(const Model& model,
 	const vector<Accessor>::size_type accessorIndex,
-	LoaderData& loaderData)
+	Loader_data& loaderData)
 {
 	if (accessorIndex >= model.accessors.size())
 		throw domain_error("accessor[" + to_string(accessorIndex) + "] out of range.");
@@ -650,10 +1017,10 @@ unique_ptr<Mesh_index_buffer_accessor> read_index_buffer(const Model& model,
 	const auto& buffer = model.buffers.at(bufferView.buffer);
 
 	if (bufferView.target != 0 && bufferView.target != TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER)
-		throw runtime_error("Index bufferView must have type ELEMENT_ARRAY_BUFFER (" + to_string(TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER) + ")");
+		throw domain_error("Index bufferView must have type ELEMENT_ARRAY_BUFFER (" + to_string(TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER) + ")");
 	
 	if (accessor.type != TINYGLTF_TYPE_SCALAR)
-		throw runtime_error("Index buffer must be scalar");
+		throw domain_error("Index buffer must be scalar");
 
 	DXGI_FORMAT format;
 	size_t sourceElementSize;
@@ -683,20 +1050,20 @@ unique_ptr<Mesh_index_buffer_accessor> read_index_buffer(const Model& model,
 		sourceElementSize = sizeof(int32_t);
 		break;
 	default:
-		throw runtime_error("Unknown index buffer format: " + to_string(accessor.componentType));
+		throw domain_error("Unknown index buffer format: " + to_string(accessor.componentType));
 	}
 	
 	// Determine the stride - if none is provided, default to sourceElementSize.
-	const size_t sourceStride = bufferView.byteStride == 0 ? sourceElementSize : bufferView.byteStride;
+	const auto sourceStride = bufferView.byteStride == 0 ? sourceElementSize : bufferView.byteStride;
 
 	// does the data range defined by the accessor fit into the bufferView?
 	if (accessor.byteOffset + accessor.count * sourceStride > bufferView.byteLength)
-		throw runtime_error("Accessor " + to_string(accessorIndex) + " exceeds maximum size of bufferView " + to_string(accessor.bufferView));
+		throw domain_error("Accessor " + to_string(accessorIndex) + " exceeds maximum size of bufferView " + to_string(accessor.bufferView));
 
-	// does the data range defined by the accessor and bufferview fit into the buffer?
-	const size_t bufferOffset = bufferView.byteOffset + accessor.byteOffset;
+	// does the data range defined by the accessor and buffer view fit into the buffer?
+	const auto bufferOffset = bufferView.byteOffset + accessor.byteOffset;
 	if (bufferOffset + accessor.count * sourceStride > buffer.data.size())
-		throw runtime_error("BufferView " + to_string(accessor.bufferView) + " exceeds maximum size of buffer " + to_string(bufferView.buffer));
+		throw domain_error("BufferView " + to_string(accessor.bufferView) + " exceeds maximum size of buffer " + to_string(bufferView.buffer));
 
 	// Have we already created an identical buffer? If so, re-use it.
 	shared_ptr<Mesh_buffer> meshBuffer;

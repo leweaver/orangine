@@ -99,7 +99,7 @@ namespace oe::internal {
 
 		Render_step<
 			Render_step_empty_data,
-			Render_pass_config<Render_pass_blend_mode::Blended_alpha, Render_pass_depth_mode::ReadWrite>
+			Render_pass_config<Render_pass_blend_mode::Blended_Alpha, Render_pass_depth_mode::ReadWrite>
 		> _renderStep_entityStandard;
 
 		Render_step<

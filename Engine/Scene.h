@@ -3,6 +3,7 @@
 #include "StepTimer.h"
 #include "Entity_graph_loader.h"
 
+#include "IAnimation_manager.h"
 #include "ID3D_resources_manager.h"
 #include "IEntity_render_manager.h"
 #include "IRender_step_manager.h"
@@ -17,6 +18,7 @@
 #include <map>
 #include <memory>
 #include "Manager_base.h"
+#include "IMaterial_manager.h"
 
 namespace oe {
 	class Entity;
@@ -94,7 +96,9 @@ namespace oe {
 			std::shared_ptr<IShadowmap_manager>,
 			std::shared_ptr<IEntity_scripting_manager>,
 			std::shared_ptr<IAsset_manager>,
-			std::shared_ptr<IInput_manager>
+			std::shared_ptr<IInput_manager>,
+            std::shared_ptr<IAnimation_manager>,
+            std::shared_ptr<IMaterial_manager>
 		>;
 
 		Scene() = default;

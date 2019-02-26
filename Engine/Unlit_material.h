@@ -8,6 +8,7 @@ namespace oe {
 	};
 
 	class Unlit_material : public Material_base<Unlit_material_vs_constant_buffer, Pixel_constant_buffer_base, Vertex_attribute::Position> {
+        using Base_type = Material_base<Unlit_material_vs_constant_buffer, Pixel_constant_buffer_base, Vertex_attribute::Position>;
 	public:
 		Unlit_material();
 
@@ -23,14 +24,15 @@ namespace oe {
 		
 		const std::string& materialType() const override;
 
+        nlohmann::json serialize(bool compilerPropertiesOnly) const override;
+
 	protected:
 		
 		void updateVSConstantBufferValues(Unlit_material_vs_constant_buffer& constants, 
 			const DirectX::SimpleMath::Matrix& worldMatrix,
 			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix) override;
-
-		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
+			const DirectX::SimpleMath::Matrix& projMatrix,
+            const Renderer_animation_data& rendererAnimationData) const override;
 
 	private:
 		DirectX::SimpleMath::Color _baseColor;

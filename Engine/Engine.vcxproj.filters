@@ -269,6 +269,31 @@
     <ClInclude Include="IAsset_manager.h">
       <Filter>Systems\Assets</Filter>
     </ClInclude>
+    <ClInclude Include="Animation_controller_component.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="IAnimation_manager.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation_manager.h" />
+    <ClInclude Include="Material_manager.h">
+      <Filter>Systems\Renderer\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="IMaterial_manager.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Material_context.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="JsonUtils.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh_vertex_layout.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Morph_weights_component.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Entity.cpp">
@@ -329,9 +354,6 @@
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Mesh_data.cpp">
-      <Filter>Systems\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Material_repository.cpp">
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Light_component.cpp">
@@ -405,6 +427,20 @@
     </ClCompile>
     <ClCompile Include="Asset_manager.cpp">
       <Filter>Systems\Assets\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation_controller_component.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation_manager.cpp" />
+    <ClCompile Include="Material_manager.cpp">
+      <Filter>Systems\Renderer\internal</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer_enum.cpp" />
+    <ClCompile Include="Mesh_vertex_layout.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Morph_weights_component.cpp">
+      <Filter>Systems\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

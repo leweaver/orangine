@@ -23,8 +23,9 @@ namespace oe::internal {
 		std::shared_ptr<Entity_filter> _scriptableEntityFilter;
 		std::shared_ptr<Entity_filter> _renderableEntityFilter;
 		std::shared_ptr<Entity_filter> _lightEntityFilter;
+	    bool _showImGui = false;
 
-		// TODO: This would be part of a script context
+	    // TODO: This would be part of a script context
 		struct ScriptData {
 			float yaw = 0.0f;
 			float pitch = 0.0f;

@@ -1,9 +1,7 @@
 ﻿#include "pch.h"
 #include "Deferred_light_material.h"
-#include "Render_pass_config.h"
 #include "Render_light_data.h"
-
-#include <array>
+#include "Material_repository.h"
 
 using namespace oe;
 using namespace std::literals;
@@ -13,31 +11,112 @@ using namespace SimpleMath;
 const auto g_mrt_shader_resource_count = 9;
 const auto g_mrt_sampler_state_count = 6;
 
-const std::array<ID3D11ShaderResourceView*, g_mrt_shader_resource_count> g_nullShaderResourceViews = { 
-	nullptr, nullptr, nullptr,
-	nullptr, nullptr, nullptr, 
-	nullptr, nullptr, nullptr 
-};
-const std::array<ID3D11SamplerState*, g_mrt_sampler_state_count> g_nullSamplerStates = { 
-	nullptr, nullptr, nullptr, 
-	nullptr, nullptr 
-};
+const std::string g_json_color0Texture = "color0_texture";
+const std::string g_json_color1Texture = "color1_texture";
+const std::string g_json_color2Texture = "color2_texture";
+const std::string g_json_depthTexture = "depth_texture";
+const std::string g_json_shadowMapDepthTexture = "shadow_map_depth_texture";
+const std::string g_json_shadowMapStencilTexture = "shadow_map_stencil_texture";
+const std::string g_json_iblEnabled = "ibl_enabled";
+const std::string g_json_shadowArrayEnabled = "shadow_array_enabled";
+const std::string g_json_shadowMapCount = "shadow_map_count";
+const std::string g_json_emittedEnabled = "emitted_enabled";
 
 const std::string g_material_type = "Deferred_light_material";
+
+Deferred_light_material::Deferred_light_material()
+    : Base_type(static_cast<uint8_t>(Material_type_index::Deferred_Light))
+{}
 
 const std::string& Deferred_light_material::materialType() const
 {
 	return g_material_type;
 }
 
-void Deferred_light_material::createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode)
+nlohmann::json Deferred_light_material::serialize(bool compilerPropertiesOnly) const
 {
-	assert(blendMode == Render_pass_blend_mode::Additive);
+    auto j = Base_type::serialize(compilerPropertiesOnly);
+
+    // TODO: Store asset ID's here.
+    if (!compilerPropertiesOnly) {
+        j[g_json_shadowMapCount] = _shadowMapCount;
+        j[g_json_emittedEnabled] = _emittedEnabled;
+    }
+
+    j[g_json_color0Texture] = serializeTexture(compilerPropertiesOnly, _color0Texture);
+    j[g_json_color1Texture] = serializeTexture(compilerPropertiesOnly, _color1Texture);
+    j[g_json_color2Texture] = serializeTexture(compilerPropertiesOnly, _color2Texture);
+    j[g_json_depthTexture] = serializeTexture(compilerPropertiesOnly, _depthTexture);
+    j[g_json_shadowMapDepthTexture] = serializeTexture(compilerPropertiesOnly, _shadowMapDepthTexture);
+    j[g_json_shadowMapStencilTexture] = serializeTexture(compilerPropertiesOnly, _shadowMapStencilTexture);
+    j[g_json_iblEnabled] = _iblEnabled;
+    j[g_json_shadowArrayEnabled] = _shadowArrayEnabled;
+
+    return j;
 }
 
-Material::Shader_compile_settings Deferred_light_material::pixelShaderSettings() const
+Material::Shader_resources Deferred_light_material::shaderResources(const Render_light_data& renderLightData) const
 {
-	auto settings = Base_type::pixelShaderSettings();
+    auto sr = Base_type::shaderResources(renderLightData);
+
+    if (!_color0Texture || !_color1Texture || !_color2Texture || !_depthTexture)
+        return sr;
+
+    auto samplerDesc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    // TODO: is the comparison function even used?
+    samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+
+    sr.textures.push_back(_color0Texture);
+    sr.samplerDescriptors.push_back(samplerDesc);
+
+    sr.textures.push_back(_color1Texture);
+    sr.samplerDescriptors.push_back(samplerDesc);
+
+    sr.textures.push_back(_color2Texture);
+    sr.samplerDescriptors.push_back(samplerDesc);
+
+    sr.textures.push_back(_depthTexture);
+    sr.samplerDescriptors.push_back(samplerDesc);
+
+    if (_iblEnabled) {
+        if (!(renderLightData.environmentMapBrdf() && renderLightData.environmentMapDiffuse() && renderLightData.environmentMapSpecular())) {
+            throw std::runtime_error("Deferred_light_material requires a valid environment map be provided in the Render_light_data");
+        }
+
+        sr.textures.push_back(renderLightData.environmentMapBrdf());
+        sr.textures.push_back(renderLightData.environmentMapDiffuse());
+        sr.textures.push_back(renderLightData.environmentMapSpecular());
+
+        // Create IBL sampler desc
+        samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+        samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+        samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+        sr.samplerDescriptors.push_back(samplerDesc);
+    }
+
+    if (_shadowArrayEnabled) {
+        if (!(_shadowMapStencilTexture && _shadowMapDepthTexture)) {
+            throw std::logic_error("Cannot bind a shadow map stencil texture without a shadow map depth texture.");
+        }
+
+        sr.textures.push_back(_shadowMapDepthTexture);
+        sr.textures.push_back(_shadowMapStencilTexture);
+
+        samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        sr.samplerDescriptors.push_back(samplerDesc);
+    }
+
+    return sr;
+}
+
+Material::Shader_compile_settings Deferred_light_material::pixelShaderSettings(const std::set<std::string>& flags) const
+{
+	auto settings = Base_type::pixelShaderSettings(flags);
 
 	if (_iblEnabled)
 		settings.defines["MAP_IBL"] = "1";
@@ -58,10 +137,9 @@ void Deferred_light_material::setupEmitted(bool enabled)
 }
 
 void Deferred_light_material::updatePSConstantBufferValues(Deferred_light_material_constant_buffer& constants,
-	const Render_light_data& renderlightData,
 	const Matrix& worldMatrix,
 	const Matrix& viewMatrix,
-	const Matrix& projMatrix)
+	const Matrix& projMatrix) const
 {
 	const auto viewMatrixInv = viewMatrix.Invert();
 
@@ -81,74 +159,4 @@ void Deferred_light_material::updatePSConstantBufferValues(Deferred_light_materi
 		// Inverse of the view matrix is the camera transform matrix
 	constants.eyePosition = Vector4(viewMatrixInv._41, viewMatrixInv._42, viewMatrixInv._43, 0.0);
 	constants.emittedEnabled = _emittedEnabled;
-}
-
-void Deferred_light_material::setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData)
-{
-	auto device = deviceResources.GetD3DDevice();
-	auto context = deviceResources.GetD3DDeviceContext();
-	if (!_color0Texture || !_color1Texture || !_color2Texture || !_depthTexture)
-		return;
-	
-	auto validSamplers = true;
-	validSamplers &= ensureSamplerState(deviceResources, *_color0Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, _color0SamplerState.GetAddressOf());
-	validSamplers &= ensureSamplerState(deviceResources, *_color1Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, _color1SamplerState.GetAddressOf());
-	validSamplers &= ensureSamplerState(deviceResources, *_color2Texture.get(), D3D11_TEXTURE_ADDRESS_WRAP, _color2SamplerState.GetAddressOf());
-	validSamplers &= ensureSamplerState(deviceResources, *_depthTexture.get(), D3D11_TEXTURE_ADDRESS_WRAP, _depthSamplerState.GetAddressOf());	
-	validSamplers &= ensureSamplerState(deviceResources, *_shadowMapDepthTexture.get(), D3D11_TEXTURE_ADDRESS_CLAMP, _shadowMapSamplerState.GetAddressOf());
-	if (_shadowMapStencilTexture)
-		_shadowMapStencilTexture->load(deviceResources.GetD3DDevice());
-
-	if (validSamplers)
-	{
-		std::array<ID3D11ShaderResourceView*, g_mrt_shader_resource_count> shaderResourceViews = {
-			_color0Texture->getShaderResourceView(),
-			_color1Texture->getShaderResourceView(),
-			_color2Texture->getShaderResourceView(),
-			_depthTexture->getShaderResourceView(),
-		};
-		std::array<ID3D11SamplerState*, g_mrt_sampler_state_count> samplerStates = {
-			_color0SamplerState.Get(),
-			_color1SamplerState.Get(),
-			_color2SamplerState.Get(),
-			_depthSamplerState.Get(),
-		};
-
-		auto srvCount = 4;
-		auto ssCount = 4;
-		assert(shaderResourceViews[srvCount] == nullptr && samplerStates[ssCount] == nullptr);
-
-		if (_iblEnabled) {
-			if (!(renderLightData.environmentMapDiffuseSRV() && renderLightData.environmentMapSpecularSRV() && renderLightData.environmentMapSamplerState())) {
-				throw std::runtime_error("Deferred_light_material requires a valid environment map be provided in the Render_light_data");
-			}
-
-			shaderResourceViews[srvCount++] = renderLightData.environmentMapBrdfSRV();
-			shaderResourceViews[srvCount++] = renderLightData.environmentMapDiffuseSRV();
-			shaderResourceViews[srvCount++] = renderLightData.environmentMapSpecularSRV();
-			samplerStates[ssCount++] = renderLightData.environmentMapSamplerState();
-		}
-
-		if (_shadowArrayEnabled) {
-			if (!(_shadowMapStencilTexture && _shadowMapDepthTexture)) {
-				throw std::logic_error("Cannot bind a shadowmap stencil texture without a shadowmap depth texture.");
-			}
-			
-			shaderResourceViews[srvCount++] = _shadowMapDepthTexture->getShaderResourceView();
-			shaderResourceViews[srvCount++] = _shadowMapStencilTexture->getShaderResourceView();
-			samplerStates[ssCount++] = _shadowMapSamplerState.Get();
-		}
-
-		// Set shader texture resource in the pixel shader.
-		context->PSSetShaderResources(0, srvCount, shaderResourceViews.data());
-		context->PSSetSamplers(0, ssCount, samplerStates.data());
-	}
-}
-
-void Deferred_light_material::unsetContextSamplers(const DX::DeviceResources& deviceResources)
-{
-	auto context = deviceResources.GetD3DDeviceContext();
-
-	context->PSSetShaderResources(0, g_mrt_shader_resource_count, g_nullShaderResourceViews.data());
-	context->PSSetSamplers(0, g_mrt_sampler_state_count, g_nullSamplerStates.data());
 }

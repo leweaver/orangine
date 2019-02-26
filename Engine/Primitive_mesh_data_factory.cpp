@@ -39,7 +39,9 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<TVertex_type>&& vertices, 
 template <>
 std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPosition>&& vertices, std::vector<uint16_t>&& indices)
 {
-	auto meshData = std::make_shared<Mesh_data>();
+	auto meshData = std::make_shared<Mesh_data>(Mesh_vertex_layout({
+        {Vertex_attribute::Position, 0}
+        }));
 	addIndices(*meshData.get(), move(indices));
 
 	using TVertex_type = DirectX::VertexPosition;
@@ -52,9 +54,9 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPosition>&&
 	memcpy_s(posNormalTexBuffer->data, posNormalTexBuffer->dataSize, vertices.data(), srcBufferSize);
 
 	// Position
-	meshData->vertexBufferAccessors[Vertex_attribute::Position] = std::make_unique<Mesh_vertex_buffer_accessor>(
+    meshData->vertexBufferAccessors[{Vertex_attribute::Position, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
 		posNormalTexBuffer,
-		Vertex_attribute::Position,
+        Vertex_attribute_semantic{Vertex_attribute::Position,0},
 		static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
 		static_cast<uint32_t>(offsetof(TVertex_type, position))
 		);
@@ -65,7 +67,11 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPosition>&&
 template <>
 std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNormalTexture>&& vertices, std::vector<uint16_t>&& indices)
 {
-	auto meshData = std::make_shared<Mesh_data>();
+	auto meshData = std::make_shared<Mesh_data>(Mesh_vertex_layout({
+        {Vertex_attribute::Position, 0},
+        {Vertex_attribute::Normal, 0},
+        {Vertex_attribute::Tex_Coord, 0}
+        }));
 	addIndices(*meshData.get(), move(indices));
 
 	using TVertex_type = DirectX::VertexPositionNormalTexture;
@@ -78,25 +84,25 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNor
 	memcpy_s(posNormalTexBuffer->data, posNormalTexBuffer->dataSize, vertices.data(), srcBufferSize);
 
 	// Position
-	meshData->vertexBufferAccessors[Vertex_attribute::Position] = std::make_unique<Mesh_vertex_buffer_accessor>(
+    meshData->vertexBufferAccessors[{Vertex_attribute::Position, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
 		posNormalTexBuffer,
-		Vertex_attribute::Position,
+        Vertex_attribute_semantic{Vertex_attribute::Position, 0},
 		static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
 		static_cast<uint32_t>(offsetof(TVertex_type, position))
 		);
 
 	// Normal
-	meshData->vertexBufferAccessors[Vertex_attribute::Normal] = std::make_unique<Mesh_vertex_buffer_accessor>(
+	meshData->vertexBufferAccessors[{Vertex_attribute::Normal, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
 		posNormalTexBuffer,
-		Vertex_attribute::Normal,
+        Vertex_attribute_semantic{Vertex_attribute::Normal, 0},
 		static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
 		static_cast<uint32_t>(offsetof(TVertex_type, normal))
 		);
 
 	// Texcoord
-	meshData->vertexBufferAccessors[Vertex_attribute::Texcoord_0] = std::make_unique<Mesh_vertex_buffer_accessor>(
+	meshData->vertexBufferAccessors[{Vertex_attribute::Tex_Coord, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
 		posNormalTexBuffer,
-		Vertex_attribute::Texcoord_0,
+        Vertex_attribute_semantic{Vertex_attribute::Tex_Coord, 0},
 		static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
 		static_cast<uint32_t>(offsetof(TVertex_type, textureCoordinate))
 		);
@@ -104,9 +110,9 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNor
 	// Tangents
 	{
 		auto tangentsBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(sizeof(Vector4) * vertices.size()));
-		meshData->vertexBufferAccessors[Vertex_attribute::Tangent] = std::make_unique<Mesh_vertex_buffer_accessor>(
+		meshData->vertexBufferAccessors[{Vertex_attribute::Tangent, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
 			tangentsBuffer,
-			Vertex_attribute::Tangent,
+            Vertex_attribute_semantic{Vertex_attribute::Tangent, 0},
 			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(Vector4)),
 			0
 			);
@@ -227,10 +233,10 @@ void Primitive_mesh_data_factory::generateNormals(
 	if (indexBufferAccessor.count % 3 != 0)
 		throw std::logic_error("Expected index buffer to have a count that is a multiple of 3.");
 
-	if (positionBufferAccessor.attribute != Vertex_attribute::Position)
-		throw std::runtime_error("Given vertex buffer accessor must have type VA_POSITION");
+    if (positionBufferAccessor.attribute != Vertex_attribute_semantic{ Vertex_attribute::Position, 0 })
+        throw std::runtime_error("Given vertex buffer accessor must have type VA_POSITION");
 
-	if (normalBufferAccessor.attribute != Vertex_attribute::Normal)
+    if (normalBufferAccessor.attribute != Vertex_attribute_semantic{Vertex_attribute::Normal, 0})
 		throw std::runtime_error("Given normal buffer accessor must have type VA_NORMAL");
 
 	if (normalBufferAccessor.count != positionBufferAccessor.count)

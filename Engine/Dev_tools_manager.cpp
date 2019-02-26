@@ -8,6 +8,7 @@
 #include "imgui.h"
 #include "VectorLog.h"
 #include <imgui/misc/cpp/imgui_stdlib.h>
+#include "Animation_controller_component.h"
 
 using namespace DirectX;
 using namespace SimpleMath;
@@ -23,12 +24,14 @@ IDev_tools_manager* oe::create_manager(Scene & scene)
 void Dev_tools_manager::initialize()
 {
 	_noLightProvider = [](const BoundingSphere&, std::vector<Entity*>&, uint32_t) {};
+    _animationControllers = _scene.manager<IScene_graph_manager>().getEntityFilter({ Animation_controller_component::type() });
 }
 
 void Dev_tools_manager::shutdown()
 {
 	assert(!_unlitMaterial);
 	_debugShapes.resize(0);
+    _animationControllers = nullptr;
 }
 
 void Dev_tools_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
@@ -41,6 +44,7 @@ void Dev_tools_manager::destroyDeviceDependentResources()
 	_unlitMaterial.reset();
 	for (auto& debugShape : _debugShapes) {
 		std::get<Renderable>(debugShape).rendererData.reset();
+        std::get<Renderable>(debugShape).materialContext.reset();
 	}
 }
 
@@ -98,6 +102,110 @@ void Dev_tools_manager::renderImGui()
 {
     // Display contents in a scrolling region
     auto scrollAmount = 0.0f;
+
+    ImGui::SetNextWindowSize(ImVec2(554, 675), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Animation")) {
+        for (const auto entity : *_animationControllers) {
+            const auto animComponent = entity->getFirstComponentOfType<Animation_controller_component>();
+            assert(animComponent);
+
+            if (ImGui::CollapsingHeader(animComponent->entity().getName().c_str())) {
+                if (!animComponent->activeAnimations.empty()) {
+                    if (ImGui::Button("Reset All Times")) {
+                        for (const auto& animEntry : animComponent->animations()) {
+                            auto activeAnimationPos = animComponent->activeAnimations.find(animEntry.first);
+                            if (activeAnimationPos == animComponent->activeAnimations.end())
+                                continue;
+
+                            for (auto i = 0; i < activeAnimationPos->second.size(); ++i) {
+                                activeAnimationPos->second[i].currentTime = 0.0;
+                            }
+                        }
+                    }
+                }
+
+                for (const auto& animEntry : animComponent->animations()) {
+                    if (ImGui::TreeNode(animEntry.first.c_str())) {
+
+                        auto activeAnimationPos = animComponent->activeAnimations.find(animEntry.first);
+                        auto isActive = activeAnimationPos != animComponent->activeAnimations.end();
+
+                        if (ImGui::Checkbox("Loaded?", &isActive)) {
+                            if (isActive) {
+                                animComponent->activeAnimations[animEntry.first] = {};
+
+                                // Create the entry. States will be added in the next step.
+                                decltype(animComponent->activeAnimations)::value_type entry = { animEntry.first , {} };
+
+                                activeAnimationPos = animComponent->activeAnimations.insert(std::move(entry)).first;
+                            }
+                            else
+                            {
+                                animComponent->activeAnimations.erase(animEntry.first);
+                                activeAnimationPos = animComponent->activeAnimations.end();
+                            }
+                        }
+
+                        if (activeAnimationPos != animComponent->activeAnimations.end()) {
+
+                            if (!activeAnimationPos->second.empty()) {
+                                auto maxTime = 0.0f;
+                                for (const auto &channel : animEntry.second->channels) {
+                                    maxTime = std::max(maxTime, channel->keyframeTimes->back());
+                                }
+
+                                const auto firstTime = activeAnimationPos->second.front().currentTime;
+                                auto showResetButton = false;
+                                for (auto i = 1; i < activeAnimationPos->second.size(); ++i) {
+                                    const auto& state = activeAnimationPos->second[i];
+                                    if (state.playing && 
+                                        (state.currentTime > firstTime + DBL_EPSILON || state.currentTime < firstTime - DBL_EPSILON)) {
+                                        showResetButton = true;
+                                        break;
+                                    }
+                                }
+
+                                if (showResetButton) {
+                                    if (ImGui::Button("Zero Timeline")) {
+                                        for (auto i = 0; i < activeAnimationPos->second.size(); ++i) {
+                                            activeAnimationPos->second[i].currentTime = 0.0;
+                                        }
+                                    }
+                                }
+                                else 
+                                {
+                                    auto currentTime = static_cast<float>(firstTime);
+                                    if (ImGui::SliderFloat("Time", &currentTime, 0.0f, maxTime, "%.2f")) {
+                                        for (auto i = 0; i < activeAnimationPos->second.size(); ++i) {
+                                            activeAnimationPos->second[i].currentTime = currentTime;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (ImGui::TreeNode("Channels")) {
+                                for (auto i = 0; i < animEntry.second->channels.size(); ++i) {
+                                    const auto& channel = animEntry.second->channels[i];
+                                    const auto animationTypeStr = animationTypeToString(channel->animationType);
+
+                                    if (activeAnimationPos->second.size() <= i) {
+                                        activeAnimationPos->second.resize(animEntry.second->channels.size());
+                                    }
+
+                                    auto& state = activeAnimationPos->second[i];
+                                    ImGui::Checkbox(animationTypeStr.c_str(), &state.playing);
+                                }
+                                ImGui::TreePop();
+                            }
+                        }
+                        ImGui::TreePop();
+                    }
+                }
+            }
+        }        
+    }
+    ImGui::End();
+
     if (ImGui::Begin("Console"))
     {
         auto uiScale = ImGui::GetIO().FontGlobalScale;

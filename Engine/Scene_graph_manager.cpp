@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <deque>
+#include "imgui.h"
 
 using namespace oe;
 using namespace internal;
@@ -93,6 +94,13 @@ std::shared_ptr<Entity> Scene_graph_manager::instantiate(const std::string &name
 {
     auto entity = _entityRepository->getEntityPtrById(parentEntity.getId());
     return instantiate(name, entity.get());
+}
+
+void Scene_graph_manager::renderImGui()
+{
+//    ImGui::Begin("Entities");
+
+//    ImGui::End();
 }
 
 std::shared_ptr<Entity> Scene_graph_manager::instantiate(const std::string &name, Entity *parentEntity)

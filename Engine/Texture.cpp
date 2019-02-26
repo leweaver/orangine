@@ -54,3 +54,12 @@ void Depth_texture::load(ID3D11Device* device)
 	ThrowIfFailed(device->CreateShaderResourceView(_deviceResources.GetDepthStencil(), &sr_desc, _shaderResourceView.ReleaseAndGetAddressOf()),
 		"DepthTexture shaderResourceView");
 }
+
+void oe::to_json(nlohmann::json& j, const std::shared_ptr<Texture> texture) {
+    // TODO: Return asset ID's here?
+    j = nlohmann::json{ {"loaded", texture ? "yes" : "no" } };
+}
+
+void oe::from_json(const nlohmann::json& /*j*/, std::shared_ptr<Texture>& /*texture*/) {
+    throw std::runtime_error("Unsupported - texture deserialization");
+}

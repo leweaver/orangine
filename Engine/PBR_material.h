@@ -9,13 +9,12 @@
 #include "Material_base.h"
 
 namespace oe {
-
-
 	struct PBR_material_vs_constant_buffer : Vertex_constant_buffer_base
 	{
 		DirectX::XMMATRIX worldView; // for debugging only
 		DirectX::XMMATRIX world;
 		DirectX::XMMATRIX worldInvTranspose;
+        DirectX::XMFLOAT4 morphWeights[2];
 	};
 
 	struct PBR_material_ps_constant_buffer : Pixel_constant_buffer_base
@@ -31,17 +30,13 @@ namespace oe {
 		PBR_material_vs_constant_buffer,
 		PBR_material_ps_constant_buffer,
 		Vertex_attribute::Position,
-		Vertex_attribute::Normal,
-		Vertex_attribute::Tangent,
-		Vertex_attribute::Texcoord_0>
+		Vertex_attribute::Normal>
 	{
 		using Base_type = Material_base<
 			PBR_material_vs_constant_buffer,
 			PBR_material_ps_constant_buffer,
 			Vertex_attribute::Position,
-			Vertex_attribute::Normal,
-			Vertex_attribute::Tangent,
-			Vertex_attribute::Texcoord_0>;
+			Vertex_attribute::Normal>;
 
 		enum Texture_type
 		{
@@ -65,7 +60,7 @@ namespace oe {
 		void operator=(const PBR_material& other) = delete;
 		void operator=(PBR_material&& other) = delete;
 
-		virtual ~PBR_material();
+		virtual ~PBR_material() = default;
 
 		/*
 		 * The RGBA components of the base color of the material.The fourth component(A) is the alpha coverage of the material.
@@ -96,7 +91,7 @@ namespace oe {
 		{
 			if (_textures[BaseColor] != baseColorTexture) {
 				_textures[BaseColor] = baseColorTexture;
-				markRequiresRecomplie();
+				markRequiresRecompile();
 			}
 		}
 
@@ -149,7 +144,6 @@ namespace oe {
 		void setAlphaCutoff(float alphaCutoff)
 		{
 			_alphaCutoff = alphaCutoff;
-			markRequiresRecomplie();
 		}
 
 		/*
@@ -167,7 +161,7 @@ namespace oe {
 		{
 			if (_textures[MetallicRoughness] != metallicRoughnessTexture) {
 				_textures[MetallicRoughness] = metallicRoughnessTexture;
-				markRequiresRecomplie();
+				markRequiresRecompile();
 			}
 		}
 
@@ -180,7 +174,7 @@ namespace oe {
 		{
 			if (_textures[Normal] != normalTexture) {
 				_textures[Normal] = normalTexture;
-				markRequiresRecomplie();
+				markRequiresRecompile();
 			}
 		}
 
@@ -193,7 +187,7 @@ namespace oe {
 		{
 			if (_textures[Occlusion] != occlusionTexture) {
 				_textures[Occlusion] = occlusionTexture;
-				markRequiresRecomplie();
+				markRequiresRecompile();
 			}
 		}
 
@@ -206,37 +200,62 @@ namespace oe {
 		{
 			if (_textures[Emissive] != emissiveTexture) {
 				_textures[Emissive] = emissiveTexture;
-				markRequiresRecomplie();
+				markRequiresRecompile();
 			}
 		}
 
 		Material_light_mode lightMode() override { return Material_light_mode::Lit; }
 		const std::string& materialType() const override;
 
+        nlohmann::json serialize(bool compilerPropertiesOnly) const override;
+
+        std::set<std::string> configFlags(Render_pass_blend_mode blendMode, const Mesh_vertex_layout& meshVertexLayout) const override;
+        std::vector<Vertex_attribute_semantic> vertexInputs(const std::set<std::string>& flags) const override;
+        Shader_resources shaderResources(const Render_light_data& renderLightData) const override;
+	    Shader_compile_settings vertexShaderSettings(const std::set<std::string>& flags) const override;
+        Shader_compile_settings pixelShaderSettings(const std::set<std::string>& flags) const override;
+
+        static void decodeMorphTargetConfig(const std::set<std::string>& flags,
+            uint8_t& targetCount,
+            int8_t& positionPosition,
+            int8_t& normalPosition,
+            int8_t& tangentPosition);
+
 	protected:
 
-		Shader_compile_settings pixelShaderSettings() const override;
+        void applyVertexLayoutShaderCompileSettings(Shader_compile_settings&) const;
 
 		void updateVSConstantBufferValues(PBR_material_vs_constant_buffer& constants,
 			const DirectX::SimpleMath::Matrix& worldMatrix,
 			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix) override;
+			const DirectX::SimpleMath::Matrix& projMatrix,
+            const Renderer_animation_data& rendererAnimationData) const override;
 
 		void updatePSConstantBufferValues(PBR_material_ps_constant_buffer& constants,
-			const Render_light_data& renderlightData,
 			const DirectX::SimpleMath::Matrix& worldMatrix,
 			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix) override;
+			const DirectX::SimpleMath::Matrix& projMatrix) const override;
 
-		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
-		void releaseShaderResources();
+        bool requiresTexCoord0() const
+        {
+            return
+                _textures[BaseColor] ||
+                _textures[MetallicRoughness] ||
+                _textures[Emissive] ||
+                _textures[Occlusion] ||
+                _textures[Normal];
+        }
 
-		void setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData) override;
-		void unsetContextSamplers(const DX::DeviceResources& deviceResources) override;
+        bool requiresTangents() const
+        {
+            return _textures[Normal] != nullptr;
+        }
+
+        static int getMorphPositionAttributeIndexOffset();
+        static int getMorphNormalAttributeIndexOffset();
+        int getMorphTangentAttributeIndexOffset() const;
 
 	private:
-
-		bool _enableDeferred;
 
 		DirectX::SimpleMath::Color _baseColor;
 		float _metallic;

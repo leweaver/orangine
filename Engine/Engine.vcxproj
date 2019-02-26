@@ -155,6 +155,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Animation_controller_component.h" />
+    <ClInclude Include="Animation_manager.h" />
     <ClInclude Include="Asset_manager.h" />
     <ClInclude Include="Camera_component.h" />
     <ClInclude Include="Clear_gbuffer_material.h" />
@@ -173,27 +175,34 @@
     <ClInclude Include="Entity_scripting_manager.h" />
     <ClInclude Include="Entity_sorter.h" />
     <ClInclude Include="FileUtils.h" />
+    <ClInclude Include="IAnimation_manager.h" />
     <ClInclude Include="IAsset_manager.h" />
     <ClInclude Include="ID3D_resources_manager.h" />
     <ClInclude Include="IDev_tools_manager.h" />
     <ClInclude Include="IEntity_render_manager.h" />
     <ClInclude Include="IEntity_scripting_manager.h" />
     <ClInclude Include="IInput_manager.h" />
+    <ClInclude Include="IMaterial_manager.h" />
     <ClInclude Include="Input_manager.h" />
     <ClInclude Include="IRender_step_manager.h" />
     <ClInclude Include="IScene_graph_manager.h" />
     <ClInclude Include="IShadowmap_manager.h" />
     <ClInclude Include="IUser_interface_manager.h" />
+    <ClInclude Include="JsonUtils.h" />
     <ClInclude Include="Light_component.h" />
     <ClInclude Include="Light_provider.h" />
     <ClInclude Include="Manager_base.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Material_base.h" />
+    <ClInclude Include="Material_context.h" />
+    <ClInclude Include="Material_manager.h" />
     <ClInclude Include="Material_repository.h" />
+    <ClInclude Include="Mesh_vertex_layout.h" />
     <ClInclude Include="Mesh_data.h" />
     <ClInclude Include="Mesh_data_component.h" />
     <ClInclude Include="Mesh_utils.h" />
     <ClInclude Include="Mikk_tspace_triangle_mesh_interface.h" />
+    <ClInclude Include="Morph_weights_component.h" />
     <ClInclude Include="PBR_material.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Primitive_mesh_data_factory.h" />
@@ -226,9 +235,15 @@
     <ClInclude Include="VectorLog.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Animation_controller_component.cpp" />
+    <ClCompile Include="Animation_manager.cpp" />
     <ClCompile Include="Asset_manager.cpp" />
     <ClCompile Include="Camera_component.cpp" />
     <ClCompile Include="Clear_gbuffer_material.cpp" />
+    <ClCompile Include="Material_manager.cpp" />
+    <ClCompile Include="Mesh_vertex_layout.cpp" />
+    <ClCompile Include="Morph_weights_component.cpp" />
+    <ClCompile Include="Renderer_enum.cpp" />
     <ClCompile Include="VectorLog.cpp" />
     <ClInclude Include="Collision.inl">
       <FileType>Document</FileType>
@@ -248,7 +263,6 @@
     <ClCompile Include="Light_component.cpp" />
     <ClCompile Include="Light_provider.cpp" />
     <ClCompile Include="Material.cpp" />
-    <ClCompile Include="Material_repository.cpp" />
     <ClCompile Include="Mesh_data.cpp" />
     <ClCompile Include="Mesh_data_component.cpp" />
     <ClCompile Include="Mesh_utils.cpp" />

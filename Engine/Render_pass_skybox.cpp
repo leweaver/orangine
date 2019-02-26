@@ -27,7 +27,7 @@ void Render_pass_skybox::render(const Camera_data& cameraData)
 
 	skyboxCamera.viewMatrix = Matrix::CreateFromQuaternion(Quaternion::CreateFromRotationMatrix(cameraData.viewMatrix));
 
-	_material->setCubemapTexture(_scene.skyboxTexture());
+	_material->setCubeMapTexture(_scene.skyboxTexture());
 	_scene.manager<IEntity_render_manager>().renderRenderable(
 		*_renderable,
 		Matrix::Identity,

@@ -14,7 +14,7 @@ namespace oe {
 }
 
 namespace oe::mesh_utils {
-	inline uint32_t convertIndexValue(DXGI_FORMAT srcFormat, const std::uint8_t* srcIndexBuffer)
+	inline uint32_t convert_index_value(DXGI_FORMAT srcFormat, const std::uint8_t* srcIndexBuffer)
 	{
 		switch (srcFormat)
 		{

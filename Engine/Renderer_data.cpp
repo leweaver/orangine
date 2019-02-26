@@ -3,19 +3,20 @@
 
 using namespace oe;
 
-D3D_buffer::D3D_buffer(ID3D11Buffer *buffer)
+D3D_buffer::D3D_buffer(ID3D11Buffer *buffer, size_t size)
 	: d3dBuffer(buffer)
+    , size(size)
 {}
 
 D3D_buffer::D3D_buffer()
 	: d3dBuffer(nullptr)
+    , size(0)
 {}
 
 D3D_buffer::~D3D_buffer()
 {
 	if (d3dBuffer != nullptr)
 		d3dBuffer->Release();
-	d3dBuffer = nullptr;
 }
 
 D3D_buffer_accessor::D3D_buffer_accessor(std::shared_ptr<D3D_buffer> buffer, uint32_t stride, uint32_t offset)

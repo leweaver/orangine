@@ -13,8 +13,10 @@
 #include "../Engine/Light_component.h"
 #include "../Engine/Renderable_component.h"
 #include "../Engine/PBR_material.h"
-#include "../Engine/Unlit_material.h"
 #include "../Engine/Collision.h"
+
+#include <filesystem>
+
 
 extern void ExitGame();
 
@@ -71,8 +73,16 @@ std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 	if (animate)
 		root->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 
-	//m_scene->loadEntities("data/meshes/" + gltfName + "/" + gltfName + ".gltf", *root);
-	m_scene->loadEntities("../thirdparty/glTF-Sample-Models/2.0/" + gltfName + "/glTF/" + gltfName + ".gltf", *root);
+    std::string gltfPath = "data/meshes/" + gltfName + +"/glTF/" + gltfName + ".gltf";
+    if (!std::filesystem::exists(gltfPath)) {
+        gltfPath = "../thirdparty/glTF-Sample-Models/2.0/" + gltfName + "/glTF/" + gltfName + ".gltf";
+    }
+
+    if (!std::filesystem::exists(gltfPath)) {
+        throw std::runtime_error("Could not find gltf file with name: " + gltfName);
+    }
+
+    m_scene->loadEntities(gltfPath, *root);
 
 	return root;
 }
@@ -296,7 +306,14 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
 		//LoadGLTF("FlightHelmet", false)->setScale({ 7, 7, 7 });
-		LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
+		//LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
+        //LoadGLTF("InterpolationTest", false);
+        //LoadGLTF("MorphPrimitivesTest", false)->setPosition({0, -3.0f, 0});
+        //LoadGLTF("AnimatedMorphCube", false)->setPosition({ 0, -3.0f, 0 });
+        //LoadGLTF("Alien", false)->setScale({ 10.01f, 10.01f, 10.01f });
+        LoadGLTF("MorphCube2", false);
+        //LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
+
 		//LoadGLTF("MetalRoughSpheres", false);
 		//CreateSceneMetalRoughSpheres(false);
 

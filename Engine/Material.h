@@ -3,133 +3,146 @@
 #include "Mesh_data_component.h"
 #include "Renderer_enum.h"
 
-#include "DeviceResources.h"
-#include <SimpleMath.h>
 #include <string>
 #include <set>
+#include "Renderer_data.h"
+
+#include <json.hpp>
 
 namespace oe {
-	class Render_light_data;
+    class Mesh_vertex_layout;
+    class Render_light_data;
 	struct Renderer_data;
 	class Texture;
 	
 	class Material
 	{
 	public:
-		Material(Material_alpha_mode alphaMode, Material_face_cull_mode faceCullMode);
+        struct Shader_compile_settings {
+            std::wstring filename;
+            std::string entryPoint;
+            std::map<std::string, std::string> defines;
+            std::set<std::string> includes;
+            std::vector<Vertex_attribute_semantic> morphAttributes;
+        };
+
+        struct Shader_resources {
+            // Ordered list of textures that will exposed to the shader as shaderResourceViews
+            std::vector<std::shared_ptr<Texture>> textures;
+
+            // Ordered list of samplers that are given to the shader.
+            // TODO: Make this a custom type, not d3d? Is there a need?
+            std::vector<D3D11_SAMPLER_DESC> samplerDescriptors;
+        };
+
+        Material(uint8_t materialTypeIndex, Material_alpha_mode alphaMode, Material_face_cull_mode faceCullMode);
 
 		Material(const Material& other) = delete;
 		Material(Material&& other) = delete;
 		void operator=(const Material& other) = delete;
 		void operator=(Material&& other) = delete;
 
-		virtual ~Material();
+		virtual ~Material() = default;
 
-		/**
-		 * Populates the given array (assumed to be empty) with the vertex attributes that this material requires. Populated in-order.
-		 */
-		virtual void vertexAttributes(std::vector<Vertex_attribute>& vertexAttributes) const;
-		bool requiresRecompile() const { return _requiresRecompile; }
-
-		// Should be called prior to deletion - releases all resources.
-		void release();
-
-		// Compiles (if needed), binds pixel and vertex shaders, and textures
-		void bind(Render_pass_blend_mode blendMode,
-			const Render_light_data& renderLightData,
-			const DX::DeviceResources& deviceResources,
-			bool enablePixelShader);
-
-		// Uploads shader constants, then renders
-		bool render(const Renderer_data& rendererData,
-			const Render_light_data& renderLightData, 
-			const DirectX::SimpleMath::Matrix& worldMatrix,
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix,
-			const DX::DeviceResources& deviceResources);
-
-		// Unbinds textures
-		void unbind(const DX::DeviceResources& deviceResources);
+        /*
+         * This index is unique for a given material type. For example, ALL instances of a PBRMaterial
+         * will return the same index. 
+         * 
+         * This is used by Material_manager to manage resources. As a practical example, this is used 
+         * to differentiate constant buffers.
+         * 
+         * This value is not guaranteed to be the same between re-runs - it should never be persisted
+         * to disk.
+         */
+        uint8_t materialTypeIndex() const {
+            return _materialTypeIndex;
+        }
 
 		Material_alpha_mode getAlphaMode() const { return _alphaMode; }
-		void setAlphaMode(Material_alpha_mode mode) { 
+		void setAlphaMode(Material_alpha_mode mode) 
+	    { 
 			_alphaMode = mode;
-			markRequiresRecomplie();
+			markRequiresRecompile();
+		}
+
+        Material_face_cull_mode faceCullMode() const { return _faceCullMode; }
+        void setFaceCullMode(Material_face_cull_mode mode)
+	    {
+            _faceCullMode = mode;
+            markRequiresRecompile();
 		}
 
 		virtual Material_light_mode lightMode() { return Material_light_mode::Unlit; }
 		virtual const std::string& materialType() const = 0;
 
-		Material_face_cull_mode faceCullMode() { return _faceCullMode; }
+
+        /*
+         * Helpers that are called by the Material_manager
+         */
+
+        // Creates a d3d constant buffer
+        virtual std::shared_ptr<D3D_buffer> createVSConstantBuffer(ID3D11Device* device) const = 0;
+        virtual void updateVSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix,
+            const DirectX::SimpleMath::Matrix& viewMatrix,
+            const DirectX::SimpleMath::Matrix& projMatrix,
+            const Renderer_animation_data& rendererAnimationData,
+            ID3D11DeviceContext* context,
+            D3D_buffer& buffer) const {}
+
+	    virtual std::vector<Vertex_attribute_semantic> vertexInputs(const std::set<std::string>& flags) const = 0;
+
+        virtual std::shared_ptr<D3D_buffer> createPSConstantBuffer(ID3D11Device* device) const = 0;
+        virtual void updatePSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix,
+            const DirectX::SimpleMath::Matrix& viewMatrix,
+            const DirectX::SimpleMath::Matrix& projMatrix,
+            ID3D11DeviceContext* context,
+            D3D_buffer& buffer) const {};
+
+        // Used at compile time - determines flags that are later passed in to the shaderSettings methods.
+        virtual std::set<std::string> configFlags(Render_pass_blend_mode blendMode, const Mesh_vertex_layout& meshBindContext) const;
+        // Used at compile time
+        virtual Shader_compile_settings vertexShaderSettings(const std::set<std::string>& flags) const;
+        // Used at compile time
+        virtual Shader_compile_settings pixelShaderSettings(const std::set<std::string>& flags) const;
+
+        // Used at bind time - specifies which textures and samplers are required.
+        virtual Shader_resources shaderResources(const Render_light_data& renderLightData) const;
+
+        /*
+         * Per Frame
+         */
+        virtual void setContextSamplers(const Render_light_data& renderLightData) const {}
+        virtual void unsetContextSamplers() const {}
+
+
+        // Returns a std::hash of all properties that affect the result of shader compilation. 
+        // If the material is marked as requiring a recompile, this method will compute the hash prior to returning it.
+	    // This is cached on the material instance and will only computer the hash if one of the properties changes.
+        size_t calculateCompilerPropertiesHash();
+
+        // Same as calculateCompilerPropertiesHash; but if the hash isn't up to date, will throw an exception.
+        size_t ensureCompilerPropertiesHash() const;
+
+        // Serialize properties to a map
+        virtual nlohmann::json serialize(bool compilerPropertiesOnly) const;
 
 	protected:
 
-		struct Shader_compile_settings {
-			std::wstring filename;
-			std::string entryPoint;
-			std::map<std::string, std::string> defines;
-			std::set<std::string> includes;
-		};
-		
-		static std::string createShaderError(HRESULT hr, ID3D10Blob* errorMessage, const Shader_compile_settings& compileSettings);
-		
-		virtual DXGI_FORMAT format(Vertex_attribute attribute);
-		virtual UINT inputSlot(Vertex_attribute attribute);
-
-		void markRequiresRecomplie() { _requiresRecompile = true; }
-		
-		/*
-		 * Initialization
-		 */ 
-		virtual Shader_compile_settings vertexShaderSettings() const;
-		virtual Shader_compile_settings pixelShaderSettings() const;
-		bool createVertexShader(ID3D11Device* device);
-		bool createPixelShader(ID3D11Device* device);
-		
-		virtual bool createVSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) = 0;
-		virtual void updateVSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix, 
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix, 
-			ID3D11DeviceContext* context, 
-			ID3D11Buffer* buffer) {};
-
-		virtual bool createPSConstantBuffer(ID3D11Device* device, ID3D11Buffer*& buffer) = 0;
-		virtual void updatePSConstantBuffer(const Render_light_data& renderlightData, const DirectX::SimpleMath::Matrix& worldMatrix, 
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix, 
-			ID3D11DeviceContext* context, 
-			ID3D11Buffer* buffer) {};
-
-		// This method is the entry point for generating the shader. It will determine the constant layout, 
-		// create the shader resource view & sampler arrays.
-		virtual void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) = 0;
-		
-		/* 
-		 * Per Frame
-		 */ 
-		virtual void setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData) {}
-		virtual void unsetContextSamplers(const DX::DeviceResources& deviceResources) {}
-
-		bool ensureSamplerState(const DX::DeviceResources& deviceResources, 
-			Texture& texture, 
-			D3D11_TEXTURE_ADDRESS_MODE textureAddressMode, 
-			ID3D11SamplerState** d3D11SamplerState);
-
+        void markRequiresRecompile() { _requiresRecompile = true; }
+        		
 		static std::wstring_view shaderPath() { return shader_path; }
 
-	private:
-		ID3D11VertexShader* _vertexShader;
-		ID3D11PixelShader*  _pixelShader;
-		ID3D11InputLayout*  _inputLayout;
-		Microsoft::WRL::ComPtr<ID3D11Buffer> _vsConstantBuffer;
-		Microsoft::WRL::ComPtr<ID3D11Buffer> _psConstantBuffer;
-		bool _errorState;
-		bool _requiresRecompile;
+        static nlohmann::json serializeTexture(bool compilerPropertiesOnly, const std::shared_ptr<Texture>& texture);
 
+	private:
+		bool _requiresRecompile;
+        
+        const uint8_t _materialTypeIndex;
 		Material_alpha_mode _alphaMode;
 		Material_face_cull_mode _faceCullMode;
+	    size_t _propertiesHash = 0;
 
-		static const std::wstring shader_path;
+	    static const std::wstring shader_path;
 	};
 
 }

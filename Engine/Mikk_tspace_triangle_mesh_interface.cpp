@@ -10,16 +10,16 @@ using namespace std::literals;
 const char* g_msg_index_buffer_format = "MikkTSpaceTriangleMeshInterface requires MeshData with a valid index buffer format (16/32 bit SINT/UINT).";
 
 Mikk_tspace_triangle_mesh_interface::Mikk_tspace_triangle_mesh_interface(const std::shared_ptr<Mesh_data>& meshData,
-	Vertex_attribute texCoordAttribute,
+	Vertex_attribute_semantic texCoordAttribute,
 	bool generateBitangentsIfPresent)
 	: m_interface()
 	, _userData{
 		meshData,
-		meshData->vertexBufferAccessors[Vertex_attribute::Position].get(),
-		meshData->vertexBufferAccessors[Vertex_attribute::Normal].get(),
+        meshData->vertexBufferAccessors[{Vertex_attribute::Position, 0}].get(),
+		meshData->vertexBufferAccessors[{Vertex_attribute::Normal, 0}].get(),
 		meshData->vertexBufferAccessors[texCoordAttribute].get(),
-		meshData->vertexBufferAccessors[Vertex_attribute::Tangent].get(),
-		meshData->vertexBufferAccessors[Vertex_attribute::Bi_Tangent].get(),
+		meshData->vertexBufferAccessors[{Vertex_attribute::Tangent, 0}].get(),
+		meshData->vertexBufferAccessors[{Vertex_attribute::Bi_Tangent, 0}].get(),
 	}
 {
 	if (meshData->m_meshIndexType != Mesh_index_type::Triangles)
@@ -42,7 +42,7 @@ Mikk_tspace_triangle_mesh_interface::Mikk_tspace_triangle_mesh_interface(const s
 		throw std::logic_error("MikkTSpaceTriangleMeshInterface requires MeshData with a valid VA_NORMAL vertex buffer.");
 	if (!_userData.texCoordAccessor) {
 		throw std::logic_error("MikkTSpaceTriangleMeshInterface requires MeshData with a valid "s.append(
-			Vertex_attribute_meta::semanticName(texCoordAttribute)) +
+			Vertex_attribute_meta::vsInputName(texCoordAttribute)) +
 			" vertex buffer.");
 	}
 	if (!_userData.tangentAccessor) {
@@ -172,5 +172,5 @@ uint32_t Mikk_tspace_triangle_mesh_interface::getVertexIndex(User_data* userData
 	assert(index <= indexAccessor->count);
 	const auto indexBufferPos = indexAccessor->buffer->data + indexAccessor->offset + index * indexAccessor->stride;
 
-	return mesh_utils::convertIndexValue(indexAccessor->format, indexBufferPos);
+	return mesh_utils::convert_index_value(indexAccessor->format, indexBufferPos);
 }

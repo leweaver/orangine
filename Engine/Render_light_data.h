@@ -8,28 +8,24 @@ namespace oe
 	public:
 		ID3D11Buffer* buffer() const { return _constantBuffer.Get(); }
 
-		ID3D11ShaderResourceView* environmentMapBrdfSRV() const
+		std::shared_ptr<Texture> environmentMapBrdf() const
 		{
-			return _environmentIblMapBrdfSRV.Get();
+			return _environmentIblMapBrdf;
 		}
-		ID3D11ShaderResourceView* environmentMapDiffuseSRV() const
+		std::shared_ptr<Texture> environmentMapDiffuse() const
 		{
-			return _environmentIblMapDiffuseSRV.Get();
+			return _environmentIblMapDiffuse;
 		}
-		ID3D11ShaderResourceView* environmentMapSpecularSRV() const
+		std::shared_ptr<Texture> environmentMapSpecular() const
 		{
-			return _environmentIblMapSpecularSRV.Get();
-		}
-		ID3D11SamplerState* environmentMapSamplerState() const {
-			return _environmentIblMapSamplerState.Get();
+			return _environmentIblMapSpecular;
 		}
 
 	protected:
 		Microsoft::WRL::ComPtr<ID3D11Buffer> _constantBuffer;
-		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _environmentIblMapBrdfSRV;
-		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _environmentIblMapDiffuseSRV;
-		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _environmentIblMapSpecularSRV;
-		Microsoft::WRL::ComPtr<ID3D11SamplerState> _environmentIblMapSamplerState;
+		std::shared_ptr<Texture> _environmentIblMapBrdf;
+		std::shared_ptr<Texture> _environmentIblMapDiffuse;
+		std::shared_ptr<Texture> _environmentIblMapSpecular;
 	};
 
 	template<uint8_t TMax_lights>
@@ -100,15 +96,13 @@ namespace oe
 			return _lightConstants.addLight({ Light_type::Ambient, DirectX::SimpleMath::Vector3::Zero, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
 		}
 		void setEnvironmentIblMap(
-			ID3D11ShaderResourceView* brdfSRV,
-			ID3D11ShaderResourceView* diffuseSRV, 
-			ID3D11ShaderResourceView* specularSRV, 
-			ID3D11SamplerState* samplerState)
+			std::shared_ptr<Texture> brdf,
+			std::shared_ptr<Texture> diffuse, 
+			std::shared_ptr<Texture> specular)
 		{
-			_environmentIblMapBrdfSRV = brdfSRV;
-			_environmentIblMapDiffuseSRV = diffuseSRV;
-			_environmentIblMapSpecularSRV = specularSRV;
-			_environmentIblMapSamplerState = samplerState;
+			_environmentIblMapBrdf = brdf;
+			_environmentIblMapDiffuse = diffuse;
+			_environmentIblMapSpecular = specular;
 		}
 		void updateBuffer(ID3D11DeviceContext* context)
 		{

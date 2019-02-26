@@ -45,6 +45,11 @@ namespace oe {
 		
 		Entity_state getState() const { return _state; }
 
+        std::shared_ptr<Entity> parent() const
+		{
+		    return hasParent() ? _parent->verifyEntityPtr() : nullptr;
+		}
+
 		void removeParent();
 		bool hasParent() const { return _parent != nullptr; }
 		void setParent(Entity& newParent);

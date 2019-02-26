@@ -33,7 +33,7 @@ namespace oe
 		 * generateBitangentsIfPresent == false.
 		 */
 		explicit Mikk_tspace_triangle_mesh_interface(const std::shared_ptr<Mesh_data>& meshData,
-			Vertex_attribute texCoordAttribute = Vertex_attribute::Texcoord_0,
+            Vertex_attribute_semantic texCoordAttribute = { Vertex_attribute::Tex_Coord, 0 },
 			bool generateBitangentsIfPresent = true);
 		
 		SMikkTSpaceInterface *getInterface() { return &m_interface; }

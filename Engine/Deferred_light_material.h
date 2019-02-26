@@ -23,7 +23,7 @@ namespace oe
 
 		static constexpr uint32_t max_lights = 8;
 
-		Deferred_light_material() = default;
+		Deferred_light_material();
 
 		const std::shared_ptr<Texture>& color0Texture() const { return _color0Texture; }
 		void setColor0Texture(const std::shared_ptr<Texture>& texture) { _color0Texture = texture; }
@@ -45,23 +45,20 @@ namespace oe
 		void setupEmitted(bool enabled);
 
 		Material_light_mode lightMode() override { return Material_light_mode::Lit; }
-		const std::string& materialType() const override;
+		const std::string& materialType() const override; 
+	    
+        nlohmann::json serialize(bool compilerPropertiesOnly) const;
+        Shader_resources shaderResources(const Render_light_data& renderLightData) const override;
 
 	protected:
-		
-		Shader_compile_settings pixelShaderSettings() const override;
+
+		Shader_compile_settings pixelShaderSettings(const std::set<std::string>& flags) const override;
 
 		void updatePSConstantBufferValues(Deferred_light_material_constant_buffer& constants,
-			const Render_light_data& renderlightData,
 			const DirectX::SimpleMath::Matrix& worldMatrix,
 			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix) override;
-
-		void createShaderResources(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData, Render_pass_blend_mode blendMode) override;
-		
-		void setContextSamplers(const DX::DeviceResources& deviceResources, const Render_light_data& renderLightData) override;
-		void unsetContextSamplers(const DX::DeviceResources& deviceResources) override;
-
+			const DirectX::SimpleMath::Matrix& projMatrix) const override;
+        		
 	private:
 		std::shared_ptr<Texture> _color0Texture;
 		std::shared_ptr<Texture> _color1Texture;
@@ -70,11 +67,13 @@ namespace oe
 		std::shared_ptr<Texture> _shadowMapDepthTexture;
 		std::shared_ptr<Texture> _shadowMapStencilTexture;
 
+        /*
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _color0SamplerState;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _color1SamplerState;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _color2SamplerState;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _depthSamplerState;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> _shadowMapSamplerState;
+        */
 
 		int32_t _shadowMapCount = 0;
 		bool _emittedEnabled = false;

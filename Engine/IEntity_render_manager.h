@@ -31,7 +31,7 @@ namespace oe {
     {
     public:
 
-        IEntity_render_manager(Scene& scene) : Manager_base(scene) {}
+        explicit IEntity_render_manager(Scene& scene) : Manager_base(scene) {}
 
         virtual BoundingFrustumRH createFrustum(const Camera_component& cameraComponent) = 0;
 

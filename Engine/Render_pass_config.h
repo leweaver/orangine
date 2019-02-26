@@ -19,7 +19,7 @@ namespace oe
 
 		constexpr static bool supportsBlendedAlpha()
 		{
-			return TBlend_mode == Render_pass_blend_mode::Blended_alpha;
+			return TBlend_mode == Render_pass_blend_mode::Blended_Alpha;
 		}
 
 		constexpr static Render_pass_depth_mode depthMode()

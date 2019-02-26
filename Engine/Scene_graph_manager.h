@@ -30,6 +30,8 @@ public:
 	std::shared_ptr<Entity> instantiate(const std::string& name) override;
 	std::shared_ptr<Entity> instantiate(const std::string& name, Entity& parentEntity) override;
 
+    void renderImGui() override;
+
 	/**
 	 * Will do nothing if no entity exists with the given ID.
 	 */

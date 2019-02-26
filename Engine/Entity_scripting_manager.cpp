@@ -91,20 +91,19 @@ void Entity_scripting_manager::tick() {
 
 void Entity_scripting_manager::renderImGui()
 {
-    ImGui::Begin("Scene");
-
-    static float color[] = { 1,0.5f,0 };
-    if (ImGui::ColorPicker3("Test", color)) {
-        LOG(DEBUG) << "Changed color to: " << color[0] << ", " << color[1] << ", " << color[2];
+    if (_showImGui) {
+        ImGui::ShowDemoWindow();        
     }
-
-    ImGui::End();
 }
 
 void Entity_scripting_manager::execute(const std::string& command)
 {
     // TODO: Execute some python, or something :)
     LOG(INFO) << "exec: " << command;
+
+    if (command == "imgui") {
+        _showImGui = !_showImGui;
+    }
 }
 
 bool Entity_scripting_manager::commandSuggestions(const std::string& command, std::vector<std::string>& suggestions)

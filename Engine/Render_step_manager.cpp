@@ -290,6 +290,14 @@ void Render_step_manager::destroyDeviceDependentResources()
 		}
 	}
 
+    // Unload renderable contexts
+    for (const auto& renderableEntity : *_renderableEntities) {
+        const auto component = renderableEntity->getFirstComponentOfType<Renderable_component>();
+        if (component && component->materialContext()) {
+            component->setMaterialContext(std::make_unique<Material_context>());
+        }
+    }
+
 	destroyRenderStepResources(_renderStep_shadowMap);
 	destroyRenderStepResources(_renderStep_entityDeferred);
 	destroyRenderStepResources(_renderStep_entityStandard);
@@ -464,7 +472,7 @@ void Render_step_manager::createRenderStepResources(Render_step<TData, TRender_p
 	// Blend state
 	if constexpr (passConfig.blendMode() == Render_pass_blend_mode::Opaque)
 		pass.setBlendState(commonStates.Opaque());
-	else if constexpr (passConfig.blendMode() == Render_pass_blend_mode::Blended_alpha)
+	else if constexpr (passConfig.blendMode() == Render_pass_blend_mode::Blended_Alpha)
 		pass.setBlendState(commonStates.AlphaBlend());
 	else if constexpr (passConfig.blendMode() == Render_pass_blend_mode::Additive)
 		pass.setBlendState(commonStates.Additive());
@@ -609,7 +617,7 @@ void Render_step_manager::renderEntity(Entity* entity,
 	assert(material != nullptr);
 
 	// Check that this render pass supports this materials alpha mode
-	if constexpr (TBlend_mode == Render_pass_blend_mode::Blended_alpha) {
+	if constexpr (TBlend_mode == Render_pass_blend_mode::Blended_Alpha) {
 		if (material->getAlphaMode() != Material_alpha_mode::Blend)
 			return;
 	}

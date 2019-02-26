@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "IDev_tools_manager.h"
+#include "IScene_graph_manager.h"
 
 namespace oe::internal {
 	class Dev_tools_manager : public IDev_tools_manager {
@@ -40,5 +41,6 @@ namespace oe::internal {
         std::string _consoleInput;
         bool _scrollLogToBottom;
         std::vector<std::string> _commandSuggestions;
+	    std::shared_ptr<Entity_filter> _animationControllers;
 	};
 }

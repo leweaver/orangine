@@ -26,13 +26,14 @@ git submodule update --recursive --remote
 [More submodule tips](https://gist.github.com/gitaarik/8735255)
 
 ## Build dependencies
-The following third party libraries should be built first.
+Some of the third party libraries should be built first using helper script `.\create-thirdparty-projects.bat`:
 
 - g3log
 - googletest
 - googlemock
 
-We need to create the appropriate visual studio projects, using CMake. In a regular command prompt (cmd.exe),
+The script creates appropriate visual studio projects using CMake. In a regular command prompt (cmd.exe),
+
 1. Change directory to the root of the GIT repository
 1. Execute command: `.\create-thirdparty-projects.bat`
 

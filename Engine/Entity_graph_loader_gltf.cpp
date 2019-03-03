@@ -17,6 +17,7 @@
 #include "PBR_material.h"
 #include "Texture.h"
 #include "Primitive_mesh_data_factory.h"
+#include "Mesh_data.h"
 #include "Mesh_utils.h"
 #include "FileUtils.h"
 #include "Animation_controller_component.h"
@@ -112,14 +113,6 @@ const std::map<int, std::set<int>> g_index_allowedAccessorTypes = {
         }
     },
 };
-const auto g_createSimpleMeshAccessor = [](shared_ptr<Mesh_buffer> meshBuffer, DXGI_FORMAT /* format */, size_t count, size_t stride, size_t offset) {
-    return make_unique<Mesh_buffer_accessor>(
-        meshBuffer,
-        static_cast<uint32_t>(count),
-        static_cast<uint32_t>(stride),
-        static_cast<uint32_t>(offset)
-        );
-};
 const std::map<int, std::set<int>> g_vertex_allowedAccessorTypes = {
     {TINYGLTF_TYPE_SCALAR, { /* all */ }},
     {TINYGLTF_TYPE_VEC2, { /* all */ }},
@@ -129,6 +122,53 @@ const std::map<int, std::set<int>> g_vertex_allowedAccessorTypes = {
 const std::map<int, std::set<int>> g_morphTarget_allowedAccessorTypes = {
     {TINYGLTF_TYPE_VEC3, { TINYGLTF_COMPONENT_TYPE_FLOAT }},
 };
+
+const std::map<int, Element_type> g_gltfType_elementType = {
+    { TINYGLTF_TYPE_VEC2, Element_type::Vector2 },
+    { TINYGLTF_TYPE_VEC3, Element_type::Vector3 },
+    { TINYGLTF_TYPE_VEC4, Element_type::Vector4 },
+    { TINYGLTF_TYPE_MAT2, Element_type::Matrix2 },
+    { TINYGLTF_TYPE_MAT3, Element_type::Matrix3 },
+    { TINYGLTF_TYPE_MAT4, Element_type::Matrix4 },
+    { TINYGLTF_TYPE_SCALAR, Element_type::Scalar }
+    //{ TINYGLTF_TYPE_VECTOR, Element_type:: },
+    //{ TINYGLTF_TYPE_MATRIX, Element_type:: }
+};
+const std::map<int, Element_component> g_gltfComponent_elementComponent = {
+    //{ TINYGLTF_COMPONENT_TYPE_BYTE, },
+    //{ TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, },
+    //{ TINYGLTF_COMPONENT_TYPE_SHORT, },
+    { TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT, Element_component::Unsigned_Short },
+    //{ TINYGLTF_COMPONENT_TYPE_INT, },
+    { TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT, Element_component::Unsigned_Int },
+    { TINYGLTF_COMPONENT_TYPE_FLOAT, Element_component::Float }
+    //{ TINYGLTF_COMPONENT_TYPE_DOUBLE, },
+};
+
+const auto g_createSimpleMeshAccessor = [](shared_ptr<Mesh_buffer> meshBuffer, Element_type type, Element_component component, size_t count, size_t stride, size_t offset) {
+    return make_unique<Mesh_buffer_accessor>(
+        meshBuffer,
+        static_cast<uint32_t>(count),
+        static_cast<uint32_t>(stride),
+        static_cast<uint32_t>(offset)
+        );
+};
+
+
+std::function<std::unique_ptr<Mesh_vertex_buffer_accessor>(shared_ptr<Mesh_buffer> meshBuffer, Element_type type, Element_component component, size_t count, size_t stride, size_t offset)>
+vertexAccessorFactory(Vertex_attribute_semantic vertexAttribute)
+{
+    return [vertexAttribute](shared_ptr<Mesh_buffer> meshBuffer, Element_type type, Element_component component, size_t count, size_t stride, size_t offset) {
+        return make_unique<Mesh_vertex_buffer_accessor>(
+            meshBuffer,
+            Vertex_attribute_element{ vertexAttribute, type, component },
+            static_cast<uint32_t>(count),
+            static_cast<uint32_t>(stride),
+            static_cast<uint32_t>(offset)
+            );
+    };
+}
+
 
 struct Loader_data
 {
@@ -180,7 +220,7 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(size_t accessorIn
     Loader_data& loaderData,
     const std::map<int, std::set<int>> allowedAccessorTypes,
     int expectedBufferViewTarget,
-    std::function<unique_ptr<TMesh_buffer_accessor>(shared_ptr<Mesh_buffer>, DXGI_FORMAT format, size_t count, size_t stride, size_t offset)> accessorFactory)
+    std::function<unique_ptr<TMesh_buffer_accessor>(shared_ptr<Mesh_buffer>, Element_type type, Element_component component, size_t count, size_t stride, size_t offset)> accessorFactory)
 {
     if (accessorIndex >= loaderData.model.accessors.size())
         throw domain_error("accessor[" + to_string(accessorIndex) + "] out of range.");
@@ -236,54 +276,27 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(size_t accessorIn
 
     if (bufferOffset + accessor.count * sourceStride > buffer.data.size())
         throw domain_error("BufferView " + to_string(accessor.bufferView) + " exceeds maximum size of buffer " + to_string(bufferView.buffer));
-
-    auto dxgiFormat = DXGI_FORMAT_UNKNOWN;
-    if (accessor.componentType) {
-        if (accessor.type == TINYGLTF_TYPE_SCALAR) {
-            switch (accessor.componentType) {
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-                dxgiFormat = DXGI_FORMAT_R8_UINT;
-                break;
-            case TINYGLTF_COMPONENT_TYPE_BYTE:
-                dxgiFormat = DXGI_FORMAT_R8_SINT;
-                break;
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-                dxgiFormat = DXGI_FORMAT_R16_UINT;
-                break;
-            case TINYGLTF_COMPONENT_TYPE_SHORT:
-                dxgiFormat = DXGI_FORMAT_R16_SINT;
-                break;
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-                dxgiFormat = DXGI_FORMAT_R32_UINT;
-                break;
-            case TINYGLTF_COMPONENT_TYPE_INT:
-                dxgiFormat = DXGI_FORMAT_R32_SINT;
-                break;
-            case TINYGLTF_COMPONENT_TYPE_FLOAT:
-                dxgiFormat = DXGI_FORMAT_R32_FLOAT;
-                break;
-            default:
-                throw domain_error("Unsupported componentType for scalar: " + to_string(accessor.componentType));
-            }
-        }
-    }
-
+    
     // Does the mesh buffer exist in the cache?
     const auto pos = loaderData.accessorIdxToMeshBuffers.find(accessorIndex);
     shared_ptr<Mesh_buffer> meshBuffer;
+    const auto elementType = g_gltfType_elementType.at(accessor.type);
+    auto elementComponent = g_gltfComponent_elementComponent.at(accessor.componentType);
     if (pos == loaderData.accessorIdxToMeshBuffers.end()) {
 
-        if (dxgiFormat == DXGI_FORMAT_R8_UINT || dxgiFormat == DXGI_FORMAT_R8_SINT) {
+        // Convert index buffers from 8-bit to 32 bit.
+        if (elementType == Element_type::Scalar && expectedBufferViewTarget == TINYGLTF_TARGET_ARRAY_BUFFER &&
+            (elementComponent == Element_component::Unsigned_Byte || elementComponent == Element_component::Signed_Byte)) {
             // Transform the data to a known format
-            auto[indexMeshBuffer, indexFormat] = mesh_utils::create_index_buffer(
+            const auto convertedIndexAccessor = mesh_utils::create_index_buffer(
                 buffer.data,
                 static_cast<uint32_t>(accessor.count),
-                dxgiFormat,
+                elementComponent,
                 static_cast<uint32_t>(sourceStride),
                 static_cast<uint32_t>(bufferOffset)
             );
-            meshBuffer = indexMeshBuffer;
-            dxgiFormat = indexFormat;
+            meshBuffer = convertedIndexAccessor->buffer;
+            elementComponent = convertedIndexAccessor->component;
         }
         else {
             // Copy the data.
@@ -301,7 +314,7 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(size_t accessorIn
     }
 
     // Note that the buffer we created above contains ONLY this element, thus has offset of zero, and stride of elementSize.
-    return accessorFactory(meshBuffer, dxgiFormat, accessor.count, sourceElementSize, 0);
+    return accessorFactory(meshBuffer, elementType, elementComponent, accessor.count, sourceElementSize, 0);
 
     /*
          // Output stream data to the log
@@ -679,15 +692,7 @@ bool loadJointsWeights(int index, const Primitive& prim, Loader_data& loaderData
                     loaderData,
                     allowedTypes,
                     0,
-                    [vertexAttribute](shared_ptr<Mesh_buffer> meshBuffer, DXGI_FORMAT /* format */, size_t count, size_t stride, size_t offset) {
-                        return make_unique<Mesh_vertex_buffer_accessor>(
-                            meshBuffer,
-                            vertexAttribute,
-                            static_cast<uint32_t>(count),
-                            static_cast<uint32_t>(stride),
-                            static_cast<uint32_t>(offset)
-                            );
-                    }
+                    vertexAccessorFactory(vertexAttribute)
                 );
                 meshData.vertexBufferAccessors[vertexAttribute] = move(accessor);
             }
@@ -741,14 +746,32 @@ shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_reposi
 			auto& meshDataComponent = primitiveEntity->addComponent<Mesh_data_component>();
 
             // Determine the vertex layout
-            vector<Vertex_attribute_semantic> meshLayoutAttributes;
+            vector<Vertex_attribute_element> meshLayoutAttributes;
             for (const auto& attr : prim.attributes) {
                 const auto vaPos = g_gltfAttributeToVertexAttributeMap.find(attr.first);
                 if (vaPos == g_gltfAttributeToVertexAttributeMap.end()) {
                     LOG(WARNING) << "Skipping unsupported attribute: " << attr.first;
                     continue;
                 }
-                meshLayoutAttributes.push_back(vaPos->second);
+
+                if (attr.second >= loaderData.model.accessors.size()) {
+                    throw std::domain_error("Invalid attribute accessor index: " + attr.first);
+                }
+                const auto &accessor = loaderData.model.accessors[attr.second];
+
+                const auto accessorTypePos = g_gltfType_elementType.find(accessor.type);
+                const auto accessorComponentTypePos = g_gltfComponent_elementComponent.find(accessor.componentType);
+
+                if (accessorTypePos == g_gltfType_elementType.end())
+                    throw std::domain_error("Unsupported gltf accessor type: " + accessor.type);
+                if (accessorComponentTypePos == g_gltfComponent_elementComponent.end())
+                    throw std::domain_error("Unsupported gltf accessor component type: " + accessor.componentType);
+
+                meshLayoutAttributes.push_back(Vertex_attribute_element{
+                    vaPos->second,
+                    accessorTypePos->second,
+                    accessorComponentTypePos->second
+                    });
             }
 
             vector<Vertex_attribute_semantic> morphTargetLayout;
@@ -782,10 +805,10 @@ shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_reposi
                         loaderData,
                         g_index_allowedAccessorTypes,
                         TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER,
-                        [](shared_ptr<Mesh_buffer> meshBuffer, DXGI_FORMAT format, size_t count, size_t stride, size_t offset) {
+                        [](shared_ptr<Mesh_buffer> meshBuffer, Element_type, Element_component component, size_t count, size_t stride, size_t offset) {
                             return make_unique<Mesh_index_buffer_accessor>(
                                 meshBuffer,
-                                format,
+                                component,
                                 static_cast<uint32_t>(count),
                                 static_cast<uint32_t>(stride),
                                 static_cast<uint32_t>(offset)
@@ -817,15 +840,7 @@ shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_reposi
                             loaderData,
                             g_vertex_allowedAccessorTypes,
                             TINYGLTF_TARGET_ARRAY_BUFFER,
-                            [vertexAttribute](shared_ptr<Mesh_buffer> meshBuffer, DXGI_FORMAT /* format */, size_t count, size_t stride, size_t offset) {
-                                return make_unique<Mesh_vertex_buffer_accessor>(
-                                    meshBuffer,
-                                    vertexAttribute,
-                                    static_cast<uint32_t>(count),
-                                    static_cast<uint32_t>(stride),
-                                    static_cast<uint32_t>(offset)
-                                    );
-                            }
+                            vertexAccessorFactory(vertexAttribute)
                         );
 
                         meshData->vertexBufferAccessors[vertexAttribute] = move(vertexBufferAccessor);
@@ -888,15 +903,7 @@ shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_reposi
                                 loaderData,
                                 g_morphTarget_allowedAccessorTypes,
                                 0,
-                                [vertexAttribute](shared_ptr<Mesh_buffer> meshBuffer, DXGI_FORMAT /* format */, size_t count, size_t stride, size_t offset) {
-                                    return make_unique<Mesh_vertex_buffer_accessor>(
-                                        meshBuffer,
-                                        vertexAttribute,
-                                        static_cast<uint32_t>(count),
-                                        static_cast<uint32_t>(stride),
-                                        static_cast<uint32_t>(offset)
-                                        );
-                                }
+                                vertexAccessorFactory(vertexAttribute)
                             );
                             morphBufferAccessors.push_back(move(accessor));
                         }
@@ -1059,111 +1066,4 @@ void create_animation(int animIdx, Loader_data loaderData)
     }
 
     animationController->addAnimation(animationName, move(animation));
-}
-
-unique_ptr<Mesh_index_buffer_accessor> read_index_buffer(const Model& model,
-	const vector<Accessor>::size_type accessorIndex,
-	Loader_data& loaderData)
-{
-	if (accessorIndex >= model.accessors.size())
-		throw domain_error("accessor[" + to_string(accessorIndex) + "] out of range.");
-	const auto& accessor = model.accessors[accessorIndex];
-
-	if (accessor.bufferView >= static_cast<int32_t>(model.bufferViews.size()))
-		throw domain_error("bufferView[" + to_string(accessor.bufferView) + "] out of range.");
-	const auto& bufferView = model.bufferViews.at(accessor.bufferView);
-
-	if (bufferView.buffer >= static_cast<int>(model.buffers.size()))
-		throw domain_error("buffer[" + to_string(bufferView.buffer) + "] out of range.");
-	const auto& buffer = model.buffers.at(bufferView.buffer);
-
-	if (bufferView.target != 0 && bufferView.target != TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER)
-		throw domain_error("Index bufferView must have type ELEMENT_ARRAY_BUFFER (" + to_string(TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER) + ")");
-	
-	if (accessor.type != TINYGLTF_TYPE_SCALAR)
-		throw domain_error("Index buffer must be scalar");
-
-	DXGI_FORMAT format;
-	size_t sourceElementSize;
-	switch (accessor.componentType) {
-	case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-		format = DXGI_FORMAT_R8_UINT;
-		sourceElementSize = sizeof(uint8_t);
-		break;
-	case TINYGLTF_COMPONENT_TYPE_BYTE:
-		format = DXGI_FORMAT_R8_SINT;
-		sourceElementSize = sizeof(int8_t);
-		break;
-	case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-		format = DXGI_FORMAT_R16_UINT;
-		sourceElementSize = sizeof(uint16_t);
-		break;
-	case TINYGLTF_COMPONENT_TYPE_SHORT:
-		format = DXGI_FORMAT_R16_SINT;
-		sourceElementSize = sizeof(int16_t);
-		break;
-	case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-		format = DXGI_FORMAT_R32_UINT;
-		sourceElementSize = sizeof(uint32_t);
-		break;
-	case TINYGLTF_COMPONENT_TYPE_INT:
-		format = DXGI_FORMAT_R32_SINT;
-		sourceElementSize = sizeof(int32_t);
-		break;
-	default:
-		throw domain_error("Unknown index buffer format: " + to_string(accessor.componentType));
-	}
-	
-	// Determine the stride - if none is provided, default to sourceElementSize.
-	const auto sourceStride = bufferView.byteStride == 0 ? sourceElementSize : bufferView.byteStride;
-
-	// does the data range defined by the accessor fit into the bufferView?
-	if (accessor.byteOffset + accessor.count * sourceStride > bufferView.byteLength)
-		throw domain_error("Accessor " + to_string(accessorIndex) + " exceeds maximum size of bufferView " + to_string(accessor.bufferView));
-
-	// does the data range defined by the accessor and buffer view fit into the buffer?
-	const auto bufferOffset = bufferView.byteOffset + accessor.byteOffset;
-	if (bufferOffset + accessor.count * sourceStride > buffer.data.size())
-		throw domain_error("BufferView " + to_string(accessor.bufferView) + " exceeds maximum size of buffer " + to_string(bufferView.buffer));
-
-	// Have we already created an identical buffer? If so, re-use it.
-	shared_ptr<Mesh_buffer> meshBuffer;
-	const auto pos = loaderData.accessorIdxToMeshBuffers.find(accessorIndex);
-
-	if (pos != loaderData.accessorIdxToMeshBuffers.end())
-	{
-		LOG(G3LOG_DEBUG) << "Found existing MeshBuffer instance, re-using.";
-		meshBuffer = pos->second;
-	}
-	else
-	{
-		LOG(G3LOG_DEBUG) << "Creating new MeshBuffer instance.";
-
-		if (format == DXGI_FORMAT_R8_UINT || format == DXGI_FORMAT_R8_SINT) {
-			// Transform the data to a known format
-			auto [ indexMeshBuffer, indexFormat ] = mesh_utils::create_index_buffer(
-				buffer.data,
-				static_cast<uint32_t>(accessor.count),
-				format,
-				static_cast<uint32_t>(sourceStride),
-				static_cast<uint32_t>(bufferOffset)
-			);
-			meshBuffer = indexMeshBuffer;
-			format = indexFormat;
-		}
-		else {
-			// Copy the data.
-			meshBuffer = mesh_utils::create_buffer(
-				static_cast<uint32_t>(sourceElementSize),
-				static_cast<uint32_t>(accessor.count),
-				buffer.data,
-				static_cast<uint32_t>(sourceStride),
-				static_cast<uint32_t>(bufferOffset));
-		}
-		loaderData.accessorIdxToMeshBuffers[accessorIndex] = meshBuffer;
-	}
-	
-	LOG(G3LOG_DEBUG) << "Creating Index Buffer Accessor.   DXGI format: " << format << "   count: " << accessor.count;
-
-	return make_unique<Mesh_index_buffer_accessor>(meshBuffer, format, static_cast<UINT>(accessor.count), static_cast<UINT>(sourceElementSize), 0);
 }

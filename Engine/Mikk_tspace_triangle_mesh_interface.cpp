@@ -28,10 +28,10 @@ Mikk_tspace_triangle_mesh_interface::Mikk_tspace_triangle_mesh_interface(const s
 	if (!meshData->indexBufferAccessor || (meshData->indexBufferAccessor->count % 3) != 0)
 		throw std::logic_error("MikkTSpaceTriangleMeshInterface requires MeshData with a valid index buffer (count must be multiple of 3).");
 	if (!(
-		meshData->indexBufferAccessor->format == DXGI_FORMAT_R16_UINT || 
-		meshData->indexBufferAccessor->format == DXGI_FORMAT_R32_UINT ||
-		meshData->indexBufferAccessor->format == DXGI_FORMAT_R16_SINT ||
-		meshData->indexBufferAccessor->format == DXGI_FORMAT_R32_SINT)) 
+		meshData->indexBufferAccessor->component == Element_component::Unsigned_Short || 
+		meshData->indexBufferAccessor->component == Element_component::Unsigned_Int ||
+        meshData->indexBufferAccessor->component == Element_component::Signed_Short ||
+        meshData->indexBufferAccessor->component == Element_component::Signed_Int))
 	{
 		throw std::logic_error(g_msg_index_buffer_format);
 	}
@@ -172,5 +172,5 @@ uint32_t Mikk_tspace_triangle_mesh_interface::getVertexIndex(User_data* userData
 	assert(index <= indexAccessor->count);
 	const auto indexBufferPos = indexAccessor->buffer->data + indexAccessor->offset + index * indexAccessor->stride;
 
-	return mesh_utils::convert_index_value(indexAccessor->format, indexBufferPos);
+	return mesh_utils::convert_index_value(indexAccessor->component, indexBufferPos);
 }

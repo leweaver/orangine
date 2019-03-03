@@ -128,4 +128,38 @@ namespace oe {
     };
     const std::string& animationInterpolationToString(Animation_interpolation enumValue);
     Animation_interpolation stringToAnimationInterpolation(const std::string& str);
+
+    enum class Element_type {
+        Scalar = 0,
+        Vector2,
+        Vector3,
+        Vector4,
+        Matrix2,
+        Matrix3,
+        Matrix4,
+
+        Num_Element_Type
+    };
+    const std::string& elementTypeToString(Element_type enumValue);
+    Element_type stringToElementType(const std::string& str);
+
+    enum class Element_component {
+        Signed_Byte = 0,
+        Unsigned_Byte,
+        Signed_Short,
+        Unsigned_Short,
+        Signed_Int,
+        Unsigned_Int,
+        Float,
+
+        Num_Element_Component
+    };
+    const std::string& elementComponentToString(Element_component enumValue);
+    Element_component stringToElementComponent(const std::string& str);
+
+    struct Vertex_attribute_element {
+        Vertex_attribute_semantic semantic;
+        Element_type type;
+        Element_component component;
+    };
 }

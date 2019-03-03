@@ -16,9 +16,9 @@ namespace oe
 		bool emittedEnabled = false;
 	};
 
-	class Deferred_light_material : public Material_base<Vertex_constant_buffer_empty, Deferred_light_material_constant_buffer, Vertex_attribute::Position>
+	class Deferred_light_material : public Material_base<Vertex_constant_buffer_empty, Deferred_light_material_constant_buffer>
 	{
-		using Base_type = Material_base<Vertex_constant_buffer_empty, Deferred_light_material_constant_buffer, Vertex_attribute::Position>;
+		using Base_type = Material_base<Vertex_constant_buffer_empty, Deferred_light_material_constant_buffer>;
 	public:
 
 		static constexpr uint32_t max_lights = 8;

@@ -23,7 +23,7 @@ namespace oe {
             size_t materialHash;
             size_t meshHash;
             Render_pass_blend_mode blendMode;
-            std::vector<Vertex_attribute_semantic> vsInputs;
+            std::vector<Vertex_attribute_element> vsInputs;
             std::set<std::string> flags;
 
             // D3D Shaders

@@ -7,8 +7,8 @@ namespace oe {
 		DirectX::SimpleMath::Color baseColor;
 	};
 
-	class Unlit_material : public Material_base<Unlit_material_vs_constant_buffer, Pixel_constant_buffer_base, Vertex_attribute::Position> {
-        using Base_type = Material_base<Unlit_material_vs_constant_buffer, Pixel_constant_buffer_base, Vertex_attribute::Position>;
+	class Unlit_material : public Material_base<Unlit_material_vs_constant_buffer, Pixel_constant_buffer_base> {
+        using Base_type = Material_base<Unlit_material_vs_constant_buffer, Pixel_constant_buffer_base>;
 	public:
 		Unlit_material();
 

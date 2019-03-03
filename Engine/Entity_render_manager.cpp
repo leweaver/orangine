@@ -22,6 +22,7 @@
 #include "IMaterial_manager.h"
 #include "Morph_weights_component.h"
 #include "Skinned_mesh_component.h"
+#include "Mesh_utils.h"
 
 using namespace oe;
 using namespace internal;
@@ -179,7 +180,7 @@ BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& c
 }
 
 void createMissingVertexAttributes(std::shared_ptr<Mesh_data> meshData, 
-    const std::vector<Vertex_attribute_semantic>& requiredAttributes,
+    const std::vector<Vertex_attribute_element>& requiredAttributes,
     const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes)
 {
     // TODO: Fix the normal/binormal/tangent loading code.
@@ -188,18 +189,22 @@ void createMissingVertexAttributes(std::shared_ptr<Mesh_data> meshData,
     auto generateBiTangents = false;
 
     auto layout = meshData->vertexLayout.vertexLayout();
-    for (const auto& requiredAttribute : requiredAttributes) {
-        if (std::find(layout.begin(), layout.end(), requiredAttribute) != layout.end())
+    for (const auto& requiredAttributeElement : requiredAttributes) {
+        const auto requiredAttribute = requiredAttributeElement.semantic;
+        if (std::any_of(layout.begin(), layout.end(), [requiredAttribute](const auto& vae) { return vae.semantic == requiredAttribute; }))
             continue;
 
         if (std::find(vertexMorphAttributes.begin(), vertexMorphAttributes.end(), requiredAttribute) != vertexMorphAttributes.end())
             continue;
 
         // We only support generation of normals, tangents, bi-tangent
+        uint32_t numComponents = 3;
         if (requiredAttribute == Vertex_attribute_semantic{ Vertex_attribute::Normal, 0 })
             generateNormals = true;
-        else if (requiredAttribute == Vertex_attribute_semantic{ Vertex_attribute::Tangent, 0 })
+        else if (requiredAttribute == Vertex_attribute_semantic{ Vertex_attribute::Tangent, 0 }) {
+            numComponents = 4;
             generateTangents = true;
+        }
         else if (requiredAttribute == Vertex_attribute_semantic{ Vertex_attribute::Bi_Tangent, 0 })
             generateBiTangents = true;
         else {
@@ -210,10 +215,14 @@ void createMissingVertexAttributes(std::shared_ptr<Mesh_data> meshData,
 
         // Create the missing accessor
         const auto vertexCount = meshData->getVertexCount();
-        const auto elementStride = sizeof(float) * Vertex_attribute_meta::numComponents(requiredAttribute.attribute);
+        const auto elementStride = sizeof(float) * numComponents;
         meshData->vertexBufferAccessors[requiredAttribute] = make_unique<Mesh_vertex_buffer_accessor>(
             make_shared<Mesh_buffer>(elementStride * vertexCount),
-            requiredAttribute,
+            Vertex_attribute_element { 
+                requiredAttribute, 
+                numComponents == 3 ? Element_type::Vector3 : Element_type::Vector4, 
+                Element_component::Float 
+            },
             static_cast<uint32_t>(vertexCount),
             static_cast<uint32_t>(elementStride),
             0
@@ -447,7 +456,7 @@ void Entity_render_manager::loadRendererDataToDeviceContext(const Renderer_data&
 		_bufferArraySet.offsetArray.clear();
 
         for (const auto vsInput : context.compiledMaterial->vsInputs) {
-            const auto accessorPos = rendererData.vertexBuffers.find(vsInput);
+            const auto accessorPos = rendererData.vertexBuffers.find(vsInput.semantic);
             assert(accessorPos != rendererData.vertexBuffers.end());
             const auto& accessor = accessorPos->second;
             _bufferArraySet.bufferArray.push_back(accessor->buffer->d3dBuffer);
@@ -534,7 +543,7 @@ void Entity_render_manager::drawRendererData(
 }
 
 std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(std::shared_ptr<Mesh_data> meshData, 
-    const std::vector<Vertex_attribute_semantic>& vertexAttributes,
+    const std::vector<Vertex_attribute_element>& vertexAttributes,
     const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const
 {
 	auto rendererData = std::make_unique<Renderer_data>();
@@ -560,7 +569,8 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(std::sh
 			createBufferFromData("Mesh data index buffer", *meshData->indexBufferAccessor->buffer, D3D11_BIND_INDEX_BUFFER),
 			meshData->indexBufferAccessor->stride,
 			meshData->indexBufferAccessor->offset);
-		rendererData->indexFormat = meshData->indexBufferAccessor->format;
+
+        rendererData->indexFormat = mesh_utils::getDxgiFormat(Element_type::Scalar, meshData->indexBufferAccessor->component);
 
 	    const auto name("Index Buffer (count: " + std::to_string(rendererData->indexCount) + ")");
 		rendererData->indexBufferAccessor->buffer->d3dBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
@@ -574,8 +584,9 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(std::sh
 
 	// Create D3D vertex buffers
 	rendererData->vertexCount = meshData->getVertexCount();
-	for (auto vertexAttr : vertexAttributes)
+	for (auto vertexAttrElement : vertexAttributes)
 	{
+        const auto& vertexAttr = vertexAttrElement.semantic;
         Mesh_vertex_buffer_accessor* meshAccessor = nullptr;
 		auto vbAccessorPos = meshData->vertexBufferAccessors.find(vertexAttr);
         if (vbAccessorPos != meshData->vertexBufferAccessors.end()) {
@@ -635,27 +646,6 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(std::sh
         }
 		rendererData->vertexBuffers[vertexAttr] = std::move(d3DAccessor);
 	}
-    /*
-    for (auto vertexMorphAttrIdx = 0; vertexMorphAttrIdx < vertexMorphAttributes.size(); ++vertexMorphAttrIdx) {
-        // Get the index in the meshData attributes array. This will probably be the same, but could potentially be different.
-        auto morphTargetLayout = meshData->vertexLayout.morphTargetLayout();
-        for (auto meshVertexMorphAttrIdx = 0; meshVertexMorphAttrIdx < morphTargetLayout.size(); ++meshVertexMorphAttrIdx) {
-            const auto morphTargetAttribute = morphTargetLayout[meshVertexMorphAttrIdx];
-            if (morphTargetAttribute.attribute != vertexMorphAttributes[vertexMorphAttrIdx].attribute)
-                continue;
-
-            const auto& morphBuffers = meshData->attributeMorphBufferAccessors[meshVertexMorphAttrIdx];
-
-            for (const auto& accessor : morphBuffers) {
-                auto d3DAccessor = std::make_unique<D3D_buffer_accessor>(
-                    createBufferFromData(*accessor->buffer, D3D11_BIND_VERTEX_BUFFER),
-                    accessor->stride,
-                    accessor->offset);
-                rendererData->vertexMorphBuffers.push_back(std::move(d3DAccessor));
-            }
-        }
-    }
-    */
 
 	return rendererData;
 }

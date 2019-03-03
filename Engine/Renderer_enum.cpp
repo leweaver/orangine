@@ -68,7 +68,7 @@ static_assert(static_cast<size_t>(Vertex_attribute::Num_Vertex_Attribute) == arr
 
 std::string g_meshIndexTypeNames[] = {
     "triangles",
-    "lines"
+    "lines",
 };
 static_assert(static_cast<size_t>(Mesh_index_type::Num_Mesh_Index_Type) == array_size(g_meshIndexTypeNames));
 
@@ -83,9 +83,31 @@ static_assert(static_cast<size_t>(Animation_type::Num_Animation_Type) == array_s
 std::string g_animationInterpolationNames[] = {
     "linear",
     "step",
-    "cubic_spline"
+    "cubic_spline",
 };
 static_assert(static_cast<size_t>(Animation_interpolation::Num_Animation_Interpolation) == array_size(g_animationInterpolationNames));
+
+std::string g_elementTypeNames[] = {
+    "Scalar",
+    "Vector2",
+    "Vector3",
+    "Vector4",
+    "Matrix2",
+    "Matrix3",
+    "Matrix4",
+};
+static_assert(static_cast<size_t>(Element_type::Num_Element_Type) == array_size(g_elementTypeNames));
+
+std::string g_elementComponentNames[] = {
+    "Signed_Byte",
+    "Unsigned_Byte",
+    "Signed_Short",
+    "Unsigned_Short",
+    "Signed_Int",
+    "Unsigned_Int",
+    "Float",
+};
+static_assert(static_cast<size_t>(Element_component::Num_Element_Component) == array_size(g_elementComponentNames));
 
 const std::string& oe::materialAlphaModeToString(Material_alpha_mode enumValue)
 {
@@ -185,4 +207,24 @@ const std::string& oe::animationInterpolationToString(Animation_interpolation en
 Animation_interpolation oe::stringToAnimationInterpolation(const std::string& str)
 {
     return stringToEnum<Animation_interpolation>(str, g_animationInterpolationNames);
+}
+
+const std::string& oe::elementTypeToString(Element_type enumValue)
+{
+    return g_elementTypeNames[static_cast<size_t>(enumValue)];
+}
+
+Element_type oe::stringToElementType(const std::string& str)
+{
+    return stringToEnum<Element_type>(str, g_elementTypeNames);
+}
+
+const std::string& oe::elementComponentToString(Element_component enumValue)
+{
+    return g_elementComponentNames[static_cast<size_t>(enumValue)];
+}
+
+Element_component oe::stringToElementComponent(const std::string& str)
+{
+    return stringToEnum<Element_component>(str, g_elementComponentNames);
 }

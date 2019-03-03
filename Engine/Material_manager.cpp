@@ -15,6 +15,7 @@
 #include <comdef.h>
 #include "ID3D_resources_manager.h"
 #include "Mesh_vertex_layout.h"
+#include "Mesh_utils.h"
 
 using namespace oe;
 using namespace DirectX;
@@ -118,34 +119,6 @@ void Material_manager::ensureMaterialConstants(const Material& material, Materia
     materialConstants = &_materialConstants[idx];
 }
 
-// TODO: This should be replaced by calculating input layouts based on the accessors.
-DXGI_FORMAT format(Vertex_attribute attribute)
-{
-    switch (attribute)
-    {
-    case Vertex_attribute::Tex_Coord:
-        return DXGI_FORMAT_R32G32_FLOAT;
-
-    case Vertex_attribute::Position:
-    case Vertex_attribute::Color:
-    case Vertex_attribute::Normal:
-        return DXGI_FORMAT_R32G32B32_FLOAT;
-
-    case Vertex_attribute::Tangent:
-        return DXGI_FORMAT_R32G32B32A32_FLOAT;
-    case Vertex_attribute::Bi_Tangent:
-        return DXGI_FORMAT_R32G32B32A32_FLOAT;
-
-    case Vertex_attribute::Joints:
-        return DXGI_FORMAT_R16G16B16A16_UINT;
-    case Vertex_attribute::Weights:
-        return DXGI_FORMAT_R32G32B32A32_FLOAT;
-
-    default:
-        throw std::logic_error("Material does not support format: "s.append(vertexAttributeToString(attribute)));
-    }
-}
-
 void debugLogSettings(const char* prefix, const Material::Shader_compile_settings& settings)
 {
     if (g3::logLevel(DEBUG)) {
@@ -185,14 +158,14 @@ void Material_manager::createVertexShader(
     for (auto inputSlot = 0u; inputSlot < compiledMaterial.vsInputs.size(); ++inputSlot)
     {
         const auto attrSemantic = compiledMaterial.vsInputs[inputSlot];
-        const auto semanticName = Vertex_attribute_meta::semanticName(attrSemantic.attribute);
+        const auto semanticName = Vertex_attribute_meta::semanticName(attrSemantic.semantic.attribute);
         assert(!semanticName.empty());
         LOG(G3LOG_DEBUG) << "  " << semanticName << " to slot " << inputSlot;
         inputElementDesc.push_back(
             {
                 semanticName.data(),
-                attrSemantic.semanticIndex,
-                format(attrSemantic.attribute),
+                attrSemantic.semantic.semanticIndex,
+                mesh_utils::getDxgiFormat(attrSemantic.type, attrSemantic.component),
                 inputSlot,
                 D3D11_APPEND_ALIGNED_ELEMENT,
                 D3D11_INPUT_PER_VERTEX_DATA,
@@ -344,7 +317,7 @@ void Material_manager::bind(
             LOG(DEBUG) << "Material flags: " << nlohmann::json(compiledMaterial->flags).dump(2);
 
             compiledMaterial->vsInputs = material->vertexInputs(compiledMaterial->flags);
-
+            
             createVertexShader(*compiledMaterial, *material);
             createPixelShader(*compiledMaterial, *material);
 

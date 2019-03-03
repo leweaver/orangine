@@ -76,17 +76,17 @@ namespace oe
 
 	struct Mesh_vertex_buffer_accessor : Mesh_buffer_accessor
 	{
-		Mesh_vertex_buffer_accessor(const std::shared_ptr<Mesh_buffer>& buffer, Vertex_attribute_semantic attribute, uint32_t count, uint32_t stride, uint32_t offset);
+		Mesh_vertex_buffer_accessor(const std::shared_ptr<Mesh_buffer>& buffer, Vertex_attribute_element attribute, uint32_t count, uint32_t stride, uint32_t offset);
 		virtual ~Mesh_vertex_buffer_accessor() = default;
 
-        Vertex_attribute_semantic attribute;
+        const Vertex_attribute_element attributeElement;
 	};
 
 	struct Mesh_index_buffer_accessor : Mesh_buffer_accessor
 	{
-		Mesh_index_buffer_accessor(const std::shared_ptr<Mesh_buffer>& buffer, DXGI_FORMAT format, uint32_t count, uint32_t stride, uint32_t offset);
+		Mesh_index_buffer_accessor(const std::shared_ptr<Mesh_buffer>& buffer, Element_component component, uint32_t count, uint32_t stride, uint32_t offset);
 		virtual ~Mesh_index_buffer_accessor() = default;
 
-		DXGI_FORMAT format;
+        const Element_component component;
 	};
 }

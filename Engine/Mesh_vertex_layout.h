@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Renderer_enum.h"
+
 #include <vector>
 
 namespace oe {
@@ -9,10 +10,10 @@ namespace oe {
     class Mesh_vertex_layout {
     public:
         explicit Mesh_vertex_layout(
-            const std::vector<Vertex_attribute_semantic>& vertexLayout);
+            const std::vector<Vertex_attribute_element>& vertexLayout);
 
         Mesh_vertex_layout(
-            const std::vector<Vertex_attribute_semantic>& vertexLayout,
+            const std::vector<Vertex_attribute_element>& vertexLayout,
             const std::vector<Vertex_attribute_semantic>& morphTargetLayout,
             uint8_t morphTargetCount);
 
@@ -22,7 +23,7 @@ namespace oe {
             return _hash;
         };
 
-        const std::vector<Vertex_attribute_semantic>& vertexLayout() const
+        const std::vector<Vertex_attribute_element>& vertexLayout() const
         {
             return _vertexLayout;
         }
@@ -40,7 +41,7 @@ namespace oe {
 
     private:
         size_t _hash;
-        const std::vector<Vertex_attribute_semantic> _vertexLayout;
+        const std::vector<Vertex_attribute_element> _vertexLayout;
         const std::vector<Vertex_attribute_semantic> _morphTargetLayout;
         const uint8_t _morphTargetCount;
     };

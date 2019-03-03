@@ -33,6 +33,10 @@ const std::string g_flag_morphTargetLayout_Position_prefix = "morph_target_verte
 const std::string g_flag_morphTargetLayout_Normal_prefix = "morph_target_vertex_normal_";
 const std::string g_flag_morphTargetLayout_Tangent_prefix = "morph_target_vertex_tangent_";
 const std::string g_flag_skinned = "skinned";
+const std::string g_flag_skinned_joints_uint16 = "joints_uint16";
+const std::string g_flag_skinned_joints_uint32 = "joints_uint32";
+const std::string g_flag_skinned_joints_sint16 = "joints_sint16";
+const std::string g_flag_skinned_joints_sint32 = "joints_sint32";
 
 PBR_material::PBR_material()
 	: Base_type(static_cast<uint8_t>(Material_type_index::PBR))
@@ -83,19 +87,32 @@ std::set<std::string> PBR_material::configFlags(Render_pass_blend_mode blendMode
     }
 
     const auto vertexLayout = meshVertexLayout.vertexLayout();
-    const auto hasJoints = std::find(
+    const auto hasJoints = std::any_of(
         vertexLayout.begin(),
         vertexLayout.end(),
-        Vertex_attribute_semantic{ Vertex_attribute::Joints, 0 }
-    ) != vertexLayout.end();
-    const auto hasWeights = std::find(
+        [](const auto& vae) { return vae.semantic == Vertex_attribute_semantic{ Vertex_attribute::Joints, 0 }; });
+    const auto hasWeights = std::any_of(
         vertexLayout.begin(),
         vertexLayout.end(),
-        Vertex_attribute_semantic{ Vertex_attribute::Weights, 0 }
-    ) != vertexLayout.end();
+        [](const auto& vae) { return vae.semantic == Vertex_attribute_semantic{ Vertex_attribute::Weights, 0 }; });
 
     if (hasJoints && hasWeights) {
         flags.insert(g_flag_skinned);
+
+        for (const auto mve : meshVertexLayout.vertexLayout()) {
+            if (mve.semantic == Vertex_attribute_semantic{ Vertex_attribute::Joints, 0 }) {
+                if (mve.component == Element_component::Unsigned_Short)
+                    flags.insert(g_flag_skinned_joints_uint16);
+                else if (mve.component == Element_component::Unsigned_Int)
+                    flags.insert(g_flag_skinned_joints_uint32);
+                else if (mve.component == Element_component::Signed_Short)
+                    flags.insert(g_flag_skinned_joints_sint16);
+                else if (mve.component == Element_component::Signed_Int)
+                    flags.insert(g_flag_skinned_joints_sint32);
+                else
+                    throw std::runtime_error("Material does not support joints component: " + elementComponentToString(mve.component));
+            }
+        }
     }
 
     if (meshVertexLayout.morphTargetCount()) {
@@ -163,21 +180,35 @@ int PBR_material::getMorphNormalAttributeIndexOffset() { return 1; }
 
 int PBR_material::getMorphTangentAttributeIndexOffset() const { return requiresTangents() ? 1 : 0; }
 
-std::vector<Vertex_attribute_semantic> PBR_material::vertexInputs(const std::set<std::string>& flags) const
+std::vector<Vertex_attribute_element> PBR_material::vertexInputs(const std::set<std::string>& flags) const
 {
     auto vertexAttributes = Base_type::vertexInputs(flags);
 
+    vertexAttributes.push_back(Vertex_attribute_element{ { Vertex_attribute::Normal, 0 }, Element_type::Vector3, Element_component::Float });
+
     if (requiresTangents()) {
-        vertexAttributes.push_back({ Vertex_attribute::Tangent, 0 });
+        vertexAttributes.push_back({ { Vertex_attribute::Tangent, 0 }, Element_type::Vector4, Element_component::Float });
     }
 
     if (requiresTexCoord0()) {
-        vertexAttributes.push_back({ Vertex_attribute::Tex_Coord, 0 });
+        vertexAttributes.push_back({{ Vertex_attribute::Tex_Coord, 0 }, Element_type::Vector2, Element_component::Float });
     }
 
     if (flags.find(g_flag_skinned) != flags.end()) {
-        vertexAttributes.push_back({ Vertex_attribute::Joints, 0 });
-        vertexAttributes.push_back({ Vertex_attribute::Weights, 0 });
+        Element_component jointsComponent;
+        if (flags.find(g_flag_skinned_joints_uint16) != flags.end())
+            jointsComponent = Element_component::Unsigned_Short;
+        else if (flags.find(g_flag_skinned_joints_uint32) != flags.end())
+            jointsComponent = Element_component::Unsigned_Int;
+        else if (flags.find(g_flag_skinned_joints_sint16) != flags.end())
+            jointsComponent = Element_component::Signed_Short;
+        else if (flags.find(g_flag_skinned_joints_sint32) != flags.end())
+            jointsComponent = Element_component::Signed_Int;
+        else
+            throw std::runtime_error("Missing joints component flag");
+
+        vertexAttributes.push_back({ { Vertex_attribute::Joints, 0 }, Element_type::Vector4, jointsComponent });
+        vertexAttributes.push_back({{ Vertex_attribute::Weights, 0 }, Element_type::Vector4, Element_component::Float });
     }
 
     // Vertex attributes for morph targets.

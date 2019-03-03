@@ -28,15 +28,11 @@ namespace oe {
 
 	class PBR_material : public Material_base<
 		PBR_material_vs_constant_buffer,
-		PBR_material_ps_constant_buffer,
-		Vertex_attribute::Position,
-		Vertex_attribute::Normal>
+		PBR_material_ps_constant_buffer>
 	{
 		using Base_type = Material_base<
 			PBR_material_vs_constant_buffer,
-			PBR_material_ps_constant_buffer,
-			Vertex_attribute::Position,
-			Vertex_attribute::Normal>;
+			PBR_material_ps_constant_buffer>;
 
 		enum Texture_type
 		{
@@ -210,7 +206,7 @@ namespace oe {
         nlohmann::json serialize(bool compilerPropertiesOnly) const override;
 
         std::set<std::string> configFlags(Render_pass_blend_mode blendMode, const Mesh_vertex_layout& meshVertexLayout) const override;
-        std::vector<Vertex_attribute_semantic> vertexInputs(const std::set<std::string>& flags) const override;
+        std::vector<Vertex_attribute_element> vertexInputs(const std::set<std::string>& flags) const override;
         Shader_resources shaderResources(const Render_light_data& renderLightData) const override;
 	    Shader_compile_settings vertexShaderSettings(const std::set<std::string>& flags) const override;
         Shader_compile_settings pixelShaderSettings(const std::set<std::string>& flags) const override;

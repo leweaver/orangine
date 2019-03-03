@@ -4,8 +4,8 @@
 namespace oe {
 	using Skybox_material_vs_constant_buffer = Vertex_constant_buffer_base;
 
-	class Skybox_material : public Material_base<Skybox_material_vs_constant_buffer, Pixel_constant_buffer_base, Vertex_attribute::Position> {
-        using Base_type = Material_base<Skybox_material_vs_constant_buffer, Pixel_constant_buffer_base, Vertex_attribute::Position>;
+	class Skybox_material : public Material_base<Skybox_material_vs_constant_buffer, Pixel_constant_buffer_base> {
+        using Base_type = Material_base<Skybox_material_vs_constant_buffer, Pixel_constant_buffer_base>;
 	public:
 		Skybox_material();
 

@@ -11,7 +11,7 @@ namespace oe {
 	struct Pixel_constant_buffer_empty {};
 	using Pixel_constant_buffer_base = Pixel_constant_buffer_empty;
 
-	template<class TVertex_shader_constants, class TPixel_shader_constants, Vertex_attribute... TVertex_attr>
+	template<class TVertex_shader_constants, class TPixel_shader_constants>
 	class Material_base : public Material {
 	public:
 		explicit Material_base(
@@ -83,23 +83,12 @@ namespace oe {
             return std::make_shared<D3D_buffer>(buffer, bufferDesc.ByteWidth);
 		}
 
-        std::vector<Vertex_attribute_semantic> vertexInputs(const std::set<std::string>& flags) const override
+        std::vector<Vertex_attribute_element> vertexInputs(const std::set<std::string>& flags) const override
 		{
-            std::vector<Vertex_attribute_semantic> vsInputs;
-            if constexpr (sizeof...(TVertex_attr) > 0) {
-                addVertexAttribute<TVertex_attr...>(vsInputs);
-            }
+            std::vector<Vertex_attribute_element> vsInputs{
+                { { Vertex_attribute::Position, 0 }, Element_type::Vector3, Element_component::Float }
+            };
             return vsInputs;
-		}
-
-		template<Vertex_attribute TThis, Vertex_attribute... TNext>
-		void addVertexAttribute(std::vector<Vertex_attribute_semantic>& vertexAttributes) const
-		{
-            vertexAttributes.push_back({ TThis, 0 });
-
-			if constexpr (sizeof...(TNext) > 0) {
-				addVertexAttribute<TNext...>(vertexAttributes);
-			}
 		}
 
 		void updateVSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix,

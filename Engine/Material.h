@@ -89,7 +89,7 @@ namespace oe {
             ID3D11DeviceContext* context,
             D3D_buffer& buffer) const {}
 
-	    virtual std::vector<Vertex_attribute_semantic> vertexInputs(const std::set<std::string>& flags) const = 0;
+	    virtual std::vector<Vertex_attribute_element> vertexInputs(const std::set<std::string>& flags) const = 0;
 
         virtual std::shared_ptr<D3D_buffer> createPSConstantBuffer(ID3D11Device* device) const = 0;
         virtual void updatePSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix,

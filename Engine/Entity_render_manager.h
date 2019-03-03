@@ -99,7 +99,7 @@ namespace oe::internal {
 		 * \return new Renderer_data instance.
 		 */
 		std::unique_ptr<Renderer_data> createRendererData(std::shared_ptr<Mesh_data> meshData, 
-            const std::vector<Vertex_attribute_semantic>& vertexAttributes,
+            const std::vector<Vertex_attribute_element>& vertexAttributes,
             const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const;
 
         // Loads the buffers to the device in the order specified by the material context.

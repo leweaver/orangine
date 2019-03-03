@@ -13,6 +13,11 @@ cbuffer constants : register(b0)
     float4        g_morphWeights1         : packoffset(c17);
 };
 
+cbuffer skinnedConstants : register(b1)
+{
+    matrix        g_boneTransforms[96];
+}
+
 //--------------------------------------------------------------------------------------
 // Input / Output structures
 //--------------------------------------------------------------------------------------
@@ -27,6 +32,10 @@ struct VS_INPUT
 #endif
 #if VB_TEXCOORD0
 	float2 vTexCoord0   : TEXCOORD0;
+#endif
+#if VB_SKINNED
+    uint4 vJoints       : BLENDINDICES;
+    float4 vWeights     : BLENDWEIGHTS;
 #endif
 #if VB_MORPH
     VB_MORPH_INPUTS
@@ -57,20 +66,49 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 {
 	VS_OUTPUT Output;
 
-#if VB_MORPH
-    VB_MORPH_WEIGHTS_CALC
-#else
-    float3 morphedPosition = Input.vPosition.xyz;
+#if VB_SKINNED
+
+    float3 positionL = float3(0, 0, 0);
 #if VB_NORMAL
-    float3 morphedNormal = Input.vNormal;
+    float3 normalL = float3(0, 0, 0);
 #endif
 #if VB_TANGENT
-    float4 morphedTangent = Input.vTangent;
+    float3 tangentL = float3(0, 0, 0);
+#endif
+
+    for (int i = 0; i < 4; ++i) {
+        positionL += Input.vWeights[i] *
+            mul(float4(Input.vPosition.xyz, 1.0f),
+                g_boneTransforms[Input.vJoints[i]]).xyz;
+
+#if VB_NORMAL
+        normalL += Input.vWeights[i] *
+            mul(Input.vNormal.xyz,
+                (float3x3)g_boneTransforms[Input.vJoints[i]]);
+#endif
+#if VB_TANGENT
+        tangentL += Input.vWeights[i] *
+            mul(Input.vTangent.xyz,
+                (float3x3)g_boneTransforms[Input.vJoints[i]]);
+#endif
+
+    }
+#else
+    float3 positionL = Input.vPosition.xyz;
+#if VB_NORMAL
+    float3 normalL = Input.vNormal;
+#endif
+#if VB_TANGENT
+    float3 tangentL = Input.vTangent.xyz;
 #endif
 #endif
 
-	Output.vPosition = mul(float4(morphedPosition.xyz, 1), g_mWorldViewProjection);
-	Output.vClipPosition = mul(float4(morphedPosition.xyz, 1), g_mWorldView);
+#if VB_MORPH
+    VB_MORPH_WEIGHTS_CALC
+#endif
+
+	Output.vPosition = mul(float4(positionL, 1.0f), g_mWorldViewProjection);
+	Output.vClipPosition = mul(float4(positionL, 1.0f), g_mWorldView);
 
 	/*
 	// Remove any scaling from the world matrix by normalizing each column
@@ -85,15 +123,15 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	*/
 
 #if VB_NORMAL
-	Output.vNormal = morphedNormal;
+	Output.vNormal = normalL;
     // Normalize as the world matrix may have scaling applied.
-    Output.vWorldNormal = normalize(mul(morphedNormal, g_mWorldInvTranspose));
+    Output.vWorldNormal = normalize(mul(normalL.xyz, (float3x3)g_mWorldInvTranspose));
 #endif
 
 #if VB_TANGENT
-	Output.vTangent = morphedTangent;
+	Output.vTangent = float4(tangentL, Input.vTangent.w);
     // Normalize as the world matrix may have scaling applied.
-    Output.vWorldTangent = normalize(mul(morphedTangent.xyz, g_mWorld));
+    Output.vWorldTangent = normalize(mul(tangentL.xyz, (float3x3)g_mWorld));
 #endif
 
 #if VB_TEXCOORD0

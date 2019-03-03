@@ -294,6 +294,9 @@
     <ClInclude Include="Morph_weights_component.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Skinned_mesh_component.h">
+      <Filter>Systems\Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Entity.cpp">
@@ -440,6 +443,9 @@
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Morph_weights_component.cpp">
+      <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Skinned_mesh_component.cpp">
       <Filter>Systems\Renderer</Filter>
     </ClCompile>
   </ItemGroup>

@@ -25,6 +25,10 @@ namespace oe {
         // Manager_tickable implementation
         void tick() override;
 
+        // Manager_deviceDependent implementation
+        void createDeviceDependentResources(DX::DeviceResources& deviceResources) override;
+        void destroyDeviceDependentResources() override;
+
         // IMaterial_manager implementation
         void bind(
             Material_context& materialContext,
@@ -68,6 +72,7 @@ namespace oe {
         std::shared_ptr<const Material> _boundMaterial;
         Render_pass_blend_mode _boundBlendMode;
         Microsoft::WRL::ComPtr<ID3D11Buffer> _boundLightDataConstantBuffer;
+        std::shared_ptr<D3D_buffer> _boneTransformConstantBuffer;
         uint32_t _boundSrvCount = 0;
         uint32_t _boundSsCount = 0;
     };

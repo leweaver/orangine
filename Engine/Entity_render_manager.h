@@ -85,7 +85,8 @@ namespace oe::internal {
 
 	private:
 
-		std::shared_ptr<D3D_buffer> createBufferFromData(const Mesh_buffer& buffer, UINT bindFlags) const;
+		std::shared_ptr<D3D_buffer> createBufferFromData(const std::string& bufferName, const Mesh_buffer& buffer, UINT bindFlags) const;
+        std::shared_ptr<D3D_buffer> createBufferFromData(const std::string& bufferName, const uint8_t* data, size_t dataSize, UINT bindFlags) const;
 
 	    /**
 		 * \brief Creates a new Renderer_data instance from the given mesh data, in a format
@@ -118,6 +119,7 @@ namespace oe::internal {
 		// Rendering
 		Render_stats _renderStats;
 		Buffer_array_set _bufferArraySet;
+        Renderer_animation_data _rendererAnimationData;
 		std::vector<Entity*> _renderLights;
 
 		struct EnvironmentIBL {

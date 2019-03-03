@@ -32,6 +32,7 @@ const std::string g_flag_morphTargetCount_prefix = "morph_target_count_";
 const std::string g_flag_morphTargetLayout_Position_prefix = "morph_target_vertex_position_";
 const std::string g_flag_morphTargetLayout_Normal_prefix = "morph_target_vertex_normal_";
 const std::string g_flag_morphTargetLayout_Tangent_prefix = "morph_target_vertex_tangent_";
+const std::string g_flag_skinned = "skinned";
 
 PBR_material::PBR_material()
 	: Base_type(static_cast<uint8_t>(Material_type_index::PBR))
@@ -80,6 +81,23 @@ std::set<std::string> PBR_material::configFlags(Render_pass_blend_mode blendMode
     if (blendMode == Render_pass_blend_mode::Opaque) {
         flags.insert(g_flag_enableDeferred);
     }
+
+    const auto vertexLayout = meshVertexLayout.vertexLayout();
+    const auto hasJoints = std::find(
+        vertexLayout.begin(),
+        vertexLayout.end(),
+        Vertex_attribute_semantic{ Vertex_attribute::Joints, 0 }
+    ) != vertexLayout.end();
+    const auto hasWeights = std::find(
+        vertexLayout.begin(),
+        vertexLayout.end(),
+        Vertex_attribute_semantic{ Vertex_attribute::Weights, 0 }
+    ) != vertexLayout.end();
+
+    if (hasJoints && hasWeights) {
+        flags.insert(g_flag_skinned);
+    }
+
     if (meshVertexLayout.morphTargetCount()) {
         flags.insert(g_flag_morphTargetCount_prefix + std::to_string(meshVertexLayout.morphTargetCount()));
 
@@ -149,14 +167,17 @@ std::vector<Vertex_attribute_semantic> PBR_material::vertexInputs(const std::set
 {
     auto vertexAttributes = Base_type::vertexInputs(flags);
 
-    if (requiresTangents())
-    {
+    if (requiresTangents()) {
         vertexAttributes.push_back({ Vertex_attribute::Tangent, 0 });
     }
 
-    if (requiresTexCoord0())
-    {
+    if (requiresTexCoord0()) {
         vertexAttributes.push_back({ Vertex_attribute::Tex_Coord, 0 });
+    }
+
+    if (flags.find(g_flag_skinned) != flags.end()) {
+        vertexAttributes.push_back({ Vertex_attribute::Joints, 0 });
+        vertexAttributes.push_back({ Vertex_attribute::Weights, 0 });
     }
 
     // Vertex attributes for morph targets.
@@ -210,6 +231,11 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
 {
     auto settings = Base_type::vertexShaderSettings(flags);
     applyVertexLayoutShaderCompileSettings(settings);
+
+    // Skinning
+    if (flags.find(g_flag_skinned) != flags.end()) {
+        settings.defines["VB_SKINNED"] = "1";
+    }
     
     uint8_t targetCount;
     int8_t positionPosition;
@@ -224,7 +250,7 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
         uint8_t morphTangentSemanticOffset = getMorphTangentAttributeIndexOffset();
 
         std::array<std::stringstream, 3> vbMorphWeightsCalcParts;
-        vbMorphWeightsCalcParts[0] << "float4 morphedPosition = float4(Input.vPosition.xyz";
+        vbMorphWeightsCalcParts[0] << "float4 morphedPosition = float4(skinnedPosition.xyz";
         vbMorphWeightsCalcParts[1] << "float3 morphedNormal = float3(Input.vNormal";
         vbMorphWeightsCalcParts[2] << "float4 morphedTangent = float4(Input.vTangent.xyz";
 
@@ -237,7 +263,7 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
                 const auto semanticIdx = static_cast<uint8_t>(morphPositionSemanticOffset++);
                 const auto semanticIdxStr = std::to_string(static_cast<int16_t>(semanticIdx));
                 vbMorphInputsArr.at(positionPosition) <<
-                    "float3 vMorphPosition" << morphTargetIdxStr << 
+                    "float3 vMorphPosition" << morphTargetIdxStr <<
                     " : POSITION" << semanticIdxStr <<
                     ";";
                 vbMorphWeightsCalcParts[0] << " + g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]" << " * Input.vMorphPosition" << morphTargetIdxStr;
@@ -270,8 +296,8 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
                 );
             }
         }
-        
-        vbMorphWeightsCalcParts[0] << ", Input.vPosition.w);";
+
+        vbMorphWeightsCalcParts[0] << ", skinnedPosition.w);";
         vbMorphWeightsCalcParts[1] << ");";
         vbMorphWeightsCalcParts[2] << ", Input.vTangent.w); ";
 

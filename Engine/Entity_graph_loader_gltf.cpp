@@ -21,6 +21,7 @@
 #include "FileUtils.h"
 #include "Animation_controller_component.h"
 #include "Morph_weights_component.h"
+#include "Skinned_mesh_component.h"
 
 using namespace std;
 using namespace tinygltf;
@@ -380,6 +381,66 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filePa
 		entities.push_back(entity);
 	}
 
+    // Load Skins
+    for (auto idx = 0; idx < loaderData.nodeIdxToEntity.size(); ++idx) {
+        const auto entity = loaderData.nodeIdxToEntity[idx];
+        const auto skinIdx = model.nodes[idx].skin;
+        if (skinIdx <= -1)
+            continue;
+
+        if (skinIdx >= model.skins.size())
+            throw std::domain_error("Node[" + to_string(idx) + "] points to invalid skin index: " + to_string(skinIdx));
+
+        try {
+            const auto& skin = model.skins[skinIdx];
+
+            for (const auto& childEntity : entity->children()) {
+                if (!childEntity->getFirstComponentOfType<Mesh_data_component>())
+                    continue;
+
+                auto& skinnedMeshComponent = childEntity->addComponent<Skinned_mesh_component>();
+
+                {
+                    // Inverse bind matrices
+                    const auto matricesAccessor = useOrCreateBufferForAccessor<Mesh_buffer_accessor>(
+                        skin.inverseBindMatrices,
+                        loaderData,
+                        { {TINYGLTF_TYPE_MAT4, {TINYGLTF_COMPONENT_TYPE_FLOAT} } },
+                        0,
+                        g_createSimpleMeshAccessor);
+
+                    std::vector<DirectX::SimpleMath::Matrix> inverseBindMatrices;
+                    inverseBindMatrices.reserve(matricesAccessor->count);
+                    for (auto i = 0u; i < matricesAccessor->count; ++i) {
+                        inverseBindMatrices.push_back(*reinterpret_cast<const DirectX::SimpleMath::Matrix*>(matricesAccessor->getIndexed(i)));
+                    }
+
+                    // Nodes that form the skeleton hierarchy.
+                    std::vector<std::shared_ptr<Entity>> joints;
+                    for (const auto jointNodeIdx : skin.joints) {
+                        if (jointNodeIdx < 0 || jointNodeIdx >= model.nodes.size())
+                            throw std::domain_error("invalid joint index: " + to_string(jointNodeIdx));
+
+                        joints.push_back(loaderData.nodeIdxToEntity.at(jointNodeIdx));
+                    }
+                    skinnedMeshComponent.setJoints(move(joints));
+                    skinnedMeshComponent.setInverseBindMatrices(move(inverseBindMatrices));
+                }
+
+                // Node that the skeleton is rooted from
+                if (skin.skeleton > -1) {
+                    if (skin.skeleton >= loaderData.nodeIdxToEntity.size())
+                        throw std::domain_error("invalid skeleton index: " + to_string(skin.skeleton));
+
+                    skinnedMeshComponent.setSkeletonTransformRoot(loaderData.nodeIdxToEntity.at(skin.skeleton));
+                }
+            }
+        }
+        catch (std::exception& ex) {
+            throw std::domain_error("Skin[" + to_string(skinIdx) + "]: "s + ex.what());
+        }
+    }
+
     // Load Animations
     if (!model.animations.empty()) {
         loaderData.rootEntity->addComponent<Animation_controller_component>();
@@ -595,10 +656,10 @@ void setEntityTransform(Entity&  entity, const Node&  node)
 	}
 }
 
-bool loadWeights(int index, const Primitive& prim, Loader_data& loaderData, Mesh_data& meshData)
+bool loadJointsWeights(int index, const Primitive& prim, Loader_data& loaderData, Mesh_data& meshData)
 {
-    const auto jointsAttrName = s_primAttrName_joints + "_" + to_string(index);
-    const auto weightsAttrName = s_primAttrName_weights + "_" + to_string(index);
+    const auto jointsAttrName = s_primAttrName_joints + to_string(index);
+    const auto weightsAttrName = s_primAttrName_weights + to_string(index);
 
     const auto& animJointAttrPos = prim.attributes.find(jointsAttrName);
     const auto& animWeightsAttrPos = prim.attributes.find(weightsAttrName);
@@ -663,7 +724,7 @@ shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_reposi
 	LOG(G3LOG_DEBUG) << "Creating entity for glTF node '" << node.name << "'";
 
 	// Transform
-	setEntityTransform(*rootEntity, node);
+    setEntityTransform(*rootEntity, node);
     
 	// Create MeshData
 	if (node.mesh > -1) {
@@ -778,8 +839,8 @@ shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_reposi
 				}
 
                 // Animation data
-                if (loadWeights(0, prim, loaderData, *meshData)) {
-                    if (loadWeights(1, prim, loaderData, *meshData)) {
+                if (loadJointsWeights(0, prim, loaderData, *meshData)) {
+                    if (loadJointsWeights(1, prim, loaderData, *meshData)) {
                         throw std::exception("loader does not support more than one weights stream");
                     }
                 }

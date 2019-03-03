@@ -21,6 +21,7 @@
 #include <optional>
 #include "IMaterial_manager.h"
 #include "Morph_weights_component.h"
+#include "Skinned_mesh_component.h"
 
 using namespace oe;
 using namespace internal;
@@ -299,15 +300,47 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
 			renderLightData = _renderLightData_unlit.get();
 		}
 
-        auto rendererAnimationData = Renderer_animation_data();
-        auto morphWeightsComponent = entity.getFirstComponentOfType<Morph_weights_component>();
+        // Morphed animation?
+        const auto morphWeightsComponent = entity.getFirstComponentOfType<Morph_weights_component>();
         if (morphWeightsComponent != nullptr) {
             std::transform(morphWeightsComponent->morphWeights().begin(),
                 morphWeightsComponent->morphWeights().end(),
-                rendererAnimationData.morphWeights.begin(),
+                _rendererAnimationData.morphWeights.begin(),
                 [](double v) {return static_cast<float>(v); }
             );
-            std::fill(rendererAnimationData.morphWeights.begin() + morphWeightsComponent->morphWeights().size(), rendererAnimationData.morphWeights.end(), 0.0f);
+            std::fill(_rendererAnimationData.morphWeights.begin() + morphWeightsComponent->morphWeights().size(), _rendererAnimationData.morphWeights.end(), 0.0f);
+        }
+
+        // Skinned mesh?
+        const auto skinnedMeshComponent = entity.getFirstComponentOfType<Skinned_mesh_component>();
+        if (skinnedMeshComponent != nullptr) {
+
+            // Don't need the transform root here, just read the world transforms.
+            const auto& joints = skinnedMeshComponent->joints();
+            const auto& inverseBindMatrices = skinnedMeshComponent->inverseBindMatrices();
+            if (joints.size() != inverseBindMatrices.size())
+                throw std::runtime_error("Size of joints and inverse bone transform arrays must match.");
+
+            if (inverseBindMatrices.size() > _rendererAnimationData.boneTransformConstants.size()) {
+                throw std::runtime_error("Maximum number of bone transforms exceeded: " +
+                    std::to_string(inverseBindMatrices.size()) + " > " +
+                    std::to_string(_rendererAnimationData.boneTransformConstants.size()));
+            }
+
+            auto rootMatrixInv = Matrix::Identity;
+            if (skinnedMeshComponent->skeletonTransformRoot())
+                rootMatrixInv = skinnedMeshComponent->skeletonTransformRoot()->worldTransform().Invert();
+
+            for (auto i = 0; i < joints.size(); ++i) {
+                const auto joint = joints[i];
+                const auto inverseBoneTransform = inverseBindMatrices[i];
+
+                _rendererAnimationData.boneTransformConstants[i] = joint->worldTransform() * rootMatrixInv * inverseBoneTransform;
+            }
+            _rendererAnimationData.numBoneTransforms = static_cast<uint32_t>(joints.size());
+        }
+        else {
+            _rendererAnimationData.numBoneTransforms = 0;
         }
 
 		drawRendererData(
@@ -319,7 +352,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
 			material,
             meshData->vertexLayout,
             *renderableComponent.materialContext(),
-            rendererAnimationData,
+            _rendererAnimationData,
 			renderableComponent.wireframe());
 	}
 	catch (std::runtime_error& e)
@@ -524,7 +557,7 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(std::sh
 		rendererData->indexCount = meshData->indexBufferAccessor->count;
 
 		rendererData->indexBufferAccessor = std::make_unique<D3D_buffer_accessor>(
-			createBufferFromData(*meshData->indexBufferAccessor->buffer, D3D11_BIND_INDEX_BUFFER),
+			createBufferFromData("Mesh data index buffer", *meshData->indexBufferAccessor->buffer, D3D11_BIND_INDEX_BUFFER),
 			meshData->indexBufferAccessor->stride,
 			meshData->indexBufferAccessor->offset);
 		rendererData->indexFormat = meshData->indexBufferAccessor->format;
@@ -591,7 +624,7 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(std::sh
         }
 
 		auto d3DAccessor = std::make_unique<D3D_buffer_accessor>(
-			createBufferFromData(*meshAccessor->buffer, D3D11_BIND_VERTEX_BUFFER),
+			createBufferFromData("Mesh data vertex buffer", *meshAccessor->buffer, D3D11_BIND_VERTEX_BUFFER),
 			meshAccessor->stride, 
 			meshAccessor->offset);
 
@@ -653,25 +686,33 @@ void Entity_render_manager::clearRenderStats()
 	_renderStats = {};
 }
 
-std::shared_ptr<D3D_buffer> Entity_render_manager::createBufferFromData(const Mesh_buffer& buffer, UINT bindFlags) const
+
+std::shared_ptr<D3D_buffer> Entity_render_manager::createBufferFromData(const std::string& bufferName, const Mesh_buffer& buffer, UINT bindFlags) const
+{
+    return createBufferFromData(bufferName, buffer.data, buffer.dataSize, bindFlags);
+}
+
+std::shared_ptr<D3D_buffer> Entity_render_manager::createBufferFromData(const std::string& bufferName, const uint8_t* data, size_t dataSize, UINT bindFlags) const
 {
 	// Fill in a buffer description.
 	D3D11_BUFFER_DESC bufferDesc;
 	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.ByteWidth = static_cast<UINT>(buffer.dataSize);
+	bufferDesc.ByteWidth = static_cast<UINT>(dataSize);
 	bufferDesc.BindFlags = bindFlags;
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = 0;
 
 	// Fill in the sub-resource data.
 	D3D11_SUBRESOURCE_DATA initData;
-	initData.pSysMem = buffer.data;
+	initData.pSysMem = data;
 	initData.SysMemPitch = 0;
 	initData.SysMemSlicePitch = 0;
 
     // Create the buffer
     ID3D11Buffer* d3dBuffer;
     ThrowIfFailed(deviceResources().GetD3DDevice()->CreateBuffer(&bufferDesc, &initData, &d3dBuffer));
+    
+    DX::ThrowIfFailed(d3dBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(bufferName.size()), bufferName.c_str()));
 
-	return std::make_shared<D3D_buffer>(d3dBuffer, buffer.dataSize);
+	return std::make_shared<D3D_buffer>(d3dBuffer, dataSize);
 }

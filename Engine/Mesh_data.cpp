@@ -11,21 +11,22 @@ const std::string g_normal_str("VA_NORMAL");
 const std::string g_tangent_str("VA_TANGENT");
 const std::string g_bi_tangent_str("VA_BITANGENT");
 const std::string g_texcoord_str("VA_TEXCOORD");
+const std::string g_joints_str("VA_TEXCOORD");
+const std::string g_weights_str("VA_TEXCOORD");
 const std::string g_invalid_str("VA_INVALID");
 
-std::vector<std::string> g_va_semantic_names = {
+std::string g_va_semantic_names[] = {
 	"POSITION",
 	"COLOR",
 	"NORMAL",
 	"TANGENT",
 	"BITANGENT",
 	"TEXCOORD",
-	""
+    "BLENDINDICES",
+    "BLENDWEIGHTS"
 };
 
-std::vector<uint32_t> g_va_semantic_indices = {
-	0, 0, 0, 0, 0, 0, 0
-};
+static_assert(array_size(g_va_semantic_names) == static_cast<uint32_t>(Vertex_attribute::Num_Vertex_Attribute));
 
 uint32_t Mesh_data::getVertexCount() const
 {
@@ -67,10 +68,10 @@ size_t Vertex_attribute_meta::numComponents(Vertex_attribute attribute)
 	case Vertex_attribute::Position:
 	case Vertex_attribute::Color:
 	case Vertex_attribute::Normal:
+    case Vertex_attribute::Bi_Tangent:
 		return 3;
 
 	case Vertex_attribute::Tangent:
-	case Vertex_attribute::Bi_Tangent:
 		return 4;
 
 	default:
@@ -80,12 +81,10 @@ size_t Vertex_attribute_meta::numComponents(Vertex_attribute attribute)
 
 std::string_view Vertex_attribute_meta::semanticName(Vertex_attribute attribute)
 {
-	return g_va_semantic_names.at(static_cast<uint32_t>(attribute));
-}
+    const auto attrIndex = static_cast<uint32_t>(attribute);
+    assert(attrIndex < array_size(g_va_semantic_names));
 
-uint32_t Vertex_attribute_meta::semanticIndex(Vertex_attribute attribute)
-{
-	return g_va_semantic_indices.at(static_cast<uint32_t>(attribute));
+	return g_va_semantic_names[attrIndex];
 }
 
 Mesh_buffer::Mesh_buffer(size_t size)

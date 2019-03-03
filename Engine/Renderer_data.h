@@ -29,6 +29,9 @@ namespace oe
 
     struct Renderer_animation_data {
         std::array<float, 8> morphWeights;
+
+        uint32_t numBoneTransforms = 0;
+        std::array<DirectX::SimpleMath::Matrix, g_max_bone_transforms> boneTransformConstants;
     };
 
 	struct Renderer_data

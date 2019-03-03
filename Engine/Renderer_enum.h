@@ -2,6 +2,8 @@
 
 namespace oe {
 
+    inline const uint32_t g_max_bone_transforms = 96;
+
 	enum class Material_alpha_mode {
 		Opaque = 0,
 		Mask,

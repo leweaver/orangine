@@ -64,9 +64,6 @@
     <FxCompile Include="data\shaders\inc\pipeline_standard.hlsl">
       <Filter>Assets\shaders\inc</Filter>
     </FxCompile>
-    <FxCompile Include="data\shaders\test\test_pbr_standard.hlsl">
-      <Filter>Assets\shaders\test</Filter>
-    </FxCompile>
     <FxCompile Include="data\shaders\Clear_gbuffer_material_PS.hlsl">
       <Filter>Assets\shaders</Filter>
     </FxCompile>
@@ -97,11 +94,15 @@
     <FxCompile Include="data\shaders\Unlit_material_PS.hlsl">
       <Filter>Assets\shaders</Filter>
     </FxCompile>
-    <FxCompile Include="data\shaders\test\test_deferred_light.hlsl">
+    <FxCompile Include="data\shaders\test\test_pbr_ps_standard_textured.hlsl" />
+    <FxCompile Include="data\shaders\test\test_pbr_ps_standard_normalmap.hlsl" />
+    <FxCompile Include="data\shaders\test\test_pbr_ps_standard.hlsl">
       <Filter>Assets\shaders\test</Filter>
     </FxCompile>
-    <FxCompile Include="data\shaders\test\test_pbr_standard_textured.hlsl" />
-    <FxCompile Include="data\shaders\test\test_pbr_standard_normalmap.hlsl" />
+    <FxCompile Include="data\shaders\test\test_deferred_light_ps.hlsl">
+      <Filter>Assets\shaders\test</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\test\test_pbr_vs_standard_skinned.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="NatvisFile.natvis" />

@@ -60,7 +60,7 @@ private:
 	* Applies transforms recursively down (from root -> leaves),
 	* then updates components from bottom up (from leaves -> root)
 	*/
-	void updateEntity(Entity* entity);
+	static void updateEntity(Entity* entity);
 
 	class Entity_filter_impl : public Entity_filter {
 	public:

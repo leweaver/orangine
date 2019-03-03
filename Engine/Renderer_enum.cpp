@@ -149,7 +149,7 @@ Render_pass_stencil_mode oe::stringToRenderPassStencilMode(const std::string& st
 
 const std::string& oe::vertexAttributeToString(Vertex_attribute enumValue)
 {
-    return g_stencilModeNames[static_cast<size_t>(enumValue)]; 
+    return g_vertexAttributeNames[static_cast<size_t>(enumValue)]; 
 }
 
 Vertex_attribute oe::stringToVertexAttribute(const std::string& str)
@@ -159,7 +159,7 @@ Vertex_attribute oe::stringToVertexAttribute(const std::string& str)
 
 const std::string& oe::meshIndexTypeToString(Mesh_index_type enumValue)
 {
-    return g_stencilModeNames[static_cast<size_t>(enumValue)]; 
+    return g_meshIndexTypeNames[static_cast<size_t>(enumValue)];
 }
 
 Mesh_index_type oe::stringToMeshIndexType(const std::string& str)

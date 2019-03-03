@@ -86,19 +86,22 @@ namespace oe {
 		
 		// Rotation from the forward vector, in local space
 		const DirectX::SimpleMath::Quaternion &rotation() const { return _localRotation; }
-		void setRotation(const DirectX::SimpleMath::Quaternion &xmvector) { _localRotation = xmvector; }
+		void setRotation(const DirectX::SimpleMath::Quaternion& vector) { _localRotation = vector; }
 
-		// Translation from the origin, in local space
-		const DirectX::SimpleMath::Vector3 &position() const { return _localPosition; }
-		void setPosition(const DirectX::SimpleMath::Vector3 &xmvector) { _localPosition = xmvector; }
+        // Translation from the origin, in local space
+        const DirectX::SimpleMath::Vector3 &position() const { return _localPosition; }
+        void setPosition(const DirectX::SimpleMath::Vector3& vector) { _localPosition = vector; }
 
-		// Scale, in local space
-		const DirectX::SimpleMath::Vector3 &scale() const { return _localScale; }
-		void setScale(const DirectX::SimpleMath::Vector3 &xmvector) { _localScale = xmvector; }
+        // Scale, in local space
+        const DirectX::SimpleMath::Vector3 &scale() const { return _localScale; }
+        void setScale(const DirectX::SimpleMath::Vector3& vector) { _localScale = vector; }
 		void setScale(float scale) { _localScale = DirectX::SimpleMath::Vector3(scale, scale, scale); }
 
 		bool calculateBoundSphereFromChildren() const { return _calculateBoundSphereFromChildren; }
 		void setCalculateBoundSphereFromChildren(bool calculateBoundSphereFromChildren) { _calculateBoundSphereFromChildren = calculateBoundSphereFromChildren; }
+
+        bool calculateWorldTransform() const { return _calculateWorldTransform; }
+        void setCalculateWorldTransform(bool calculateWorldTransform) { _calculateWorldTransform = calculateWorldTransform; }
 
 		const DirectX::BoundingSphere& boundSphere() const { return _boundSphere; }
 		void setBoundSphere(const DirectX::BoundingSphere& boundSphere) { _boundSphere = boundSphere; }
@@ -112,6 +115,11 @@ namespace oe {
 		*/
 		// TODO: This is still a LH Matrix...? :(
 		const DirectX::SimpleMath::Matrix& worldTransform() const { return _worldTransform; }
+        void setWorldTransform(const DirectX::SimpleMath::Matrix& worldTransform)
+		{
+            assert(!_calculateWorldTransform);
+            _worldTransform = worldTransform;
+		}
 
 		const DirectX::SimpleMath::Vector3& worldScale() const;
 		DirectX::SimpleMath::Vector3 worldPosition() const;
@@ -131,6 +139,10 @@ namespace oe {
 		DirectX::SimpleMath::Quaternion _localRotation;
 		DirectX::SimpleMath::Vector3 _localPosition;
 		DirectX::SimpleMath::Vector3 _localScale;
+
+        // If true, the application will calculate the world transform from parent and TRS.
+        // If false, the world transform must be updated manually 
+        bool _calculateWorldTransform;
 
 		// If true, value of _boundSphere will be calculated to be the merged result of all children.
 		// If false, the app must provide the value for _boundSphere.
@@ -153,6 +165,7 @@ namespace oe {
 		DirectX::SimpleMath::Matrix _worldTransform;
 		DirectX::SimpleMath::Quaternion _worldRotation;
 		DirectX::SimpleMath::Vector3 _worldScale;
+
 		DirectX::BoundingSphere _boundSphere;
 
 		/*

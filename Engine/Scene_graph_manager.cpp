@@ -64,7 +64,8 @@ void Scene_graph_manager::tick()
 
 void Scene_graph_manager::updateEntity(Entity* entity)
 {
-    entity->computeWorldTransform();
+    if (entity->calculateWorldTransform())
+        entity->computeWorldTransform();
 
     if (entity->hasChildren()) {
         const auto& children = entity->children();

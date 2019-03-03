@@ -311,7 +311,8 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
         //LoadGLTF("MorphPrimitivesTest", false)->setPosition({0, -3.0f, 0});
         //LoadGLTF("AnimatedMorphCube", false)->setPosition({ 0, -3.0f, 0 });
         //LoadGLTF("Alien", false)->setScale({ 10.01f, 10.01f, 10.01f });
-        LoadGLTF("MorphCube2", false);
+        //LoadGLTF("MorphCube2", false);
+        LoadGLTF("RiggedSimple", false);
         //LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
 
 		//LoadGLTF("MetalRoughSpheres", false);

@@ -43,10 +43,43 @@ Material_manager::Material_manager(Scene& scene)
 {    
 }
 
-
 inline DX::DeviceResources& Material_manager::deviceResources() const
 {
     return _scene.manager<ID3D_resources_manager>().deviceResources();
+}
+
+void Material_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
+{
+    // Animation constant buffer
+    std::array<Matrix, g_max_bone_transforms> initDataMem;
+    constexpr auto dataSize = initDataMem.size() * sizeof(decltype(initDataMem)::value_type);
+
+    // Fill in a buffer description.
+    D3D11_BUFFER_DESC bufferDesc;
+    bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+    bufferDesc.ByteWidth = static_cast<UINT>(dataSize);
+    bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bufferDesc.CPUAccessFlags = 0;
+    bufferDesc.MiscFlags = 0;
+
+    // Fill in the sub-resource data.
+    D3D11_SUBRESOURCE_DATA initData;
+    initData.pSysMem = initDataMem.data();
+    initData.SysMemPitch = 0;
+    initData.SysMemSlicePitch = 0;
+
+    // Create the buffer
+    ID3D11Buffer* d3dBuffer;
+    ThrowIfFailed(deviceResources().GetD3DDevice()->CreateBuffer(&bufferDesc, &initData, &d3dBuffer));
+
+    const std::string bufferName = "bone transforms CB";
+    DX::ThrowIfFailed(d3dBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(bufferName.size()), bufferName.c_str()));
+
+    _boneTransformConstantBuffer = std::make_unique<D3D_buffer>(d3dBuffer, dataSize);
+}
+void Material_manager::destroyDeviceDependentResources()
+{
+    
 }
 
 std::string createShaderError(HRESULT hr, ID3D10Blob* errorMessage, const Material::Shader_compile_settings& compileSettings)
@@ -99,6 +132,13 @@ DXGI_FORMAT format(Vertex_attribute attribute)
         return DXGI_FORMAT_R32G32B32_FLOAT;
 
     case Vertex_attribute::Tangent:
+        return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case Vertex_attribute::Bi_Tangent:
+        return DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+    case Vertex_attribute::Joints:
+        return DXGI_FORMAT_R16G16B16A16_UINT;
+    case Vertex_attribute::Weights:
         return DXGI_FORMAT_R32G32B32A32_FLOAT;
 
     default:
@@ -410,8 +450,26 @@ void Material_manager::render(
 
     // Update constant buffers
     if (materialConstants->vertexConstantBuffer != nullptr) {
+
         _boundMaterial->updateVSConstantBuffer(worldMatrix, camera.viewMatrix, camera.projectionMatrix, rendererAnimationData, context, *materialConstants->vertexConstantBuffer);
-        context->VSSetConstantBuffers(0, 1, &materialConstants->vertexConstantBuffer->d3dBuffer);
+
+        if (rendererAnimationData.numBoneTransforms) {
+            assert(_boneTransformConstantBuffer &&
+                rendererAnimationData.boneTransformConstants.size() <= _boneTransformConstantBuffer->size &&
+                rendererAnimationData.numBoneTransforms < _boneTransformConstantBuffer->size);
+
+            context->UpdateSubresource(
+                _boneTransformConstantBuffer->d3dBuffer, 0, nullptr, rendererAnimationData.boneTransformConstants.data(), 0, 0
+            );
+
+            ID3D11Buffer* vertexConstantBuffers[] = { materialConstants->vertexConstantBuffer->d3dBuffer, _boneTransformConstantBuffer->d3dBuffer };
+            context->VSSetConstantBuffers(0, 2, vertexConstantBuffers);
+        }
+        else {
+            ID3D11Buffer* vertexConstantBuffers[] = { materialConstants->vertexConstantBuffer->d3dBuffer };
+            context->VSSetConstantBuffers(0, 1, vertexConstantBuffers);            
+        }
+
     }
     if (materialConstants->pixelConstantBuffer != nullptr) {
         _boundMaterial->updatePSConstantBuffer(worldMatrix, camera.viewMatrix, camera.projectionMatrix, context, *materialConstants->pixelConstantBuffer);

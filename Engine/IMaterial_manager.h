@@ -15,7 +15,8 @@ namespace oe {
     
     class IMaterial_manager :
         public Manager_base,
-        public Manager_tickable
+        public Manager_tickable,
+        public Manager_deviceDependent
     {
     public:
         explicit IMaterial_manager(Scene& scene) : Manager_base(scene) {}

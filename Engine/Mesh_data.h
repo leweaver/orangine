@@ -34,7 +34,6 @@ namespace oe
 		static std::string vsInputName(Vertex_attribute_semantic attribute);
 		static size_t numComponents(Vertex_attribute attribute);
 		static std::string_view semanticName(Vertex_attribute attribute);
-		static uint32_t semanticIndex(Vertex_attribute attribute);
 	};
 
 	struct Mesh_buffer

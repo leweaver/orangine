@@ -77,9 +77,12 @@ nlohmann::json PBR_material::serialize(bool compilerPropertiesOnly) const
     return j;
 }
 
-std::set<std::string> PBR_material::configFlags(Render_pass_blend_mode blendMode, const Mesh_vertex_layout& meshVertexLayout) const
+std::set<std::string> PBR_material::configFlags(
+    const Renderer_features_enabled& rendererFeatures,
+    Render_pass_blend_mode blendMode, 
+    const Mesh_vertex_layout& meshVertexLayout) const
 {
-    auto flags = Base_type::configFlags(blendMode, meshVertexLayout);
+    auto flags = Base_type::configFlags(rendererFeatures, blendMode, meshVertexLayout);
 
     // TODO: This is a hacky way of finding this information out.
     if (blendMode == Render_pass_blend_mode::Opaque) {
@@ -96,7 +99,7 @@ std::set<std::string> PBR_material::configFlags(Render_pass_blend_mode blendMode
         vertexLayout.end(),
         [](const auto& vae) { return vae.semantic == Vertex_attribute_semantic{ Vertex_attribute::Weights, 0 }; });
 
-    if (hasJoints && hasWeights) {
+    if (rendererFeatures.skinnedAnimation && hasJoints && hasWeights) {
         flags.insert(g_flag_skinned);
 
         for (const auto mve : meshVertexLayout.vertexLayout()) {
@@ -115,7 +118,7 @@ std::set<std::string> PBR_material::configFlags(Render_pass_blend_mode blendMode
         }
     }
 
-    if (meshVertexLayout.morphTargetCount()) {
+    if (rendererFeatures.vertexMorph && meshVertexLayout.morphTargetCount()) {
         flags.insert(g_flag_morphTargetCount_prefix + std::to_string(meshVertexLayout.morphTargetCount()));
 
         const auto& morphTargetLayout = meshVertexLayout.morphTargetLayout();
@@ -391,14 +394,13 @@ void PBR_material::applyVertexLayoutShaderCompileSettings(Shader_compile_setting
 void PBR_material::updateVSConstantBufferValues(PBR_material_vs_constant_buffer& constants,
 	const SimpleMath::Matrix& worldMatrix,
 	const SimpleMath::Matrix& viewMatrix,
-	const SimpleMath::Matrix& /* projMatrix */,
+	const SimpleMath::Matrix& projMatrix,
     const Renderer_animation_data& rendererAnimationData) const
 {
 	// Note that HLSL matrices are Column Major (as opposed to Row Major in DirectXMath) - so we need to transpose everything.
-	constants.worldView = XMMatrixMultiplyTranspose(worldMatrix, viewMatrix);
-
+    constants.viewProjection = XMMatrixMultiplyTranspose(viewMatrix, projMatrix);
 	constants.world = XMMatrixTranspose(worldMatrix);
-	constants.worldInvTranspose = XMMatrixInverse(nullptr, worldMatrix);
+    constants.worldInvTranspose = XMMatrixInverse(nullptr, worldMatrix);
     memcpy_s(&constants.morphWeights[0].x,
         sizeof(XMFLOAT4) * array_size(constants.morphWeights),
         rendererAnimationData.morphWeights.data(),

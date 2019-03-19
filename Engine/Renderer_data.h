@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include <memory>
 #include <array>
 #include "Renderer_enum.h"
@@ -52,4 +51,11 @@ namespace oe
 
 		bool failedRendering;
 	};
+
+    struct Renderer_features_enabled {
+        bool vertexMorph = true;
+        bool skinnedAnimation = true;
+
+        Debug_display_mode debugDisplayMode = Debug_display_mode::None;
+    };
 }

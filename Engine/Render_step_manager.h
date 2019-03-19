@@ -104,7 +104,7 @@ namespace oe::internal {
 
 		Render_step<
 			Render_step_empty_data,
-			Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::ReadWrite>
+			Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::WriteOnly>
 		> _renderStep_debugElements;
 
 		Render_step<

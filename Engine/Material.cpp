@@ -28,7 +28,11 @@ Material::Shader_resources Material::shaderResources(const Render_light_data& re
     return {};
 }
 
-std::set<std::string> Material::configFlags(Render_pass_blend_mode blendMode, const Mesh_vertex_layout& meshBindContext) const
+std::set<std::string> Material::configFlags(
+    const Renderer_features_enabled& rendererFeatures, 
+    Render_pass_blend_mode blendMode, 
+    const Mesh_vertex_layout& meshBindContext
+) const
 {
     return {};
 }

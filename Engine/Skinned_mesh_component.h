@@ -30,5 +30,6 @@ namespace oe {
         std::vector<Entity*> _jointsRaw;
 
         std::vector<DirectX::SimpleMath::Matrix> _inverseBindMatrices;
+        
     };
 }

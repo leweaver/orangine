@@ -2,6 +2,7 @@
 
 #include <string>
 #include <string_view>
+#include <SimpleMath.h>
 
 namespace oe {
     template <typename T, size_t N>
@@ -17,6 +18,12 @@ namespace oe {
         std::hash<T> hasher;
         seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
+
+    // Create a rotation matrix from input unit vector A to B.
+    bool createRotationBetweenUnitVectors(
+        DirectX::SimpleMath::Matrix& result,
+        const DirectX::SimpleMath::Vector3& directionFrom, 
+        const DirectX::SimpleMath::Vector3& directionTo);
 
 	// Convert a wide Unicode string to an UTF8 string
 	std::string utf8_encode(const std::wstring& wstr);

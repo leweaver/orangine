@@ -34,5 +34,7 @@ namespace oe_test {
 
         MOCK_METHOD1(removeFromRoot, std::shared_ptr<oe::Entity>(std::shared_ptr<oe::Entity>));
         MOCK_METHOD1(addToRoot, void(std::shared_ptr<oe::Entity>));
+
+        MOCK_METHOD0(renderImGui, void());
 	};
 }

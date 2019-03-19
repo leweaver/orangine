@@ -11,8 +11,8 @@
 namespace oe {
 	struct PBR_material_vs_constant_buffer : Vertex_constant_buffer_base
 	{
-		DirectX::XMMATRIX worldView; // for debugging only
 		DirectX::XMMATRIX world;
+        DirectX::XMMATRIX viewProjection;
 		DirectX::XMMATRIX worldInvTranspose;
         DirectX::XMFLOAT4 morphWeights[2];
 	};
@@ -205,7 +205,11 @@ namespace oe {
 
         nlohmann::json serialize(bool compilerPropertiesOnly) const override;
 
-        std::set<std::string> configFlags(Render_pass_blend_mode blendMode, const Mesh_vertex_layout& meshVertexLayout) const override;
+        std::set<std::string> configFlags(
+            const Renderer_features_enabled& rendererFeatures,
+            Render_pass_blend_mode blendMode, 
+            const Mesh_vertex_layout& meshVertexLayout) const override;
+
         std::vector<Vertex_attribute_element> vertexInputs(const std::set<std::string>& flags) const override;
         Shader_resources shaderResources(const Render_light_data& renderLightData) const override;
 	    Shader_compile_settings vertexShaderSettings(const std::set<std::string>& flags) const override;

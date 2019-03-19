@@ -117,7 +117,6 @@ namespace oe {
 		const DirectX::SimpleMath::Matrix& worldTransform() const { return _worldTransform; }
         void setWorldTransform(const DirectX::SimpleMath::Matrix& worldTransform)
 		{
-            assert(!_calculateWorldTransform);
             _worldTransform = worldTransform;
 		}
 

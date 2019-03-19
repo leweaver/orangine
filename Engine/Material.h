@@ -98,8 +98,12 @@ namespace oe {
             ID3D11DeviceContext* context,
             D3D_buffer& buffer) const {};
 
-        // Used at compile time - determines flags that are later passed in to the shaderSettings methods.
-        virtual std::set<std::string> configFlags(Render_pass_blend_mode blendMode, const Mesh_vertex_layout& meshBindContext) const;
+        // Used at material compile time - determines flags that are later passed in to the shaderSettings methods.
+        virtual std::set<std::string> configFlags(
+            const Renderer_features_enabled& rendererFeatures,
+            Render_pass_blend_mode blendMode, 
+            const Mesh_vertex_layout& meshBindContext
+        ) const;
         // Used at compile time
         virtual Shader_compile_settings vertexShaderSettings(const std::set<std::string>& flags) const;
         // Used at compile time

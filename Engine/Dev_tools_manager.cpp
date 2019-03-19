@@ -9,11 +9,18 @@
 #include "VectorLog.h"
 #include <imgui/misc/cpp/imgui_stdlib.h>
 #include "Animation_controller_component.h"
+#include "Skinned_mesh_component.h"
+#include "Renderable_component.h"
 
 using namespace DirectX;
 using namespace SimpleMath;
 using namespace oe;
 using namespace internal;
+
+const auto g_hashSeed_sphere = std::hash<std::string>{}("sphere");
+const auto g_hashSeed_cone = std::hash<std::string>{}("cone");
+const auto g_hashSeed_boundingBox = std::hash<std::string>{}("boundingBox");
+const auto g_hashSeed_debugFrustum = std::hash<std::string>{}("debugFrustum");
 
 template<>
 IDev_tools_manager* oe::create_manager(Scene & scene)
@@ -25,6 +32,7 @@ void Dev_tools_manager::initialize()
 {
 	_noLightProvider = [](const BoundingSphere&, std::vector<Entity*>&, uint32_t) {};
     _animationControllers = _scene.manager<IScene_graph_manager>().getEntityFilter({ Animation_controller_component::type() });
+    _skinnedMeshEntities = _scene.manager<IScene_graph_manager>().getEntityFilter({ Skinned_mesh_component::type() });
 }
 
 void Dev_tools_manager::shutdown()
@@ -32,6 +40,69 @@ void Dev_tools_manager::shutdown()
 	assert(!_unlitMaterial);
 	_debugShapes.resize(0);
     _animationControllers = nullptr;
+    _skinnedMeshEntities = nullptr;
+}
+
+void Dev_tools_manager::renderSkeletons() {
+    const auto white = Color(Colors::White);
+    const auto red = Color(Colors::Red);
+    const auto green = Color(Colors::Green);
+
+    std::list<Entity*> bones;
+    for (const auto& skinnedMeshEntity : *_skinnedMeshEntities) {
+        const auto component = skinnedMeshEntity->getFirstComponentOfType<Skinned_mesh_component>();
+        assert(component);
+
+        auto rootEntity = component->skeletonTransformRoot();
+        if (!rootEntity)
+            rootEntity = skinnedMeshEntity;
+
+        for (const auto& child : rootEntity->children()) {
+            bones.push_back(child.get());
+        }
+
+        while (!bones.empty()) {
+            const auto bone = bones.front();
+            bones.pop_front();
+
+            for (const auto& child : bone->children()) {
+                bones.push_back(child.get());
+            }
+
+            const auto parentPos = bone->parent()->worldPosition();
+            const auto childPos = bone->worldPosition();
+
+            auto targetDirection = childPos - parentPos;
+            const auto height = targetDirection.Length();
+
+            if (height != 0.0f) {
+                targetDirection /= height;
+
+                Matrix rotation;
+                if (!createRotationBetweenUnitVectors(rotation, Vector3::Up, targetDirection)) {
+                    rotation = Matrix::CreateRotationX(XM_PI);
+                }
+
+                const auto worldPosition = parentPos + Vector3::Transform(Vector3{ 0, height * 0.5f, 0 }, rotation);
+                const auto transform = Matrix::CreateTranslation(worldPosition);
+                const auto scale = Matrix::CreateScale(height);
+
+                addDebugCone(scale * rotation * transform,
+                             0.1f,
+                             1.0f,
+                             red);
+            }
+
+            addDebugSphere(Matrix::CreateScale(height) * bone->worldTransform(), 0.1f, white, 3);
+        }
+    }
+}
+
+void Dev_tools_manager::tick()
+{
+    clearDebugShapes();
+    if (_renderSkeletons)
+        renderSkeletons();
 }
 
 void Dev_tools_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
@@ -43,41 +114,62 @@ void Dev_tools_manager::destroyDeviceDependentResources()
 {
 	_unlitMaterial.reset();
 	for (auto& debugShape : _debugShapes) {
-		std::get<Renderable>(debugShape).rendererData.reset();
-        std::get<Renderable>(debugShape).materialContext.reset();
+        const auto& renderable = std::get<std::shared_ptr<Renderable>>(debugShape);
+        renderable->rendererData.reset();
+        renderable->materialContext.reset();
 	}
 }
 
-void Dev_tools_manager::addDebugSphere(const Matrix& worldTransform, float radius, const Color& color)
+void Dev_tools_manager::addDebugCone(const Matrix& worldTransform, float diameter, float height, const Color& color)
 {
-	Renderable renderable = {
-		Primitive_mesh_data_factory::createSphere(radius, 6),
-		_unlitMaterial,
-		nullptr
-	};
-	_debugShapes.push_back({ worldTransform, color, std::move(renderable)});
+    auto hash = g_hashSeed_cone;
+    hash_combine(hash, diameter);
+    hash_combine(hash, height);
+    
+    auto renderable = getOrCreateRenderable(hash, [diameter, height]() {
+        return Primitive_mesh_data_factory::createCone(diameter, height, 6);
+    });
+
+    _debugShapes.push_back({ worldTransform, color, renderable });
+}
+
+void Dev_tools_manager::addDebugSphere(const Matrix& worldTransform, float radius, const Color& color, size_t tessellation)
+{
+    auto hash = g_hashSeed_sphere;
+    hash_combine(hash, radius);
+    hash_combine(hash, tessellation);
+
+    auto renderable = getOrCreateRenderable(hash, [radius, tessellation]() {
+        return Primitive_mesh_data_factory::createSphere(radius, tessellation);
+    });
+
+	_debugShapes.push_back({ worldTransform, color, renderable});
 }
 
 void Dev_tools_manager::addDebugBoundingBox(const BoundingOrientedBox& boundingOrientedBox, const Color& color)
 {
 	auto worldTransform = XMMatrixAffineTransformation(Vector3::One, Vector3::Zero, XMLoadFloat4(&boundingOrientedBox.Orientation), XMLoadFloat3(&boundingOrientedBox.Center));
-	
-	Renderable renderable = {
-		Primitive_mesh_data_factory::createBox(boundingOrientedBox.Extents * 2.0f),
-		_unlitMaterial,
-		nullptr
-	};
-	_debugShapes.push_back({ worldTransform, color, std::move(renderable) });
+
+    auto hash = g_hashSeed_boundingBox;
+    hash_combine(hash, boundingOrientedBox.Extents.x);
+    hash_combine(hash, boundingOrientedBox.Extents.y);
+    hash_combine(hash, boundingOrientedBox.Extents.z);
+
+    auto renderable = getOrCreateRenderable(hash, [&boundingOrientedBox]() {
+        return Primitive_mesh_data_factory::createBox(boundingOrientedBox.Extents * 2.0f);
+    });
+
+	_debugShapes.push_back({ worldTransform, color, renderable });
 }
 
 void Dev_tools_manager::addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color)
 {
-	Renderable renderable = {
-		Primitive_mesh_data_factory::createFrustumLines(boundingFrustum),
-		_unlitMaterial,
-		nullptr
-	};
-	_debugShapes.push_back({ Matrix::Identity, color, std::move(renderable) });
+    // TODO: Cache these meshes? Will require not building the transform into the mesh itself.
+    auto renderable = std::make_shared<Renderable>();
+    renderable->meshData = Primitive_mesh_data_factory::createFrustumLines(boundingFrustum);
+    renderable->material = _unlitMaterial;
+
+	_debugShapes.push_back({ Matrix::Identity, color, renderable });
 }
 
 void Dev_tools_manager::clearDebugShapes()
@@ -91,10 +183,10 @@ void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& camera
 	for (auto& debugShape : _debugShapes) {
 		const auto& transform = std::get<Matrix>(debugShape);
 		const auto& color = std::get<Color>(debugShape);
-		auto& renderable = std::get<Renderable>(debugShape);
+		auto& renderable = std::get<std::shared_ptr<Renderable>>(debugShape);
 
 		_unlitMaterial->setBaseColor(color);
-		entityRenderManager.renderRenderable(renderable, transform, 0.0f, cameraData, _noLightProvider, Render_pass_blend_mode::Opaque, true);
+		entityRenderManager.renderRenderable(*renderable, transform, 0.0f, cameraData, _noLightProvider, Render_pass_blend_mode::Opaque, true);
 	}
 }
 
@@ -103,8 +195,30 @@ void Dev_tools_manager::renderImGui()
     // Display contents in a scrolling region
     auto scrollAmount = 0.0f;
 
+    ImGui::SetNextWindowSize(ImVec2(554, 300), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Renderer Features")) {
+        auto featuresEnabled = _scene.manager<IMaterial_manager>().rendererFeatureEnabled();
+
+        const char* items[] = { 
+            debugDisplayModeToString(Debug_display_mode::None).c_str(),
+            debugDisplayModeToString(Debug_display_mode::Normals).c_str()
+            };
+        auto item_current = static_cast<int>(featuresEnabled.debugDisplayMode);
+        if (
+            ImGui::Checkbox("Skinning", &featuresEnabled.skinnedAnimation) ||
+            ImGui::Checkbox("Morphing", &featuresEnabled.vertexMorph) ||
+            ImGui::Combo("Debug Rendering", &item_current, items, IM_ARRAYSIZE(items))
+            ) {
+            featuresEnabled.debugDisplayMode = static_cast<Debug_display_mode>(item_current);
+            _scene.manager<IMaterial_manager>().setRendererFeaturesEnabled(featuresEnabled);
+        }
+    }
+    ImGui::End();
+    
     ImGui::SetNextWindowSize(ImVec2(554, 675), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Animation")) {
+        ImGui::Checkbox("Render Skeletons", &_renderSkeletons);
+
         for (const auto entity : *_animationControllers) {
             const auto animComponent = entity->getFirstComponentOfType<Animation_controller_component>();
             assert(animComponent);
@@ -252,5 +366,20 @@ void Dev_tools_manager::renderImGui()
         ImGui::EndChild();
     }
     ImGui::End();
+}
+
+std::shared_ptr<Renderable> Dev_tools_manager::getOrCreateRenderable(size_t hash,
+    std::function<std::shared_ptr<Mesh_data>()> factory)
+{
+    const auto pos = _shapeMeshCache.find(hash);
+    if (pos == _shapeMeshCache.end()) {
+        const auto renderable = std::make_shared<Renderable>();
+        renderable->meshData = factory();
+        renderable->material = _unlitMaterial;
+        _shapeMeshCache[hash] = renderable;
+        return renderable;
+    }
+
+    return pos->second;
 }
 

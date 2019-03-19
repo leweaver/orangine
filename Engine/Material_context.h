@@ -22,6 +22,7 @@ namespace oe {
             // State that the compiled state relied on
             size_t materialHash;
             size_t meshHash;
+            size_t rendererFeaturesHash;
             Render_pass_blend_mode blendMode;
             std::vector<Vertex_attribute_element> vsInputs;
             std::set<std::string> flags;

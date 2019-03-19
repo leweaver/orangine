@@ -176,11 +176,11 @@ void Game::CreateLights()
 	{
 		auto shadowLight1 = createDirLight({ 0.0f, -1.0f, 0.0f }, { 1, 1, 1 }, 2);
 		shadowLight1->setParent(*lightRoot);
-		shadowLight1->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
+		shadowLight1->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(false);
 
 		auto shadowLight2 = createDirLight({ -0.707, -0.707, -0.707 }, { 1, 1, 0 }, 2.75);
 		shadowLight2->setParent(*lightRoot);
-		shadowLight2->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
+		shadowLight2->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(false);
 
 		createDirLight({ -0.666, -0.333, 0.666 }, { 1, 0, 1 }, 4.0)->setParent(*lightRoot);
 	}
@@ -274,7 +274,7 @@ void Game::CreateGeometricPrimitives()
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
 		child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
-		child2->setPosition({ 0.0f, -6.0f, 0.0f });
+		child2->setPosition({ 0.0f, 0.0f, 0.0f });
 		child2->setBoundSphere(BoundingSphere(Vector3::Zero, 10.0f));
 	}
 }
@@ -312,7 +312,8 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
         //LoadGLTF("AnimatedMorphCube", false)->setPosition({ 0, -3.0f, 0 });
         //LoadGLTF("Alien", false)->setScale({ 10.01f, 10.01f, 10.01f });
         //LoadGLTF("MorphCube2", false);
-        LoadGLTF("RiggedSimple", false);
+        //LoadGLTF("RiggedSimple", false);
+        LoadGLTF("RiggedFigure", false);
         //LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
 
 		//LoadGLTF("MetalRoughSpheres", false);
@@ -320,7 +321,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 
 		CreateCamera(false);
 		CreateLights();
-		CreateGeometricPrimitives();
+		//CreateGeometricPrimitives();
 
 		// Load the skybox
 		auto skyBoxTexture = std::make_shared<File_texture>(std::wstring(L"data/textures/park-cubemap.dds"));

@@ -274,7 +274,8 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
 		if (rendererData == nullptr) {
 			LOG(INFO) << "Creating renderer data for entity " << entity.getName() << " (ID " << entity.getId() << ")";
 
-            const auto flags = material->configFlags(blendMode, meshDataComponent->meshData()->vertexLayout);
+            // Note we get the flags for the case where all features are enabled, to make sure we load all the data streams.
+            const auto flags = material->configFlags(Renderer_features_enabled(), blendMode, meshDataComponent->meshData()->vertexLayout);
 			const auto vertexInputs = material->vertexInputs(flags);
             const auto vertexSettings = material->vertexShaderSettings(flags);
             
@@ -322,7 +323,10 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
 
         // Skinned mesh?
         const auto skinnedMeshComponent = entity.getFirstComponentOfType<Skinned_mesh_component>();
-        if (skinnedMeshComponent != nullptr) {
+        //Matrix const* worldTransform;
+        const Matrix* worldTransform;
+        const auto skinningEnabled = _scene.manager<IMaterial_manager>().rendererFeatureEnabled().skinnedAnimation;
+        if (skinningEnabled && skinnedMeshComponent != nullptr) {
 
             // Don't need the transform root here, just read the world transforms.
             const auto& joints = skinnedMeshComponent->joints();
@@ -336,25 +340,32 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
                     std::to_string(_rendererAnimationData.boneTransformConstants.size()));
             }
 
-            auto rootMatrixInv = Matrix::Identity;
+            Matrix invWorld;
             if (skinnedMeshComponent->skeletonTransformRoot())
-                rootMatrixInv = skinnedMeshComponent->skeletonTransformRoot()->worldTransform().Invert();
+                worldTransform = &skinnedMeshComponent->skeletonTransformRoot()->worldTransform();
+            else
+                worldTransform = &entity.worldTransform();
+                
+            worldTransform->Invert(invWorld);
 
             for (auto i = 0; i < joints.size(); ++i) {
                 const auto joint = joints[i];
+                auto jointToRoot = joint->worldTransform() * invWorld;
                 const auto inverseBoneTransform = inverseBindMatrices[i];
 
-                _rendererAnimationData.boneTransformConstants[i] = joint->worldTransform() * rootMatrixInv * inverseBoneTransform;
+                _rendererAnimationData.boneTransformConstants[i] = (inverseBoneTransform * jointToRoot).Transpose();
+
             }
             _rendererAnimationData.numBoneTransforms = static_cast<uint32_t>(joints.size());
         }
         else {
             _rendererAnimationData.numBoneTransforms = 0;
+            worldTransform = &entity.worldTransform();
         }
-
+        
 		drawRendererData(
 			cameraData,
-			entity.worldTransform(),
+            *worldTransform,
 			*rendererData,
 			blendMode,
 			*renderLightData,
@@ -363,6 +374,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
             *renderableComponent.materialContext(),
             _rendererAnimationData,
 			renderableComponent.wireframe());
+        
 	}
 	catch (std::runtime_error& e)
 	{
@@ -389,7 +401,8 @@ void Entity_render_manager::renderRenderable(Renderable& renderable,
 
 		LOG(INFO) << "Creating renderer data for renderable";
 
-        const auto flags = material->configFlags(blendMode, renderable.meshData->vertexLayout);
+        // Note we get the flags for the case where all features are enabled, to make sure we load all the data streams.
+        const auto flags = material->configFlags(Renderer_features_enabled(), blendMode, renderable.meshData->vertexLayout);
         const auto vertexInputs = material->vertexInputs(flags);
         const auto vertexSettings = material->vertexShaderSettings(flags);
 
@@ -661,7 +674,8 @@ Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material
 
 	if (renderable.rendererData == nullptr)
 	{
-        const auto flags = material->configFlags(Render_pass_blend_mode::Opaque, renderable.meshData->vertexLayout);
+        // Note we get the flags for the case where all features are enabled, to make sure we load all the data streams.
+        const auto flags = material->configFlags(Renderer_features_enabled(), Render_pass_blend_mode::Opaque, renderable.meshData->vertexLayout);
 		std::vector<Vertex_attribute> vertexAttributes;
 		const auto vertexInputs = renderable.material->vertexInputs(flags);
         const auto vertexSettings = material->vertexShaderSettings(flags);

@@ -3,6 +3,7 @@
 #include "Manager_base.h"
 #include "Renderer_enum.h"
 #include "Render_pass.h"
+#include "Renderer_data.h"
 
 namespace oe {
     class Material_context;
@@ -40,5 +41,8 @@ namespace oe {
 
         // Unbinds the current material. Must be called when rendering of an object is complete.
         virtual void unbind() = 0;
+
+        virtual void setRendererFeaturesEnabled(const Renderer_features_enabled& renderer_feature_enabled) = 0;
+        virtual const Renderer_features_enabled& rendererFeatureEnabled() const = 0;
     };
 }

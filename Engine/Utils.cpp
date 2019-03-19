@@ -8,6 +8,61 @@
 using namespace oe;
 using namespace std::string_literals;
 
+bool oe::createRotationBetweenUnitVectors(
+    DirectX::SimpleMath::Matrix& result,
+    const DirectX::SimpleMath::Vector3& directionFrom,
+    const DirectX::SimpleMath::Vector3& directionTo)
+{
+
+#ifdef _DEBUG
+    // Verify that the inputs are unit vectors.
+    auto lenSqr = directionFrom.LengthSquared();
+    // more forgiving than FLT_EPSILON as this is 
+    // just to make sure we normalized, and error may actually be high.
+    constexpr auto epsilon = 0.00001f;     
+    assert(lenSqr < 1.0f + epsilon && lenSqr > 1.0f - epsilon);
+    lenSqr = directionTo.LengthSquared();
+    assert(lenSqr < 1.0f + epsilon && lenSqr > 1.0f - epsilon);
+#endif
+    
+    const auto v = directionFrom.Cross(directionTo);
+    const auto sine = v.Length();
+    if (sine == 0.0f) {
+        // Vectors are identical, no operation needed.
+        result = DirectX::SimpleMath::Matrix::Identity;
+        return true;
+    }
+
+    const auto cosine = directionFrom.Dot(directionTo);
+    if (cosine == -1.0f) {
+        // Vectors pointing directly opposite to one another.
+        return false;
+    }
+    DirectX::XMFLOAT3X3 vx = {
+        0, v.z, -v.y,
+        -v.z, 0, v.x,
+        v.y, -v.x, 0
+    };
+    const auto vxMat = XMLoadFloat3x3(&vx);
+
+    DirectX::XMFLOAT3X3 i {
+        1.0f, 0, 0,
+        0, 1.0f, 0,
+        0, 0, 1.0f
+    };
+    static const auto i_mat = XMLoadFloat3x3(&i);
+
+    const auto resultMat =
+        i_mat + 
+        vxMat +
+        vxMat * vxMat * ((1.0f - cosine) / (sine * sine));
+
+    // Important that we store as a 3x3, so that the extra fields in the 4x4 matrix are discarded.
+    XMStoreFloat3x3(&vx, resultMat);
+    result = vx;
+    return true;
+}
+
 // Convert a wide Unicode string to an UTF8 string
 std::string oe::utf8_encode(const std::wstring &wstr)
 {

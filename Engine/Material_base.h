@@ -5,7 +5,7 @@
 namespace oe {
 	struct Vertex_constant_buffer_empty {};
 	struct Vertex_constant_buffer_base {
-		DirectX::SimpleMath::Matrix worldViewProjection;		
+		DirectX::SimpleMath::Matrix worldViewProjection;
 	};
 	
 	struct Pixel_constant_buffer_empty {};

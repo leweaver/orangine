@@ -12,11 +12,13 @@ namespace oe {
 
     class IDev_tools_manager :
         public Manager_base,
+        public Manager_tickable,
         public Manager_deviceDependent {
     public:
         explicit IDev_tools_manager(Scene& scene) : Manager_base(scene) {}
 
-        virtual void addDebugSphere(const DirectX::SimpleMath::Matrix& worldTransform, float radius, const DirectX::SimpleMath::Color& color) = 0;
+        virtual void addDebugCone(const DirectX::SimpleMath::Matrix& worldTransform, float diameter, float height, const DirectX::SimpleMath::Color& color) = 0;
+        virtual void addDebugSphere(const DirectX::SimpleMath::Matrix& worldTransform, float radius, const DirectX::SimpleMath::Color& color, size_t tessellation = 6) = 0;
         virtual void addDebugBoundingBox(const DirectX::BoundingOrientedBox& boundingOrientedBox, const DirectX::SimpleMath::Color& color) = 0;
         virtual void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const DirectX::SimpleMath::Color& color) = 0;
         virtual void clearDebugShapes() = 0;

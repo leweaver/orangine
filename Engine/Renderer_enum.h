@@ -46,6 +46,7 @@ namespace oe {
 	enum class Render_pass_depth_mode {
 		ReadWrite = 0,
 		ReadOnly,
+        WriteOnly,
 		Disabled,
 
         Num_Depth_Mode
@@ -156,6 +157,15 @@ namespace oe {
     };
     const std::string& elementComponentToString(Element_component enumValue);
     Element_component stringToElementComponent(const std::string& str);
+
+    enum class Debug_display_mode {
+        None = 0,
+        Normals,
+
+        Num_Debug_Display_Mode
+    };
+    const std::string& debugDisplayModeToString(Debug_display_mode enumValue);
+    Debug_display_mode stringToDebugDisplayMode(const std::string& str);
 
     struct Vertex_attribute_element {
         Vertex_attribute_semantic semantic;

@@ -27,16 +27,14 @@ cbuffer cb_surface : register(b0)
 struct PS_INPUT
 {
 #if VB_NORMAL
-	float3 vNormal        : NORMAL0;
-	float3 vWorldNormal   : NORMAL1;
+	float3 vWorldNormal   : NORMAL0;
 #endif
 #if VB_TANGENT
 	float4 vTangent       : TANGENT0;
 	float3 vWorldTangent  : TANGENT1;
 #endif
-    float4 vClipPosition  : TEXCOORD0;
 #if VB_TEXCOORD0
-	float2 vTexCoord0     : TEXCOORD1;
+	float2 vTexCoord0     : TEXCOORD0;
 #endif
 	float4 vWorldPosition : SV_POSITION;
 };
@@ -131,7 +129,6 @@ PS_OUTPUT PSMain(PS_INPUT input)
 		occlusionFactor,
 		input.vWorldPosition.xyz);
 
-	//output.Color = float4(input.vClipPosition.xyz, 0.0);
 	return output;
 }
 

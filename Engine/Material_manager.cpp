@@ -41,7 +41,7 @@ Material_manager::Material_manager(Scene& scene)
     : IMaterial_manager(scene)
     , _materialConstants({})
     , _boundBlendMode(Render_pass_blend_mode::Opaque)
-{    
+{
 }
 
 inline DX::DeviceResources& Material_manager::deviceResources() const
@@ -264,6 +264,11 @@ void Material_manager::createPixelShader(
     compiledMaterial.pixelShader->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(debugName.size()), debugName.c_str());
 }
 
+void Material_manager::initialize()
+{
+    setRendererFeaturesEnabled(Renderer_features_enabled());
+}
+
 void Material_manager::tick()
 {
     if (_boundMaterial) {
@@ -283,61 +288,85 @@ void Material_manager::bind(
 
     const auto materialHash = material->ensureCompilerPropertiesHash();
     auto compiledMaterial = materialContext.compiledMaterial;
-    if (compiledMaterial) {
+    auto rebuildConfig = false;
+    if (!compiledMaterial) {
+        rebuildConfig = true;
+    }
+    else {
         if (compiledMaterial->blendMode != blendMode) {
             LOG(WARNING) << "Rendering material with a different blendMode than last time. This will be a big performance hit.";
-            compiledMaterial = nullptr;
+            rebuildConfig = true;
         }
         else if (compiledMaterial->meshHash != meshVertexLayout.propertiesHash()) {
             LOG(WARNING) << "Rendering material with a different morphTargetCount than last time. This will be a big performance hit.";
-            compiledMaterial = nullptr;
+            rebuildConfig = true;
         }
-        else if(compiledMaterial->materialHash != materialHash) {
+        else if (compiledMaterial->materialHash != materialHash) {
             LOG(DEBUG) << "Material hash changed.";
-            compiledMaterial = nullptr;
+            rebuildConfig = true;
+        }
+        else if(compiledMaterial->rendererFeaturesHash != _rendererFeaturesHash) {
+            LOG(DEBUG) << "Renderer features hash changed.";
+            rebuildConfig = true;
         }
     }
 
     const auto device = deviceResources().GetD3DDevice();
-    if (!compiledMaterial)
+    if (rebuildConfig)
     {
-        LOG(INFO) << "Recompiling shaders for material";
+        auto flags = material->configFlags(_rendererFeatures, blendMode, meshVertexLayout);
+        LOG(DEBUG) << "Material flags: " << nlohmann::json(flags).dump(2);
 
-        // TODO: Look in a cache for a compiled material that matches the hash
-        compiledMaterial = std::make_shared<Material_context::Compiled_material>();
-        materialContext.compiledMaterial = compiledMaterial;
-
-        compiledMaterial->materialHash = materialHash;
-        compiledMaterial->meshHash = meshVertexLayout.propertiesHash();
-
-        try {
-            // Start with gathering the flags  
-            compiledMaterial->blendMode = blendMode;
-            compiledMaterial->flags = material->configFlags(blendMode, meshVertexLayout);
-            LOG(DEBUG) << "Material flags: " << nlohmann::json(compiledMaterial->flags).dump(2);
-
-            compiledMaterial->vsInputs = material->vertexInputs(compiledMaterial->flags);
-            
-            createVertexShader(*compiledMaterial, *material);
-            createPixelShader(*compiledMaterial, *material);
-
-            // Lazy create constant buffers for this material type if they don't already exist.
-            Material_constants* materialConstants;
-            ensureMaterialConstants(*material, materialConstants);
-
-            if (!materialConstants->vertexConstantBuffer) {
-                materialConstants->vertexConstantBuffer = material->createVSConstantBuffer(device);
+        auto requiresRecompile = true;
+        if (compiledMaterial) {
+            // Skip recompile if the flags are actually the same.
+            if (flags.size() == compiledMaterial->flags.size() &&
+                std::equal(flags.begin(), flags.end(), compiledMaterial->flags.begin())) 
+            {
+                requiresRecompile = false;
             }
-            if (!materialConstants->pixelConstantBuffer) {
-                materialConstants->pixelConstantBuffer = material->createPSConstantBuffer(device);
-            }
-
-            // Make sure that the shader resource views and SamplerStates vectors are empty.
-            materialContext.resetShaderResourceViews();
-            materialContext.resetSamplerStates();
         }
-        catch (std::exception& ex) {
-            throw std::runtime_error("Failed to create resources in Material_manager::bind. "s + ex.what());
+        else {
+            compiledMaterial = std::make_shared<Material_context::Compiled_material>();
+        }
+        compiledMaterial->rendererFeaturesHash = _rendererFeaturesHash;
+
+        if (requiresRecompile) {
+            LOG(INFO) << "Recompiling shaders for material";
+
+            // TODO: Look in a cache for a compiled material that matches the hash
+            materialContext.compiledMaterial = compiledMaterial;
+
+            compiledMaterial->materialHash = materialHash;
+            compiledMaterial->meshHash = meshVertexLayout.propertiesHash();
+
+            try {
+                compiledMaterial->blendMode = blendMode;
+                compiledMaterial->flags = std::move(flags);
+
+                compiledMaterial->vsInputs = material->vertexInputs(compiledMaterial->flags);
+
+                createVertexShader(*compiledMaterial, *material);
+                createPixelShader(*compiledMaterial, *material);
+
+                // Lazy create constant buffers for this material type if they don't already exist.
+                Material_constants* materialConstants;
+                ensureMaterialConstants(*material, materialConstants);
+
+                if (!materialConstants->vertexConstantBuffer) {
+                    materialConstants->vertexConstantBuffer = material->createVSConstantBuffer(device);
+                }
+                if (!materialConstants->pixelConstantBuffer) {
+                    materialConstants->pixelConstantBuffer = material->createPSConstantBuffer(device);
+                }
+
+                // Make sure that the shader resource views and SamplerStates vectors are empty.
+                materialContext.resetShaderResourceViews();
+                materialContext.resetSamplerStates();
+            }
+            catch (std::exception& ex) {
+                throw std::runtime_error("Failed to create resources in Material_manager::bind. "s + ex.what());
+            }
         }
     }
 
@@ -484,6 +513,20 @@ void Material_manager::unbind()
 
     _boundMaterial.reset();
     _boundLightDataConstantBuffer.Reset();
+}
+
+void Material_manager::setRendererFeaturesEnabled(const Renderer_features_enabled& renderer_feature_enabled)
+{
+    _rendererFeatures = renderer_feature_enabled;
+    _rendererFeaturesHash = 0;
+    hash_combine(_rendererFeaturesHash, _rendererFeatures.skinnedAnimation);
+    hash_combine(_rendererFeaturesHash, _rendererFeatures.vertexMorph);
+    hash_combine(_rendererFeaturesHash, _rendererFeatures.debugDisplayMode);
+}
+
+const Renderer_features_enabled& Material_manager::rendererFeatureEnabled() const
+{
+    return _rendererFeatures;
 }
 
 bool Material_manager::ensureSamplerState(

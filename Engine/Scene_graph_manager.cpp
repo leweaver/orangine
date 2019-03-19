@@ -130,7 +130,9 @@ void Scene_graph_manager::initializeEntity(std::shared_ptr<Entity> entityPtr) co
         auto entity = entities.front();
         entities.pop_front();
 
-        entity->computeWorldTransform();
+        if (entity->calculateWorldTransform())
+            entity->computeWorldTransform();
+
         entity->_state = Entity_state::Initialized;
 
         for (const auto &child : entity->_children)

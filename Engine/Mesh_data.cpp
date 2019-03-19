@@ -22,8 +22,8 @@ std::string g_va_semantic_names[] = {
 	"TANGENT",
 	"BITANGENT",
 	"TEXCOORD",
-    "BLENDINDICES",
-    "BLENDWEIGHTS"
+    "BONEINDICES",
+    "WEIGHTS"
 };
 
 static_assert(array_size(g_va_semantic_names) == static_cast<uint32_t>(Vertex_attribute::Num_Vertex_Attribute));

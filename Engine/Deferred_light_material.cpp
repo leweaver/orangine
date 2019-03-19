@@ -24,6 +24,8 @@ const std::string g_json_emittedEnabled = "emitted_enabled";
 
 const std::string g_material_type = "Deferred_light_material";
 
+const std::string g_flag_debugNormals = "debug_normals";
+
 Deferred_light_material::Deferred_light_material()
     : Base_type(static_cast<uint8_t>(Material_type_index::Deferred_Light))
 {}
@@ -53,6 +55,18 @@ nlohmann::json Deferred_light_material::serialize(bool compilerPropertiesOnly) c
     j[g_json_shadowArrayEnabled] = _shadowArrayEnabled;
 
     return j;
+}
+
+std::set<std::string> Deferred_light_material::configFlags(const Renderer_features_enabled& rendererFeatures,
+    Render_pass_blend_mode blendMode, const Mesh_vertex_layout& meshBindContext) const
+{
+    auto flags = Base_type::configFlags(rendererFeatures, blendMode, meshBindContext);
+
+    if (rendererFeatures.debugDisplayMode == Debug_display_mode::Normals) {
+        flags.insert(g_flag_debugNormals);
+    }
+
+    return flags;
 }
 
 Material::Shader_resources Deferred_light_material::shaderResources(const Render_light_data& renderLightData) const
@@ -124,10 +138,13 @@ Material::Shader_compile_settings Deferred_light_material::pixelShaderSettings(c
 	if (_shadowArrayEnabled)
 		settings.defines["MAP_SHADOWMAP_ARRAY"] = "1";
 
+    if (flags.find(g_flag_debugNormals) != flags.end()) {
+        settings.defines["DEBUG_DISPLAY_NORMALS"] = "1";
+    }
+
 	//settings.defines["DEBUG_DISPLAY_METALLIC_ROUGHNESS"] = "1";
 	//settings.defines["DEBUG_LIGHTING_ONLY"] = "1";
 	//settings.defines["DEBUG_NO_LIGHTING"] = "1";
-	//settings.defines["DEBUG_DISPLAY_NORMALS"] = "1";
 	return settings;
 }
 

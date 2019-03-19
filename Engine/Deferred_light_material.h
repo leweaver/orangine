@@ -47,7 +47,13 @@ namespace oe
 		Material_light_mode lightMode() override { return Material_light_mode::Lit; }
 		const std::string& materialType() const override; 
 	    
-        nlohmann::json serialize(bool compilerPropertiesOnly) const;
+        nlohmann::json serialize(bool compilerPropertiesOnly) const; 
+	    
+        std::set<std::string> configFlags(
+            const Renderer_features_enabled& rendererFeatures,
+            Render_pass_blend_mode blendMode,
+            const Mesh_vertex_layout& meshBindContext
+        ) const override;
         Shader_resources shaderResources(const Render_light_data& renderLightData) const override;
 
 	protected:

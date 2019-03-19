@@ -44,6 +44,7 @@ static_assert(static_cast<size_t>(Render_pass_blend_mode::Num_Blend_Mode) == arr
 std::string g_depthModeNames[] = {
     "read_write",
     "read_only",
+    "write_only",
     "disabled"
 };
 static_assert(static_cast<size_t>(Render_pass_depth_mode::Num_Depth_Mode) == array_size(g_depthModeNames));
@@ -108,6 +109,12 @@ std::string g_elementComponentNames[] = {
     "Float",
 };
 static_assert(static_cast<size_t>(Element_component::Num_Element_Component) == array_size(g_elementComponentNames));
+
+std::string g_debugDisplayModeNames[] = {
+    "None",
+    "Normals",
+};
+static_assert(static_cast<size_t>(Debug_display_mode::Num_Debug_Display_Mode) == array_size(g_debugDisplayModeNames));
 
 const std::string& oe::materialAlphaModeToString(Material_alpha_mode enumValue)
 {
@@ -227,4 +234,14 @@ const std::string& oe::elementComponentToString(Element_component enumValue)
 Element_component oe::stringToElementComponent(const std::string& str)
 {
     return stringToEnum<Element_component>(str, g_elementComponentNames);
+}
+
+const std::string& oe::debugDisplayModeToString(Debug_display_mode enumValue)
+{
+    return g_debugDisplayModeNames[static_cast<size_t>(enumValue)];
+}
+
+Debug_display_mode oe::stringToDebugDisplayMode(const std::string& str)
+{
+    return stringToEnum<Debug_display_mode>(str, g_debugDisplayModeNames);
 }

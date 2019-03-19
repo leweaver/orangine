@@ -169,7 +169,6 @@ vertexAccessorFactory(Vertex_attribute_semantic vertexAttribute)
     };
 }
 
-
 struct Loader_data
 {
 	Loader_data(Model& model, string&& baseDir, IWICImagingFactory *imagingFactory, bool calculateBounds)
@@ -342,6 +341,51 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(size_t accessorIn
         */
 }
 
+DirectX::SimpleMath::Matrix createMatrix4FromGltfArray(const vector<double>& m)
+{
+    // glTF matrices are RHS, Column Major
+    // Orangine matrices are RHS, Row Major
+    // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#data-alignment
+    // buffer is: |m00|m10|m20|m30|m01|m11|m21|m31|m02|m12|m22|m32|m03|m13|m23|m33|
+    // output is: |m00|m01|m02|m03|m10|m11|m12|m13|m20|m21|m22|m23|m30|m31|m32|m33|
+    const auto f = [m](size_t index) { return static_cast<float>(m[index]); };
+    return DirectX::SimpleMath::Matrix(
+        static_cast<float>(m[0]), static_cast<float>(m[1]), static_cast<float>(m[2]), static_cast<float>(m[3]),
+        static_cast<float>(m[4]), static_cast<float>(m[5]), static_cast<float>(m[6]), static_cast<float>(m[7]),
+        static_cast<float>(m[8]), static_cast<float>(m[9]), static_cast<float>(m[10]), static_cast<float>(m[11]),
+        static_cast<float>(m[12]), static_cast<float>(m[13]), static_cast<float>(m[14]), static_cast<float>(m[15])
+    );
+}
+
+std::vector<DirectX::SimpleMath::Matrix> createMatrix4ArrayFromAccessor(Loader_data& loaderData, int accessorIndex)
+{
+    // Inverse bind matrices
+    const auto matricesAccessor = useOrCreateBufferForAccessor<Mesh_buffer_accessor>(
+        accessorIndex,
+        loaderData,
+        { {TINYGLTF_TYPE_MAT4, {TINYGLTF_COMPONENT_TYPE_FLOAT} } },
+        0,
+        g_createSimpleMeshAccessor);
+
+    std::vector<DirectX::SimpleMath::Matrix> matrices;
+    matrices.reserve(matricesAccessor->count);
+
+    const auto reference = DirectX::SimpleMath::Matrix::CreateTranslation({ 1,2,3 });
+    
+    for (auto i = 0u; i < matricesAccessor->count; ++i) {
+        const auto m = reinterpret_cast<const float*>(matricesAccessor->getIndexed(i));
+        matrices.push_back(
+            DirectX::SimpleMath::Matrix(
+                m[0], m[1], m[2], m[3],
+                m[4], m[5], m[6], m[7],
+                m[8], m[9], m[10], m[11],
+                m[12], m[13], m[14], m[15]
+            ));
+    }
+
+    return matrices;
+}
+
 vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filePath,
 	IEntity_repository& entityRepository, 
 	IMaterial_repository& materialRepository,
@@ -414,19 +458,7 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filePa
                 auto& skinnedMeshComponent = childEntity->addComponent<Skinned_mesh_component>();
 
                 {
-                    // Inverse bind matrices
-                    const auto matricesAccessor = useOrCreateBufferForAccessor<Mesh_buffer_accessor>(
-                        skin.inverseBindMatrices,
-                        loaderData,
-                        { {TINYGLTF_TYPE_MAT4, {TINYGLTF_COMPONENT_TYPE_FLOAT} } },
-                        0,
-                        g_createSimpleMeshAccessor);
-
-                    std::vector<DirectX::SimpleMath::Matrix> inverseBindMatrices;
-                    inverseBindMatrices.reserve(matricesAccessor->count);
-                    for (auto i = 0u; i < matricesAccessor->count; ++i) {
-                        inverseBindMatrices.push_back(*reinterpret_cast<const DirectX::SimpleMath::Matrix*>(matricesAccessor->getIndexed(i)));
-                    }
+                    std::vector<DirectX::SimpleMath::Matrix> inverseBindMatrices = createMatrix4ArrayFromAccessor(loaderData, skin.inverseBindMatrices);
 
                     // Nodes that form the skeleton hierarchy.
                     std::vector<std::shared_ptr<Entity>> joints;
@@ -434,7 +466,12 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filePa
                         if (jointNodeIdx < 0 || jointNodeIdx >= model.nodes.size())
                             throw std::domain_error("invalid joint index: " + to_string(jointNodeIdx));
 
-                        joints.push_back(loaderData.nodeIdxToEntity.at(jointNodeIdx));
+                        auto jointEntity = loaderData.nodeIdxToEntity.at(jointNodeIdx);
+                        //jointEntity->setCalculateWorldTransform(false);
+                        //jointEntity->setScale({ 1,1,1 });
+                        //jointEntity->setRotation(DirectX::SimpleMath::Quaternion::Identity);
+                        //jointEntity->setPosition({ 0, 0, 0 });
+                        joints.push_back(jointEntity);
                     }
                     skinnedMeshComponent.setJoints(move(joints));
                     skinnedMeshComponent.setInverseBindMatrices(move(inverseBindMatrices));
@@ -625,10 +662,7 @@ void setEntityTransform(Entity&  entity, const Node&  node)
 {
 	if (node.matrix.size() == 16)
 	{
-		float elements[16];
-		for (auto i = 0; i < 16; ++i)
-			elements[i] = static_cast<float>(node.matrix[i]);
-		auto trs = DirectX::SimpleMath::Matrix(elements);
+        auto trs = createMatrix4FromGltfArray(node.matrix);
 
 		DirectX::SimpleMath::Vector3 scale;
 		DirectX::SimpleMath::Quaternion rotation;

@@ -17,6 +17,7 @@ namespace oe {
 
 		// Creates an indexed mesh with Position, Normal, Tangent, Textcoord_0
 		static std::shared_ptr<Mesh_data> createBox(const DirectX::SimpleMath::Vector3& size);
+        static std::shared_ptr<Mesh_data> createCone(float diameter, float height, size_t tessellation = 32);
 		static std::shared_ptr<Mesh_data> createTeapot(size_t tessellation = 8);
 		static std::shared_ptr<Mesh_data> createSphere(float radius = 0.5f, size_t tessellation = 16, bool invertNormals = false);
 

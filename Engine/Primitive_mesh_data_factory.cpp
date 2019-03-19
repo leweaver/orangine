@@ -161,6 +161,19 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2
 	return md;
 }
 
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createCone(float diameter, float height, size_t tessellation)
+{
+    std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
+    std::vector<uint16_t> indices;
+
+    // FIXME: This doesn't seem right, as we are trying to use a RH coordinate system:
+    DirectX::GeometricPrimitive::CreateCone(vertices, indices, diameter, height, tessellation, false);
+
+    auto md = createMeshData(move(vertices), move(indices));
+    generateTangents(md);
+    return md;
+}
+
 std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createSphere(float radius, size_t tessellation, bool invertNormals)
 {
 	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;

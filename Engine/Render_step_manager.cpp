@@ -478,39 +478,46 @@ void Render_step_manager::createRenderStepResources(Render_step<TData, TRender_p
 		pass.setBlendState(commonStates.Additive());
 
 	// Depth/Stencil
-	if constexpr (Render_pass_stencil_mode::Disabled == passConfig.stencilMode()) {
-		if constexpr (Render_pass_depth_mode::ReadWrite == passConfig.depthMode())
-			pass.setDepthStencilState(commonStates.DepthDefault());
-		else if constexpr (Render_pass_depth_mode::ReadOnly == passConfig.depthMode())
-			pass.setDepthStencilState(commonStates.DepthRead());
-		else
-			pass.setDepthStencilState(commonStates.DepthNone());
-	}
-	else {
-		D3D11_DEPTH_STENCIL_DESC desc;
+    D3D11_DEPTH_STENCIL_DESC desc = {};
 
-		desc.DepthEnable = passConfig.depthMode() != Render_pass_depth_mode::Disabled ? TRUE : FALSE;
-		desc.DepthWriteMask = passConfig.depthMode() == Render_pass_depth_mode::ReadWrite ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-		desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+    constexpr auto depthReadEnabled = passConfig.depthMode() == Render_pass_depth_mode::ReadOnly ||
+        passConfig.depthMode() == Render_pass_depth_mode::ReadWrite;
+    constexpr auto depthWriteEnabled = passConfig.depthMode() == Render_pass_depth_mode::WriteOnly ||
+        passConfig.depthMode() == Render_pass_depth_mode::ReadWrite;
 
-		desc.StencilEnable = TRUE;
-		desc.StencilReadMask = passConfig.stencilReadMask();
-		desc.StencilWriteMask = passConfig.stencilWriteMask();
+	desc.DepthEnable = depthReadEnabled || depthWriteEnabled  ? TRUE : FALSE;
+	desc.DepthWriteMask = depthWriteEnabled ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+	desc.DepthFunc = depthReadEnabled ? D3D11_COMPARISON_LESS_EQUAL : D3D11_COMPARISON_ALWAYS;
 
-		desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
-		desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_REPLACE;
-		desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+    if constexpr (Render_pass_stencil_mode::Disabled == passConfig.stencilMode()) {
+        desc.StencilEnable = FALSE;
+        desc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+        desc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+    }
+    else {
+        desc.StencilEnable = TRUE;
+        desc.StencilReadMask = passConfig.stencilReadMask();
+        desc.StencilWriteMask = passConfig.stencilWriteMask();
+        desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
+        desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_REPLACE;
+    }
 
-		desc.BackFace = desc.FrontFace;
+    desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
 
-		ID3D11DepthStencilState* pResult;
-		ThrowIfFailed(d3DResourcesManager.deviceResources().GetD3DDevice()->CreateDepthStencilState(&desc, &pResult));
-		
-		SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilEnabled");
-		pass.setDepthStencilState(pResult);
-		pResult->Release();
-	}
+	desc.BackFace = desc.FrontFace;
+
+	ID3D11DepthStencilState* pResult;
+	ThrowIfFailed(d3DResourcesManager.deviceResources().GetD3DDevice()->CreateDepthStencilState(&desc, &pResult));
+
+    if constexpr (Render_pass_stencil_mode::Disabled == passConfig.stencilMode()) {
+        SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilEnabled");
+    }
+    else {
+        SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilDisabled");
+    }
+	pass.setDepthStencilState(pResult);
+	pResult->Release();
 
 	pass.createDeviceDependentResources();
 

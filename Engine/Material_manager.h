@@ -10,7 +10,7 @@ namespace oe {
 
     class Material_manager : public IMaterial_manager {
     public:
-
+        
         explicit Material_manager(Scene& scene);
 
         Material_manager(const Material_manager& other) = delete;
@@ -19,7 +19,7 @@ namespace oe {
         void operator=(Material_manager&& other) = delete;
 
         // Manager_base implementation
-        void initialize() override {}
+        void initialize() override;
         void shutdown() override {}
 
         // Manager_tickable implementation
@@ -46,6 +46,9 @@ namespace oe {
 
         void unbind() override;
 
+        void setRendererFeaturesEnabled(const Renderer_features_enabled& renderer_feature_enabled) override;
+        const Renderer_features_enabled& rendererFeatureEnabled() const override;
+
     protected:
 
         struct Material_constants {
@@ -54,7 +57,6 @@ namespace oe {
         };
         // Indexed by Material::materialTypeIndex()
         std::vector<Material_constants> _materialConstants;
-
 
         DX::DeviceResources& deviceResources() const;
 
@@ -68,6 +70,9 @@ namespace oe {
             const Material& material) const;
         void createPixelShader(Material_context::Compiled_material& compiledMaterial,
             const Material& material) const;
+
+        Renderer_features_enabled _rendererFeatures;
+        size_t _rendererFeaturesHash = 0;
 
         std::shared_ptr<const Material> _boundMaterial;
         Render_pass_blend_mode _boundBlendMode;

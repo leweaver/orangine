@@ -313,7 +313,8 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
         //LoadGLTF("Alien", false)->setScale({ 10.01f, 10.01f, 10.01f });
         //LoadGLTF("MorphCube2", false);
         //LoadGLTF("RiggedSimple", false);
-        LoadGLTF("RiggedFigure", false);
+        //LoadGLTF("RiggedFigure", false);
+        LoadGLTF("CesiumMan", false);
         //LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
 
 		//LoadGLTF("MetalRoughSpheres", false);

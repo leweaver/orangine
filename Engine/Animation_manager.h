@@ -17,6 +17,7 @@ namespace oe {
         // Manager_base implementation
         void initialize() override;
         void shutdown() override;
+        const std::string& name() const override;
 
         // Manager_tickable implementation
         void tick() override;
@@ -77,6 +78,8 @@ namespace oe {
             uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor);
 
     private:
+
+        static std::string _name;
 
         std::shared_ptr<Entity_filter> _animationControllers;
     };

@@ -7,6 +7,8 @@ using namespace DirectX;
 using namespace oe;
 using namespace internal;
 
+std::string D3D_resources_manager::_name = "D3D_resources_manager";
+
 template<>
 ID3D_resources_manager* oe::create_manager(Scene & scene, DX::DeviceResources& deviceResources)
 {
@@ -19,6 +21,11 @@ D3D_resources_manager::D3D_resources_manager(Scene& scene, DX::DeviceResources& 
     , _commonStates(nullptr)
     , _window(nullptr)
 {	
+}
+
+const std::string& D3D_resources_manager::name() const
+{
+    return _name;
 }
 
 void D3D_resources_manager::createDeviceDependentResources(DX::DeviceResources& deviceResources)

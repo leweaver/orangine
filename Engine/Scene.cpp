@@ -10,17 +10,19 @@
 #include "Entity_repository.h"
 #include "Material_repository.h"
 
+#include "Perf_timer.h"
+
 #include <type_traits>
 #include "IMaterial_manager.h"
 
 using namespace oe;
 
 template<typename TBase, typename TTuple, int TIdx = 0>
-constexpr void forEachOfType(TTuple& managers, const std::function<void(TBase*)>& fn)
+constexpr void forEachOfType(TTuple& managers, const std::function<void(int, TBase*)>& fn)
 {
 	// Initialize only types that derive from TBase
 	if constexpr (std::is_base_of_v<TBase, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
-		fn(std::get<TIdx>(managers).get());
+		fn(TIdx, std::get<TIdx>(managers).get());
 
 	// iterate the next manager
 	if constexpr (TIdx + 1 < std::tuple_size_v<TTuple>)
@@ -28,11 +30,11 @@ constexpr void forEachOfType(TTuple& managers, const std::function<void(TBase*)>
 }
 
 template<typename TBase, typename TTuple, int TIdx = std::tuple_size_v<TTuple> -1>
-constexpr void forEachOfTypeReverse(TTuple& managers, const std::function<void(TBase*)>& fn)
+constexpr void forEachOfTypeReverse(TTuple& managers, const std::function<void(int, TBase*)>& fn)
 {
 	// Initialize only types that derive from TBase
 	if constexpr (std::is_base_of_v<TBase, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
-		fn(std::get<TIdx>(managers).get());
+		fn(TIdx, std::get<TIdx>(managers).get());
 
 	// iterate the next manager (in reverse order than initialized)
 	if constexpr (TIdx > 0)
@@ -40,15 +42,19 @@ constexpr void forEachOfTypeReverse(TTuple& managers, const std::function<void(T
 }
 
 template<typename TTuple, int TIdx = 0>
-constexpr void forEach_tick(TTuple& managers)
+constexpr void forEach_tick(TTuple& managers, std::array<double, std::tuple_size_v<TTuple>>& tickTimes)
 {
 	// Tick only types that derive from Manager_tickable
-	if constexpr (std::is_base_of_v<Manager_tickable, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
-		std::get<TIdx>(managers)->tick();
+    if constexpr (std::is_base_of_v<Manager_tickable, std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>) {
+        auto perfTimer = Perf_timer::start();
+        std::get<TIdx>(managers)->tick();
+        perfTimer.stop();
+        tickTimes[TIdx] += perfTimer.elapsedSeconds();
+    }
 
 	// Recursively iterate to the next tuple index
 	if constexpr (TIdx + 1 < std::tuple_size_v<TTuple>)
-		forEach_tick<TTuple, TIdx + 1>(managers);
+		forEach_tick<TTuple, TIdx + 1>(managers, tickTimes);
 }
 
 template<typename TTuple, int TIdx = 0>
@@ -75,7 +81,10 @@ void Scene::initialize()
 	// Mesh loaders
 	addMeshLoader<Entity_graph_loader_gltf>();
 
-	forEachOfType<Manager_base>(_managers, [](auto* manager) { 
+    std::fill(_tickTimes.begin(), _tickTimes.end(), 0.0);
+    _tickCount = 0;
+
+	forEachOfType<Manager_base>(_managers, [](auto, auto* manager) { 
 		if (manager)
 		    manager->initialize(); 
 	});
@@ -123,13 +132,37 @@ void Scene::tick(DX::StepTimer const& timer)
 {	
 	_deltaTime = timer.GetElapsedSeconds();
 	_elapsedTime += _deltaTime;
-	
-	forEach_tick(_managers);
+    ++_tickCount;
+
+	forEach_tick(_managers, _tickTimes);
+    
+    if (_tickCount == 1) {
+        std::fill(_tickTimes.begin(), _tickTimes.end(), 0.0);
+    }
 }
 
 void Scene::shutdown()
 {
-	forEachOfTypeReverse<Manager_base>(_managers, [](Manager_base* manager) { if (manager) manager->shutdown(); });
+    std::stringstream ss;
+    const auto &tickTimes = _tickTimes;
+    const double tickCount = _tickCount;
+
+    if (_tickCount > 0) {
+        const std::function<void(int, Manager_base*)> timesLog = [&](int idx, Manager_base* manager) {
+            if (tickTimes[idx] > 0.0) {
+                ss  << "  " 
+                    << manager->name() 
+                    << ": " 
+                    << (1000.0 * tickTimes[idx] / tickCount) 
+                    << std::endl;
+            }
+            ++idx;
+        };
+        forEachOfType(_managers, timesLog);
+        LOG(INFO) << "Manager average tick times (ms): " << std::endl << ss.str();
+    }
+
+	forEachOfTypeReverse<Manager_base>(_managers, [](int, Manager_base* manager) { if (manager) manager->shutdown(); });
 
 	_managers = decltype(_managers)();
 }
@@ -171,7 +204,7 @@ void Scene::setMainCamera(const std::shared_ptr<Entity>& cameraEntity)
 void Scene_device_resource_aware::createWindowSizeDependentResources(HWND window, int width, int height)
 {
     LOG(INFO) << "Creating window size dependent resources";
-	forEachOfType<Manager_windowDependent>(_managers, [=](Manager_windowDependent* manager) {
+	forEachOfType<Manager_windowDependent>(_managers, [=](int, Manager_windowDependent* manager) {
 		manager->createWindowSizeDependentResources(_deviceResources, window, width, height);
 	});
 }
@@ -179,7 +212,7 @@ void Scene_device_resource_aware::createWindowSizeDependentResources(HWND window
 void Scene_device_resource_aware::destroyWindowSizeDependentResources()
 {
     LOG(INFO) << "Destroying window size dependent resources";
-	forEachOfType<Manager_windowDependent>(_managers, [](Manager_windowDependent* manager) {
+	forEachOfType<Manager_windowDependent>(_managers, [](int, Manager_windowDependent* manager) {
 		manager->destroyWindowSizeDependentResources();
 	});
 }
@@ -187,7 +220,7 @@ void Scene_device_resource_aware::destroyWindowSizeDependentResources()
 void Scene_device_resource_aware::createDeviceDependentResources()
 {
     LOG(INFO) << "Creating device dependent resources";
-	forEachOfType<Manager_deviceDependent>(_managers, [this](Manager_deviceDependent* manager) {
+	forEachOfType<Manager_deviceDependent>(_managers, [this](int, Manager_deviceDependent* manager) {
 		manager->createDeviceDependentResources(_deviceResources);
 	});
 }
@@ -195,7 +228,7 @@ void Scene_device_resource_aware::createDeviceDependentResources()
 void Scene_device_resource_aware::destroyDeviceDependentResources()
 {
     LOG(INFO) << "Destroying device dependent resources";
-	forEachOfType<Manager_deviceDependent>(_managers, [](Manager_deviceDependent* manager) {
+	forEachOfType<Manager_deviceDependent>(_managers, [](int, Manager_deviceDependent* manager) {
 		manager->destroyDeviceDependentResources();
 	});
 	if (_skyBoxTexture)

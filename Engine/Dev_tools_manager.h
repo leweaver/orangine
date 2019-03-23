@@ -2,6 +2,11 @@
 #include "IDev_tools_manager.h"
 #include "IScene_graph_manager.h"
 #include "Mesh_data.h"
+#include "Fps_counter.h"
+
+namespace oe {
+    class Perf_timer;
+}
 
 namespace oe::internal {
 	class Dev_tools_manager : public IDev_tools_manager {
@@ -9,13 +14,12 @@ namespace oe::internal {
 		explicit Dev_tools_manager(Scene& scene)
 			: IDev_tools_manager(scene)
 			, _unlitMaterial(nullptr)
-            , _vectorLog(nullptr)
 		{}
 
 		// Manager_base implementation
 		void initialize() override;
 		void shutdown() override;
-	    void renderSkeletons();
+        const std::string& name() const override;
 
 	    // Manager_tickable implementation
         void tick() override;
@@ -42,10 +46,15 @@ namespace oe::internal {
 		using LightProvider = std::function<void(const DirectX::BoundingSphere& target, std::vector<Entity*>& lights, uint8_t maxLights)>;
 
         std::shared_ptr<Renderable> getOrCreateRenderable(size_t hash, std::function< std::shared_ptr<Mesh_data>()> factory);
+        void renderSkeletons();
+
+        static std::string _name;
 
 		std::shared_ptr<Unlit_material> _unlitMaterial;
 		std::vector<std::tuple<DirectX::SimpleMath::Matrix, DirectX::SimpleMath::Color, std::shared_ptr<Renderable>>> _debugShapes;
 		LightProvider _noLightProvider;
+
+        std::unique_ptr<Fps_counter> _fpsCounter;
 
         VectorLog* _vectorLog = nullptr;
         std::string _consoleInput;

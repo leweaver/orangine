@@ -8,6 +8,8 @@
 using namespace oe;
 using namespace internal;
 
+std::string Input_manager::_name = "Input_manager";
+
 template<>
 IInput_manager* oe::create_manager(Scene& scene)
 {
@@ -29,6 +31,11 @@ void Input_manager::initialize()
 void Input_manager::shutdown()
 {
 	_mouse.reset();
+}
+
+const std::string& Input_manager::name() const
+{
+    return _name;
 }
 
 void Input_manager::tick()

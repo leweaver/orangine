@@ -16,6 +16,7 @@ namespace oe::internal {
 		// Manager_base implementation
 		void initialize() override {}
 		void shutdown() override {}
+        const std::string& name() const override;
 
 		// Manager_deviceDependent implementation
 		void createDeviceDependentResources(DX::DeviceResources& deviceResources) override;
@@ -28,6 +29,9 @@ namespace oe::internal {
 		std::shared_ptr<Texture> shadowMapStencilTextureArray() override;
 
 	private:
+
+        static std::string _name;
+
 		void verifyTexturePool() const;
 		std::unique_ptr<Shadow_map_texture_pool> _texturePool;
 	};

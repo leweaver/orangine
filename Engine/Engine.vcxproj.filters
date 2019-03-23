@@ -297,6 +297,12 @@
     <ClInclude Include="Skinned_mesh_component.h">
       <Filter>Systems\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Perf_timer.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Fps_counter.h">
+      <Filter>Systems\Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Entity.cpp">
@@ -447,6 +453,9 @@
     </ClCompile>
     <ClCompile Include="Skinned_mesh_component.cpp">
       <Filter>Systems\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Fps_counter.cpp">
+      <Filter>Systems\Tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

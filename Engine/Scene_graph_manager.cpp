@@ -10,6 +10,8 @@
 using namespace oe;
 using namespace internal;
 
+std::string Scene_graph_manager::_name = "Scene_graph_manager";
+
 template<>
 IScene_graph_manager* oe::create_manager(Scene & scene, std::shared_ptr<IEntity_repository>& entityRepository)
 {
@@ -29,6 +31,11 @@ void Scene_graph_manager::initialize()
 
 void Scene_graph_manager::shutdown()
 {
+}
+
+const std::string& Scene_graph_manager::name() const
+{
+    return _name;
 }
 
 void Scene_graph_manager::tick()

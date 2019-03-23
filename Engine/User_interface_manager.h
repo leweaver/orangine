@@ -10,6 +10,7 @@ namespace oe::internal {
         // Manager_base implementation
         void initialize() override;
         void shutdown() override;
+        const std::string& name() const override;
 
         // Manager_windowDependent implementation
         void createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND window, int width, int height) override;
@@ -25,6 +26,9 @@ namespace oe::internal {
         void setUIScale(float uiScale) override { _uiScale = uiScale; }
 
     private:
+
+        static std::string _name;
+
         HWND _window = nullptr;
         float _uiScale = 1.0f;
     };

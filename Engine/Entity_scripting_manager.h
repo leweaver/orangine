@@ -10,6 +10,7 @@ namespace oe::internal {
 		// Manager_base implementation
 		void initialize() override;
 		void shutdown() override;
+        const std::string& name() const override;
         
 		// Manager_tickable implementation
 		void tick() override;
@@ -20,6 +21,9 @@ namespace oe::internal {
         bool commandSuggestions(const std::string& command, std::vector<std::string>& suggestions) override;
 
 	private:
+
+        static std::string _name;
+
 		std::shared_ptr<Entity_filter> _scriptableEntityFilter;
 		std::shared_ptr<Entity_filter> _renderableEntityFilter;
 		std::shared_ptr<Entity_filter> _lightEntityFilter;

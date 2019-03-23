@@ -16,6 +16,7 @@ namespace oe::internal {
 		// Manager_base implementations
 		void initialize() override;
 		void shutdown() override;
+        const std::string& name() const override;
 
 		// Manager_deviceDependent implementation
 		void createDeviceDependentResources(DX::DeviceResources& deviceResources) override;
@@ -79,6 +80,8 @@ namespace oe::internal {
 		};
 		struct Render_step_empty_data {};
 
+        static std::string _name;
+
 		Render_step<
 			Render_step_empty_data,
 			Render_pass_config<
@@ -124,6 +127,9 @@ namespace oe::internal {
 
 		bool _fatalError;
 		bool _enableDeferredRendering;
+
+        std::array<double, 5> _renderTimes;
+        uint32_t _renderCount = 0;
 
 	};
 }

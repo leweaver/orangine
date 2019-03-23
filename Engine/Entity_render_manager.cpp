@@ -33,6 +33,8 @@ using namespace std::literals;
 
 using namespace std;
 
+std::string Entity_render_manager::_name = "Entity_render_manager";
+
 Renderer_animation_data g_emptyRenderableAnimationData = []() {
     auto rad = Renderer_animation_data();
     std::fill(rad.morphWeights.begin(), rad.morphWeights.end(), 0.0f);
@@ -62,6 +64,11 @@ void Entity_render_manager::initialize()
 
 void Entity_render_manager::shutdown()
 {
+}
+
+const std::string& Entity_render_manager::name() const
+{
+    return _name;
 }
 
 void Entity_render_manager::tick()

@@ -9,6 +9,8 @@
 using namespace oe;
 using namespace internal;
 
+std::string User_interface_manager::_name = "User_interface_manager";
+
 template<>
 IUser_interface_manager* oe::create_manager(Scene & scene)
 {
@@ -30,6 +32,11 @@ void User_interface_manager::initialize()
 void User_interface_manager::shutdown()
 {
     ImGui::DestroyContext();
+}
+
+const std::string& User_interface_manager::name() const
+{
+    return _name;
 }
 
 void User_interface_manager::createWindowSizeDependentResources(DX::DeviceResources&, HWND window, int, int)

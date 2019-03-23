@@ -9,6 +9,7 @@ namespace oe::internal {
 		// Manager_base implementation
 		void initialize() override {};
 		void shutdown() override {};
+        const std::string& name() const override;
 
 		// Manager_deviceDependent implementation
 		void createDeviceDependentResources(DX::DeviceResources& deviceResources) override;
@@ -19,6 +20,8 @@ namespace oe::internal {
 		DX::DeviceResources& deviceResources() const override { return _deviceResources; }
 
 	private:
+
+        static std::string _name;
 
 		DX::DeviceResources& _deviceResources;
 		std::unique_ptr<DirectX::CommonStates> _commonStates;

@@ -8,6 +8,8 @@
 using namespace oe;
 using namespace DirectX::SimpleMath;
 
+std::string Animation_manager::_name = "Animation_manager";
+
 template<>
 IAnimation_manager* oe::create_manager(Scene & scene)
 {
@@ -58,6 +60,11 @@ void Animation_manager::initialize()
 void Animation_manager::shutdown()
 {
     _animationControllers = nullptr;
+}
+
+const std::string& Animation_manager::name() const
+{
+    return _name;
 }
 
 void Animation_manager::tick()

@@ -26,5 +26,10 @@ namespace oe::internal {
 		// Manager_base implementation
 		void initialize() override;
 		void shutdown() override;
+        const std::string& name() const override;
+
+	private:
+
+        static std::string _name;
 	};
 }

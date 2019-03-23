@@ -21,6 +21,7 @@ namespace oe {
         // Manager_base implementation
         void initialize() override;
         void shutdown() override {}
+        const std::string& name() const override;
 
         // Manager_tickable implementation
         void tick() override;
@@ -70,6 +71,10 @@ namespace oe {
             const Material& material) const;
         void createPixelShader(Material_context::Compiled_material& compiledMaterial,
             const Material& material) const;
+
+    private:
+
+        static std::string _name;
 
         Renderer_features_enabled _rendererFeatures;
         size_t _rendererFeaturesHash = 0;

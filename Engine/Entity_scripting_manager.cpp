@@ -21,6 +21,8 @@ using namespace SimpleMath;
 using namespace oe;
 using namespace internal;
 
+std::string Entity_scripting_manager::_name = "Entity_scripting_manager";
+
 template<>
 IEntity_scripting_manager* oe::create_manager(Scene & scene)
 {
@@ -114,6 +116,11 @@ bool Entity_scripting_manager::commandSuggestions(const std::string& command, st
 
 void Entity_scripting_manager::shutdown()
 {
+}
+
+const std::string& Entity_scripting_manager::name() const
+{
+    return _name;
 }
 
 void Entity_scripting_manager::renderDebugSpheres() const

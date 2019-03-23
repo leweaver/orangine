@@ -10,7 +10,7 @@ using namespace DirectX::SimpleMath;
 Render_pass_skybox::Render_pass_skybox(Scene& scene)
 	: _scene(scene)
 {
-	_meshData = Primitive_mesh_data_factory::createSphere(1.0f);
+	_meshData = Primitive_mesh_data_factory::createSphere(1.0f, 3);
 	_material = std::make_shared<Skybox_material>();
 }
 

@@ -15,11 +15,14 @@
 #include "CommonStates.h"
 #include "Dev_tools_manager.h"
 #include "Render_pass_skybox.h"
+#include "Perf_timer.h"
 
 using namespace DirectX;
 using namespace SimpleMath;
 using namespace oe;
 using namespace internal;
+
+std::string Render_step_manager::_name = "Render_step_manager";
 
 template<>
 IRender_step_manager* oe::create_manager(Scene & scene)
@@ -71,6 +74,21 @@ void Render_step_manager::initialize()
 
 void Render_step_manager::shutdown()
 {
+    if (_renderCount > 0) {
+        std::stringstream ss;
+        for (auto i = 0; i < _renderTimes.size(); ++i) {
+            const auto renderTime = _renderTimes[i];
+            if (renderTime > 0.0) {
+                ss << "  "
+                    << i
+                    << ": "
+                    << (1000.0 * renderTime / _renderCount)
+                    << std::endl;
+            }
+        }
+        LOG(INFO) << "Render step average times (ms): " << std::endl << ss.str();
+    }
+
 	_renderStep_entityDeferred.data.reset();
 
 	auto context = deviceResources().GetD3DDeviceContext();
@@ -89,6 +107,10 @@ void Render_step_manager::shutdown()
 	_lightEntities.reset();
 }
 
+const std::string& Render_step_manager::name() const
+{
+    return _name;
+}
 
 void Render_step_manager::createRenderSteps()
 {
@@ -359,12 +381,37 @@ void Render_step_manager::render(std::shared_ptr<Entity> cameraEntity)
 		_scene.manager<IEntity_render_manager>().clearRenderStats();
 
 		clearDepthStencil();
+
+        auto timer = Perf_timer::start();
 		renderStep(_renderStep_shadowMap, cameraData);
+        timer.stop();
+        _renderTimes[0] += timer.elapsedSeconds();
+
+        timer.restart();
 		renderStep(_renderStep_entityDeferred, cameraData);
+        timer.stop();
+        _renderTimes[1] += timer.elapsedSeconds();
+
+        timer.restart();
 		renderStep(_renderStep_entityStandard, cameraData);
+        timer.stop();
+        _renderTimes[2] += timer.elapsedSeconds();
+
+        timer.restart();
 		renderStep(_renderStep_debugElements, cameraData);
+        timer.stop();
+        _renderTimes[3] += timer.elapsedSeconds();
+
+        timer.restart();
 		renderStep(_renderStep_skybox, cameraData);
+        timer.stop();
+        _renderTimes[4] += timer.elapsedSeconds();
 	});
+
+    ++_renderCount;
+    if (_renderCount == 1) {
+        std::fill(_renderTimes.begin(), _renderTimes.end(), 0.0);
+    }
 }
 
 // TODO: Move this to a Render_pass_deferred class?

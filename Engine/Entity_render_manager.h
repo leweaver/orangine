@@ -37,6 +37,7 @@ namespace oe::internal {
 		// Manager_base implementation
 		void initialize() override;
 		void shutdown() override;
+        const std::string& name() const override;
 
 		// Manager_tickable implementation
 		void tick() override;
@@ -84,6 +85,8 @@ namespace oe::internal {
 			bool wireframe);
 
 	private:
+
+        static std::string _name;
 
 		std::shared_ptr<D3D_buffer> createBufferFromData(const std::string& bufferName, const Mesh_buffer& buffer, UINT bindFlags) const;
         std::shared_ptr<D3D_buffer> createBufferFromData(const std::string& bufferName, const uint8_t* data, size_t dataSize, UINT bindFlags) const;

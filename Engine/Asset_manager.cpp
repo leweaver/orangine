@@ -4,6 +4,8 @@
 using namespace oe;
 using namespace internal;
 
+std::string Asset_manager::_name = "Asset_manager";
+
 template<>
 IAsset_manager* oe::create_manager(Scene& scene)
 {
@@ -25,6 +27,11 @@ void Asset_manager::initialize()
 
 void Asset_manager::shutdown()
 {
+}
+
+const std::string& Asset_manager::name() const
+{
+    return _name;
 }
 
 bool Asset_manager::getFilePath(FAsset_id assetId, std::wstring& path) const

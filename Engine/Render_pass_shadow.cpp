@@ -84,6 +84,9 @@ void Render_pass_shadow::render(const Camera_data&)
 				Vector3 extents2;
 				XMStoreFloat3(&extents2, XMVectorScale(XMLoadFloat3(&shadowVolumeBoundingBox.Extents), 2.0f));
 
+                if (extents2.x == 0.0f)
+                    extents2 = Vector3::One;
+
 				//shadowCameraData.worldMatrix = Matrix::CreateTranslation(lightNearPlaneWorldTranslation);
 				shadowCameraData.viewMatrix = Matrix::CreateLookAt(pos, pos + forward, up);
 				shadowCameraData.projectionMatrix = Matrix::CreateOrthographic(extents2.x, extents2.y, 0.01f, extents2.z);

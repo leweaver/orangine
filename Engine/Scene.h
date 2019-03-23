@@ -117,6 +117,9 @@ namespace oe {
 		// Values as of the last call to Tick.
 		double _deltaTime = 0;
 		double _elapsedTime = 0;
+
+        std::array<double, std::tuple_size_v<Manager_tuple>> _tickTimes;
+        uint32_t _tickCount = 0;
 	};
 
 	template <typename TMgr>

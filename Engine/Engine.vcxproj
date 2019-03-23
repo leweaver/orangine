@@ -175,6 +175,7 @@
     <ClInclude Include="Entity_scripting_manager.h" />
     <ClInclude Include="Entity_sorter.h" />
     <ClInclude Include="FileUtils.h" />
+    <ClInclude Include="Fps_counter.h" />
     <ClInclude Include="IAnimation_manager.h" />
     <ClInclude Include="IAsset_manager.h" />
     <ClInclude Include="ID3D_resources_manager.h" />
@@ -205,6 +206,7 @@
     <ClInclude Include="Morph_weights_component.h" />
     <ClInclude Include="PBR_material.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Perf_timer.h" />
     <ClInclude Include="Primitive_mesh_data_factory.h" />
     <ClInclude Include="Renderable.h" />
     <ClInclude Include="Renderable_component.h" />
@@ -241,6 +243,7 @@
     <ClCompile Include="Asset_manager.cpp" />
     <ClCompile Include="Camera_component.cpp" />
     <ClCompile Include="Clear_gbuffer_material.cpp" />
+    <ClCompile Include="Fps_counter.cpp" />
     <ClCompile Include="Material_manager.cpp" />
     <ClCompile Include="Mesh_vertex_layout.cpp" />
     <ClCompile Include="Morph_weights_component.cpp" />

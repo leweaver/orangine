@@ -31,6 +31,8 @@ std::vector<ID3D11ShaderResourceView*> g_nullShaderResourceViews;
 const auto g_max_sampler_state_count = D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT;
 std::vector<ID3D11SamplerState*> g_nullSamplerStates;
 
+std::string Material_manager::_name = "Material_manager";
+
 template<>
 IMaterial_manager* oe::create_manager(Scene & scene)
 {
@@ -267,6 +269,11 @@ void Material_manager::createPixelShader(
 void Material_manager::initialize()
 {
     setRendererFeaturesEnabled(Renderer_features_enabled());
+}
+
+const std::string& Material_manager::name() const
+{
+    return _name;
 }
 
 void Material_manager::tick()

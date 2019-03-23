@@ -448,7 +448,7 @@ void Game::GetDefaultSize(int& width, int& height) const
 	RECT rc;
 	GetWindowRect(GetDesktopWindow(), &rc);
 
-	// Set window to 50% of the desktop size
+	// Set window to 75% of the desktop size
     width = std::max(320l, (rc.right * 3) / 4);
     height = std::max(200l, (rc.bottom * 3) / 4);
 }

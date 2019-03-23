@@ -11,6 +11,7 @@
 #include "Animation_controller_component.h"
 #include "Skinned_mesh_component.h"
 #include "Renderable_component.h"
+#include "Fps_counter.h"
 
 using namespace DirectX;
 using namespace SimpleMath;
@@ -22,6 +23,8 @@ const auto g_hashSeed_cone = std::hash<std::string>{}("cone");
 const auto g_hashSeed_boundingBox = std::hash<std::string>{}("boundingBox");
 const auto g_hashSeed_debugFrustum = std::hash<std::string>{}("debugFrustum");
 
+std::string Dev_tools_manager::_name = "Dev_tools_manager";
+
 template<>
 IDev_tools_manager* oe::create_manager(Scene & scene)
 {
@@ -31,6 +34,7 @@ IDev_tools_manager* oe::create_manager(Scene & scene)
 void Dev_tools_manager::initialize()
 {
 	_noLightProvider = [](const BoundingSphere&, std::vector<Entity*>&, uint32_t) {};
+    _fpsCounter = std::make_unique<Fps_counter>();
     _animationControllers = _scene.manager<IScene_graph_manager>().getEntityFilter({ Animation_controller_component::type() });
     _skinnedMeshEntities = _scene.manager<IScene_graph_manager>().getEntityFilter({ Skinned_mesh_component::type() });
 }
@@ -41,6 +45,12 @@ void Dev_tools_manager::shutdown()
 	_debugShapes.resize(0);
     _animationControllers = nullptr;
     _skinnedMeshEntities = nullptr;
+    _fpsCounter.reset();
+}
+
+const std::string& Dev_tools_manager::name() const
+{
+    return _name;
 }
 
 void Dev_tools_manager::renderSkeletons() {
@@ -103,6 +113,8 @@ void Dev_tools_manager::tick()
     clearDebugShapes();
     if (_renderSkeletons)
         renderSkeletons();
+
+    _fpsCounter->mark();
 }
 
 void Dev_tools_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
@@ -364,6 +376,12 @@ void Dev_tools_manager::renderImGui()
             ImGui::Checkbox("Auto Scroll", &_scrollLogToBottom);
         }
         ImGui::EndChild();
+    }
+    ImGui::End();
+
+    if (ImGui::Begin("Statistics")) {
+        ImGui::TextColored(ImVec4(1, 0, 1, 1), "Frame Time (s): %.4f", _fpsCounter->avgFrameTime());
+        ImGui::TextColored(ImVec4(1, 0, 1, 1), "FPS: %.2f", _fpsCounter->avgFps());
     }
     ImGui::End();
 }

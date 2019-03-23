@@ -23,6 +23,7 @@ public:
 	// Manager_base implementation
 	void initialize() override;
 	void shutdown() override;
+    const std::string& name() const override;
 
 	// Manager_tickable implementation
 	void tick() override;
@@ -74,6 +75,8 @@ private:
 		void handleEntityComponentsUpdated(const std::shared_ptr<Entity>& entity);
 
 	};
+
+    static std::string _name;
 
 	std::vector<std::shared_ptr<Entity_filter_impl>> m_entityFilters;
 	

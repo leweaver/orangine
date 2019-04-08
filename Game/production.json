@@ -1,0 +1,38 @@
+{
+    "produce_definitions": [
+        {
+            "name": "apple"
+        },
+        {
+            "name": "sugar"
+        },
+        {
+            "name": "rhubarb"
+        },
+        {
+            "name": "crumble",
+            "display_name": "Apple and Rhubarb Crumble"
+        }
+    ],
+    "processes": [
+        {
+            "name": "bake_crumble",
+            "inputs": [
+                { "produce_definition": "apple", "quantity": 1 },
+                { "produce_definition": "sugar", "quantity": 2 },
+                { "produce_definition": "rhubarb", "quantity": 1 }
+            ],
+            "outputs": [
+                { "produce_definition": "crumble", "quantity": 1 }
+            ],
+            "iteration_work_cycles": 6,
+            "iteration_count": 1
+        }
+    ],
+    "producers": [
+        {
+            "name": "kitchen",
+            "process": "bake_crumble"
+        }
+    ]
+}

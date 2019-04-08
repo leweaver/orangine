@@ -67,9 +67,13 @@ namespace oe {
             D3D11_TEXTURE_ADDRESS_MODE textureAddressMode,
             ID3D11SamplerState** d3D11SamplerState) const;
 
-        void createVertexShader(Material_context::Compiled_material& compiledMaterial,
+        void createVertexShader(
+            bool enableOptimizations, 
+            Material_context::Compiled_material& compiledMaterial,
             const Material& material) const;
-        void createPixelShader(Material_context::Compiled_material& compiledMaterial,
+        void createPixelShader(
+            bool enableOptimizations, 
+            Material_context::Compiled_material& compiledMaterial,
             const Material& material) const;
 
     private:

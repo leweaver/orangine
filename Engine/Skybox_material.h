@@ -22,7 +22,7 @@ namespace oe {
 		const std::string& materialType() const override;
 
         nlohmann::json serialize(bool compilerPropertiesOnly) const override;
-        Shader_resources shaderResources(const Render_light_data& renderLightData) const override;
+        Shader_resources shaderResources(const std::set<std::string>& flags, const Render_light_data& renderLightData) const override;
 
 	private:
 		std::shared_ptr<Texture> _cubeMapTexture;

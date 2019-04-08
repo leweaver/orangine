@@ -28,9 +28,9 @@ nlohmann::json Skybox_material::serialize(bool compilerPropertiesOnly) const
     return j;
 }
 
-Material::Shader_resources Skybox_material::shaderResources(const Render_light_data& renderLightData) const
+Material::Shader_resources Skybox_material::shaderResources(const std::set<std::string>& flags, const Render_light_data& renderLightData) const
 {
-    auto sr = Base_type::shaderResources(renderLightData);
+    auto sr = Base_type::shaderResources(flags, renderLightData);
     if (_cubeMapTexture) {
         sr.textures.push_back(_cubeMapTexture);
 

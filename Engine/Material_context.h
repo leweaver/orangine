@@ -4,7 +4,6 @@
 
 #include <wrl/client.h>
 #include <set>
-#include "Mesh_data.h"
 
 namespace oe {
     /**

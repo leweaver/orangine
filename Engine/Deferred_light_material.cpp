@@ -25,6 +25,8 @@ const std::string g_json_emittedEnabled = "emitted_enabled";
 const std::string g_material_type = "Deferred_light_material";
 
 const std::string g_flag_debugNormals = "debug_normals";
+const std::string g_flag_shadowsEnabled = "shadowsEnabled";
+const std::string g_flag_iblEnabled = "iblEnabled";
 
 Deferred_light_material::Deferred_light_material()
     : Base_type(static_cast<uint8_t>(Material_type_index::Deferred_Light))
@@ -65,13 +67,20 @@ std::set<std::string> Deferred_light_material::configFlags(const Renderer_featur
     if (rendererFeatures.debugDisplayMode == Debug_display_mode::Normals) {
         flags.insert(g_flag_debugNormals);
     }
+    if (rendererFeatures.shadowsEnabled && _shadowArrayEnabled) {
+        flags.insert(g_flag_shadowsEnabled);
+    }
+    if (rendererFeatures.irradianceMappingEnabled && _iblEnabled) {
+        flags.insert(g_flag_iblEnabled);
+    }
 
     return flags;
 }
 
-Material::Shader_resources Deferred_light_material::shaderResources(const Render_light_data& renderLightData) const
+Material::Shader_resources Deferred_light_material::shaderResources(const std::set<std::string>& flags,
+    const Render_light_data& renderLightData) const
 {
-    auto sr = Base_type::shaderResources(renderLightData);
+    auto sr = Base_type::shaderResources(flags, renderLightData);
 
     if (!_color0Texture || !_color1Texture || !_color2Texture || !_depthTexture)
         return sr;
@@ -95,7 +104,7 @@ Material::Shader_resources Deferred_light_material::shaderResources(const Render
     sr.textures.push_back(_depthTexture);
     sr.samplerDescriptors.push_back(samplerDesc);
 
-    if (_iblEnabled) {
+    if (flags.find(g_flag_iblEnabled) != flags.end()) {
         if (!(renderLightData.environmentMapBrdf() && renderLightData.environmentMapDiffuse() && renderLightData.environmentMapSpecular())) {
             throw std::runtime_error("Deferred_light_material requires a valid environment map be provided in the Render_light_data");
         }
@@ -111,7 +120,7 @@ Material::Shader_resources Deferred_light_material::shaderResources(const Render
         sr.samplerDescriptors.push_back(samplerDesc);
     }
 
-    if (_shadowArrayEnabled) {
+    if (flags.find(g_flag_shadowsEnabled) != flags.end()) {
         if (!(_shadowMapStencilTexture && _shadowMapDepthTexture)) {
             throw std::logic_error("Cannot bind a shadow map stencil texture without a shadow map depth texture.");
         }
@@ -130,13 +139,15 @@ Material::Shader_resources Deferred_light_material::shaderResources(const Render
 
 Material::Shader_compile_settings Deferred_light_material::pixelShaderSettings(const std::set<std::string>& flags) const
 {
-	auto settings = Base_type::pixelShaderSettings(flags);
+    auto settings = Base_type::pixelShaderSettings(flags);
 
-	if (_iblEnabled)
-		settings.defines["MAP_IBL"] = "1";
+    if (flags.find(g_flag_iblEnabled) != flags.end()) {
+        settings.defines["MAP_IBL"] = "1";
+    }
 
-	if (_shadowArrayEnabled)
-		settings.defines["MAP_SHADOWMAP_ARRAY"] = "1";
+    if (flags.find(g_flag_shadowsEnabled) != flags.end()) {
+        settings.defines["MAP_SHADOWMAP_ARRAY"] = "1";
+    }
 
     if (flags.find(g_flag_debugNormals) != flags.end()) {
         settings.defines["DEBUG_DISPLAY_NORMALS"] = "1";

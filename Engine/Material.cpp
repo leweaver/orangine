@@ -23,7 +23,7 @@ Material::Material(uint8_t materialTypeIndex, Material_alpha_mode alphaMode, Mat
 {
 }
 
-Material::Shader_resources Material::shaderResources(const Render_light_data& renderLightData) const
+Material::Shader_resources Material::shaderResources(const std::set<std::string>& flags, const Render_light_data& renderLightData) const
 {
     return {};
 }

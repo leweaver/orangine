@@ -54,7 +54,8 @@ namespace oe
             Render_pass_blend_mode blendMode,
             const Mesh_vertex_layout& meshBindContext
         ) const override;
-        Shader_resources shaderResources(const Render_light_data& renderLightData) const override;
+        Shader_resources shaderResources(const std::set<std::string>& flags,
+            const Render_light_data& renderLightData) const override;
 
 	protected:
 

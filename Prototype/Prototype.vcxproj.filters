@@ -103,6 +103,8 @@
       <Filter>Assets\shaders\test</Filter>
     </FxCompile>
     <FxCompile Include="data\shaders\test\test_pbr_vs_standard_skinned.hlsl" />
+    <FxCompile Include="data\shaders\inc\shadow.hlsl" />
+    <FxCompile Include="data\shaders\inc\irradiance.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="NatvisFile.natvis" />

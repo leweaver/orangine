@@ -37,6 +37,14 @@ SamplerState g_shadowMapSampler;
 #include "inc\utils.hlsl"
 #include "inc\lighting.hlsl"
 
+#ifdef MAP_IBL
+#include "inc\irradiance.hlsl"
+#endif
+
+#ifdef MAP_SHADOWMAP_ARRAY
+#include "inc\shadow.hlsl"
+#endif
+
 //--------------------------------------------------------------------------------------
 // Globals
 //--------------------------------------------------------------------------------------
@@ -103,27 +111,17 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	brdf.eyeVectorW = normalize(g_eyePosition.xyz - brdf.worldPosition);
 
 	float3 finalColor = float3(0, 0, 0);
+#ifdef MAP_SHADOWMAP_ARRAY
 	ShadowSampleInputs ssi;
 	ssi.worldPosition = brdf.worldPosition;
+#endif
 
 	LightingInputs li;
 	li.NdotV = abs(dot(brdf.worldNormal, brdf.eyeVectorW)) + 0.001;
-
-	// Environment map
-#ifdef MAP_IBL
-	BRDFEnvInputs brdfEnvInputs;
-	brdfEnvInputs.surfaceNormal = brdf.worldNormal;
-	brdfEnvInputs.reflection = -normalize(reflect(brdf.eyeVectorW, brdf.worldNormal));
-	brdfEnvInputs.roughness = brdf.roughness;
-	brdfEnvInputs.diffuseColor = diffuseColor;
-	brdfEnvInputs.specularColor = specularColor;
-	brdfEnvInputs.scaleIBLAmbient = float2(1.0, 1.0);
-
-	float3 envContribution = BRDFEnv(brdfEnvInputs, li);
-#endif
-
+    
 	// Iterate over the lights
 	for (uint lightIdx = 0; lightIdx < g_lightCount; ++lightIdx)
+    //uint lightIdx = 0;
 	{
 		Light light = g_lights[lightIdx];
 
@@ -155,7 +153,19 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 		finalColor += emissive;
 	}
 
-	finalColor += envContribution;
+    // Environment map
+#ifdef MAP_IBL
+    BRDFEnvInputs brdfEnvInputs;
+    brdfEnvInputs.surfaceNormal = brdf.worldNormal;
+    brdfEnvInputs.reflection = -normalize(reflect(brdf.eyeVectorW, brdf.worldNormal));
+    brdfEnvInputs.roughness = brdf.roughness;
+    brdfEnvInputs.diffuseColor = diffuseColor;
+    brdfEnvInputs.specularColor = specularColor;
+    brdfEnvInputs.scaleIBLAmbient = float2(1.0, 1.0);
+
+    float3 envContribution = BRDFEnv(brdfEnvInputs, li);
+    finalColor += envContribution;
+#endif
 
 #ifdef DEBUG_NO_LIGHTING
 	return float4(color0.rgb, 1);

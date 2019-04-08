@@ -211,7 +211,7 @@ namespace oe {
             const Mesh_vertex_layout& meshVertexLayout) const override;
 
         std::vector<Vertex_attribute_element> vertexInputs(const std::set<std::string>& flags) const override;
-        Shader_resources shaderResources(const Render_light_data& renderLightData) const override;
+        Shader_resources shaderResources(const std::set<std::string>& flags, const Render_light_data& renderLightData) const override;
 	    Shader_compile_settings vertexShaderSettings(const std::set<std::string>& flags) const override;
         Shader_compile_settings pixelShaderSettings(const std::set<std::string>& flags) const override;
 

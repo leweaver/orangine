@@ -3,6 +3,7 @@
 #include <memory>
 #include <array>
 #include "Renderer_enum.h"
+#include "Material_context.h"
 
 namespace oe 
 {
@@ -52,10 +53,15 @@ namespace oe
 		bool failedRendering;
 	};
 
+    // NOTE: When adding new items to this, make sure to also add them to the hashing function
     struct Renderer_features_enabled {
         bool vertexMorph = true;
         bool skinnedAnimation = true;
 
         Debug_display_mode debugDisplayMode = Debug_display_mode::None;
+        bool shadowsEnabled = true;
+        bool irradianceMappingEnabled = true;
+        bool enableShaderOptimization = false;
+        size_t hash() const;
     };
 }

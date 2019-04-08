@@ -23,6 +23,7 @@ using namespace SimpleMath;
 using namespace std::literals;
 
 const auto g_max_material_index = UINT8_MAX;
+const std::string g_flag_disableOptimization = "disableOptimizations";
 
 // Arbitrary limit
 const auto g_max_shader_resource_count = 32;
@@ -134,6 +135,7 @@ void debugLogSettings(const char* prefix, const Material::Shader_compile_setting
 }
 
 void Material_manager::createVertexShader(
+    bool enableOptimizations,
     Material_context::Compiled_material& compiledMaterial,
     const Material& material) const
 {
@@ -178,7 +180,8 @@ void Material_manager::createVertexShader(
 
     UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
 #if defined( DEBUG ) || defined( _DEBUG )
-    flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_PREFER_FLOW_CONTROL;
+    if (!enableOptimizations)
+        flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_PREFER_FLOW_CONTROL;
 #endif
 
     hr = D3DCompileFromFile(settings.filename.c_str(),
@@ -215,6 +218,7 @@ void Material_manager::createVertexShader(
 }
 
 void Material_manager::createPixelShader(
+    bool enableOptimizations,
     Material_context::Compiled_material& compiledMaterial,
     const Material& material) const
 {
@@ -224,7 +228,8 @@ void Material_manager::createPixelShader(
 
     UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
 #if defined( DEBUG ) || defined( _DEBUG )
-    flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_PREFER_FLOW_CONTROL;
+    if (!enableOptimizations)
+        flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_PREFER_FLOW_CONTROL;
 #endif
     
     auto settings = material.pixelShaderSettings(compiledMaterial.flags);
@@ -322,6 +327,11 @@ void Material_manager::bind(
     if (rebuildConfig)
     {
         auto flags = material->configFlags(_rendererFeatures, blendMode, meshVertexLayout);
+
+        // Add flag for shader optimization, to determine if we need to recompile
+        if (!_rendererFeatures.enableShaderOptimization)
+            flags.insert(g_flag_disableOptimization);
+
         LOG(DEBUG) << "Material flags: " << nlohmann::json(flags).dump(2);
 
         auto requiresRecompile = true;
@@ -353,8 +363,8 @@ void Material_manager::bind(
 
                 compiledMaterial->vsInputs = material->vertexInputs(compiledMaterial->flags);
 
-                createVertexShader(*compiledMaterial, *material);
-                createPixelShader(*compiledMaterial, *material);
+                createVertexShader(_rendererFeatures.enableShaderOptimization, *compiledMaterial, *material);
+                createPixelShader(_rendererFeatures.enableShaderOptimization, *compiledMaterial, *material);
 
                 // Lazy create constant buffers for this material type if they don't already exist.
                 Material_constants* materialConstants;
@@ -375,20 +385,8 @@ void Material_manager::bind(
                 throw std::runtime_error("Failed to create resources in Material_manager::bind. "s + ex.what());
             }
         }
-    }
 
-    // We have a valid shader
-    auto context = deviceResources().GetD3DDeviceContext();
-
-    context->IASetInputLayout(compiledMaterial->inputLayout.Get());
-    context->VSSetShader(compiledMaterial->vertexShader.Get(), nullptr, 0);
-
-    if (enablePixelShader) {
-        context->PSSetShader(compiledMaterial->pixelShader.Get(), nullptr, 0);
-
-        // TODO: these could potentially be cached somewhere and marked dirty.
-        const auto shaderResources = material->shaderResources(renderLightData);
-
+        const auto shaderResources = material->shaderResources(compiledMaterial->flags, renderLightData);
         if (materialContext.shaderResourceViews.size() < shaderResources.textures.size()) {
             materialContext.shaderResourceViews.resize(shaderResources.textures.size());
 
@@ -408,7 +406,7 @@ void Material_manager::bind(
                 }
             }
 
-            LOG(G3LOG_DEBUG) << "Created " << material->materialType() << 
+            LOG(G3LOG_DEBUG) << "Created " << material->materialType() <<
                 " shader resources. Texture Count: " << std::to_string(materialContext.shaderResourceViews.size());
         }
 
@@ -426,14 +424,24 @@ void Material_manager::bind(
             LOG(G3LOG_DEBUG) << "Created " << material->materialType() <<
                 " sampler states. Count: " << std::to_string(materialContext.samplerStates.size());
         }
+    }
+
+    // We have a valid shader
+    auto context = deviceResources().GetD3DDeviceContext();
+
+    context->IASetInputLayout(compiledMaterial->inputLayout.Get());
+    context->VSSetShader(compiledMaterial->vertexShader.Get(), nullptr, 0);
+
+    if (enablePixelShader) {
+        context->PSSetShader(compiledMaterial->pixelShader.Get(), nullptr, 0);
 
         // Set shader texture resource in the pixel shader.
-        _boundSrvCount = static_cast<uint32_t>(shaderResources.textures.size());
+        _boundSrvCount = static_cast<uint32_t>(materialContext.shaderResourceViews.size());
         if (_boundSrvCount > g_max_shader_resource_count) 
             throw std::runtime_error("Too many shaderResourceViews bound");
         context->PSSetShaderResources(0, _boundSrvCount, materialContext.shaderResourceViews.data());
 
-        _boundSsCount = static_cast<uint32_t>(shaderResources.samplerDescriptors.size());
+        _boundSsCount = static_cast<uint32_t>(materialContext.samplerStates.size());
         if (_boundSsCount > g_max_sampler_state_count) 
             throw std::runtime_error("Too many samplerStates bound");
         context->PSSetSamplers(0, _boundSsCount, materialContext.samplerStates.data());
@@ -525,10 +533,7 @@ void Material_manager::unbind()
 void Material_manager::setRendererFeaturesEnabled(const Renderer_features_enabled& renderer_feature_enabled)
 {
     _rendererFeatures = renderer_feature_enabled;
-    _rendererFeaturesHash = 0;
-    hash_combine(_rendererFeaturesHash, _rendererFeatures.skinnedAnimation);
-    hash_combine(_rendererFeaturesHash, _rendererFeatures.vertexMorph);
-    hash_combine(_rendererFeaturesHash, _rendererFeatures.debugDisplayMode);
+    _rendererFeaturesHash = _rendererFeatures.hash();
 }
 
 const Renderer_features_enabled& Material_manager::rendererFeatureEnabled() const

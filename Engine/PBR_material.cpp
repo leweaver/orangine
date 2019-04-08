@@ -242,9 +242,9 @@ std::vector<Vertex_attribute_element> PBR_material::vertexInputs(const std::set<
     return vertexAttributes;
 }
 
-Material::Shader_resources PBR_material::shaderResources(const Render_light_data& renderLightData) const
+Material::Shader_resources PBR_material::shaderResources(const std::set<std::string>& flags, const Render_light_data& renderLightData) const
 {
-    auto sr = Base_type::shaderResources(renderLightData);
+    auto sr = Base_type::shaderResources(flags, renderLightData);
 
     const auto samplerDesc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
     for (auto i = 0; i < _textures.size(); ++i) {

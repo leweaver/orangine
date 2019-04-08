@@ -219,6 +219,9 @@ void Dev_tools_manager::renderImGui()
         if (
             ImGui::Checkbox("Skinning", &featuresEnabled.skinnedAnimation) ||
             ImGui::Checkbox("Morphing", &featuresEnabled.vertexMorph) ||
+            ImGui::Checkbox("Shadowing", &featuresEnabled.shadowsEnabled) ||
+            ImGui::Checkbox("Environment Irradiance", &featuresEnabled.irradianceMappingEnabled) ||
+            ImGui::Checkbox("Shader Optimization", &featuresEnabled.enableShaderOptimization) ||
             ImGui::Combo("Debug Rendering", &item_current, items, IM_ARRAYSIZE(items))
             ) {
             featuresEnabled.debugDisplayMode = static_cast<Debug_display_mode>(item_current);

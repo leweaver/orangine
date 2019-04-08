@@ -50,3 +50,15 @@ void Renderer_data::release()
 	vertexBuffers.clear();
 	indexBufferAccessor.reset();
 }
+
+size_t Renderer_features_enabled::hash() const
+{
+    size_t rendererFeaturesHash = 0;
+    hash_combine(rendererFeaturesHash, skinnedAnimation);
+    hash_combine(rendererFeaturesHash, vertexMorph);
+    hash_combine(rendererFeaturesHash, debugDisplayMode);
+    hash_combine(rendererFeaturesHash, shadowsEnabled);
+    hash_combine(rendererFeaturesHash, irradianceMappingEnabled);
+    hash_combine(rendererFeaturesHash, enableShaderOptimization);
+    return rendererFeaturesHash;
+}

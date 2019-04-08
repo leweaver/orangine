@@ -110,7 +110,7 @@ namespace oe {
         virtual Shader_compile_settings pixelShaderSettings(const std::set<std::string>& flags) const;
 
         // Used at bind time - specifies which textures and samplers are required.
-        virtual Shader_resources shaderResources(const Render_light_data& renderLightData) const;
+        virtual Shader_resources shaderResources(const std::set<std::string>& flags, const Render_light_data& renderLightData) const;
 
         /*
          * Per Frame

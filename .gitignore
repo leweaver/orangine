@@ -1,4 +1,5 @@
 .vs
+.vscode
 Debug
 *.log
 AssetWorker/
@@ -9,3 +10,6 @@ packages/
 bin/
 obj/
 /Prototype/imgui.ini
+thirdparty/amd64/
+Engine/cmake-build
+cmake-build*

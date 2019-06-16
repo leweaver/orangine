@@ -59,6 +59,9 @@
     <Filter Include="Systems\Assets\internal">
       <UniqueIdentifier>{a5f6f1f8-1809-416f-8025-66bda22fa55d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Scripts">
+      <UniqueIdentifier>{fc257a63-3d9c-43a5-86a8-7f71a7202bff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Entity.h">
@@ -467,5 +470,10 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="scripts\console.py">
+      <Filter>Scripts</Filter>
+    </None>
   </ItemGroup>
 </Project>

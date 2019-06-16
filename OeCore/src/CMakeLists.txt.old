@@ -1,0 +1,97 @@
+include(PrecompiledHeader)
+
+# Includes
+include_directories(
+        "${Engine_SOURCE_DIR}/include"
+        "${Engine_SOURCE_DIR}/../thirdparty/imgui"
+        "${Engine_SOURCE_DIR}/../thirdparty/tinygltf"
+        "${Engine_SOURCE_DIR}/../thirdparty/MikkTSpace"
+        "${Engine_SOURCE_DIR}/../thirdparty"
+        "${Engine_SOURCE_DIR}/../thirdparty/g3log/src"
+        "${Engine_SOURCE_DIR}/../thirdparty/g3log/include"
+        "${Engine_SOURCE_DIR}/../thirdparty/DirectXTK/Inc"
+        "${PYTHON_PATH}"
+        "${VS_INCLUDE}/VC/Tools/MSVC/14.16.27023/include"
+        "${VS_INCLUDE}/VC/Tools/MSVC/14.16.27023/atlmfc/include"
+        "${VS_INCLUDE}/VC/Auxiliary/VS/include"
+        "${WINSDK_PATH}/ucrt"
+        "${WINSDK_PATH}/um"
+        "${WINSDK_PATH}/shared"
+        "${WINSDK_PATH}/winrt"
+        "${WINSDK_PATH}/cppwinrt"
+)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+file(GLOB PUBLIC_HEADERS "${Engine_SOURCE_DIR}/include/*.(h|inl)")
+
+add_compile_definitions(${CPP_DEFINES})
+
+#Generate the shared library from the sources
+add_library(Engine STATIC
+        ${PUBLIC_HEADERS}
+        User_interface_manager.h
+        Shadowmap_manager.h
+        Scene_graph_manager.h
+        Render_step_manager.h
+        Material_manager.h
+        Entity_scripting_manager.h
+        Entity_render_manager.h
+        Dev_tools_manager.h
+        D3D_resources_manager.h
+        Animation_manager.h
+        Asset_manager.h
+        pch.h
+        Animation_controller_component.cpp
+        Animation_manager.cpp
+        Asset_manager.cpp
+        Camera_component.cpp
+        Clear_gbuffer_material.cpp
+        Component.cpp
+        D3D_resources_manager.cpp
+        Deferred_light_material.cpp
+        Dev_tools_manager.cpp
+        DeviceResources.cpp
+        Entity.cpp
+        Entity_graph_loader_gltf.cpp
+        Entity_render_manager.cpp
+        Entity_repository.cpp
+        Entity_scripting_manager.cpp
+        Entity_sorter.cpp
+        Fps_counter.cpp
+        Input_manager.cpp
+        Light_component.cpp
+        Light_provider.cpp
+        Material.cpp
+        Material_manager.cpp
+        Mesh_data.cpp
+        Mesh_data_component.cpp
+        Mesh_utils.cpp
+        Mesh_vertex_layout.cpp
+        Mikk_tspace_triangle_mesh_interface.cpp
+        Morph_weights_component.cpp
+        PBR_material.cpp
+        pch.cpp
+        Primitive_mesh_data_factory.cpp
+        Render_pass.cpp
+        Render_pass_shadow.cpp
+        Render_pass_skybox.cpp
+        Render_step_manager.cpp
+        Render_target_texture.cpp
+        Renderable_component.cpp
+        Renderer_data.cpp
+        Renderer_enum.cpp
+        Scene.cpp
+        Scene_graph_manager.cpp
+        Shadow_map_texture.cpp
+        Shadow_map_texture_pool.cpp
+        Shadowmap_manager.cpp
+        Skinned_mesh_component.cpp
+        Skybox_material.cpp
+        Test_component.cpp
+        Texture.cpp
+        Unlit_material.cpp
+        User_interface_manager.cpp
+        EngineUtils.cpp
+        VectorLog.cpp
+        )
+
+add_precompiled_header(Engine pch.h FORCEINCLUDE)

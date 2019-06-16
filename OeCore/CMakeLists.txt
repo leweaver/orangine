@@ -1,0 +1,127 @@
+project(OeCore VERSION 1.0
+        DESCRIPTION "Orangine Core Library"
+        LANGUAGES CXX)
+
+# Library Definition
+add_library(${PROJECT_NAME} STATIC
+        src/pch.h
+        src/pch.cpp
+        src/User_interface_manager.h
+        src/Shadowmap_manager.h
+        src/Scene_graph_manager.h
+        src/Render_step_manager.h
+        src/Material_manager.h
+        src/Entity_scripting_manager.h
+        src/Entity_render_manager.h
+        src/Dev_tools_manager.h
+        src/D3D_resources_manager.h
+        src/Animation_manager.h
+        src/Asset_manager.h
+        src/Animation_controller_component.cpp
+        src/Animation_manager.cpp
+        src/Asset_manager.cpp
+        src/Camera_component.cpp
+        src/Clear_gbuffer_material.cpp
+        src/Component.cpp
+        src/D3D_resources_manager.cpp
+        src/Deferred_light_material.cpp
+        src/Dev_tools_manager.cpp
+        src/DeviceResources.cpp
+        src/Entity.cpp
+        src/Entity_graph_loader_gltf.cpp
+        src/Entity_render_manager.cpp
+        src/Entity_repository.cpp
+        src/Entity_scripting_manager.cpp
+        src/Entity_sorter.cpp
+        src/Fps_counter.cpp
+        src/Input_manager.cpp
+        src/Light_component.cpp
+        src/Light_provider.cpp
+        src/Material.cpp
+        src/Material_manager.cpp
+        src/Mesh_data.cpp
+        src/Mesh_data_component.cpp
+        src/Mesh_utils.cpp
+        src/Mesh_vertex_layout.cpp
+        src/Mikk_tspace_triangle_mesh_interface.cpp
+        src/Morph_weights_component.cpp
+        src/PBR_material.cpp
+        src/Primitive_mesh_data_factory.cpp
+        src/Render_pass.cpp
+        src/Render_pass_shadow.cpp
+        src/Render_pass_skybox.cpp
+        src/Render_step_manager.cpp
+        src/Render_target_texture.cpp
+        src/Renderable_component.cpp
+        src/Renderer_data.cpp
+        src/Renderer_enum.cpp
+        src/Scene.cpp
+        src/Scene_graph_manager.cpp
+        src/Shadow_map_texture.cpp
+        src/Shadow_map_texture_pool.cpp
+        src/Shadowmap_manager.cpp
+        src/Skinned_mesh_component.cpp
+        src/Skybox_material.cpp
+        src/Test_component.cpp
+        src/Texture.cpp
+        src/Unlit_material.cpp
+        src/User_interface_manager.cpp
+        src/EngineUtils.cpp
+        src/VectorLog.cpp
+)
+add_library(Oe::Core ALIAS OeCore)
+
+# Precompiled Headers
+# [=[
+include(PrecompiledHeader)
+add_precompiled_header(${PROJECT_NAME} pch.h
+        SOURCE_CXX src/pch.cpp)
+#]=]
+
+target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
+
+# Public headers
+target_include_directories(${PROJECT_NAME}
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/include"
+        "${PROJECT_SOURCE_DIR}/../thirdparty/imgui"
+        "${PROJECT_SOURCE_DIR}/../thirdparty/tinygltf"
+        "${PROJECT_SOURCE_DIR}/../thirdparty/DirectXTK/Inc"
+        "${VS_INCLUDE}/VC/Tools/MSVC/14.16.27023/include"
+        "${VS_INCLUDE}/VC/Tools/MSVC/14.16.27023/atlmfc/include"
+        "${VS_INCLUDE}/VC/Auxiliary/VS/include"
+        "${WINSDK_PATH}/ucrt"
+        "${WINSDK_PATH}/um"
+        "${WINSDK_PATH}/shared"
+        "${WINSDK_PATH}/winrt"
+        "${WINSDK_PATH}/cppwinrt"
+        )
+
+# g3log
+find_package(g3logger REQUIRED)
+target_include_directories(${PROJECT_NAME}
+        PUBLIC ${G3LOG_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PUBLIC g3logger)
+
+# imgui
+target_link_libraries(${PROJECT_NAME} PUBLIC Oe::Imgui)
+target_link_libraries(${PROJECT_NAME} PUBLIC Oe::MikktSpace)
+
+# Python
+find_package(Python3 COMPONENTS Development)
+target_include_directories(${PROJECT_NAME}
+        PUBLIC ${PYTHON_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PUBLIC Python3::Python)
+
+# DirectX
+target_link_libraries(${PROJECT_NAME} PUBLIC
+        d3d11.lib
+        D3DCompiler.lib
+        dxgi.lib
+        dxguid.lib
+        )
+
+# DirectXTK
+find_package(directxtk REQUIRED)
+target_link_libraries(${PROJECT_NAME} PUBLIC
+        "${DIRECTX_LIB_DIR}/Desktop_2017_Win10/x64/Debug/DirectXTK.lib")

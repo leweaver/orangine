@@ -1,17 +1,27 @@
-﻿# First time setup
-I prefer to use bash shell for git commands. (the ubuntu shell within windows, or git-bash work equally well).
+﻿# Software Pre-requisites
 
-## OS & Visual Studio Version
-You must have Windows 10 (RS4 or later), with Visual Studio 2017 15.7.5, or later (Windows SDK 10.0.17134.0 or later)
+## Windows 10
+You must be running Windows 10 build version 1703 (Creators Update) or higher. Run the `winver` program to view which build version you have. If you are running an earlier version of Windows, run Windows Update or [Download Windows 10 Disk Image](https://go.microsoft.com/fwlink/p/?LinkId=821363)
 
-Install plugins:
+## Visual Studio 2017
+No matter what you use for actual coding (CLion? VSCode? VIM?!), you still need visual studio installed in order to satisfy library dependencies and actually compile.
 
-- [ReSharper.AutoFormatOnSave.vsix](https://marketplace.visualstudio.com/items?itemName=PedroPombeiro.ReSharperAutoFormatOnSave)
+Visual Studio 2017 15.7.5 is the minimum required. (2019 may work? not tried.)
+
+When installing, ensure you select the following options (in addition to whatever defaults are selected):
+
+- Desktop Development with Visual C++
+  - Windows 10 SDK (10.0.17134.0)
+  - Test Adapter for Google Test (If you want to use the visual studio gtest UI)
+
+## Git
+If you are reading this you probably already have GIT installed. If not, [follow these instructions](https://confluence.atlassian.com/get-started-with-bitbucket/install-and-set-up-git-860009658.html)
+
+# First time build
 
 ## Get the code & dependencies from GIT
-1. Install ssh keypair to your system (run `ssh-keygen`), and load the public key to your github account
-1. Clone the repository.
-1. Download thirdparty dependencies. In the root repository directory, run: 
+1. Clone the repository
+1. Download thirdparty dependencies: In the root repository directory, run: 
 
 ```
 git submodule update --init --recursive
@@ -26,16 +36,11 @@ git submodule update --recursive --remote
 [More submodule tips](https://gist.github.com/gitaarik/8735255)
 
 ## Build dependencies
-Some of the third party libraries should be built first using helper script `.\create-thirdparty-projects.bat`:
+Some of the third party libraries need to be built first using helper script `.\create-thirdparty-projects.bat`:
 
 - g3log
 - googletest
 - googlemock
-
-The script creates appropriate visual studio projects using CMake. In a regular command prompt (cmd.exe),
-
-1. Change directory to the root of the GIT repository
-1. Execute command: `.\create-thirdparty-projects.bat`
 
 # Overall Architecture
 Here is a quick non-exhaustive overview of how the main object instances are instantiated. Each item creates and owns the items below it in the tree. Each item below is the name of a class, which is located in a CPP/H file of the same name. 
@@ -53,6 +58,28 @@ Here is a quick non-exhaustive overview of how the main object instances are ins
 		- oe::Render_step_manager
 			- oe::Render_step
 		- ...
+
+# Using your IDE
+Open the root CMakeLists.txt in your favourite IDE. 
+
+## Visual studio 2019
+some good tips for using CMake in VS are here: https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=vs-2019 - especially "Choose Targets view")
+
+You will need to set the cwd of the Prototype.exe startup item. In launch.vs.json, set the currentDir property of your startup configuration. Eg:
+
+```
+"configurations": [
+    {
+        "type": "default",
+        "project": "CMakeLists.txt",
+        "projectTarget": "Prototype.exe (Prototype\\Prototype.exe)",
+        "name": "Prototype.exe (Prototype\\Prototype.exe)",
+        "currentDir": "C:\\repos\\Orangine\\Prototype"
+    }
+  ]
+```
+
+
 
 # Running unit tests
 First, make sure tests are set to run in x64.
@@ -124,3 +151,17 @@ template parameters: TMy_class_name
 
 private field members: _lowerCamelCase
 public field members: lowerCamelCase
+
+## Install Python 3.7
+Download [Python 3.7.3 installer](https://www.python.org/ftp/python/3.7.3/python-3.7.3-amd64.exe) from Python website.
+
+In the installer, choose _advanced options_ and enable:
+
+- Download debug binaries
+
+then make sure it is installed to the LOCALAPPDATA folder:
+
+```
+C:\Users\<your-username>\AppData\Local\Programs\Python\Python37\
+```
+

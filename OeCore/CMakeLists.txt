@@ -68,14 +68,21 @@ add_library(${PROJECT_NAME} STATIC
         src/User_interface_manager.cpp
         src/EngineUtils.cpp
         src/VectorLog.cpp
-)
+    )
 add_library(Oe::Core ALIAS OeCore)
+
+install(TARGETS OeCore
+    EXPORT OeCoreTargets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+    )
 
 # Precompiled Headers
 # [=[
 include(PrecompiledHeader)
-add_precompiled_header(${PROJECT_NAME} pch.h
-        SOURCE_CXX src/pch.cpp)
+add_precompiled_header(${PROJECT_NAME} pch.h SOURCE_CXX src/pch.cpp)
 #]=]
 
 target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)

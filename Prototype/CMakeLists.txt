@@ -31,17 +31,17 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Oe::Core)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
         WindowsApp.lib
-        uuid.lib
-        kernel32.lib
-        user32.lib
-        gdi32.lib
-        winspool.lib
-        comdlg32.lib
-        advapi32.lib
-        shell32.lib
-        ole32.lib
-        oleaut32.lib
-        odbc32.lib
-        odbccp32.lib
-        windowscodecs.lib
+        # odbc32.lib
+        # odbccp32.lib
+        # windowscodecs.lib
+        )
+        
+set_property(TARGET Prototype PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+
+install(TARGETS Prototype
+        EXPORT PrototypeTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include
         )

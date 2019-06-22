@@ -13,3 +13,5 @@ obj/
 thirdparty/amd64/
 Engine/cmake-build
 cmake-build*
+cmake-ninjabuild-x64-Debug/
+cmake-ninjabuild-x64-Release/

@@ -113,23 +113,23 @@ function(add_precompiled_header _target _input)
           set(_pch_compile_flags "${_pch_compile_flags} \"/Fp${_pch_cxx_pch}\" \"/Yc${_input}\"")
           set(_pch_source_cxx_found TRUE)
           #LW: Disable OBJECT_OUTPUTS, which seems to cause the PCH to be recreated each build.
-          #set_source_files_properties("${_source}" PROPERTIES OBJECT_OUTPUTS "${_pch_cxx_pch}")
+          set_source_files_properties("${_source}" PROPERTIES OBJECT_OUTPUTS "${_pch_cxx_pch}")
         elseif(_source STREQUAL "${_PCH_SOURCE_C}")
           set(_pch_compile_flags "${_pch_compile_flags} \"/Fp${_pch_c_pch}\" \"/Yc${_input}\"")
           set(_pch_source_c_found TRUE)
           #LW: Disable OBJECT_OUTPUTS, which seems to cause the PCH to be recreated each build.
-          #set_source_files_properties("${_source}" PROPERTIES OBJECT_OUTPUTS "${_pch_c_pch}")
+          set_source_files_properties("${_source}" PROPERTIES OBJECT_OUTPUTS "${_pch_c_pch}")
         else()
           if(_source MATCHES \\.\(cpp|cxx|cc\)$)
             set(_pch_compile_flags "${_pch_compile_flags} \"/Fp${_pch_cxx_pch}\" \"/Yu${_input}\"")
             set(_pch_source_cxx_needed TRUE)
             #LW: Disable OBJECT_OUTPUTS, which seems to cause the PCH to be recreated each build.
-            #set_source_files_properties("${_source}" PROPERTIES OBJECT_DEPENDS "${_pch_cxx_pch}")
+            set_source_files_properties("${_source}" PROPERTIES OBJECT_DEPENDS "${_pch_cxx_pch}")
           else()
             set(_pch_compile_flags "${_pch_compile_flags} \"/Fp${_pch_c_pch}\" \"/Yu${_input}\"")
             set(_pch_source_c_needed TRUE)
             #LW: Disable OBJECT_OUTPUTS, which seems to cause the PCH to be recreated each build.
-            #set_source_files_properties("${_source}" PROPERTIES OBJECT_DEPENDS "${_pch_c_pch}")
+            set_source_files_properties("${_source}" PROPERTIES OBJECT_DEPENDS "${_pch_c_pch}")
           endif()
           if(_PCH_FORCEINCLUDE)
             set(_pch_compile_flags "${_pch_compile_flags} /FI${_input}")
@@ -147,7 +147,7 @@ function(add_precompiled_header _target _input)
         set_source_files_properties(${_source} PROPERTIES
           COMPILE_FLAGS "${_pch_compile_flags}"
           #LW: Disable OBJECT_OUTPUTS, which seems to cause the PCH to be recreated each build.
-          #OBJECT_DEPENDS "${_object_depends}"
+          OBJECT_DEPENDS "${_object_depends}"
           )
       endif()
     endforeach()

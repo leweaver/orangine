@@ -1,7 +1,0 @@
-MESSAGE("Using win32-x86 toolchain")
-
-set(OE_TARGET_64 ON)
-set(OE_CMAKE_GENERATION_PATH cmake-build-debug-x86)
-
-GET_FILENAME_COMPONENT(OE_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." REALPATH)
-set(CMAKE_MODULE_PATH "${OE_ROOT}/cmake/modules")

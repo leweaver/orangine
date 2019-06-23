@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Common">
+      <UniqueIdentifier>c644818c-5266-4a1f-ad2c-d656004a9640</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>0e1b36f7-2536-4edf-a796-6c7dda2f6a04</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dds;dlg;fbx;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Assets\shaders">
+      <UniqueIdentifier>{5552b684-2186-4d88-a4a8-3b3fd05d6580}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets\shaders\inc">
+      <UniqueIdentifier>{4af0fe66-d1d3-4436-af4d-54fbfcc4f374}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets\shaders\test">
+      <UniqueIdentifier>{3c0807bd-77f9-4013-9a3f-31190b38a1ea}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="Game.h" />
+    <ClInclude Include="LogFileSink.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="data\shaders\inc\lighting.hlsl">
+      <Filter>Assets\shaders\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="VectorLogSink.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="LogFileSink.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="VectorLogSink.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="directx.ico">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="settings.manifest">
+      <Filter>Assets</Filter>
+    </Manifest>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="data\shaders\inc\utils.hlsl">
+      <Filter>Assets\shaders\inc</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\inc\pipeline_deferred.hlsl">
+      <Filter>Assets\shaders\inc</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\inc\pipeline_standard.hlsl">
+      <Filter>Assets\shaders\inc</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\Clear_gbuffer_material_PS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\Clear_gbuffer_material_VS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\Deferred_light_material_PS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\Deferred_light_material_VS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\Unlit_material_VS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\PBR_material_PS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\PBR_material_VS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\Skybox_material_VS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\Skybox_material_PS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\Unlit_material_PS.hlsl">
+      <Filter>Assets\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\test\test_pbr_ps_standard_textured.hlsl" />
+    <FxCompile Include="data\shaders\test\test_pbr_ps_standard_normalmap.hlsl" />
+    <FxCompile Include="data\shaders\test\test_pbr_ps_standard.hlsl">
+      <Filter>Assets\shaders\test</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\test\test_deferred_light_ps.hlsl">
+      <Filter>Assets\shaders\test</Filter>
+    </FxCompile>
+    <FxCompile Include="data\shaders\test\test_pbr_vs_standard_skinned.hlsl" />
+    <FxCompile Include="data\shaders\inc\shadow.hlsl" />
+    <FxCompile Include="data\shaders\inc\irradiance.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="NatvisFile.natvis" />
+  </ItemGroup>
+</Project>

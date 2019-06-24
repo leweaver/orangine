@@ -10,6 +10,5 @@ list(APPEND CMAKE_PREFIX_PATH "${Orangine_SOURCE_DIR}/../thirdparty/amd64/lib/cm
 
 include(OeCompilerFlags)
 
-add_subdirectory(OeThirdParty)
 add_subdirectory(OeCore)
 add_subdirectory(Prototype)

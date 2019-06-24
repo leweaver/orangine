@@ -1,9 +1,10 @@
 ﻿#pragma once
 
-#include <mikktspace/mikktspace.h>
+#include "Mesh_data.h"
+
+#include <OeThirdParty/mikktspace.h>
 
 #include <memory>
-#include "Mesh_data.h"
 
 namespace oe
 {

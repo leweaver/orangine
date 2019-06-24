@@ -97,7 +97,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
 target_include_directories(${PROJECT_NAME}
         PUBLIC
         "${PROJECT_SOURCE_DIR}/include"
-        "${PROJECT_SOURCE_DIR}/../../thirdparty/imgui"
         "${PROJECT_SOURCE_DIR}/../../thirdparty/tinygltf"
         "${PROJECT_SOURCE_DIR}/../../thirdparty/DirectXTK/Inc"
         "${PROJECT_BINARY_DIR}/include/"
@@ -117,9 +116,9 @@ target_include_directories(${PROJECT_NAME}
         PUBLIC ${G3LOG_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC g3logger)
 
-# imgui
-target_link_libraries(${PROJECT_NAME} PUBLIC Oe::Imgui)
-target_link_libraries(${PROJECT_NAME} PUBLIC Oe::MikktSpace)
+# imgui, MikktSpace
+find_package(OeThirdParty REQUIRED)
+target_link_libraries(${PROJECT_NAME} PUBLIC Oe::MikktSpace Oe::OeImgui)
 
 # Python
 find_package(Python3 COMPONENTS Development)

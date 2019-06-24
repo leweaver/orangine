@@ -11,8 +11,8 @@
 #include "OeCore/Renderable_component.h"
 #include "OeCore/Fps_counter.h"
 
-#include <imgui/imgui.h>
-#include <imgui/misc/cpp/imgui_stdlib.h>
+#include <OeThirdParty/imgui.h>
+#include <OeThirdParty/imgui_stdlib.h>
 
 using namespace DirectX;
 using namespace SimpleMath;

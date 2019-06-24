@@ -22,6 +22,7 @@ if %VSCMD_ARG_TGT_ARCH%==x86 (
 
 set OE_CMAKE_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\CMake\bin\cmake.exe
 set OE_NINJA_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\Ninja\ninja.exe
+set OE_INSTALL_PREFIX=%OE_ROOT%\bin\x64
 
 rem ******************************
 rem MikktSpace and tinygltf
@@ -32,14 +33,14 @@ set OE_GENERATE_BUILD_CONFIG=Debug
 set OE_BUILD_DIR=%OE_ROOT%\thirdparty\cmake-ninjabuild-x64-!OE_GENERATE_BUILD_CONFIG!
 IF NOT EXIST "!OE_BUILD_DIR!" md !OE_BUILD_DIR!
 cd !OE_BUILD_DIR!
-"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_DEBUG_POSTFIX=_d -DCMAKE_INSTALL_PREFIX:PATH="%OE_ROOT%\thirdparty\amd64" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%/thirdparty"
+"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_DEBUG_POSTFIX=_d -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%/thirdparty"
 ninja install
 
 set OE_GENERATE_BUILD_CONFIG=Release
 set OE_BUILD_DIR=%OE_ROOT%\thirdparty\cmake-ninjabuild-x64-!OE_GENERATE_BUILD_CONFIG!
 IF NOT EXIST "!OE_BUILD_DIR!" md !OE_BUILD_DIR!
 cd !OE_BUILD_DIR!
-"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_INSTALL_PREFIX:PATH="%OE_ROOT%\thirdparty\amd64" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%/thirdparty"
+"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%/thirdparty"
 ninja install
 
 endlocal
@@ -54,24 +55,27 @@ msbuild DirectXTK_Desktop_2017_Win10.sln /p:Configuration=Release /p:Platform="x
 rem ******************************
 rem g3log
 echo Creating and building g3log solution
-set G3LOG_BUILD_PATH=%OE_ROOT%\thirdparty\g3log
-IF EXIST %G3LOG_BUILD_PATH% (
-    set NOTHING=0
-) ELSE (
-    md %G3LOG_BUILD_PATH%
-)
-cd %G3LOG_BUILD_PATH% 
+set G3LOG_SOURCE_PATH=%OE_ROOT%\thirdparty\g3log
 
-rem Create the VS solutions and cmake init cache with common values
-"%OE_CMAKE_EXE%" . -G "Visual Studio 15 2017" -A x64 -DCMAKE_DEBUG_POSTFIX=d -DCMAKE_INSTALL_PREFIX="%OE_ROOT%\thirdparty\amd64" -DG3_SHARED_LIB=OFF -DADD_FATAL_EXAMPLE=OFF
+rem DEBUG
+set G3LOG_BUILD_PATH=%G3LOG_SOURCE_PATH%\cmake-build-debug-x64
+IF NOT EXIST %G3LOG_BUILD_PATH% md %G3LOG_BUILD_PATH%
 
-rem Build debug and release lib's
-"%OE_CMAKE_EXE%" --build . --config Debug --target install -- /p:Configuration=Debug /p:Platform="x64"
-rem "%OE_CMAKE_EXE%" --build . --config Release --target install -- /p:Configuration=Release /p:Platform="x64"
+cd %G3LOG_BUILD_PATH%
+"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_DEBUG_POSTFIX=_d -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%" -DCMAKE_BUILD_TYPE="Debug" "%G3LOG_SOURCE_PATH%"
+"%OE_NINJA_EXE%" install
+
+rem Release
+set G3LOG_BUILD_PATH=%G3LOG_SOURCE_PATH%\cmake-build-release-x64
+IF NOT EXIST %G3LOG_BUILD_PATH% md %G3LOG_BUILD_PATH%
+
+cd %G3LOG_BUILD_PATH%
+"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%" -DCMAKE_BUILD_TYPE="Release" "%G3LOG_SOURCE_PATH%"
+"%OE_NINJA_EXE%" install
 
 rem For some reason, the g3logger cmake find_module needs these directories to exist. Even though they are empty.
-md "%OE_ROOT%\thirdparty\amd64\COMPONENT"
-md "%OE_ROOT%\thirdparty\amd64\libraries"
+IF NOT EXIST "%OE_INSTALL_PREFIX%\COMPONENT" md "%OE_INSTALL_PREFIX%\COMPONENT"
+IF NOT EXIST "%OE_INSTALL_PREFIX%\libraries" md "%OE_INSTALL_PREFIX%\libraries"
 
 rem ******************************
 rem googletest

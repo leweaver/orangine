@@ -6,7 +6,7 @@ project(Orangine VERSION 1.0
 
 # Update module path
 list(APPEND CMAKE_MODULE_PATH "${Orangine_SOURCE_DIR}/CMake;${Orangine_SOURCE_DIR}/cmake/modules")
-list(APPEND CMAKE_PREFIX_PATH "${Orangine_SOURCE_DIR}/../thirdparty/amd64/lib/cmake")
+list(APPEND CMAKE_PREFIX_PATH "${Orangine_SOURCE_DIR}/../bin/x64/lib/cmake")
 
 include(OeCompilerFlags)
 

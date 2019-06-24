@@ -3,10 +3,10 @@
 ## Windows 10
 You must be running Windows 10 build version 1703 (Creators Update) or higher. Run the `winver` program to view which build version you have. If you are running an earlier version of Windows, run Windows Update or [Download Windows 10 Disk Image](https://go.microsoft.com/fwlink/p/?LinkId=821363)
 
-## Visual Studio 2017
-No matter what you use for actual coding (CLion? VSCode? VIM?!), you still need visual studio installed in order to satisfy library dependencies and actually compile.
+## Visual Studio
+Visual Studio must be installed in order to satisfy library dependencies and get the windows SDK.
 
-Visual Studio 2017 15.7.5 is the minimum required. (2019 may work? not tried.)
+Visual Studio 2017 15.7.5 is the minimum required. (I've tested with 2019 and it also works.)
 
 When installing, ensure you select the following options (in addition to whatever defaults are selected):
 
@@ -42,6 +42,17 @@ Some of the third party libraries need to be built first using helper script `.\
 - googletest
 - googlemock
 
+## CMake
+I've set the project up to use CMake, which is a build file generator. If you've not used CMake before, I recommend you simply open the main CMake file (`Orangine/CMakeLists.txt`) in visual studio (see: https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=vs-2019)
+
+I've tested the CMake support in CLion, VSCode, Visual Studio 2017/2019 and all seem to work. (My IDE of choice is VS 2019)
+
+You can also use a wrapper utility `Orangine/oe-built.bat` to compile without an IDE:
+
+- `oe-built.bat Generate` _Uses CMake to creates ninja build definition files. You will only need to run this once_
+- `oe-built.bat Build Debug` _Uses ninja to build the libraries and samples. Also supports `Release` as the second arg_
+- `oe-built.bat Install Debug` _Uses ninja to build and place the engine libraries to the root `bin` directory, for consumption by other repositories_
+
 # Overall Architecture
 Here is a quick non-exhaustive overview of how the main object instances are instantiated. Each item creates and owns the items below it in the tree. Each item below is the name of a class, which is located in a CPP/H file of the same name. 
 
@@ -49,39 +60,19 @@ Here is a quick non-exhaustive overview of how the main object instances are ins
   - DX::DeviceResources
   - oe::Game
     - oe::Scene
-	  - oe::Entity_graph_loader_gltf
-	  - oe::IManager_base derived classes:
-		- oe::Entity_render_manager
-		- oe::Scene_graph_manager
-			- oe::Entity
-			- oe::Entity_filter
-		- oe::Render_step_manager
-			- oe::Render_step
-		- ...
+      - oe::Entity_graph_loader_gltf
+      - oe::IManager_base derived classes:
+        - oe::Entity_render_manager
+        - oe::Scene_graph_manager
+            - oe::Entity
+            - oe::Entity_filter
+        - oe::Render_step_manager
+            - oe::Render_step
+        - ...
 
-# Using your IDE
-Open the root CMakeLists.txt in your favourite IDE. 
+# (Outdated) Running unit tests
+> Unit tests haven't yet been updated to use CMake; so the following may be an OK guide but probably won't work
 
-## Visual studio 2019
-some good tips for using CMake in VS are here: https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=vs-2019 - especially "Choose Targets view")
-
-You will need to set the cwd of the Prototype.exe startup item. In launch.vs.json, set the currentDir property of your startup configuration. Eg:
-
-```
-"configurations": [
-    {
-        "type": "default",
-        "project": "CMakeLists.txt",
-        "projectTarget": "Prototype.exe (Prototype\\Prototype.exe)",
-        "name": "Prototype.exe (Prototype\\Prototype.exe)",
-        "currentDir": "C:\\repos\\Orangine\\Prototype"
-    }
-  ]
-```
-
-
-
-# Running unit tests
 First, make sure tests are set to run in x64.
 
 1. Test -> Test Settings -> Select Test Settings File 
@@ -114,7 +105,7 @@ Some notes on libraries that are in use:
 
 - __DirectXMath__ offers both left-handed and right-handed versions of matrix functions with 'handedness', but always assumes a row-major format.
 - __SimpleMath__ as with DirectXMath uses row-major ordering for matrices.
-- __HLSL__ 	defaults to using column-major ordering as this makes for slightly more efficient shader matrix multiplies. Therefore, when a Matrix is going to be copied into a HLSL constant buffer, it is usually transposed as part of updating the constant buffer.  
+- __HLSL__     defaults to using column-major ordering as this makes for slightly more efficient shader matrix multiplies. Therefore, when a Matrix is going to be copied into a HLSL constant buffer, it is usually transposed as part of updating the constant buffer.  
 
 # Renderer 
 ## Normals and Tangents
@@ -131,18 +122,18 @@ Do use when referencing manager classes in header files
 
 ## Pointers, References, SmartPointers
 Function Arguments:
-	[https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rr-smartptrparam](R.30)
-	Prefer references to objects, but take a pointer if it can be null.
-	Only take in a smart/unique pointer when lifetime/ownership needs to be managed:
-		[https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rr-smartptrparam](R.36)
-		```
-		void share(shared_ptr<widget>);            // share -- "will" retain refcount
-		void reseat(shared_ptr<widget>&);          // "might" reseat ptr
-		void may_share(const shared_ptr<widget>&); // "might" retain refcount
-		```
+    [https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rr-smartptrparam](R.30)
+    Prefer references to objects, but take a pointer if it can be null.
+    Only take in a smart/unique pointer when lifetime/ownership needs to be managed:
+        [https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rr-smartptrparam](R.36)
+        ```
+        void share(shared_ptr<widget>);            // share -- "will" retain refcount
+        void reseat(shared_ptr<widget>&);          // "might" reseat ptr
+        void may_share(const shared_ptr<widget>&); // "might" retain refcount
+        ```
 
 ## Naming
-[https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#nl10-prefer-underscore_style-names](NL.10) Prefer	underscore_case for names
+[https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#nl10-prefer-underscore_style-names](NL.10) Prefer    underscore_case for names
 [https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#nl17-use-kr-derived-layout](NL.17) use KR derived layout
 
 namespace: lower_underscored

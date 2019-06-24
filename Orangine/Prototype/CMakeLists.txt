@@ -2,8 +2,17 @@ project(Prototype VERSION 1.0
         DESCRIPTION "Orangine Sample Application"
         LANGUAGES CXX)
 
+set(Prototype_DATA_PATH ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/data)
+set(Prototype_THIRDPARTY_PATH ${CMAKE_SOURCE_DIR}/../thirdparty)
+
+configure_file (
+        "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
+        "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
+)
+
 # Library Definition
 add_executable(${PROJECT_NAME} WIN32
+        ${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h
         resource.rc
         resource.aps
         settings.manifest
@@ -17,6 +26,11 @@ add_executable(${PROJECT_NAME} WIN32
         src/VectorLogSink.h
         src/VectorLogSink.cpp
         src/filesinkhelper.ipp)
+
+target_include_directories(${PROJECT_NAME}
+        PUBLIC
+        "${PROJECT_BINARY_DIR}/include/"
+)
 
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION bin

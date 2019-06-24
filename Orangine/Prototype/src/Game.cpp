@@ -5,6 +5,8 @@
 #include "pch.h"
 #include "Game.h"
 
+#include "PrototypeConfig.h"
+
 #include "OeCore/IScene_graph_manager.h"
 #include "OeCore/Scene.h"
 #include "OeCore/Test_component.h"
@@ -74,15 +76,23 @@ std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 	if (animate)
 		root->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 
-
-    std::string gltfPath = _appDir + "data/meshes/" + gltfName + +"/glTF/" + gltfName + ".gltf";
+    std::string gltfPath;
+    std::string gltfPathSubfolder = "/" + gltfName + "/glTF/" + gltfName + ".gltf";
+    std::string gltfPathPrefix = PROTOTYPE_DATA_PATH + std::string("data/meshes");
+    gltfPath = gltfPathPrefix + gltfPath;
+    LOG(DEBUG) << "Looking for gltf at: " << gltfPath;
+    
     if (!std::filesystem::exists(gltfPath)) {
-        gltfPath = _appDir + "../thirdparty/glTF-Sample-Models/2.0/" + gltfName + "/glTF/" + gltfName + ".gltf";
-    }
-
-    if (!std::filesystem::exists(gltfPath)) {
-        LOG(INFO) << "Current Working Directory: " << std::filesystem::current_path();
-        throw std::runtime_error("Could not find gltf file with name: " + gltfName);
+        std::stringstream ss;
+        ss  << PROTOTYPE_THIRDPARTY_PATH 
+            << "/glTF-Sample-Models/2.0"
+            << gltfPathSubfolder;
+        gltfPath = ss.str();
+        
+        LOG(DEBUG) << "Looking for gltf at: " << gltfPath;
+        if (!std::filesystem::exists(gltfPath)) {
+            throw std::runtime_error("Could not find gltf file with name: " + gltfName);
+        }
     }
 
     m_scene->loadEntities(gltfPath, *root);
@@ -292,6 +302,8 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
     m_scene->manager<IUser_interface_manager>().setUIScale(static_cast<float>(dpi) / 96.0f);
 	m_scene->initialize();
 
+    m_scene->manager<IMaterial_manager>().setShaderPath(utf8_decode(PROTOTYPE_DATA_PATH) + L"/shaders");
+
 	try
 	{
 		// TODO: Change the timer settings if you want something other than the default variable timestep mode.
@@ -328,7 +340,10 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 		//CreateGeometricPrimitives();
 
 		// Load the skybox
-		auto skyBoxTexture = std::make_shared<File_texture>(std::wstring(L"data/textures/park-cubemap.dds"));
+		auto skyBoxTexture = std::make_shared<File_texture>(
+            utf8_decode(PROTOTYPE_DATA_PATH) + 
+            std::wstring(L"/textures/park-cubemap.dds")
+            );
 		m_scene->setSkyboxTexture(skyBoxTexture);
 	}
 	catch (const std::exception &e)

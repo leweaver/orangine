@@ -20,7 +20,6 @@ void Buffer_texture::load(ID3D11Device* device)
 
 void File_texture::load(ID3D11Device* device)
 {
-
 	unload();
 
 	HRESULT hr;
@@ -29,10 +28,14 @@ void File_texture::load(ID3D11Device* device)
 	else
 		hr = DirectX::CreateWICTextureFromFile(device, _filename.c_str(), _textureResource.ReleaseAndGetAddressOf(), &_shaderResourceView);
 
+	if (FAILED(hr)) {
+		LOG(WARNING) << "Failed to load " << utf8_encode(_filename);
+		return;
+	}
+
 	D3D11_SHADER_RESOURCE_VIEW_DESC desc;
 	_shaderResourceView->GetDesc(&desc);
 
-	ThrowIfFailed(hr, utf8_encode(_filename));
 }
 
 void File_texture::unload()

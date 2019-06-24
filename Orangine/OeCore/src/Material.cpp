@@ -8,8 +8,6 @@
 using namespace oe;
 using namespace std::string_literals;
 
-const std::wstring Material::shader_path = std::wstring(L"data/shaders/");
-
 const std::string g_json_alphaMode = "alpha_mode";
 const std::string g_json_faceCullMode = "face_cull_mode";
 const std::string g_json_enabled = "enabled";

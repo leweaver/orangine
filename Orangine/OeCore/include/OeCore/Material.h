@@ -133,8 +133,6 @@ namespace oe {
 	protected:
 
         void markRequiresRecompile() { _requiresRecompile = true; }
-        		
-		static std::wstring_view shaderPath() { return shader_path; }
 
         static nlohmann::json serializeTexture(bool compilerPropertiesOnly, const std::shared_ptr<Texture>& texture);
 
@@ -145,8 +143,6 @@ namespace oe {
 		Material_alpha_mode _alphaMode;
 		Material_face_cull_mode _faceCullMode;
 	    size_t _propertiesHash = 0;
-
-	    static const std::wstring shader_path;
 	};
 
 }

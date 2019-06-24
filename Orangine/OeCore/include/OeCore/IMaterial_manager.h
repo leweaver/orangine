@@ -21,6 +21,10 @@ namespace oe {
     {
     public:
         explicit IMaterial_manager(Scene& scene) : Manager_base(scene) {}
+
+        // Sets the path that contains hlsl files. Should not end in a trailing slash.
+        virtual void setShaderPath(const std::wstring& path) = 0;
+        virtual const std::wstring& shaderPath() const = 0;
                
         // Sets the Material that is used for all subsequent calls to render.
         // Compiles (if needed), binds pixel and vertex shaders, and textures.

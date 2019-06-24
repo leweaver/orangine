@@ -31,6 +31,9 @@ namespace oe {
         void destroyDeviceDependentResources() override;
 
         // IMaterial_manager implementation
+        void setShaderPath(const std::wstring& path) override;
+        const std::wstring& shaderPath() const;
+
         void bind(
             Material_context& materialContext,
             std::shared_ptr<const Material> material,
@@ -79,6 +82,8 @@ namespace oe {
     private:
 
         static std::string _name;
+        
+        std::wstring _shaderPath = L"data/shaders";
 
         Renderer_features_enabled _rendererFeatures;
         size_t _rendererFeaturesHash = 0;

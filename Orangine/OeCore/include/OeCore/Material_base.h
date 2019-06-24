@@ -126,7 +126,7 @@ namespace oe {
 		Shader_compile_settings vertexShaderSettings(const std::set<std::string>& flags) const override
 		{
 			std::wstringstream ss;
-			ss << shaderPath() << utf8_decode(materialType()) << L"_VS.hlsl";
+			ss << utf8_decode(materialType()) << L"_VS.hlsl";
 			auto settings = Material::vertexShaderSettings(flags);
 			settings.filename = ss.str();
 			return settings;
@@ -135,7 +135,7 @@ namespace oe {
 		Shader_compile_settings pixelShaderSettings(const std::set<std::string>& flags) const override
 		{
 			std::wstringstream ss;
-			ss << shaderPath() << utf8_decode(materialType()) << L"_PS.hlsl";
+			ss << utf8_decode(materialType()) << L"_PS.hlsl";
 			auto settings = Material::pixelShaderSettings(flags);
 			settings.filename = ss.str();
 			return settings;

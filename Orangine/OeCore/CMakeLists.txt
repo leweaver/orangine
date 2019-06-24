@@ -5,11 +5,11 @@ project(OeCore VERSION 1.0
 configure_file (
         "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
         "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
-) 
+)
 
 # Library Definition
 add_library(${PROJECT_NAME} STATIC
-        ${PROJECT_BINARY_DIR}/include/OeCoreConfig.h
+        ${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h
         src/pch.h
         src/pch.cpp
         src/User_interface_manager.h

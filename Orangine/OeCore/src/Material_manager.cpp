@@ -53,6 +53,15 @@ inline DX::DeviceResources& Material_manager::deviceResources() const
     return _scene.manager<ID3D_resources_manager>().deviceResources();
 }
 
+
+void Material_manager::setShaderPath(const std::wstring& path) {
+    _shaderPath = path;
+}
+
+const std::wstring& Material_manager::shaderPath() const {
+    return _shaderPath;
+}
+
 void Material_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
 {
     // Animation constant buffer
@@ -185,7 +194,9 @@ void Material_manager::createVertexShader(
         flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_PREFER_FLOW_CONTROL;
 #endif
 
-    hr = D3DCompileFromFile(settings.filename.c_str(),
+    const auto filename = _shaderPath + L"/" + settings.filename;
+    LOG(DEBUG) << "Compiling shader " << filename.c_str();
+    hr = D3DCompileFromFile(filename.c_str(),
         defines.data(),
         D3D_COMPILE_STANDARD_FILE_INCLUDE,
         settings.entryPoint.c_str(),
@@ -246,7 +257,9 @@ void Material_manager::createPixelShader(
     }
     defines.push_back({ nullptr, nullptr });
 
-    hr = D3DCompileFromFile(settings.filename.c_str(),
+    const auto filename = _shaderPath + L"/" + settings.filename;
+    LOG(DEBUG) << "Compiling shader " << filename.c_str();
+    hr = D3DCompileFromFile(filename.c_str(),
         defines.data(),
         D3D_COMPILE_STANDARD_FILE_INCLUDE,
         settings.entryPoint.c_str(),

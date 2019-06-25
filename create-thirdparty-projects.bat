@@ -7,11 +7,10 @@ rem This line MUST be run at root scope. otherwise weirdness.
 FOR /f "tokens=1-2* delims= " %%a in ( 'reg query "HKLM\Software\WOW6432Node\Microsoft\VisualStudio\SxS\VS7" /V 15.0 ^| find "REG_SZ" ' ) do set OE_VS15DIR=%%c
 
 if not defined VSINSTALLDIR (
-    echo "OE_VS15DIR=%OE_VS15DIR%"
-    IF EXIST "%OE_VS15DIR%VC\Auxiliary\Build\vcvarsall.bat" (
-        call "%OE_VS15DIR%VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
+    IF EXIST "%OE_VS15DIR%VC\Auxiliary\Build\vcvars64.bat" (
+        call "%OE_VS15DIR%VC\Auxiliary\Build\vcvars64.bat"
     ) ELSE (
-        echo "Could not find vcvarsall.bat. Is visual studio 2017 community edition installed?"
+        echo "Could not find vcvars64.bat. Is visual studio 2017 community edition installed?"
         goto:eof
     )
 )
@@ -33,14 +32,14 @@ set OE_GENERATE_BUILD_CONFIG=Debug
 set OE_BUILD_DIR=%OE_ROOT%\thirdparty\cmake-ninjabuild-x64-!OE_GENERATE_BUILD_CONFIG!
 IF NOT EXIST "!OE_BUILD_DIR!" md !OE_BUILD_DIR!
 cd !OE_BUILD_DIR!
-"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_DEBUG_POSTFIX=_d -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%/thirdparty"
+"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_DEBUG_POSTFIX=_d -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%/%OE_GENERATE_BUILD_CONFIG%" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%/thirdparty"
 ninja install
 
 set OE_GENERATE_BUILD_CONFIG=Release
 set OE_BUILD_DIR=%OE_ROOT%\thirdparty\cmake-ninjabuild-x64-!OE_GENERATE_BUILD_CONFIG!
 IF NOT EXIST "!OE_BUILD_DIR!" md !OE_BUILD_DIR!
 cd !OE_BUILD_DIR!
-"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%/thirdparty"
+"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%/%OE_GENERATE_BUILD_CONFIG%" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%/thirdparty"
 ninja install
 
 endlocal
@@ -62,7 +61,7 @@ set G3LOG_BUILD_PATH=%G3LOG_SOURCE_PATH%\cmake-build-debug-x64
 IF NOT EXIST %G3LOG_BUILD_PATH% md %G3LOG_BUILD_PATH%
 
 cd %G3LOG_BUILD_PATH%
-"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_DEBUG_POSTFIX=_d -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%" -DCMAKE_BUILD_TYPE="Debug" "%G3LOG_SOURCE_PATH%"
+"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_DEBUG_POSTFIX=_d -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%/Debug" -DCMAKE_BUILD_TYPE="Debug" "%G3LOG_SOURCE_PATH%"
 "%OE_NINJA_EXE%" install
 
 rem Release
@@ -70,12 +69,14 @@ set G3LOG_BUILD_PATH=%G3LOG_SOURCE_PATH%\cmake-build-release-x64
 IF NOT EXIST %G3LOG_BUILD_PATH% md %G3LOG_BUILD_PATH%
 
 cd %G3LOG_BUILD_PATH%
-"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%" -DCMAKE_BUILD_TYPE="Release" "%G3LOG_SOURCE_PATH%"
+"%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%/Release" -DCMAKE_BUILD_TYPE="Release" "%G3LOG_SOURCE_PATH%"
 "%OE_NINJA_EXE%" install
 
 rem For some reason, the g3logger cmake find_module needs these directories to exist. Even though they are empty.
-IF NOT EXIST "%OE_INSTALL_PREFIX%\COMPONENT" md "%OE_INSTALL_PREFIX%\COMPONENT"
-IF NOT EXIST "%OE_INSTALL_PREFIX%\libraries" md "%OE_INSTALL_PREFIX%\libraries"
+IF NOT EXIST "%OE_INSTALL_PREFIX%\Debug\COMPONENT" md "%OE_INSTALL_PREFIX%\Debug\COMPONENT"
+IF NOT EXIST "%OE_INSTALL_PREFIX%\Release\COMPONENT" md "%OE_INSTALL_PREFIX%\Release\COMPONENT"
+IF NOT EXIST "%OE_INSTALL_PREFIX%\Debug\libraries" md "%OE_INSTALL_PREFIX%\Debug\libraries"
+IF NOT EXIST "%OE_INSTALL_PREFIX%\Release\libraries" md "%OE_INSTALL_PREFIX%\Release\libraries"
 
 rem ******************************
 rem googletest

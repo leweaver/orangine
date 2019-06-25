@@ -95,14 +95,6 @@ target_include_directories(${PROJECT_NAME}
         $<INSTALL_INTERFACE:include>
         "${OE_THIRDPARTY_PATH}/tinygltf"
         "${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
-        "${VS_INCLUDE}/VC/Tools/MSVC/14.16.27023/include"
-        "${VS_INCLUDE}/VC/Tools/MSVC/14.16.27023/atlmfc/include"
-        "${VS_INCLUDE}/VC/Auxiliary/VS/include"
-        "${WINSDK_PATH}/ucrt"
-        "${WINSDK_PATH}/um"
-        "${WINSDK_PATH}/shared"
-        "${WINSDK_PATH}/winrt"
-        "${WINSDK_PATH}/cppwinrt"
         )
 
 # g3log
@@ -132,7 +124,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 # DirectXTK
 find_package(directxtk REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC
-        "${DIRECTX_LIB_DIR}/Desktop_2017_Win10/x64/Debug/DirectXTK.lib")
+        "${DIRECTX_LIB_DIR}/Desktop_2017_Win10/x64/${CMAKE_BUILD_TYPE}/DirectXTK.lib")
 
 # Install
 install(TARGETS ${PROJECT_NAME}

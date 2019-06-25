@@ -2,6 +2,8 @@
 setlocal enableextensions
 setlocal EnableDelayedExpansion
 
+echo Building %cd%
+
 set OE_REQUIRES_ARG2=0
 set OE_VALID_INPUT=0
 
@@ -52,16 +54,15 @@ rem This line MUST be run at root scope. otherwise weirdness.
 FOR /f "tokens=1-2* delims= " %%a in ( 'reg query "HKLM\Software\WOW6432Node\Microsoft\VisualStudio\SxS\VS7" /V 15.0 ^| find "REG_SZ" ' ) do set OE_VS15DIR=%%c
 
 if not defined VSINSTALLDIR (
-    echo "OE_VS15DIR=%OE_VS15DIR%"
-    IF EXIST "%OE_VS15DIR%VC\Auxiliary\Build\vcvarsall.bat" (
-        call "%OE_VS15DIR%VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
+    IF EXIST "%OE_VS15DIR%VC\Auxiliary\Build\vcvars64.bat" (
+        call "%OE_VS15DIR%VC\Auxiliary\Build\vcvars64.bat"
     ) ELSE (
-        echo "Could not find vcvarsall.bat. Is visual studio 2017 community edition installed?"
+        echo "Could not find vcvars64.bat. Is visual studio 2017 community edition installed?"
         goto:eof
     )
 )
 
-if %VSCMD_ARG_TGT_ARCH%==x86 (
+if not "%VSCMD_ARG_TGT_ARCH%"=="x64" (
     call "%VCINSTALLDIR%\Auxiliary\Build\vcvars64.bat"
 )
 
@@ -69,17 +70,18 @@ set OE_CMAKE_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\CMake\bin\cmake.exe
 set OE_NINJA_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\Ninja\ninja.exe
 
 if "!OE_ACTION_GENERATE!" == "1" (
+    echo Task: Generate
     set OE_GENERATE_BUILD_CONFIG=Debug
     set OE_BUILD_DIR=%OE_ROOT%\cmake-ninjabuild-x64-!OE_GENERATE_BUILD_CONFIG!
     IF NOT EXIST "!OE_BUILD_DIR!" md !OE_BUILD_DIR!
     cd !OE_BUILD_DIR!
-    "%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_DEBUG_POSTFIX=_d -DCMAKE_INSTALL_PREFIX:PATH="%OE_ROOT%\..\bin\x64" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%"
+    "%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_DEBUG_POSTFIX=_d -DCMAKE_INSTALL_PREFIX:PATH="%OE_ROOT%\..\bin\x64\!OE_GENERATE_BUILD_CONFIG!" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%"
 
     set OE_GENERATE_BUILD_CONFIG=Release
     set OE_BUILD_DIR=%OE_ROOT%\cmake-ninjabuild-x64-!OE_GENERATE_BUILD_CONFIG!
     IF NOT EXIST "!OE_BUILD_DIR!" md !OE_BUILD_DIR!
     cd !OE_BUILD_DIR!
-    "%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_INSTALL_PREFIX:PATH="%OE_ROOT%\..\bin\x64" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%"
+    "%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_INSTALL_PREFIX:PATH="%OE_ROOT%\..\bin\x64\!OE_GENERATE_BUILD_CONFIG!" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%"
 )
 
 if NOT "!OE_BUILD_CONFIG!" EQU "" (
@@ -94,12 +96,14 @@ if NOT "!OE_BUILD_CONFIG!" EQU "" (
 )
 
 if "!OE_ACTION_CLEAN!" == "1" (
+    echo Task: Clean !OE_BUILD_CONFIG!
     ninja clean
 )
 if "!OE_ACTION_BUILD!" == "1" (
-    rem Building Prototype will build OeCore, so don't need to explicitly call it out below.
-    ninja Prototype
+    echo Task: Build !OE_BUILD_CONFIG!
+    ninja
 )
 if "!OE_ACTION_INSTALL!" == "1" (
-    ninja OeCore/install Prototype/install
+    echo Task: Installing !OE_BUILD_CONFIG!
+    ninja install
 )

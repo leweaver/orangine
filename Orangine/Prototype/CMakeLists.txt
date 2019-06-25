@@ -40,22 +40,15 @@ install(DIRECTORY data
         )
 
 # Precompiled Headers
-# [=[
 include(PrecompiledHeader)
 add_precompiled_header(${PROJECT_NAME} pch.h
         SOURCE_CXX src/pch.cpp)
-#]=]
 
 target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Oe::Core)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
-        WindowsApp.lib
-        # odbc32.lib
-        # odbccp32.lib
-        # windowscodecs.lib
-        )
+target_link_libraries(${PROJECT_NAME} PRIVATE WindowsApp.lib)
         
 set_property(TARGET Prototype PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 

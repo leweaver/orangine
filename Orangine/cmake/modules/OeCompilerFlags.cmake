@@ -36,14 +36,28 @@ if(OE_COMPILER_IS_MSVC)
 endif()
 
 
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${PROJECT_BINARY_DIR}/OeCompilerFlagsConfigVersion.cmake"
+    VERSION 1.0
+    COMPATIBILITY AnyNewerVersion
+)
+
 # Install
 install(TARGETS OeCompilerFlags
         EXPORT OeCompilerFlagsTargets
         )
 
-install(
-        EXPORT OeCompilerFlagsTargets
-        FILE OeCompilerFlagsTargets.cmake
-        NAMESPACE Oe:: 
-        DESTINATION lib/cmake/OeCompilerFlags
-        )
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    "${CMAKE_CURRENT_LIST_DIR}/OeCompilerFlagsConfig.cmake.in"
+    "${PROJECT_BINARY_DIR}/OeCompilerFlagsConfig.cmake"
+    INSTALL_DESTINATION lib/cmake/OeCompilerFlags
+)
+
+install(EXPORT OeCompilerFlagsTargets DESTINATION lib/cmake/OeCompilerFlags)
+install(FILES "${PROJECT_BINARY_DIR}/OeCompilerFlagsConfigVersion.cmake"
+              "${PROJECT_BINARY_DIR}/OeCompilerFlagsConfig.cmake"
+        DESTINATION lib/cmake/OeCompilerFlags)

@@ -15,14 +15,6 @@ endif()
 
 # ImGui library
 add_library(OeImgui STATIC
-        "imgui/imgui/examples/imgui_impl_dx11.h"
-        "imgui/imgui/examples/imgui_impl_win32.h"
-        "imgui/imgui/imconfig.h"
-        "imgui/imgui/imgui.h"
-        "imgui/imgui/imgui_internal.h"
-        "imgui/imgui/imstb_rectpack.h"
-        "imgui/imgui/imstb_truetype.h"
-        "imgui/imgui/misc/cpp/imgui_stdlib.h"
         "imgui/imgui/examples/imgui_impl_dx11.cpp"
         "imgui/imgui/examples/imgui_impl_win32.cpp"
         "imgui/imgui/imgui.cpp"
@@ -31,9 +23,17 @@ add_library(OeImgui STATIC
         "imgui/imgui/imgui_widgets.cpp"
         "imgui/imgui/misc/cpp/imgui_stdlib.cpp"
 )
-set_target_properties(OeImgui PROPERTIES
-        PUBLIC_HEADER "imgui/imgui/examples/imgui_impl_dx11.h;imgui/imgui/examples/imgui_impl_win32.h;imgui/imgui/imconfig.h;imgui/imgui/imgui.h;imgui/imgui/imgui_internal.h;imgui/imgui/imstb_rectpack.h;imgui/imgui/imstb_truetype.h;imgui/imgui/misc/cpp/imgui_stdlib.h"
+set(OeImgui_HEADERS 
+        "imgui/imgui/examples/imgui_impl_dx11.h"
+        "imgui/imgui/examples/imgui_impl_win32.h"
+        "imgui/imgui/imconfig.h"
+        "imgui/imgui/imgui.h"
+        "imgui/imgui/imgui_internal.h"
+        "imgui/imgui/imstb_rectpack.h"
+        "imgui/imgui/imstb_truetype.h"
+        "imgui/imgui/misc/cpp/imgui_stdlib.h"
 )
+set_target_properties(OeImgui PROPERTIES PUBLIC_HEADER "${OeImgui_HEADERS}")
 
 add_library(Oe::Imgui ALIAS OeImgui)
 target_include_directories(OeImgui
@@ -47,7 +47,6 @@ target_link_libraries(OeImgui PUBLIC OeCompilerFlags)
 
 # MikktSpace library
 add_library(MikktSpace STATIC
-        "MikktSpace/include/MikktSpace/mikktspace.h"
         "MikktSpace/src/mikktspace.c"
         )
 set_target_properties(MikktSpace PROPERTIES

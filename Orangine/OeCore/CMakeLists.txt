@@ -9,7 +9,6 @@ configure_file (
 
 # Library Definition
 add_library(${PROJECT_NAME} STATIC
-        ${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h
         src/pch.h
         src/pch.cpp
         src/User_interface_manager.h
@@ -75,31 +74,27 @@ add_library(${PROJECT_NAME} STATIC
         src/EngineUtils.cpp
         src/VectorLog.cpp
     )
+file(GLOB OeCore_HEADERS "include/OeCore/*")
+list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
+
+set_target_properties(OeCore PROPERTIES PUBLIC_HEADER "${OeCore_HEADERS}")
 add_library(Oe::Core ALIAS OeCore)
 
-install(TARGETS ${PROJECT_NAME}
-    EXPORT OeCoreTargets
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-    INCLUDES DESTINATION include
-    )
-
 # Precompiled Headers
-# [=[
 include(PrecompiledHeader)
 add_precompiled_header(${PROJECT_NAME} pch.h SOURCE_CXX src/pch.cpp)
-#]=]
 
 target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
 
 # Public headers
+get_filename_component(OE_THIRDPARTY_PATH "${Orangine_SOURCE_DIR}/../thirdparty" ABSOLUTE)
 target_include_directories(${PROJECT_NAME}
         PUBLIC
-        "${PROJECT_SOURCE_DIR}/include"
-        "${PROJECT_SOURCE_DIR}/../../thirdparty/tinygltf"
-        "${PROJECT_SOURCE_DIR}/../../thirdparty/DirectXTK/Inc"
-        "${PROJECT_BINARY_DIR}/include/"
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+        "${OE_THIRDPARTY_PATH}/tinygltf"
+        "${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
         "${VS_INCLUDE}/VC/Tools/MSVC/14.16.27023/include"
         "${VS_INCLUDE}/VC/Tools/MSVC/14.16.27023/atlmfc/include"
         "${VS_INCLUDE}/VC/Auxiliary/VS/include"
@@ -138,3 +133,28 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 find_package(directxtk REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC
         "${DIRECTX_LIB_DIR}/Desktop_2017_Win10/x64/Debug/DirectXTK.lib")
+
+# Install
+install(TARGETS ${PROJECT_NAME}
+        EXPORT OeCoreTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include
+        PUBLIC_HEADER DESTINATION include/${PROJECT_NAME}
+        )
+
+install(
+        EXPORT OeCoreTargets
+        FILE OeCoreTargets.cmake
+        NAMESPACE Oe:: 
+        DESTINATION lib/cmake/OeCore
+        )
+
+configure_file(OeCoreConfig.cmake.in OeCoreConfig.cmake @ONLY)
+configure_file(OeCoreConfigVersion.cmake.in OeCoreConfigVersion.cmake @ONLY)
+install(
+        FILES "${CMAKE_CURRENT_BINARY_DIR}/OeCoreConfig.cmake"
+                "${CMAKE_CURRENT_BINARY_DIR}/OeCoreConfigVersion.cmake"
+        DESTINATION lib/cmake/OeCore
+)

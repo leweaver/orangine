@@ -34,3 +34,16 @@ if(OE_COMPILER_IS_MSVC)
                 add_compile_definitions("_DEBUG")
         endif()
 endif()
+
+
+# Install
+install(TARGETS OeCompilerFlags
+        EXPORT OeCompilerFlagsTargets
+        )
+
+install(
+        EXPORT OeCompilerFlagsTargets
+        FILE OeCompilerFlagsTargets.cmake
+        NAMESPACE Oe:: 
+        DESTINATION lib/cmake/OeCompilerFlags
+        )

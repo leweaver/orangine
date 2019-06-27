@@ -41,9 +41,9 @@ if "!OE_VALID_INPUT!" EQU "0" (
     echo Usage: %0 BUILDTYPE [CONFIG]
     echo.
     echo   Where:
-    echo     BUILDTYPE = Generate, Build or Install
+    echo     BUILDTYPE = Generate, Clean, Build or Install
     echo.
-    echo   For Build or Install, provide:
+    echo   For Clean, Build or Install, provide:
     echo     CONFIG    = Debug, Release
     GOTO:eof
 )

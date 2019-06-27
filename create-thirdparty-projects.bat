@@ -34,7 +34,7 @@ IF NOT EXIST "!OE_BUILD_DIR!" md !OE_BUILD_DIR!
 cd !OE_BUILD_DIR!
 "%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_DEBUG_POSTFIX=_d -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%/%OE_GENERATE_BUILD_CONFIG%" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%OE_ROOT%/thirdparty"
 ninja install
-
+goto:end
 set OE_GENERATE_BUILD_CONFIG=Release
 set OE_BUILD_DIR=%OE_ROOT%\thirdparty\cmake-ninjabuild-x64-!OE_GENERATE_BUILD_CONFIG!
 IF NOT EXIST "!OE_BUILD_DIR!" md !OE_BUILD_DIR!
@@ -83,11 +83,11 @@ rem googletest
 echo Creating and building googletest solution
 set GOOGLETEST_BUILD_PATH=%OE_ROOT%\thirdparty\googletest\googletest
 IF EXIST %GOOGLETEST_BUILD_PATH% (
-    set NOTHING=0    
+    set NOTHING=0
 ) ELSE (
     md %GOOGLETEST_BUILD_PATH%
 )
-cd %GOOGLETEST_BUILD_PATH% 
+cd %GOOGLETEST_BUILD_PATH%
 
 "%VSINSTALLDIR%COMMON7\IDE\COMMONEXTENSIONS\MICROSOFT\CMAKE\CMake\bin\cmake.exe" -DBUILD_SHARED_LIBS=ON -G "Visual Studio 15 2017" -A x64
 msbuild gtest.sln /p:Configuration=Debug /p:Platform="x64"
@@ -98,11 +98,11 @@ rem googlemock
 echo Creating and building googlemock solution
 set GOOGLEMOCK_BUILD_PATH=%OE_ROOT%\thirdparty\googletest\googlemock
 IF EXIST %GOOGLEMOCK_BUILD_PATH% (
-    set NOTHING=0    
+    set NOTHING=0
 ) ELSE (
     md %GOOGLEMOCK_BUILD_PATH%
 )
-cd %GOOGLEMOCK_BUILD_PATH% 
+cd %GOOGLEMOCK_BUILD_PATH%
 
 echo %cd%
 

@@ -32,13 +32,6 @@ target_include_directories(${PROJECT_NAME}
         "${PROJECT_BINARY_DIR}/include/"
 )
 
-install(TARGETS ${PROJECT_NAME}
-        RUNTIME DESTINATION bin
-        )
-install(DIRECTORY data
-        DESTINATION bin
-        )
-
 # Precompiled Headers
 include(PrecompiledHeader)
 add_precompiled_header(${PROJECT_NAME} pch.h
@@ -49,13 +42,21 @@ target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
 target_link_libraries(${PROJECT_NAME} PRIVATE Oe::Core)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE WindowsApp.lib)
-        
+
 set_property(TARGET Prototype PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 
-install(TARGETS Prototype
+# Install data and exe
+install(DIRECTORY data
+        DESTINATION bin
+        )
+install(TARGETS ${PROJECT_NAME}
         EXPORT PrototypeTargets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
         INCLUDES DESTINATION include
         )
+
+# Install PDB
+include(OeUtils)
+install_target_pdb(Prototype)

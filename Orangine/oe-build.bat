@@ -86,7 +86,7 @@ if "!OE_ACTION_GENERATE!" == "1" (
 
 if NOT "!OE_BUILD_CONFIG!" EQU "" (
     set OE_BUILD_DIR=%OE_ROOT%\cmake-ninjabuild-x64-!OE_BUILD_CONFIG!
-    
+
     IF NOT EXIST "!OE_BUILD_DIR!" (
         echo CMake cache does not exist. Try running: %0 Generate
         echo Looking for: !OE_BUILD_DIR!

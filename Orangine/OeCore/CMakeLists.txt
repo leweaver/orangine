@@ -136,17 +136,21 @@ install(TARGETS ${PROJECT_NAME}
         PUBLIC_HEADER DESTINATION include/${PROJECT_NAME}
         )
 
+include(OeUtils)
+install_target_pdb(OeCore)
+
 install(
         EXPORT OeCoreTargets
         FILE OeCoreTargets.cmake
-        NAMESPACE Oe:: 
-        DESTINATION lib/cmake/OeCore
+        NAMESPACE Oe::
+        DESTINATION lib/cmake/${PROJECT_NAME}
         )
 
+# Config.cmake files
 configure_file(OeCoreConfig.cmake.in OeCoreConfig.cmake @ONLY)
 configure_file(OeCoreConfigVersion.cmake.in OeCoreConfigVersion.cmake @ONLY)
 install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/OeCoreConfig.cmake"
-                "${CMAKE_CURRENT_BINARY_DIR}/OeCoreConfigVersion.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/OeCoreConfigVersion.cmake"
         DESTINATION lib/cmake/OeCore
 )

@@ -5,9 +5,9 @@ project(OeThirdParty VERSION 1.0
         LANGUAGES CXX C)
 
 # Update module path
-#list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../Orangine/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../Orangine/cmake/modules")
+include(OeUtils)
 
-#include(OeCompilerFlags)
 add_compile_definitions("_UNICODE;UNICODE;WIN32;_WINDOWS;_LIB;HAVE_SNPRINTF")
 if(CMAKE_BUILD_TYPE MATCHES Debug)
         add_compile_definitions("_DEBUG")
@@ -23,7 +23,7 @@ add_library(OeImgui STATIC
         "imgui/imgui/imgui_widgets.cpp"
         "imgui/imgui/misc/cpp/imgui_stdlib.cpp"
 )
-set(OeImgui_HEADERS 
+set(OeImgui_HEADERS
         "imgui/imgui/examples/imgui_impl_dx11.h"
         "imgui/imgui/examples/imgui_impl_win32.h"
         "imgui/imgui/imconfig.h"
@@ -73,9 +73,14 @@ install(TARGETS OeImgui MikktSpace
 install(
     EXPORT OeThirdPartyTargets
     FILE OeThirdPartyTargets.cmake
-    NAMESPACE Oe:: 
+    NAMESPACE Oe::
     DESTINATION lib/cmake/OeThirdParty)
 
+# Install PDB's
+install_target_pdb(OeImgui)
+install_target_pdb(MikktSpace)
+
+# Version
 configure_file(OeThirdPartyConfig.cmake.in OeThirdPartyConfig.cmake @ONLY)
 configure_file(OeThirdPartyConfigVersion.cmake.in OeThirdPartyConfigVersion.cmake @ONLY)
 install(

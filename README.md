@@ -14,14 +14,24 @@ When installing, ensure you select the following options (in addition to whateve
   - Windows 10 SDK (10.0.17134.0)
   - Test Adapter for Google Test (If you want to use the visual studio gtest UI)
 
+
+## Python 3.7
+Download [Python 3.7.3 installer](https://www.python.org/ftp/python/3.7.3/python-3.7.3-amd64.exe) from Python website.
+
+In the installer, choose _advanced options_ and enable:
+
+- Download debug binaries
+
+Make sure it is installed to: `%LOCALAPPDATA%\Programs\Python\Python37\`
+
 ## Git
 If you are reading this you probably already have GIT installed. If not, [follow these instructions](https://confluence.atlassian.com/get-started-with-bitbucket/install-and-set-up-git-860009658.html)
 
-# First time build
+# First Time Setup
 
-## Get the code & dependencies from GIT
+## Get the code & submodules from GIT
 1. Clone the repository
-1. Download thirdparty dependencies: In the root repository directory, run: 
+1. To download submodules for the third party libraries, run the following in the repository root directory:
 
 ```
 git submodule update --init --recursive
@@ -36,25 +46,48 @@ git submodule update --recursive --remote
 [More submodule tips](https://gist.github.com/gitaarik/8735255)
 
 ## Build dependencies
-Some of the third party libraries need to be built first using helper script `.\create-thirdparty-projects.bat`:
+Our third party dependencies have a number of build and integration methods. To make things easier, a helper script in the root directory will configure, build and install these:
 
-- g3log
-- googletest
-- googlemock
+`<git-repo>\install-thirdparty-projects.bat`:
 
-## CMake
-I've set the project up to use CMake, which is a build file generator. If you've not used CMake before, I recommend you simply open the main CMake file (`Orangine/CMakeLists.txt`) in visual studio (see: https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=vs-2019)
+This only needs to be run once.
 
-I've tested the CMake support in CLion, VSCode, Visual Studio 2017/2019 and all seem to work. (My IDE of choice is VS 2019)
+# Build Orangine
 
-You can also use a wrapper utility `Orangine/oe-built.bat` to compile without an IDE:
+The project is defined using CMake. If you've not used CMake before, it is a tool that takes an input file list (`CMakeLists.txt`) and produces a project file that Visual Studio, ninja, etc can open & build. CMake itself is not a compiler.
 
-- `oe-built.bat Generate` _Uses CMake to creates ninja build definition files. You will only need to run this once_
-- `oe-built.bat Build Debug` _Uses ninja to build the libraries and samples. Also supports `Release` as the second arg_
+## Option 1: In Visual Studio
+
+1. Launch Visual Studio
+1. On the startup page, click the tiny blue link to 'Continue without Code'
+1. File -> Open -> CMake -> `<git-repo>\Orangine\CMakeLists.txt`
+
+From here, you can select one of two startup projects in the "Select Startup Item" dropdown:
+
+- __Prototype.exe (Prototype\\Prototype.exe)__
+  - This will build and run the sample executable.
+- __Prototype.exe (Install)__
+  - This will build the engine lib's and sample exe's, placing them in a directory for import into other projects: `<git-repo>\bin\x64`
+
+Some tips on Visual Studio with CMake: https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=vs-2019
+
+## Option 2: Your IDE of choice
+
+I've tested the CMake support in CLion, VSCode, Visual Studio 2017/2019 and all seem to work.
+
+## Option 3: On the command line
+You can also run CMake commands yourself on the command line.
+
+If you want to use ninja to build, `<git-repo>\Orangine\oe-built.bat` wraps CMake and ninja commands:
+
+- `oe-built.bat Configure` _Uses CMake to creates ninja build definition files. You will only need to run this once_
+- `oe-built.bat Build Debug` _Calls_ __ninja build__ _in the cmake cache directory. Also supports `Release` as the second arg_
 - `oe-built.bat Install Debug` _Uses ninja to build and place the engine libraries to the root `bin` directory, for consumption by other repositories_
 
+You can manually run any other ninja command: list all of the available ninja commands:`cd cmake-ninjabuild-x64-Debug`
+
 # Overall Architecture
-Here is a quick non-exhaustive overview of how the main object instances are instantiated. Each item creates and owns the items below it in the tree. Each item below is the name of a class, which is located in a CPP/H file of the same name. 
+Here is a quick non-exhaustive overview of how the main object instances are instantiated. Each item creates and owns the items below it in the tree. Each item below is the name of a class, which is located in a CPP/H file of the same name.
 
 - oe::Main
   - DX::DeviceResources
@@ -75,8 +108,8 @@ Here is a quick non-exhaustive overview of how the main object instances are ins
 
 First, make sure tests are set to run in x64.
 
-1. Test -> Test Settings -> Select Test Settings File 
-1. Choose `.\Engine-Test\x64.runsettings`
+1. Test -> Test Settings -> Select Test Settings File
+1. Choose `<git-repo>\Engine-Test\x64.runsettings`
 
 Try one of these two methods... stick to the one that works for you!
 
@@ -89,14 +122,12 @@ Try one of these two methods... stick to the one that works for you!
 
 Tests are executed via the `Test Explorer` window in visual studio. Projects that contain tests are suffixed with `-Test` and compile to an x64 executable. To run them;
 
-1. Click the Run All button in the test explorer window. 
+1. Click the Run All button in the test explorer window.
     - If not visible, Test -> Windows -> Test Explorer
 
-> NOTE: Don't try to run individual tests; this seems to break the Test Explorer window. If in doubt, `Run All` makes things work again :) 
+> NOTE: Don't try to run individual tests; this seems to break the Test Explorer window. If in doubt, `Run All` makes things work again :)
 
 > Tip: Optionally you can unload the `Prototype` solution to make runs faster, since it doesn't contain any tests.
-
-
 
 # Maths Conventions
 Matrix conventions are as in SimpleMath: Right Handed, Row Major.
@@ -107,7 +138,7 @@ Some notes on libraries that are in use:
 - __SimpleMath__ as with DirectXMath uses row-major ordering for matrices.
 - __HLSL__     defaults to using column-major ordering as this makes for slightly more efficient shader matrix multiplies. Therefore, when a Matrix is going to be copied into a HLSL constant buffer, it is usually transposed as part of updating the constant buffer.  
 
-# Renderer 
+# Renderer
 ## Normals and Tangents
 Normals are expected to be in tangent space. Further, the tangents on meshes must be generated using the MikkiT algorithm.
 
@@ -120,7 +151,9 @@ Using [Cpp Core Guidelines](https://github.com/isocpp/CppCoreGuidelines/blob/mas
 Don't use for model classes in 'Manager' class header files (ie, for the things that the manager class managers)
 Do use when referencing manager classes in header files
 
-## Pointers, References, SmartPointers
+## Pointers, References, Smart Pointers
+Using Core CPP guidelines; but it is worth copying them here on this point:
+
 Function Arguments:
     [https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rr-smartptrparam](R.30)
     Prefer references to objects, but take a pointer if it can be null.
@@ -133,26 +166,14 @@ Function Arguments:
         ```
 
 ## Naming
-[https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#nl10-prefer-underscore_style-names](NL.10) Prefer    underscore_case for names
+[https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#nl10-prefer-underscore_style-names](NL.10) Prefer underscore_case for names
 [https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#nl17-use-kr-derived-layout](NL.17) use KR derived layout
 
+```
 namespace: lower_underscored
 classes, structs, enums: My_class_name
 template parameters: TMy_class_name
 
 private field members: _lowerCamelCase
 public field members: lowerCamelCase
-
-## Install Python 3.7
-Download [Python 3.7.3 installer](https://www.python.org/ftp/python/3.7.3/python-3.7.3-amd64.exe) from Python website.
-
-In the installer, choose _advanced options_ and enable:
-
-- Download debug binaries
-
-then make sure it is installed to the LOCALAPPDATA folder:
-
 ```
-C:\Users\<your-username>\AppData\Local\Programs\Python\Python37\
-```
-

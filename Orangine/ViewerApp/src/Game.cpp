@@ -5,7 +5,7 @@
 #include "pch.h"
 #include "Game.h"
 
-#include "PrototypeConfig.h"
+#include "ViewerAppConfig.h"
 
 #include "OeCore/IScene_graph_manager.h"
 #include "OeCore/Scene.h"
@@ -78,13 +78,13 @@ std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 
     std::string gltfPath;
     std::string gltfPathSubfolder = "/" + gltfName + "/glTF/" + gltfName + ".gltf";
-    std::string gltfPathPrefix = PROTOTYPE_DATA_PATH + std::string("data/meshes");
+    std::string gltfPathPrefix = VIEWERAPP_DATA_PATH + std::string("data/meshes");
     gltfPath = gltfPathPrefix + gltfPath;
     LOG(DEBUG) << "Looking for gltf at: " << gltfPath;
     
     if (!std::filesystem::exists(gltfPath)) {
         std::stringstream ss;
-        ss  << PROTOTYPE_THIRDPARTY_PATH 
+        ss  << VIEWERAPP_THIRDPARTY_PATH 
             << "/glTF-Sample-Models/2.0"
             << gltfPathSubfolder;
         gltfPath = ss.str();
@@ -302,7 +302,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
     m_scene->manager<IUser_interface_manager>().setUIScale(static_cast<float>(dpi) / 96.0f);
 	m_scene->initialize();
 
-    m_scene->manager<IMaterial_manager>().setShaderPath(utf8_decode(PROTOTYPE_DATA_PATH) + L"/shaders");
+    m_scene->manager<IMaterial_manager>().setShaderPath(utf8_decode(VIEWERAPP_DATA_PATH) + L"/shaders");
 
 	try
 	{
@@ -341,7 +341,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 
 		// Load the skybox
 		auto skyBoxTexture = std::make_shared<File_texture>(
-            utf8_decode(PROTOTYPE_DATA_PATH) + 
+            utf8_decode(VIEWERAPP_DATA_PATH) + 
             std::wstring(L"/textures/park-cubemap.dds")
             );
 		m_scene->setSkyboxTexture(skyBoxTexture);

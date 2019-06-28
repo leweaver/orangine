@@ -94,7 +94,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
         wcex.hbrBackground = (HBRUSH) (COLOR_WINDOW + 1);
         wcex.lpszMenuName = nullptr;
-        wcex.lpszClassName = L"PrototypeWindowClass";
+        wcex.lpszClassName = L"ViewerAppWindowClass";
         wcex.hIconSm = LoadIcon(wcex.hInstance, L"IDI_ICON");
         if (!RegisterClassEx(&wcex))
             return 1;
@@ -111,10 +111,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
         AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 
-        HWND hwnd = CreateWindowEx(0, L"PrototypeWindowClass", L"Prototype", WS_OVERLAPPEDWINDOW,
+        HWND hwnd = CreateWindowEx(0, L"ViewerAppWindowClass", L"ViewerApp", WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
             nullptr);
-        // TODO: Change to CreateWindowEx(WS_EX_TOPMOST, L"PrototypeWindowClass", L"Prototype", WS_POPUP,
+        // TODO: Change to CreateWindowEx(WS_EX_TOPMOST, L"ViewerAppWindowClass", L"ViewerApp", WS_POPUP,
         // to default to fullscreen.
 
         if (!hwnd)

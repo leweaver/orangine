@@ -1,9 +1,9 @@
-project(Prototype VERSION 1.0
+project(ViewerApp VERSION 1.0
         DESCRIPTION "Orangine Sample Application"
         LANGUAGES CXX)
 
-set(Prototype_DATA_PATH ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/data)
-set(Prototype_THIRDPARTY_PATH ${CMAKE_SOURCE_DIR}/../thirdparty)
+set(ViewerApp_DATA_PATH ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/data)
+set(ViewerApp_THIRDPARTY_PATH ${CMAKE_SOURCE_DIR}/../thirdparty)
 
 configure_file (
         "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
@@ -43,14 +43,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Oe::Core)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE WindowsApp.lib)
 
-set_property(TARGET Prototype PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+set_property(TARGET ViewerApp PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 
 # Install data and exe
 install(DIRECTORY data
         DESTINATION bin
         )
 install(TARGETS ${PROJECT_NAME}
-        EXPORT PrototypeTargets
+        EXPORT ViewerAppTargets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
@@ -59,4 +59,4 @@ install(TARGETS ${PROJECT_NAME}
 
 # Install PDB
 include(OeUtils)
-install_target_pdb(Prototype)
+install_target_pdb(ViewerApp)

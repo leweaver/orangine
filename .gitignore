@@ -18,3 +18,4 @@ cmake-ninjabuild-x64-Release/
 Orangine/Build/
 Orangine/imgui.ini
 Orangine/.idea/
+thirdparty/cmake-*

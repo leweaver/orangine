@@ -14,15 +14,28 @@ When installing, ensure you select the following options (in addition to whateve
   - Windows 10 SDK (10.0.17134.0)
   - Test Adapter for Google Test (If you want to use the visual studio gtest UI)
 
+## Visual studio find module
+(This is a microsoft module, see here: https://github.com/microsoft/vssetup.powershell)
+
+In a regular powershell window, run the following command (and agree to the prompts to install PowerShellGet, and untrusted PSGallery warning):
+
+
+```
+Install-Module VSSetup -Scope CurrentUser
+```
 
 ## Python 3.7
-Download [Python 3.7.3 installer](https://www.python.org/ftp/python/3.7.3/python-3.7.3-amd64.exe) from Python website.
+READ ALL THE STEPS!
+
+Download 64bit [Python 3.7.3 installer](https://www.python.org/ftp/python/3.7.3/python-3.7.3-amd64.exe) from Python website. 
+
+> If you get the 32 bit installer, be prepared for compiler errors!
 
 In the installer, choose _advanced options_ and enable:
 
 - Download debug binaries
 
-Make sure it is installed to: `%LOCALAPPDATA%\Programs\Python\Python37\`
+> Make sure it is installed to: `%LOCALAPPDATA%\Programs\Python\Python37\`
 
 ## Git
 If you are reading this you probably already have GIT installed. If not, [follow these instructions](https://confluence.atlassian.com/get-started-with-bitbucket/install-and-set-up-git-860009658.html)
@@ -30,8 +43,9 @@ If you are reading this you probably already have GIT installed. If not, [follow
 # First Time Setup
 
 ## Get the code & submodules from GIT
+
 1. Clone the repository
-1. To download submodules for the third party libraries, run the following in the repository root directory:
+1. If you aren't using gitkraken, download submodules for the third party libraries, by running the following in the repository root directory:
 
 ```
 git submodule update --init --recursive
@@ -64,9 +78,9 @@ The project is defined using CMake. If you've not used CMake before, it is a too
 
 From here, you can select one of two startup projects in the "Select Startup Item" dropdown:
 
-- __Prototype.exe (Prototype\\Prototype.exe)__
+- __ViewerApp.exe (ViewerApp\ViewerApp.exe)__
   - This will build and run the sample executable.
-- __Prototype.exe (Install)__
+- __ViewerApp.exe (Install)__
   - This will build the engine lib's and sample exe's, placing them in a directory for import into other projects: `<git-repo>\bin\x64`
 
 Some tips on Visual Studio with CMake: https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=vs-2019

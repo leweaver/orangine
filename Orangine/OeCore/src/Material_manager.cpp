@@ -287,6 +287,7 @@ void Material_manager::createPixelShader(
 
 void Material_manager::initialize()
 {
+	_shaderPath = _scene.manager<IAsset_manager>().getDataPath() + L"/shaders";
     setRendererFeaturesEnabled(Renderer_features_enabled());
 }
 

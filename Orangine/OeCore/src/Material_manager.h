@@ -31,9 +31,7 @@ namespace oe {
         void destroyDeviceDependentResources() override;
 
         // IMaterial_manager implementation
-        void setShaderPath(const std::wstring& path) override;
         const std::wstring& shaderPath() const;
-
         void bind(
             Material_context& materialContext,
             std::shared_ptr<const Material> material,
@@ -61,6 +59,8 @@ namespace oe {
         };
         // Indexed by Material::materialTypeIndex()
         std::vector<Material_constants> _materialConstants;
+
+        void setShaderPath(const std::wstring& path);
 
         DX::DeviceResources& deviceResources() const;
 

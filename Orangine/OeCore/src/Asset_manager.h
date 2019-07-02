@@ -22,6 +22,8 @@ namespace oe::internal {
 		explicit Asset_manager(Scene& scene);
 
 		bool getFilePath(FAsset_id assetId, std::wstring& path) const override;
+		void setDataPath(const std::wstring& dataPath) override;
+		const std::wstring& getDataPath() const override { return _dataPath; }
 		
 		// Manager_base implementation
 		void initialize() override;
@@ -31,5 +33,8 @@ namespace oe::internal {
 	private:
 
         static std::string _name;
+		std::wstring _dataPath = L"./data";
+
+		bool _initialized = false;
 	};
 }

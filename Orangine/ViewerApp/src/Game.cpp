@@ -299,10 +299,12 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
     m_deviceResources->SetWindow(window, width, height);
 
 	m_scene = std::make_unique<Scene_device_resource_aware>(*(m_deviceResources.get()));
-    m_scene->manager<IUser_interface_manager>().setUIScale(static_cast<float>(dpi) / 96.0f);
-	m_scene->initialize();
 
-    m_scene->manager<IMaterial_manager>().setShaderPath(utf8_decode(VIEWERAPP_DATA_PATH) + L"/shaders");
+	// Some things need setting before initialization.
+    m_scene->manager<IUser_interface_manager>().setUIScale(static_cast<float>(dpi) / 96.0f);
+	m_scene->manager<IAsset_manager>().setDataPath(utf8_decode(VIEWERAPP_DATA_PATH));
+
+	m_scene->initialize();
 
 	try
 	{

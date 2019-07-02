@@ -80,6 +80,8 @@ list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.
 set_target_properties(OeCore PROPERTIES PUBLIC_HEADER "${OeCore_HEADERS}")
 add_library(Oe::Core ALIAS OeCore)
 
+add_compile_options(-std=c++17)
+
 # Precompiled Headers
 include(PrecompiledHeader)
 add_precompiled_header(${PROJECT_NAME} pch.h SOURCE_CXX src/pch.cpp)
@@ -103,7 +105,7 @@ target_include_directories(${PROJECT_NAME}
         PUBLIC ${G3LOG_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC g3logger)
 
-# imgui, MikktSpace
+# Third Party (imgui, MikktSpace)
 find_package(OeThirdParty REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC Oe::MikktSpace Oe::OeImgui)
 
@@ -145,6 +147,18 @@ install(
         NAMESPACE Oe::
         DESTINATION lib/cmake/${PROJECT_NAME}
         )
+		
+install(DIRECTORY data
+        DESTINATION bin
+        )
+
+# Install Python binaries
+install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll"
+		CONFIGURATIONS Debug
+		DESTINATION bin)
+install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll"
+		CONFIGURATIONS Release
+		DESTINATION bin)
 
 # Config.cmake files
 configure_file(OeCoreConfig.cmake.in OeCoreConfig.cmake @ONLY)

@@ -67,6 +67,17 @@ if "%VisualStudioVersion%" == "16.0" (
     msbuild DirectXTK_Desktop_2019_Win10.sln /p:Configuration=Release /p:Platform="x64"
 )
 
+
+rem ******************************
+rem Hacky Steps
+rem ******************************
+
+rem For some reason, the g3logger cmake find_module needs these directories to exist. Even though they are empty.
+IF NOT EXIST "%OE_INSTALL_PREFIX%\Debug\COMPONENT" md "%OE_INSTALL_PREFIX%\Debug\COMPONENT"
+IF NOT EXIST "%OE_INSTALL_PREFIX%\Release\COMPONENT" md "%OE_INSTALL_PREFIX%\Release\COMPONENT"
+IF NOT EXIST "%OE_INSTALL_PREFIX%\Debug\libraries" md "%OE_INSTALL_PREFIX%\Debug\libraries"
+IF NOT EXIST "%OE_INSTALL_PREFIX%\Release\libraries" md "%OE_INSTALL_PREFIX%\Release\libraries"
+
 goto:eof
 
 rem ******************************

@@ -23,6 +23,8 @@ void Asset_manager::initialize()
 		0,
 		L"data/models/Cube.gltf"
 		};
+
+	_initialized = true;
 }
 
 void Asset_manager::shutdown()
@@ -44,4 +46,12 @@ bool Asset_manager::getFilePath(FAsset_id assetId, std::wstring& path) const
 	else {
 		return false;
 	}
+}
+
+void oe::internal::Asset_manager::setDataPath(const std::wstring& dataPath)
+{
+	if (_initialized) {
+		throw std::logic_error("Cannot change data path after Asset_manager is initialized.");
+	}
+	_dataPath = dataPath;
 }

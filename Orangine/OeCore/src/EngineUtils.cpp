@@ -129,6 +129,32 @@ std::wstring oe::hr_to_wstring(const HRESULT hr)
 	return err.ErrorMessage();
 }
 
+std::wstring oe::expand_environment_strings(const std::wstring& source)
+{
+	DWORD len;
+	std::wstring result;
+	len = ::ExpandEnvironmentStringsW(source.c_str(), 0, 0);
+	if (len == 0)
+	{
+		throw std::runtime_error("Failed to expand path (" + utf8_encode(source) + "): " + getlasterror_to_str());
+	}
+	result.resize(len);
+	len = ::ExpandEnvironmentStringsW(source.c_str(), &result[0], len);
+	if (len == 0)
+	{
+		throw std::runtime_error("Failed to expand path (" + utf8_encode(source) + "): " + getlasterror_to_str());
+	}
+	result.pop_back(); //Get rid of extra null
+	return result;
+}
+
+std::string oe::getlasterror_to_str()
+{
+	char errmsg[94];
+	strerror_s(errmsg, sizeof(errmsg), GetLastError());
+	return std::string(errmsg);
+}
+
 std::string oe::errno_to_str()
 {
 	char errmsg[94];

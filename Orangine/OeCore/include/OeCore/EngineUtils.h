@@ -47,6 +47,8 @@ namespace oe {
 		return (i != 0u) && ((i - 1u) & i) == 0u;
 	}
 
+	std::wstring expand_environment_strings(const std::wstring& source);
+	std::string getlasterror_to_str();
 	std::string errno_to_str();
 	
 	// Helper class for COM exceptions

@@ -30,6 +30,8 @@ if(OE_COMPILER_IS_MSVC)
 
         add_compile_definitions("_UNICODE;UNICODE;WIN32;_WINDOWS;_LIB;HAVE_SNPRINTF")
 
+		add_compile_options(/EHsc)
+
         if(CMAKE_BUILD_TYPE MATCHES Debug)
                 add_compile_definitions("_DEBUG")
         endif()

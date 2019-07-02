@@ -6,7 +6,9 @@ You must be running Windows 10 build version 1703 (Creators Update) or higher. R
 ## Visual Studio
 Visual Studio must be installed in order to satisfy library dependencies and get the windows SDK.
 
-Visual Studio 2017 15.7.5 is the minimum required. (I've tested with 2019 and it also works.)
+Visual Studio 2019 16.2 (also Preview 3) is the recommended option (due to [this bug](https://developercommunity.visualstudio.com/content/problem/514953/c-standard-for-intellisense-in-open-folder-cmake-p.html))
+
+Visual Studio 2017 15.7.5 is the minimum required.
 
 When installing, ensure you select the following options (in addition to whatever defaults are selected):
 

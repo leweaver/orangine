@@ -19,6 +19,7 @@
 #include <set>
 
 #include <OeThirdParty/imgui.h>
+#include <filesystem>
 
 using namespace DirectX;
 using namespace SimpleMath;
@@ -44,7 +45,7 @@ static PyObject *SpamError;
 static PyObject *
 spam_system(PyObject *self, PyObject *args)
 {
-    const char *command;
+    const char *command = "";
     int sts;
 
     if (!PyArg_ParseTuple(args, "s", &command))
@@ -98,17 +99,24 @@ void Entity_scripting_manager::initialize()
 
     LOG(INFO) << OECORE_VERSION_MAJOR;
 
-    _pythonHome = 
-        L"C:\\Users\\hotma\\AppData\\Local\\Programs\\Python\\Python37;"
-        L"C:\\Users\\hotma\\AppData\\Local\\Programs\\Python\\Python37\\DLLs;"
-        L"C:\\Users\\hotma\\AppData\\Local\\Programs\\Python\\Python37\\Lib;"
-        L"C:\\repos\\Orangine\\Engine\\scripts;"
-        //L"C:\\Users\\hotma\\AppData\\Local\\Programs\\Python\\Python37\\Lib\\site-packages;" 
-        
-        //std::wstring(szFileName) + L"\\data\\scripts;" +
-        //std::wstring(szFileName) + L"\\..\\Engine\\scripts"
-        ;
-    // TODO: Oh god the hacks. THE HACKS.
+	const auto& dataPath = _scene.manager<IAsset_manager>().getDataPath();
+
+	std::wstringstream wss;
+#ifdef _DEBUG
+	// Use the locally installed python so that we can run from build directory, skipping CMake install.
+	const auto pythonPathExpanded = expand_environment_strings(L"%LOCALAPPDATA%\\Programs\\Python\\Python37");
+	wss //<< pythonPathExpanded << L";"
+		<< pythonPathExpanded << L"\\DLLs;"
+		<< pythonPathExpanded << L"\\Lib;";
+#endif
+	wss	<< dataPath << L"\\lib;"
+		<< dataPath << L"\\scripts;";
+	_pythonHome = wss.str();
+
+	if (_pythonHome.length() > MAX_PATH) {
+		// Python for some reason limits the concatenated path length, not each individual component >_<
+		throw std::runtime_error("Computed python home path exceeds windows MAX_PATH.");
+	}
 
     Py_SetPythonHome(_pythonHome.c_str());
     Py_SetProgramName(_pythonProgramName.c_str());
@@ -118,7 +126,6 @@ void Entity_scripting_manager::initialize()
     Py_Initialize();
 
 //    PyImport_ImportModule("console");
-
     loadPythonModule("json");
     loadPythonModule("codecs");
     loadPythonModule("console");
@@ -266,5 +273,8 @@ void Entity_scripting_manager::loadPythonModule(std::string moduleName)
 
     if (loadedModule) {
         _loadedModules[moduleName] = loadedModule;
-    }
+	}
+	else {
+		LOG(WARNING) << "Failed to load module: " << moduleName;
+	}
 }

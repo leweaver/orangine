@@ -11,4 +11,5 @@ list(APPEND CMAKE_PREFIX_PATH "${Orangine_SOURCE_DIR}/../bin/x64/${CMAKE_BUILD_T
 include(OeCompilerFlags)
 
 add_subdirectory(OeCore)
+add_subdirectory(OeScripting)
 add_subdirectory(ViewerApp)

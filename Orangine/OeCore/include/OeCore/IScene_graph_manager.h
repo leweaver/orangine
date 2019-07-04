@@ -3,17 +3,12 @@
 #include "Component.h"
 #include "Entity_filter.h"
 #include "Manager_base.h"
+#include "Entity_filter_mode.h"
 
 #include <vector>
 #include <set>
 
 namespace oe {
-
-    enum class Entity_filter_mode
-    {
-        All,
-        Any
-    };
 
     class IScene_graph_manager :
         public Manager_base,

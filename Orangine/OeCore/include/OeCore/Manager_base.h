@@ -1,6 +1,8 @@
 #pragma once
 
-#include "DeviceResources.h"
+namespace DX {
+    class DeviceResources;
+}
 
 namespace oe {
 	class Scene;

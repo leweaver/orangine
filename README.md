@@ -170,16 +170,9 @@ Do use when referencing manager classes in header files
 ## Pointers, References, Smart Pointers
 Using Core CPP guidelines; but it is worth copying them here on this point:
 
-Function Arguments:
-    [https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rr-smartptrparam](R.30)
-    Prefer references to objects, but take a pointer if it can be null.
-    Only take in a smart/unique pointer when lifetime/ownership needs to be managed:
-        [https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rr-smartptrparam](R.36)
-        ```
-        void share(shared_ptr<widget>);            // share -- "will" retain refcount
-        void reseat(shared_ptr<widget>&);          // "might" reseat ptr
-        void may_share(const shared_ptr<widget>&); // "might" retain refcount
-        ```
+- Don’t pass a smart pointer as a function parameter unless you want to use or manipulate the smart pointer itself, such as to share or transfer ownership.
+- Express that a function will store and share ownership of a heap object using a by-value shared_ptr parameter.
+- Use a non-const shared_ptr& parameter only to modify the shared_ptr. Use a const shared_ptr& as a parameter only if you’re not sure whether or not you’ll take a copy and share ownership; otherwise use widget* instead (or if not nullable, a widget&).
 
 ## Naming
 [https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#nl10-prefer-underscore_style-names](NL.10) Prefer underscore_case for names

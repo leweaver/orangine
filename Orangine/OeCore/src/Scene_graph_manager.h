@@ -1,7 +1,9 @@
 ﻿#pragma once
+
+#include "Entity_filter_impl.h"
+
 #include "OeCore/Entity.h"
 #include "OeCore/Component.h"
-#include "OeCore/Entity_filter.h"
 #include "OeCore/IScene_graph_manager.h"
 #include "OeCore/Entity_repository.h"
 
@@ -13,7 +15,6 @@ namespace oe::internal {
 class Scene_graph_manager : public IScene_graph_manager {
 	friend Entity;
 	friend EntityRef;
-	class Entity_filter_impl;
 public:
 	
 	Scene_graph_manager(Scene& scene, std::shared_ptr<IEntity_repository> entityRepository);
@@ -62,19 +63,6 @@ private:
 	* then updates components from bottom up (from leaves -> root)
 	*/
 	static void updateEntity(Entity* entity);
-
-	class Entity_filter_impl : public Entity_filter {
-	public:
-		std::set<Component::Component_type> componentTypes;
-		Entity_filter_mode mode;
-
-		Entity_filter_impl(const Component_type_set::const_iterator& begin, const Component_type_set::const_iterator& end, Entity_filter_mode mode);
-
-		void handleEntityAdd(const std::shared_ptr<Entity>& entity);
-		void handleEntityRemove(const std::shared_ptr<Entity>& entity);
-		void handleEntityComponentsUpdated(const std::shared_ptr<Entity>& entity);
-
-	};
 
     static std::string _name;
 

@@ -16,7 +16,6 @@ add_library(${PROJECT_NAME} STATIC
         src/Scene_graph_manager.h
         src/Render_step_manager.h
         src/Material_manager.h
-        src/Entity_scripting_manager.h
         src/Entity_render_manager.h
         src/Dev_tools_manager.h
         src/D3D_resources_manager.h
@@ -34,9 +33,10 @@ add_library(${PROJECT_NAME} STATIC
         src/DeviceResources.cpp
         src/Entity.cpp
         src/Entity_graph_loader_gltf.cpp
+		src/Entity_filter_impl.h
+		src/Entity_filter_impl.cpp
         src/Entity_render_manager.cpp
         src/Entity_repository.cpp
-        src/Entity_scripting_manager.cpp
         src/Entity_sorter.cpp
         src/Fps_counter.cpp
         src/Input_manager.cpp
@@ -80,8 +80,6 @@ list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.
 set_target_properties(OeCore PROPERTIES PUBLIC_HEADER "${OeCore_HEADERS}")
 add_library(Oe::Core ALIAS OeCore)
 
-add_compile_options(-std=c++17)
-
 # Precompiled Headers
 include(PrecompiledHeader)
 add_precompiled_header(${PROJECT_NAME} pch.h SOURCE_CXX src/pch.cpp)
@@ -108,12 +106,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC g3logger)
 # Third Party (imgui, MikktSpace)
 find_package(OeThirdParty REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC Oe::MikktSpace Oe::OeImgui)
-
-# Python
-find_package(Python3 COMPONENTS Development)
-target_include_directories(${PROJECT_NAME}
-        PUBLIC ${PYTHON_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PUBLIC Python3::Python)
 
 # DirectX
 target_link_libraries(${PROJECT_NAME} PUBLIC

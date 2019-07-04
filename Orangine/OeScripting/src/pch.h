@@ -7,9 +7,6 @@
 
 #include "OeCore/WindowsDefines.h"
 
-#include <SimpleMath.h>
-#include <g3log/g3log.hpp>
-
 #include <algorithm>
 #include <exception>
 #include <memory>
@@ -17,4 +14,4 @@
 
 #include <cstdio>
 
-#include <tinygltf/json.hpp>
+#include <g3log/g3log.hpp>

@@ -7,6 +7,8 @@ using namespace DirectX;
 using namespace oe;
 using namespace internal;
 
+#include "OeCore/DeviceResources.h"
+
 std::string D3D_resources_manager::_name = "D3D_resources_manager";
 
 template<>

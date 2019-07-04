@@ -1,10 +1,12 @@
 ﻿#pragma once
 
+#include "OeCore/Component.h"
+
 #include <DirectXMath.h>
 #include <vector>
 #include <map>
 
-#include "OeCore/Component.h"
+#include "SimpleMath.h"
 
 namespace oe {
 

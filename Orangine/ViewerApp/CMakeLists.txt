@@ -39,7 +39,7 @@ add_precompiled_header(${PROJECT_NAME} pch.h
 
 target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Oe::Core)
+target_link_libraries(${PROJECT_NAME} PRIVATE Oe::Core Oe::Scripting)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE WindowsApp.lib)
 
@@ -73,7 +73,6 @@ install(FILES ${IMPORTED_LOCATION_g3logger}
 # Manually copy the python DLL for builds, to keep the Py_SetPythonHome path < 260 characters.
 find_package(Python3 COMPONENTS Development)
 set(Python3_DLL_NAME "python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}$<$<CONFIG:debug>:_d>$<$<CONFIG:release>:>.dll")
-message("Python3_DLL_NAME=${Python3_DLL_NAME}")
 add_custom_command(TARGET ${PROJECT_NAME}
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy "${Python3_RUNTIME_LIBRARY_DIRS}/${Python3_DLL_NAME}" "${PROJECT_BINARY_DIR}"

@@ -4,9 +4,9 @@
 
 #include "OeCoreConfig.h"
 
-#include "Scene_graph_manager.h"
 #include "Entity_scripting_manager.h"
-#include "Input_manager.h"
+#include "OeCore/IInput_manager.h"
+#include "OeCore/IScene_graph_manager.h"
 #include "OeCore/Test_component.h"
 #include "OeCore/Renderable_component.h"
 #include "OeCore/Camera_component.h"
@@ -82,6 +82,12 @@ PyInit_spam(void)
 void Entity_scripting_manager::initialize()
 {
 	_scriptableEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({ Test_component::type() });
+    _scriptableEntityFilterListener = std::make_unique<Entity_filter::Entity_filter_listener>();
+    _scriptableEntityFilterListener->onAdd = [this](Entity* entity) {
+        _addedEntities.push_back(entity->getId());
+    };
+    _scriptableEntityFilter->add_listener(_scriptableEntityFilterListener);
+
 	_renderableEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({ Renderable_component::type() });
 	_lightEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({
 		Directional_light_component::type(),
@@ -131,8 +137,19 @@ void Entity_scripting_manager::initialize()
     loadPythonModule("console");
 }
 
-void Entity_scripting_manager::tick() {
-	
+void Entity_scripting_manager::tick() 
+{
+    const auto& sceneGraphManager = _scene.manager<IScene_graph_manager>();
+    for (const auto entityId : _addedEntities) {
+        auto entity = sceneGraphManager.getEntityPtrById(entityId);
+        if (entity == nullptr)
+            continue;
+
+        // TODO: Start script init lifecycle.
+        entity->getFirstComponentOfType<Test_component>();
+    }
+    _addedEntities.clear();
+
 	const auto elapsedTime = _scene.elapsedTime();
 	for (auto iter = _scriptableEntityFilter->begin(); iter != _scriptableEntityFilter->end(); ++iter) {
 		auto& entity = **iter;
@@ -149,7 +166,7 @@ void Entity_scripting_manager::tick() {
 	const auto mouseSpeed = 1.0f / 600.0f;
 	const auto mouseState = _scene.manager<IInput_manager>().mouseState().lock();
 	if (mouseState) {
-		if (mouseState->left == Input_manager::Mouse_state::Button_state::HELD) {
+		if (mouseState->left == IInput_manager::Mouse_state::Button_state::HELD) {
 			_scriptData.yaw += -mouseState->deltaPosition.x * XM_2PI * mouseSpeed;
 			_scriptData.pitch += mouseState->deltaPosition.y * XM_2PI * mouseSpeed;
 
@@ -160,7 +177,7 @@ void Entity_scripting_manager::tick() {
 			_scriptData.distance = std::max(1.0f, std::min(40.0f, _scriptData.distance + static_cast<float>(mouseState->scrollWheelDelta) * -mouseSpeed));
 		//}
 
-		if (mouseState->right == Input_manager::Mouse_state::Button_state::HELD) {
+		if (mouseState->right == IInput_manager::Mouse_state::Button_state::HELD) {
 			renderDebugSpheres();
 		}
 

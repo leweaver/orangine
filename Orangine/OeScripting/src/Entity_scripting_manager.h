@@ -1,5 +1,6 @@
 #pragma once
 
+#include "OeCore/Entity_filter.h"
 #include "OeCore/IEntity_scripting_manager.h"
 
 #include <Python.h>
@@ -27,6 +28,9 @@ namespace oe::internal {
         static std::string _name;
 
 		std::shared_ptr<Entity_filter> _scriptableEntityFilter;
+        std::shared_ptr<Entity_filter::Entity_filter_listener> _scriptableEntityFilterListener;
+        std::vector<unsigned> _addedEntities;
+
 		std::shared_ptr<Entity_filter> _renderableEntityFilter;
 		std::shared_ptr<Entity_filter> _lightEntityFilter;
 	    bool _showImGui = false;

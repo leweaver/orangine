@@ -22,3 +22,6 @@
 [submodule "thirdparty/tinygltf/tinygltf"]
 	path = thirdparty/tinygltf/tinygltf
 	url = git@github.com:syoyo/tinygltf.git
+[submodule "thirdparty/pybind11"]
+	path = thirdparty/pybind11
+	url = git@github.com:pybind/pybind11.git

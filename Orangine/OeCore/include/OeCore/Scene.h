@@ -57,8 +57,8 @@ namespace oe {
 		/*
 		 * Add things to the scene, from a file
 		 */
-		void loadEntities(const std::string& filename);
-		void loadEntities(const std::string& filename, Entity& parentEntity);
+		void loadEntities(const std::wstring& filename);
+		void loadEntities(const std::wstring& filename, Entity& parentEntity);
 
 		template <typename TLoader>
 		std::shared_ptr<TLoader> addMeshLoader()
@@ -88,6 +88,7 @@ namespace oe {
 
 			// Managers. IUser_interface_manager should always be first, so it can handle windows messages first.
             std::shared_ptr<IUser_interface_manager>,
+			std::shared_ptr<IAsset_manager>,
 			std::shared_ptr<IScene_graph_manager>,
 			std::shared_ptr<IDev_tools_manager>,
 			std::shared_ptr<ID3D_resources_manager>,
@@ -95,7 +96,6 @@ namespace oe {
 			std::shared_ptr<IRender_step_manager>,
 			std::shared_ptr<IShadowmap_manager>,
 			std::shared_ptr<IEntity_scripting_manager>,
-			std::shared_ptr<IAsset_manager>,
 			std::shared_ptr<IInput_manager>,
             std::shared_ptr<IAnimation_manager>,
             std::shared_ptr<IMaterial_manager>
@@ -104,11 +104,12 @@ namespace oe {
 		Scene() = default;
 
 		Manager_tuple _managers;
+		std::vector<Manager_base*> _initializedManagers;
 		std::shared_ptr<Texture> _skyBoxTexture;
 
 	private:
 
-		void loadEntities(const std::string& filename, Entity* parentEntity);
+		void loadEntities(const std::wstring& filename, Entity* parentEntity);
 
 		std::map<std::string, std::shared_ptr<Entity_graph_loader>> _entityGraphLoaders = {};
 

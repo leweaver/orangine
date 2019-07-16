@@ -1,0 +1,30 @@
+{
+    "imgui/imgui": {
+        "url": "git@github.com:ocornut/imgui.git",
+        "ref": "7a5058e3bfea4149acef2ad98d8fdd62605a0f4c"
+    },
+    "glTF-Sample-Models": {
+        "url": "git@github.com:KhronosGroup/glTF-Sample-Models.git",
+        "ref": "ec880043ae0cead374d7e3a965cc8323c51b06e1"
+    },
+    "g3log": {
+        "url": "git@github.com:KjellKod/g3log.git",
+        "ref": "376c417ad170228fa6d1b9994a6e07a2ac143a51"
+    },
+    "DirectXTK": {
+        "url": "git@github.com:Microsoft/DirectXTK.git",
+        "ref": "jun2019"
+    },
+    "googletest": {
+        "url": "git@github.com:google/googletest.git",
+        "ref": "e5e2ef7cd27cc089c1d8302a11970ef870554294"
+    },
+    "tinygltf/tinygltf": {
+        "url": "git@github.com:syoyo/tinygltf.git",
+        "ref": "c0d0251e2c7f2273a894aa1b125af9313a88eae4"
+    },
+    "pybind11": {
+        "url": "git@github.com:pybind/pybind11.git",
+        "ref": "v2.3.0"
+    }
+}

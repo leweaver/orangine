@@ -15,7 +15,7 @@ namespace oe {
 		explicit Component(Entity& entity) : _entity(entity) { }
 
 		/** Returns a new, unique component id */
-		static Component_type createComponentTypeId();
+		static Component_type createComponentTypeId() noexcept;
 
 		virtual ~Component() = default;
 

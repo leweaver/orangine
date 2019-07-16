@@ -30,6 +30,7 @@ namespace oe::internal {
 		std::shared_ptr<Entity_filter> _scriptableEntityFilter;
         std::shared_ptr<Entity_filter::Entity_filter_listener> _scriptableEntityFilterListener;
         std::vector<unsigned> _addedEntities;
+		std::vector<unsigned> _removedEntities;
 
 		std::shared_ptr<Entity_filter> _renderableEntityFilter;
 		std::shared_ptr<Entity_filter> _lightEntityFilter;
@@ -47,7 +48,25 @@ namespace oe::internal {
 		};
 		ScriptData _scriptData;
 
+		struct EngineInternalPythonModule {
+			EngineInternalPythonModule(pybind11::module engine_internal);
+
+			pybind11::module engine_internal;
+			pybind11::detail::str_attr_accessor reset_output_streams;
+		};
+		struct PythonContext {
+			pybind11::module sys;
+			std::unique_ptr<EngineInternalPythonModule> engine_internal;
+		};
+		PythonContext _pythonContext;
+
+		void initializePythonInterpreter();
+		void finalizePythonInterpreter();
+		void logPythonError(const pybind11::error_already_set& err, const std::string& whereStr) const;
+		void flushStdIo();
+
 		void renderDebugSpheres() const;
-        void loadPythonModule(std::string moduleName);
-	};
+
+        bool _pythonInitialized = false;
+    };
 }

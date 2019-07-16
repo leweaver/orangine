@@ -7,15 +7,16 @@
 
 #include "ViewerAppConfig.h"
 
-#include "OeCore/IScene_graph_manager.h"
-#include "OeCore/Scene.h"
-#include "OeCore/Test_component.h"
-#include "OeCore/IEntity_render_manager.h"
-#include "OeCore/Camera_component.h"
-#include "OeCore/Light_component.h"
-#include "OeCore/Renderable_component.h"
-#include "OeCore/PBR_material.h"
-#include "OeCore/Collision.h"
+#include <OeCore/IScene_graph_manager.h>
+#include <OeCore/Scene.h>
+#include <OeCore/Test_component.h>
+#include <OeCore/IEntity_render_manager.h>
+#include <OeCore/Camera_component.h>
+#include <OeCore/Light_component.h>
+#include <OeCore/Renderable_component.h>
+#include <OeCore/PBR_material.h>
+#include <OeCore/Collision.h>
+#include <OeScripting/Script_component.h>
 
 #include <filesystem>
 
@@ -28,9 +29,8 @@ using namespace oe;
 
 using Microsoft::WRL::ComPtr;
 
-Game::Game(std::string appDir)
+Game::Game()
 	: m_fatalError(false)
-    , _appDir(appDir)
 {
     m_deviceResources = std::make_unique<DX::DeviceResources>(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_R24G8_TYPELESS);
     m_deviceResources->RegisterDeviceNotify(this);
@@ -45,12 +45,12 @@ Game::~Game()
 	}
 
 	ComPtr<ID3D11Device> device = m_deviceResources->GetD3DDevice();
-	m_deviceResources.reset();
-
 	ComPtr<ID3D11Debug> d3DDebug;
-	if (SUCCEEDED(device.As(&d3DDebug))) {
+	if (device && SUCCEEDED(device.As(&d3DDebug))) {
 		//d3DDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 	}
+
+	m_deviceResources.reset();
 }
 
 void Game::CreateSceneCubeSatellite()
@@ -76,20 +76,19 @@ std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 	if (animate)
 		root->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 
-    std::string gltfPath;
-    std::string gltfPathSubfolder = "/" + gltfName + "/glTF/" + gltfName + ".gltf";
-    std::string gltfPathPrefix = VIEWERAPP_DATA_PATH + std::string("data/meshes");
-    gltfPath = gltfPathPrefix + gltfPath;
-    LOG(DEBUG) << "Looking for gltf at: " << gltfPath;
+    const auto gltfPathSubfolder = "/" + gltfName + "/glTF/" + gltfName + ".gltf";
+    auto gltfPath = m_scene->manager<IAsset_manager>().makeAbsoluteAssetPath(
+            utf8_decode("ViewerApp/data/meshes" + gltfPathSubfolder));
+    LOG(DEBUG) << "Looking for gltf at: " << utf8_encode(gltfPath);
     
     if (!std::filesystem::exists(gltfPath)) {
-        std::stringstream ss;
+        std::wstringstream ss;
         ss  << VIEWERAPP_THIRDPARTY_PATH 
-            << "/glTF-Sample-Models/2.0"
-            << gltfPathSubfolder;
+            << utf8_decode("/glTF-Sample-Models/2.0")
+            << utf8_decode(gltfPathSubfolder);
         gltfPath = ss.str();
         
-        LOG(DEBUG) << "Looking for gltf at: " << gltfPath;
+        LOG(DEBUG) << "Looking for gltf at: " << utf8_encode(gltfPath);
         if (!std::filesystem::exists(gltfPath)) {
             throw std::runtime_error("Could not find gltf file with name: " + gltfName);
         }
@@ -98,19 +97,6 @@ std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
     m_scene->loadEntities(gltfPath, *root);
 
 	return root;
-}
-
-void Game::CreateSceneMetalRoughSpheres(bool animate)
-{
-	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
-	const auto &root1 = entityManager.instantiate("Root");
-	//root1->SetPosition({ 0, 0, -10 });
-	root1->setScale({ 1, 1, 1 });
-
-	if (animate)
-		root1->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
-
-	m_scene->loadEntities("data/meshes/MetalRoughSpheres/MetalRoughSpheres.gltf", *root1);
 }
 
 void Game::CreateCamera(bool animate)
@@ -221,6 +207,15 @@ void Game::CreateSceneLeverArm()
 	AddCubeToEntity(*child3, { 0.5f, 0, 0 }, { 2.0f, 0.50f, 1.0f }, { 0, 2, 0});
 }
 
+void Game::CreateScripts() {
+
+	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
+	const auto& root1 = entityManager.instantiate("Script Container");
+
+	auto& scriptComponent = root1->addComponent<Script_component>();
+	scriptComponent.setScriptName("testmodule.TestComponent");
+}
+
 void Game::CreateGeometricPrimitives()
 {
 	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
@@ -302,9 +297,15 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 
 	// Some things need setting before initialization.
     m_scene->manager<IUser_interface_manager>().setUIScale(static_cast<float>(dpi) / 96.0f);
-	m_scene->manager<IAsset_manager>().setDataPath(utf8_decode(VIEWERAPP_DATA_PATH));
 
-	m_scene->initialize();
+	try {
+		m_scene->initialize();
+	}
+	catch (std::exception& e) {
+		LOG(WARNING) << "Failed to init scene: " << e.what();
+		m_fatalError = true;
+		return;
+	}
 
 	try
 	{
@@ -331,30 +332,41 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
         //LoadGLTF("MorphCube2", false);
         //LoadGLTF("RiggedSimple", false);
         //LoadGLTF("RiggedFigure", false);
-        LoadGLTF("CesiumMan", false);
+		LoadGLTF("CesiumMan", false)->setPosition({ 0, 0, 1.0f });
         //LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
 
-		//LoadGLTF("MetalRoughSpheres", false);
-		//CreateSceneMetalRoughSpheres(false);
+		LoadGLTF("MetalRoughSpheres", false);
 
 		CreateCamera(false);
 		CreateLights();
 		//CreateGeometricPrimitives();
+		CreateScripts();
+
+
 
 		// Load the skybox
 		auto skyBoxTexture = std::make_shared<File_texture>(
-            utf8_decode(VIEWERAPP_DATA_PATH) + 
-            std::wstring(L"/textures/park-cubemap.dds")
+                m_scene->manager<IAsset_manager>().makeAbsoluteAssetPath(L"ViewerApp/textures/park-cubemap.dds")
             );
 		m_scene->setSkyboxTexture(skyBoxTexture);
 	}
 	catch (const std::exception &e)
 	{
-		LOG(FATAL) << "Failed to load scene: " << e.what();
+		LOG(WARNING) << "Failed to load scene: " << e.what();
+		m_fatalError = true;
+		return;
 	}
 
-	createDeviceDependentResources();
-	createWindowSizeDependentResources();
+	try {
+		createDeviceDependentResources();
+		createWindowSizeDependentResources();
+	}
+	catch (const std::exception& e)
+	{
+		LOG(WARNING) << "Failed to create device resources: " << e.what();
+		m_fatalError = true;
+		return;
+	}
 }
 
 void Game::AddCubeToEntity(Entity& entity, Vector3 animationSpeed, Vector3 localScale, Vector3 localPosition) const
@@ -364,7 +376,7 @@ void Game::AddCubeToEntity(Entity& entity, Vector3 animationSpeed, Vector3 local
 	entity.setScale(localScale);
 	entity.setPosition(localPosition);
 	
-	m_scene->loadEntities("data/meshes/Cube/Cube.gltf", entity);
+	m_scene->loadEntities(L"data/meshes/Cube/Cube.gltf", entity);
 }
 
 #pragma region Frame Update

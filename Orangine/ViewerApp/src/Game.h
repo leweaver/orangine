@@ -21,10 +21,11 @@ class Game : public DX::IDeviceNotify
 {
 public:
 
-    explicit Game(std::string appDir);
+    explicit Game();
 	~Game();
 
 	void CreateSceneLeverArm();
+	void CreateScripts();
 	void CreateGeometricPrimitives();
 	void CreateSceneCubeSatellite();
 	std::shared_ptr<oe::Entity> LoadGLTF(std::string gltfName, bool animate);
@@ -80,7 +81,6 @@ private:
 	
 	bool									m_fatalError;
 	HWND									_window;
-    std::string _appDir;
 };
 
 bool Game::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const

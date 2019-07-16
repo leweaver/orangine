@@ -53,6 +53,8 @@ namespace oe
 		std::wstring _filename;
 	public:
 
+	    // Filename must be an absolute path to a supported texture file.
+	    // If the file does not exist or is not supported, the load() method will throw.
 		explicit File_texture(std::wstring&& filename)
 			: _filename(std::move(filename))
 		{

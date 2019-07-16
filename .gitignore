@@ -2,7 +2,6 @@
 .vscode
 Debug
 *.log
-AssetWorker/
 *.vcxproj.user
 *.TMP
 packages/
@@ -10,7 +9,6 @@ packages/
 bin/
 obj/
 /Prototype/imgui.ini
-thirdparty/amd64/
 Engine/cmake-build
 cmake-build*
 cmake-ninjabuild-x64-Debug/
@@ -18,4 +16,15 @@ cmake-ninjabuild-x64-Release/
 Orangine/Build/
 Orangine/imgui.ini
 Orangine/.idea/
+Orangine/ViewerApp/data/lib/__pycache__/
+Orangine/ViewerApp/data/scripts/__pycache__/
+Orangine/OeScripting/data/OeScripting/lib/__pycache__/
+thirdparty/amd64/
 thirdparty/cmake-*
+thirdparty/pybind11
+thirdparty/DirectXTK/
+thirdparty/g3log/
+thirdparty/glTF-Sample-Models/
+thirdparty/googletest/
+thirdparty/imgui/
+thirdparty/tinygltf/

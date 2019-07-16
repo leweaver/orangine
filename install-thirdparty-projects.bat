@@ -25,15 +25,23 @@ call :oe_verify_errorlevel "check python PIP is installed" || goto:eof
 rem install pytest if it's missing
 python -m pip show pytest > NUL
 if "%errorlevel%" == "1" (
-    python -m pip --version install pytest
-    call :oe_verify_errorlevel "install python PIP" || goto:eof
+    python -m pip install pytest > NUL
+    call :oe_verify_errorlevel "python -m pip install pytest" || goto:eof
+) else (
+    rem this should always succeed, just using it for a nicely formatted OK message
+    call :oe_verify_errorlevel "check pytest installed"
 )
 
 set "OE_ROOT=%cd%"
 
 if not defined VSINSTALLDIR (
+    powershell -command "Get-VSSetupInstance" > NUL
+    rem If this failed, run the following in a regular powershell window:
+    rem Install-Module VSSetup -Scope CurrentUser
+    call :oe_verify_errorlevel "Detect Get-VSSetupInstance powershell utility" || goto:eof
+
     for /f "tokens=*" %%a in ('powershell -command "Get-VSSetupInstance | Select-VSSetupInstance -Require Microsoft.VisualStudio.Workload.NativeDesktop -Latest | Select-Object -ExpandProperty InstallationPath"') do @set "OE_VC_INSTALL_PATH=%%a"
-    
+
     IF EXIST "!OE_VC_INSTALL_PATH!\VC\Auxiliary\Build\vcvars64.bat" (
         echo Using visual studio at: !OE_VC_INSTALL_PATH!
         call "!OE_VC_INSTALL_PATH!\VC\Auxiliary\Build\vcvars64.bat"
@@ -47,32 +55,48 @@ if "%VSCMD_ARG_TGT_ARCH%"=="x86" (
     call "%VCINSTALLDIR%\Auxiliary\Build\vcvars64.bat"
 )
 
-set OE_CMAKE_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\CMake\bin\cmake.exe
-set OE_NINJA_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\Ninja\ninja.exe
-set OE_INSTALL_PREFIX=%OE_ROOT%\bin\x64
+set "OE_CMAKE_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\CMake\bin\cmake.exe"
+set "OE_NINJA_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\Ninja\ninja.exe"
+set "OE_INSTALL_PREFIX=%OE_ROOT%\bin\x64"
+
+rem ******************************
+rem Clone third party repositories
+rem ******************************
+
+cd "%OE_ROOT%"
+set "OE_THIRDPARTY_OUTPUT=%OE_ROOT%\thirdparty\update-thirdparty.log"
+echo Updating thirdparty repositories: %OE_THIRDPARTY_OUTPUT%
+if not exist "%OE_ROOT%\thirdparty\glTF-Sample-Models" (
+    echo * [[33mThis will take 5 to 10 minutes, go walk the dog.[0m]
+) else (
+    echo * [[33mThis will take a few minutes if there are changes since your last run.[0m]
+)
+python Orangine\cmake\scripts\update-thirdparty.py 1> %OE_THIRDPARTY_OUTPUT% 2>&1
+call :oe_verify_errorlevel "update-thirdparty.py" || goto:eof
 
 rem ******************************
 rem Build Steps
 rem ******************************
 
 rem pybind11
-call :cmake_ninja_install "%OE_ROOT%\thirdparty\pybind11", pybind11
+call :cmake_ninja_install "%OE_ROOT%\thirdparty\pybind11", pybind11 || goto:eof
 
 rem g3log
-call :cmake_ninja_install "%OE_ROOT%\thirdparty\g3log", g3log
+call :cmake_ninja_install "%OE_ROOT%\thirdparty\g3log", g3log || goto:eof
 
 rem MikktSpace and tinygltf are build using our own CMakeLists file.
-call :cmake_ninja_install "%OE_ROOT%\thirdparty", thirdparty
+call :cmake_ninja_install "%OE_ROOT%\thirdparty", thirdparty || goto:eof
 
 rem Google Test
-call :cmake_msvc_shared "%OE_ROOT%\thirdparty\googletest\googletest", gtest
+call :cmake_msvc_shared "%OE_ROOT%\thirdparty\googletest\googletest", gtest || goto:eof
 
 rem Google Mock
-call :cmake_msvc_shared "%OE_ROOT%\thirdparty\googletest\googlemock", gmock
+call :cmake_msvc_shared "%OE_ROOT%\thirdparty\googletest\googlemock", gmock || goto:eof
 
 rem DirectXTK
 cd %OE_ROOT%\thirdparty\DirectXTK
 
+md "%OE_ROOT%\thirdparty\DirectXTK\bin"
 set "CM_LOGFILE=%OE_ROOT%\thirdparty\DirectXTK\bin\oe-build-log.txt"
 echo DirectXTK build output: %CM_LOGFILE%
 
@@ -121,10 +145,10 @@ set "CM_LOGFILE=%CM_NINJA_BUILD_PATH%\oe-build-log.txt"
 echo %CM_TARGET_NAME% %OE_GENERATE_BUILD_CONFIG% build output: %CM_LOGFILE%
 IF EXIST "!CM_NINJA_BUILD_PATH!\CMakeCache.txt" del "!CM_NINJA_BUILD_PATH!\CMakeCache.txt"
 "%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_DEBUG_POSTFIX=_d -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%/%OE_GENERATE_BUILD_CONFIG%" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%CM_NINJA_SOURCE_PATH%" > %CM_LOGFILE%
-call :oe_verify_errorlevel "cmake" || goto:eof
+call :oe_verify_errorlevel "cmake" || EXIT /B 1
 
 ninja install >> %CM_LOGFILE%
-call :oe_verify_errorlevel "ninja install" || goto:eof
+call :oe_verify_errorlevel "ninja install" || EXIT /B 1
 
 set OE_GENERATE_BUILD_CONFIG=Release
 set "CM_NINJA_BUILD_PATH=%OE_ROOT%\thirdparty\cmake-%CM_TARGET_NAME%-ninjabuild-x64-!OE_GENERATE_BUILD_CONFIG!"
@@ -134,10 +158,10 @@ set "CM_LOGFILE=%CM_NINJA_BUILD_PATH%\oe-build-log.txt"
 echo %CM_TARGET_NAME% %OE_GENERATE_BUILD_CONFIG% build output: %CM_LOGFILE%
 IF EXIST "!CM_NINJA_BUILD_PATH!\CMakeCache.txt" del "!CM_NINJA_BUILD_PATH!\CMakeCache.txt"
 "%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_INSTALL_PREFIX:PATH="%OE_INSTALL_PREFIX%/%OE_GENERATE_BUILD_CONFIG%" -DCMAKE_BUILD_TYPE="!OE_GENERATE_BUILD_CONFIG!" "%CM_NINJA_SOURCE_PATH%" > %CM_LOGFILE%
-call :oe_verify_errorlevel "cmake" || goto:eof
+call :oe_verify_errorlevel "cmake" || EXIT /B 1
 
 ninja install >> %CM_LOGFILE%
-call :oe_verify_errorlevel "ninja install" || goto:eof
+call :oe_verify_errorlevel "ninja install" || EXIT /B 1
 
 EXIT /B 0
 
@@ -165,13 +189,13 @@ set "CM_LOGFILE=%CM_MSVC_BUILD_PATH%\oe-build-log.txt"
 echo %CM_TARGET_NAME% build output: %CM_LOGFILE%
 
 "%OE_CMAKE_EXE%" -DBUILD_SHARED_LIBS=ON -G "%OE_CMAKE_GENERATE%" -A x64 "%CM_MSVC_SOURCE_PATH%" > %CM_LOGFILE%
-call :oe_verify_errorlevel "cmake" || goto:eof
+call :oe_verify_errorlevel "cmake" || EXIT /B 1
 
 msbuild %CM_TARGET_NAME%.sln /p:Configuration=Debug /p:Platform="x64" >> %CM_LOGFILE%
-call :oe_verify_errorlevel "msbuild Debug" || goto:eof
+call :oe_verify_errorlevel "msbuild Debug" || EXIT /B 1
 
 msbuild %CM_TARGET_NAME%.sln /p:Configuration=Release /p:Platform="x64" >> %CM_LOGFILE%
-call :oe_verify_errorlevel "msbuild Release" || goto:eof
+call :oe_verify_errorlevel "msbuild Release" || EXIT /B 1
 
 EXIT /B 0
 

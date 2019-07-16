@@ -6,6 +6,7 @@ namespace DX {
 
 namespace oe {
 	class Scene;
+	class IConfigReader;
 
 	class Manager_tickable {
 	public:
@@ -39,7 +40,8 @@ namespace oe {
 		explicit Manager_base(Scene& scene)
 			: _scene(scene) {}
 		virtual ~Manager_base() = default;
-		
+
+		virtual void loadConfig(const IConfigReader&) {}
 		virtual void initialize() = 0;
 		virtual void shutdown() = 0;
 	    virtual const std::string& name() const = 0;

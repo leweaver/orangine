@@ -93,8 +93,10 @@ void Render_step_manager::shutdown()
 	_renderStep_entityDeferred.data.reset();
 
 	auto context = deviceResources().GetD3DDeviceContext();
-	std::array<ID3D11RenderTargetView*, g_max_render_target_views> renderTargetViews = { nullptr, nullptr, nullptr };
-	context->OMSetRenderTargets(static_cast<UINT>(renderTargetViews.size()), renderTargetViews.data(), nullptr);
+	if (context) {
+		std::array<ID3D11RenderTargetView*, g_max_render_target_views> renderTargetViews = { nullptr, nullptr, nullptr };
+		context->OMSetRenderTargets(static_cast<UINT>(renderTargetViews.size()), renderTargetViews.data(), nullptr);
+	}
 
 	_renderStep_shadowMap.renderPasses[0].reset();
 	_renderStep_entityDeferred.renderPasses[0].reset();

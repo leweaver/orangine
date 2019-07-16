@@ -37,6 +37,8 @@ namespace oe {
 	bool str_starts(const std::wstring& str, const std::wstring& prefix);
 	bool str_ends(const std::wstring& str, const std::wstring& suffix);
 
+	std::vector<std::string> str_split(const std::string& str, const std::string& delims = " ");
+
 	std::string str_replace_all(std::string str, const std::string& from, const std::string& to);
 
 	std::string hr_to_string(HRESULT hr);

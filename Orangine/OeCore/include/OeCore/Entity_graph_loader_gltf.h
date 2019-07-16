@@ -12,7 +12,7 @@ namespace oe {
 		Entity_graph_loader_gltf();
 
 		void getSupportedFileExtensions(std::vector<std::string>& extensions) const override;
-		std::vector<std::shared_ptr<Entity>> loadFile(std::string_view filename,
+		std::vector<std::shared_ptr<Entity>> loadFile(std::wstring_view filename,
 			IEntity_repository& entityRepository,
 			IMaterial_repository& materialRepository,
 			bool calculateBounds) const override;

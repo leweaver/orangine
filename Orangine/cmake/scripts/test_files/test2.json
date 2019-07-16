@@ -1,0 +1,9 @@
+{
+    "override": "ok",
+    "bar": "foo",
+    "arr": [3,4],
+    "obj": {
+        "cat": 3,
+        "mouse": 4
+    }
+}

@@ -27,13 +27,13 @@ using namespace std;
 using namespace tinygltf;
 using namespace oe;
 
-string s_primAttrName_position = "POSITION";
-string s_primAttrName_normal = "NORMAL";
-string s_primAttrName_tangent = "TANGENT";
-string s_primAttrName_color = "COLOR_";
-string s_primAttrName_texCoord = "TEXCOORD_";
-string s_primAttrName_joints = "JOINTS_";
-string s_primAttrName_weights = "WEIGHTS_";
+std::string s_primAttrName_position = "POSITION";
+std::string s_primAttrName_normal = "NORMAL";
+std::string s_primAttrName_tangent = "TANGENT";
+std::string s_primAttrName_color = "COLOR_";
+std::string s_primAttrName_texCoord = "TEXCOORD_";
+std::string s_primAttrName_joints = "JOINTS_";
+std::string s_primAttrName_weights = "WEIGHTS_";
 
 const map<string, Vertex_attribute_semantic> g_gltfAttributeToVertexAttributeMap = {
 	{ s_primAttrName_position, {Vertex_attribute::Position, 0}},
@@ -170,7 +170,7 @@ vertexAccessorFactory(Vertex_attribute_semantic vertexAttribute)
 
 struct Loader_data
 {
-	Loader_data(Model& model, string&& baseDir, IWICImagingFactory *imagingFactory, bool calculateBounds)
+	Loader_data(Model& model, wstring&& baseDir, IWICImagingFactory *imagingFactory, bool calculateBounds)
 		: model(model)
 		, baseDir(std::move(baseDir))
 		, imagingFactory(imagingFactory)
@@ -178,7 +178,7 @@ struct Loader_data
 	{}
 
 	Model& model;
-	string baseDir;
+	wstring baseDir;
 	IWICImagingFactory* imagingFactory;
 	map<size_t, shared_ptr<Mesh_buffer>> accessorIdxToMeshBuffers;
     vector<shared_ptr<Entity>> nodeIdxToEntity;
@@ -189,18 +189,18 @@ struct Loader_data
 shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_repository& entityRepository, IMaterial_repository& materialRepository, Loader_data& loaderData);
 void create_animation(int animIdx, Loader_data loaderData);
 
-string g_pbrPropertyName_baseColorFactor = "baseColorFactor";
-string g_pbrPropertyName_baseColorTexture = "baseColorTexture";
-string g_pbrPropertyName_metallicFactor = "metallicFactor";
-string g_pbrPropertyName_roughnessFactor = "roughnessFactor";
-string g_pbrPropertyName_emissiveFactor = "emissiveFactor";
-string g_pbrPropertyName_metallicRoughnessTexture = "metallicRoughnessTexture";
-string g_pbrPropertyName_alphaMode = "alphaMode";
-string g_pbrPropertyName_alphaCutoff = "alphaCutoff";
+const char* g_pbrPropertyName_baseColorFactor = "baseColorFactor";
+const char* g_pbrPropertyName_baseColorTexture = "baseColorTexture";
+const char* g_pbrPropertyName_metallicFactor = "metallicFactor";
+const char* g_pbrPropertyName_roughnessFactor = "roughnessFactor";
+const char* g_pbrPropertyName_emissiveFactor = "emissiveFactor";
+const char* g_pbrPropertyName_metallicRoughnessTexture = "metallicRoughnessTexture";
+const char* g_pbrPropertyName_alphaMode = "alphaMode";
+const char* g_pbrPropertyName_alphaCutoff = "alphaCutoff";
 
-string g_pbrPropertyValue_alphaMode_opaque = "OPAQUE";
-string g_pbrPropertyValue_alphaMode_mask = "MASK";
-string g_pbrPropertyValue_alphaMode_blend = "BLEND";
+const char* g_pbrPropertyValue_alphaMode_opaque = "OPAQUE";
+const char* g_pbrPropertyValue_alphaMode_mask = "MASK";
+const char* g_pbrPropertyValue_alphaMode_blend = "BLEND";
 
 Entity_graph_loader_gltf::Entity_graph_loader_gltf()
 {
@@ -385,7 +385,7 @@ std::vector<DirectX::SimpleMath::Matrix> createMatrix4ArrayFromAccessor(Loader_d
     return matrices;
 }
 
-vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filePath,
+vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(wstring_view filePath,
 	IEntity_repository& entityRepository, 
 	IMaterial_repository& materialRepository,
 	bool calculateBounds) const
@@ -396,11 +396,20 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filePa
 	string err;
     string warn;
 
-	const auto filePathStr = string(filePath);
+	const auto filePathStr = wstring(filePath);
+	LOG(INFO) << "Loading entity graph (glTF): " << utf8_encode(filePathStr);
+
 	auto gltfAscii = get_file_contents(filePathStr.c_str());
-    auto baseDir = GetBaseDir(filePathStr.c_str());
+
+	std::wstring baseDir;
+    {
+        const auto lastSlashPos = filePathStr.find_last_of(L"/\\");
+        if (lastSlashPos != std::string::npos)
+            baseDir = filePathStr.substr(0, lastSlashPos);
+    }
 
     const auto filename = filePathStr.substr(baseDir.size());
+    const auto filenameUtf8 = utf8_encode(filename);
 
 	const auto ret = loader.LoadASCIIFromString(
         &model,
@@ -408,12 +417,12 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filePa
         &warn,
         gltfAscii.c_str(),
         static_cast<unsigned>(gltfAscii.length()),
-        baseDir);
+        utf8_encode(baseDir));
 	if (!err.empty()) {
 		throw domain_error(err);
 	}
     if (!warn.empty()) {
-        LOG(WARNING) << filename << ": " << warn;
+        LOG(WARNING) << filenameUtf8 << ": " << warn;
     }
 
 	if (!ret) {
@@ -425,11 +434,11 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(string_view filePa
 
 	const auto& scene = model.scenes[model.defaultScene];
 	if (baseDir.empty())
-		baseDir = ".";
-	Loader_data loaderData(model, string(baseDir), _imagingFactory.Get(), calculateBounds);
+		baseDir = L".";
+	Loader_data loaderData(model, move(baseDir), _imagingFactory.Get(), calculateBounds);
 
     // Load Entities
-    loaderData.rootEntity = entityRepository.instantiate(filename);
+    loaderData.rootEntity = entityRepository.instantiate(filenameUtf8);
 	for (auto nodeIdx : scene.nodes) 
 	{
         auto entity = create_entity(nodeIdx, entityRepository, materialRepository, loaderData);
@@ -554,8 +563,7 @@ shared_ptr<oe::Texture> try_create_texture(const Loader_data& loaderData, const 
 
 	if (!gltfImage.uri.empty())
 	{
-		const auto filename = utf8_decode(loaderData.baseDir + "\\" + gltfImage.uri);
-
+		const auto filename = loaderData.baseDir + L"\\" + utf8_decode(gltfImage.uri);
 		return make_shared<File_texture>(wstring(filename));
 	}
 	if (!gltfImage.mimeType.empty())

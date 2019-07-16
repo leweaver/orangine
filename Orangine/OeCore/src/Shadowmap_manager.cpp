@@ -28,8 +28,10 @@ void Shadowmap_manager::createDeviceDependentResources(DX::DeviceResources&)
 
 void Shadowmap_manager::destroyDeviceDependentResources()
 {
-	_texturePool->destroyDeviceDependentResources();
-	_texturePool.reset();
+	if (_texturePool) {
+		_texturePool->destroyDeviceDependentResources();
+		_texturePool.reset();
+	}
 }
 
 std::unique_ptr<Shadow_map_texture_array_slice> Shadowmap_manager::borrowTexture()

@@ -91,7 +91,6 @@ function(add_precompiled_header _target _input)
   endif()
 
   if(MSVC)
-    MESSAGE("_PCH_BUILD_DIR = ${_PCH_BUILD_DIR}")
     set(_pch_cxx_pch "${_PCH_BUILD_DIR}/cxx_${_input_we}.pch")
     set(_pch_c_pch "${CMAKE_CFG_INTDIR}/c_${_input_we}.pch")
 

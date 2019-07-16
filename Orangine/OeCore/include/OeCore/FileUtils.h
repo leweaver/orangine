@@ -4,7 +4,7 @@
 #include "EngineUtils.h"
 
 // from: http://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
-inline std::string get_file_contents(const char *filename)
+inline std::string get_file_contents(const wchar_t* filename)
 {
 	std::ifstream in(filename, std::ios::in | std::ios::binary);
 	if (in)

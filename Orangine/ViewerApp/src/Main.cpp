@@ -73,12 +73,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 		return 1;
 #endif
 
-    std::string appRoot = "";
-    //if (__argc == 2) {
-    //    appRoot = __argv[1];
-    //}
-
-    g_game = std::make_unique<Game>(appRoot);
+    g_game = std::make_unique<Game>();
 
     // Register class and create window
     {
@@ -127,7 +122,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
         GetClientRect(hwnd, &rc);
         g_game->Initialize(hwnd, GetDpiForWindow(hwnd), rc.right - rc.left, rc.bottom - rc.top);
-        g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(vectorLog.get());
+        
+		if (!g_game->hasFatalError()) {
+			g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(vectorLog.get());
+		}
     }
 
     // Main message loop

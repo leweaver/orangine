@@ -12,10 +12,16 @@
 
 #include "OeCore/Perf_timer.h"
 #include "OeCore/IMaterial_manager.h"
+#include "OeCore/FileUtils.h"
+#include "OeCore/IConfigReader.h"
+#include "JsonConfigReader.h"
 
 #include <type_traits>
+#include <tinygltf/json.hpp>
 
 using namespace oe;
+
+const auto CONFIG_FILE_NAME = L"config.json";
 
 template<typename TBase, typename TTuple, int TIdx = 0>
 constexpr void forEachOfType(TTuple& managers, const std::function<void(int, TBase*)>& fn)
@@ -79,36 +85,62 @@ void Scene::initialize()
 	using namespace std;
 
 	// Mesh loaders
-	addMeshLoader<Entity_graph_loader_gltf>();
+	const auto meshLoader = addMeshLoader<Entity_graph_loader_gltf>();
+	assert(meshLoader);
 
     std::fill(_tickTimes.begin(), _tickTimes.end(), 0.0);
     _tickCount = 0;
 
-	forEachOfType<Manager_base>(_managers, [](auto, auto* manager) { 
-		if (manager)
-		    manager->initialize(); 
-	});
+    std::unique_ptr<JsonConfigReader> configReader;
+    try {
+        configReader = std::make_unique<JsonConfigReader>(CONFIG_FILE_NAME);
+    }
+    catch (std::exception& ex) {
+        LOG(WARNING) << "Failed to read config file: " << CONFIG_FILE_NAME << "(" << ex.what() << ")";
+        throw std::runtime_error(std::string("Scene init failed reading config. ") + ex.what());
+    }
+
+	try {
+		forEachOfType<Manager_base>(_managers, [this, &configReader](auto, auto* manager) {
+			if (manager == nullptr)
+				return;
+
+			try {
+			    manager->loadConfig(*configReader);
+				manager->initialize();
+			}
+			catch (std::exception& ex) {
+				throw std::runtime_error("Failed to initialize " + manager->name() + ": " + ex.what());
+			}
+			_initializedManagers.push_back(manager);
+			});
+	}
+	catch (std::exception& ex) {
+		LOG(WARNING) << "Failed to initialize managers: " << ex.what();
+		throw std::runtime_error(std::string("Scene init failed. ") + ex.what());
+	}
+
 }
 
-void Scene::loadEntities(const std::string& filename)
+void Scene::loadEntities(const std::wstring& filename)
 {
 	return loadEntities(filename, nullptr);
 }
 
-void Scene::loadEntities(const std::string& filename, Entity& parentEntity)
+void Scene::loadEntities(const std::wstring& filename, Entity& parentEntity)
 {
 	auto entity = std::get<std::shared_ptr<IEntity_repository>>(_managers)->getEntityPtrById(parentEntity.getId());
 	return loadEntities(filename, entity.get());
 }
 
-void Scene::loadEntities(const std::string& filename, Entity *parentEntity)
+void Scene::loadEntities(const std::wstring& filename, Entity *parentEntity)
 {
 	// Get the file extension
 	const auto dotPos = filename.find_last_of('.');
 	if (dotPos == std::string::npos)
 		throw std::runtime_error("Cannot load mesh; given file doesn't have an extension.");
 
-	const std::string extension = filename.substr(dotPos + 1);
+	const std::string extension = utf8_encode(filename.substr(dotPos + 1));
 	const auto extPos = _entityGraphLoaders.find(extension);
 	if (extPos == _entityGraphLoaders.end())
 		throw std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension);
@@ -162,7 +194,10 @@ void Scene::shutdown()
         LOG(INFO) << "Manager average tick times (ms): " << std::endl << ss.str();
     }
 
-	forEachOfTypeReverse<Manager_base>(_managers, [](int, Manager_base* manager) { if (manager) manager->shutdown(); });
+	std::for_each(_initializedManagers.rbegin(), _initializedManagers.rend(), [](const auto& manager) {
+		manager->shutdown();
+		});
+	_initializedManagers.clear();
 
 	_managers = decltype(_managers)();
 }

@@ -13,7 +13,9 @@ add_library(${PROJECT_NAME} STATIC
         src/pch.cpp
         src/Entity_scripting_manager.h
         src/Entity_scripting_manager.cpp
-        )
+        src/Script_component.cpp
+        src/Script_runtime_data.h)
+
 file(GLOB OeScripting_HEADERS "include/OeScripting/*")
 list(APPEND OeScripting_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
@@ -28,11 +30,24 @@ target_link_libraries(${PROJECT_NAME}
         PUBLIC OeCompilerFlags
         PRIVATE Oe::Core)
 
+# Public headers
+target_include_directories(${PROJECT_NAME}
+        PUBLIC
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+        )
+
 # Python
 find_package(Python3 COMPONENTS Development)
 target_include_directories(${PROJECT_NAME}
         PUBLIC ${PYTHON_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC Python3::Python)
+
+# PyBind
+set(PYBIND11_CPP_STANDARD /std:c++17)
+find_package(pybind11 REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE pybind11::embed)
 
 # Install
 install(TARGETS ${PROJECT_NAME}
@@ -44,6 +59,14 @@ install(TARGETS ${PROJECT_NAME}
         PUBLIC_HEADER DESTINATION include/${PROJECT_NAME}
         )
 
+# Install Python binaries
+install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll"
+        CONFIGURATIONS Debug
+        DESTINATION bin)
+install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll"
+        CONFIGURATIONS Release
+        DESTINATION bin)
+
 include(OeUtils)
 install_target_pdb(OeScripting)
 
@@ -54,6 +77,8 @@ install(
         DESTINATION lib/cmake/${PROJECT_NAME}
 )
 
+# Data and Assets
+set(${PROJECT_NAME}_DATA_SOURCE_DIR "${PROJECT_SOURCE_DIR}/data" PARENT_SCOPE)
 install(DIRECTORY data
         DESTINATION bin
         )

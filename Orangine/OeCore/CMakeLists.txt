@@ -73,7 +73,7 @@ add_library(${PROJECT_NAME} STATIC
         src/User_interface_manager.cpp
         src/EngineUtils.cpp
         src/VectorLog.cpp
-    )
+        src/JsonConfigReader.cpp src/JsonConfigReader.h)
 file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
@@ -117,8 +117,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 
 # DirectXTK
 find_package(directxtk REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC
-        "${DIRECTX_LIB_DIR}/Desktop_2017_Win10/x64/${CMAKE_BUILD_TYPE}/DirectXTK.lib")
+target_link_libraries(${PROJECT_NAME} PUBLIC ${DIRECTXTK_LIBRARIES})
 
 # Install
 install(TARGETS ${PROJECT_NAME}
@@ -139,18 +138,12 @@ install(
         NAMESPACE Oe::
         DESTINATION lib/cmake/${PROJECT_NAME}
         )
-		
+
+# Data and Assets
+set(${PROJECT_NAME}_DATA_SOURCE_DIR "${PROJECT_SOURCE_DIR}/data" PARENT_SCOPE)
 install(DIRECTORY data
         DESTINATION bin
         )
-
-# Install Python binaries
-install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll"
-		CONFIGURATIONS Debug
-		DESTINATION bin)
-install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll"
-		CONFIGURATIONS Release
-		DESTINATION bin)
 
 # Config.cmake files
 configure_file(OeCoreConfig.cmake.in OeCoreConfig.cmake @ONLY)

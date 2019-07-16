@@ -287,7 +287,7 @@ void Material_manager::createPixelShader(
 
 void Material_manager::initialize()
 {
-	_shaderPath = _scene.manager<IAsset_manager>().getDataPath() + L"/shaders";
+	_shaderPath = _scene.manager<IAsset_manager>().makeAbsoluteAssetPath(L"OeCore/shaders");
     setRendererFeaturesEnabled(Renderer_features_enabled());
 }
 

@@ -40,26 +40,11 @@ In the installer, choose _advanced options_ and enable:
 > Make sure it is installed to: `%LOCALAPPDATA%\Programs\Python\Python37\`
 
 ## Git
-If you are reading this you probably already have GIT installed. If not, [follow these instructions](https://confluence.atlassian.com/get-started-with-bitbucket/install-and-set-up-git-860009658.html)
-
-# First Time Setup
-
-## Get the code & submodules from GIT
-
-1. Clone the repository
-1. If you aren't using gitkraken, download submodules for the third party libraries, by running the following in the repository root directory:
+If you are reading this you probably already have GIT installed. If not, [follow these instructions](https://confluence.atlassian.com/get-started-with-bitbucket/install-and-set-up-git-860009658.html) and clone the repository to somewhere convenient on your hard drive:
 
 ```
-git submodule update --init --recursive
+git clone git@bitbucket.org:orangine/orangine.git c:\repos\orangine
 ```
-
-_Note_, to update the submodules to the latest version pointed to by the repository, run the following command:
-```
-git pull --recurse-submodules
-git submodule update --recursive --remote
-```
-
-[More submodule tips](https://gist.github.com/gitaarik/8735255)
 
 ## Build dependencies
 Our third party dependencies have a number of build and integration methods. To make things easier, a helper script in the root directory will configure, build and install these:
@@ -83,7 +68,13 @@ From here, you can select one of two startup projects in the "Select Startup Ite
 - __ViewerApp.exe (ViewerApp\ViewerApp.exe)__
   - This will build and run the sample executable.
 - __ViewerApp.exe (Install)__
-  - This will build the engine lib's and sample exe's, placing them in a directory for import into other projects: `<git-repo>\bin\x64`
+  - This will build the engine lib's and sample exe's, placing them in a directory for import into other projects.
+
+The game files will be built/installed to the following location:
+
+```
+%USERPROFILE%\CMakeBuilds\<some-build-hash>\build\x64-Debug\ViewerApp
+```
 
 Some tips on Visual Studio with CMake: https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=vs-2019
 
@@ -102,8 +93,8 @@ If you want to use ninja to build, `<git-repo>\Orangine\oe-built.bat` wraps CMak
 
 You can manually run any other ninja command: list all of the available ninja commands:`cd cmake-ninjabuild-x64-Debug`
 
-# Overall Architecture
-Here is a quick non-exhaustive overview of how the main object instances are instantiated. Each item creates and owns the items below it in the tree. Each item below is the name of a class, which is located in a CPP/H file of the same name.
+# (Outdated) Overall Architecture
+Here is an quick non-exhaustive overview of how the main object instances are instantiated. Each item creates and owns the items below it in the tree. Each item below is the name of a class, which is located in a CPP/H file of the same name.
 
 - oe::Main
   - DX::DeviceResources

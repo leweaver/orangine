@@ -55,6 +55,11 @@ if "%VSCMD_ARG_TGT_ARCH%"=="x86" (
     call "%VCINSTALLDIR%\Auxiliary\Build\vcvars64.bat"
 )
 
+if not "%VisualStudioVersion%" == "15.0" (
+    echo "The-Forge doesn't support VS 2019 yet (blah!). Please run this from the VS 2017 Developer Command Prompt."
+    goto:eof
+) 
+
 set "OE_CMAKE_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\CMake\bin\cmake.exe"
 set "OE_NINJA_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\Ninja\ninja.exe"
 set "OE_INSTALL_PREFIX=%OE_ROOT%\bin\x64"
@@ -126,6 +131,12 @@ msbuild Unit_Tests.sln /p:Configuration=ReleaseDx /p:Platform="x64" -target:OS;R
 call :oe_verify_errorlevel "msbuild The-Forge ReleaseDx" || goto:eof
 
 rem ******************************
+rem End of main script.
+rem ******************************
+
+goto:eof
+
+rem ******************************
 rem Hacky Steps
 rem ******************************
 
@@ -134,8 +145,6 @@ IF NOT EXIST "%OE_INSTALL_PREFIX%\Debug\COMPONENT" md "%OE_INSTALL_PREFIX%\Debug
 IF NOT EXIST "%OE_INSTALL_PREFIX%\Release\COMPONENT" md "%OE_INSTALL_PREFIX%\Release\COMPONENT"
 IF NOT EXIST "%OE_INSTALL_PREFIX%\Debug\libraries" md "%OE_INSTALL_PREFIX%\Debug\libraries"
 IF NOT EXIST "%OE_INSTALL_PREFIX%\Release\libraries" md "%OE_INSTALL_PREFIX%\Release\libraries"
-
-goto:eof
 
 rem ******************************
 rem Build Function Definitions

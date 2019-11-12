@@ -33,8 +33,8 @@ add_library(${PROJECT_NAME} STATIC
         src/DeviceResources.cpp
         src/Entity.cpp
         src/Entity_graph_loader_gltf.cpp
-		src/Entity_filter_impl.h
-		src/Entity_filter_impl.cpp
+        src/Entity_filter_impl.h
+        src/Entity_filter_impl.cpp
         src/Entity_render_manager.cpp
         src/Entity_repository.cpp
         src/Entity_sorter.cpp
@@ -94,7 +94,7 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
         "${OE_THIRDPARTY_PATH}/tinygltf"
-        "${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
+        #"${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
         )
 
 # g3log
@@ -115,9 +115,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         dxguid.lib
         )
 
+# The-Forge
+find_package(theforge REQUIRED)
+target_include_directories(${PROJECT_NAME} PUBLIC ${THEFORGE_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${THEFORGE_STATIC_LIBRARIES})
+
 # DirectXTK
-find_package(directxtk REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC ${DIRECTXTK_LIBRARIES})
+#find_package(directxtk REQUIRED)
+#target_link_libraries(${PROJECT_NAME} PUBLIC ${DIRECTXTK_LIBRARIES})
 
 # Install
 install(TARGETS ${PROJECT_NAME}

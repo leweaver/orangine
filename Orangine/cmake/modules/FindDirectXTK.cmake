@@ -1,10 +1,10 @@
 set(DIRECTXTK_BIN_DIR "${Orangine_SOURCE_DIR}/../thirdparty/DirectXTK/bin" CACHE PATH "")
 if(IS_DIRECTORY "${DIRECTXTK_BIN_DIR}/Desktop_2017_Win10")
-	set(DIRECTXTK_LIB_DIR "${DIRECTXTK_BIN_DIR}/Desktop_2017_Win10" CACHE PATH "")
+        set(DIRECTXTK_LIB_DIR "${DIRECTXTK_BIN_DIR}/Desktop_2017_Win10" CACHE PATH "")
 elseif(IS_DIRECTORY "${DIRECTXTK_BIN_DIR}/Desktop_2019_Win10")
-	set(DIRECTXTK_LIB_DIR "${DIRECTXTK_BIN_DIR}/Desktop_2019_Win10" CACHE PATH "")
+        set(DIRECTXTK_LIB_DIR "${DIRECTXTK_BIN_DIR}/Desktop_2019_Win10" CACHE PATH "")
 else()
-	message(FATAL "Could not find valid DirectXTK build directory")
+        message(FATAL "Could not find valid DirectXTK build directory")
 endif()
 
 set(DIRECTXTK_LIBRARIES "${DIRECTXTK_LIB_DIR}/x64/${CMAKE_BUILD_TYPE}/DirectXTK.lib" CACHE PATH "")

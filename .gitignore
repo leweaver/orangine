@@ -18,6 +18,12 @@ Orangine/imgui.ini
 Orangine/.idea/
 Orangine/ViewerApp/data/lib/__pycache__/
 Orangine/ViewerApp/data/scripts/__pycache__/
+
+thirdparty/pybind11
+thirdparty/build_DirectXTK.txt
+thirdparty/build_The-Forge.txt
+thirdparty/The-Forge
+
 Orangine/OeScripting/data/OeScripting/lib/__pycache__/
 thirdparty/amd64/
 thirdparty/cmake-*

@@ -97,8 +97,8 @@ rem DirectXTK
 cd %OE_ROOT%\thirdparty\DirectXTK
 
 md "%OE_ROOT%\thirdparty\DirectXTK\bin"
-set "CM_LOGFILE=%OE_ROOT%\thirdparty\DirectXTK\bin\oe-build-log.txt"
-echo DirectXTK build output: %CM_LOGFILE%
+set "OE_DIRECTXTK_LOGFILE=%OE_ROOT%\thirdparty\build_DirectXTK.txt"
+echo DirectXTK build output: %OE_DIRECTXTK_LOGFILE%
 
 if "%VisualStudioVersion%" == "15.0" (
     set OE_DXTK_SLN=DirectXTK_Desktop_2017_Win10
@@ -110,10 +110,20 @@ if "%OE_DXTK_SLN%" == "" (
     echo * [[31mFailed[0m] Unsupported visual studio version: %VisualStudioVersion%
     goto:eof
 )
-msbuild %OE_DXTK_SLN%.sln /p:Configuration=Debug /p:Platform="x64" > %CM_LOGFILE%
-call :oe_verify_errorlevel "msbuild Debug" || goto:eof
-msbuild %OE_DXTK_SLN%.sln /p:Configuration=Release /p:Platform="x64" >> %CM_LOGFILE%
-call :oe_verify_errorlevel "msbuild Release" || goto:eof
+msbuild %OE_DXTK_SLN%.sln /p:Configuration=Debug /p:Platform="x64" > %OE_DIRECTXTK_LOGFILE%
+call :oe_verify_errorlevel "msbuild DirectXTK Debug" || goto:eof
+msbuild %OE_DXTK_SLN%.sln /p:Configuration=Release /p:Platform="x64" >> %OE_DIRECTXTK_LOGFILE%
+call :oe_verify_errorlevel "msbuild DirectXTK Release" || goto:eof
+
+rem The-Forge
+set "OE_THEFORGE_LOGFILE=%OE_ROOT%\thirdparty\build_The-Forge.txt"
+echo The-Forge build output: %OE_THEFORGE_LOGFILE%
+
+cd "%OE_ROOT%\thirdparty\The-Forge\Examples_3\Unit_Tests\PC Visual Studio 2017"
+msbuild Unit_Tests.sln /p:Configuration=DebugDx /p:Platform="x64" -target:OS;Renderer\RendererDX12 > %OE_THEFORGE_LOGFILE%
+call :oe_verify_errorlevel "msbuild The-Forge DebugDx" || goto:eof
+msbuild Unit_Tests.sln /p:Configuration=ReleaseDx /p:Platform="x64" -target:OS;Renderer\RendererDX12 > %OE_THEFORGE_LOGFILE%
+call :oe_verify_errorlevel "msbuild The-Forge ReleaseDx" || goto:eof
 
 rem ******************************
 rem Hacky Steps

@@ -26,5 +26,9 @@
     "pybind11": {
         "url": "git@github.com:pybind/pybind11.git",
         "ref": "v2.3.0"
+    },
+    "The-Forge": {
+        "url": "git@github.com:ConfettiFX/The-Forge.git",
+        "ref": "v1.37"
     }
 }

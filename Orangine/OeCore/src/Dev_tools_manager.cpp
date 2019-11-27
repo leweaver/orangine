@@ -15,7 +15,6 @@
 #include <OeThirdParty/imgui_stdlib.h>
 
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace oe;
 using namespace internal;
 
@@ -55,9 +54,9 @@ const std::string& Dev_tools_manager::name() const
 }
 
 void Dev_tools_manager::renderSkeletons() {
-    const auto white = Color(Colors::White);
-    const auto red = Color(Colors::Red);
-    const auto green = Color(Colors::Green);
+    const auto white = SimpleMath::Color(Colors::White);
+    const auto red = SimpleMath::Color(Colors::Red);
+    const auto green = SimpleMath::Color(Colors::Green);
 
     std::list<Entity*> bones;
     for (const auto& skinnedMeshEntity : *_skinnedMeshEntities) {
@@ -89,14 +88,14 @@ void Dev_tools_manager::renderSkeletons() {
             if (height != 0.0f) {
                 targetDirection /= height;
 
-                Matrix rotation;
-                if (!createRotationBetweenUnitVectors(rotation, Vector3::Up, targetDirection)) {
-                    rotation = Matrix::CreateRotationX(XM_PI);
+				SimpleMath::Matrix rotation;
+                if (!createRotationBetweenUnitVectors(rotation, SimpleMath::Vector3::Up, targetDirection)) {
+                    rotation = SimpleMath::Matrix::CreateRotationX(XM_PI);
                 }
 
-                const auto worldPosition = parentPos + Vector3::Transform(Vector3{ 0, height * 0.5f, 0 }, rotation);
-                const auto transform = Matrix::CreateTranslation(worldPosition);
-                const auto scale = Matrix::CreateScale(height);
+                const auto worldPosition = parentPos + SimpleMath::Vector3::Transform({ 0, height * 0.5f, 0 }, rotation);
+                const auto transform = SimpleMath::Matrix::CreateTranslation(worldPosition);
+                const auto scale = SimpleMath::Matrix::CreateScale(height);
 
                 addDebugCone(scale * rotation * transform,
                              0.1f,
@@ -104,7 +103,7 @@ void Dev_tools_manager::renderSkeletons() {
                              red);
             }
 
-            addDebugSphere(Matrix::CreateScale(height) * bone->worldTransform(), 0.1f, white, 3);
+            addDebugSphere(SimpleMath::Matrix::CreateScale(height) * bone->worldTransform(), 0.1f, white, 3);
         }
     }
 }
@@ -133,7 +132,7 @@ void Dev_tools_manager::destroyDeviceDependentResources()
 	}
 }
 
-void Dev_tools_manager::addDebugCone(const Matrix& worldTransform, float diameter, float height, const Color& color)
+void Dev_tools_manager::addDebugCone(const SimpleMath::Matrix& worldTransform, float diameter, float height, const SimpleMath::Color& color)
 {
     auto hash = g_hashSeed_cone;
     hash_combine(hash, diameter);
@@ -146,7 +145,7 @@ void Dev_tools_manager::addDebugCone(const Matrix& worldTransform, float diamete
     _debugShapes.push_back({ worldTransform, color, renderable });
 }
 
-void Dev_tools_manager::addDebugSphere(const Matrix& worldTransform, float radius, const Color& color, size_t tessellation)
+void Dev_tools_manager::addDebugSphere(const SimpleMath::Matrix& worldTransform, float radius, const SimpleMath::Color& color, size_t tessellation)
 {
     auto hash = g_hashSeed_sphere;
     hash_combine(hash, radius);
@@ -159,9 +158,9 @@ void Dev_tools_manager::addDebugSphere(const Matrix& worldTransform, float radiu
 	_debugShapes.push_back({ worldTransform, color, renderable});
 }
 
-void Dev_tools_manager::addDebugBoundingBox(const BoundingOrientedBox& boundingOrientedBox, const Color& color)
+void Dev_tools_manager::addDebugBoundingBox(const BoundingOrientedBox& boundingOrientedBox, const SimpleMath::Color& color)
 {
-	auto worldTransform = XMMatrixAffineTransformation(Vector3::One, Vector3::Zero, XMLoadFloat4(&boundingOrientedBox.Orientation), XMLoadFloat3(&boundingOrientedBox.Center));
+	auto worldTransform = XMMatrixAffineTransformation(SimpleMath::Vector3::One, SimpleMath::Vector3::Zero, XMLoadFloat4(&boundingOrientedBox.Orientation), XMLoadFloat3(&boundingOrientedBox.Center));
 
     auto hash = g_hashSeed_boundingBox;
     hash_combine(hash, boundingOrientedBox.Extents.x);
@@ -169,20 +168,20 @@ void Dev_tools_manager::addDebugBoundingBox(const BoundingOrientedBox& boundingO
     hash_combine(hash, boundingOrientedBox.Extents.z);
 
     auto renderable = getOrCreateRenderable(hash, [&boundingOrientedBox]() {
-        return Primitive_mesh_data_factory::createBox(boundingOrientedBox.Extents * 2.0f);
+        return Primitive_mesh_data_factory::createBox(SimpleMath::Vector3(boundingOrientedBox.Extents) * 2.0f);
     });
 
 	_debugShapes.push_back({ worldTransform, color, renderable });
 }
 
-void Dev_tools_manager::addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color)
+void Dev_tools_manager::addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const SimpleMath::Color& color)
 {
     // TODO: Cache these meshes? Will require not building the transform into the mesh itself.
     auto renderable = std::make_shared<Renderable>();
     renderable->meshData = Primitive_mesh_data_factory::createFrustumLines(boundingFrustum);
     renderable->material = _unlitMaterial;
 
-	_debugShapes.push_back({ Matrix::Identity, color, renderable });
+	_debugShapes.push_back({ SimpleMath::Matrix::Identity, color, renderable });
 }
 
 void Dev_tools_manager::clearDebugShapes()
@@ -194,8 +193,8 @@ void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& camera
 {
 	auto& entityRenderManager = _scene.manager<IEntity_render_manager>();
 	for (auto& debugShape : _debugShapes) {
-		const auto& transform = std::get<Matrix>(debugShape);
-		const auto& color = std::get<Color>(debugShape);
+		const auto& transform = std::get<SimpleMath::Matrix>(debugShape);
+		const auto& color = std::get<SimpleMath::Color>(debugShape);
 		auto& renderable = std::get<std::shared_ptr<Renderable>>(debugShape);
 
 		_unlitMaterial->setBaseColor(color);

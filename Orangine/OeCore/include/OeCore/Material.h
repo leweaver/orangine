@@ -8,6 +8,7 @@
 #include "Renderer_data.h"
 
 #include <tinygltf/json.hpp>
+#include <vectormath/vectormath.hpp>
 
 namespace oe {
     class Mesh_vertex_layout;
@@ -82,9 +83,9 @@ namespace oe {
 
         // Creates a d3d constant buffer
         virtual std::shared_ptr<D3D_buffer> createVSConstantBuffer(ID3D11Device* device) const = 0;
-        virtual void updateVSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix,
-            const DirectX::SimpleMath::Matrix& viewMatrix,
-            const DirectX::SimpleMath::Matrix& projMatrix,
+        virtual void updateVSConstantBuffer(const SSE::Matrix4& worldMatrix,
+            const SSE::Matrix4& viewMatrix,
+			const SSE::Matrix4& projMatrix,
             const Renderer_animation_data& rendererAnimationData,
             ID3D11DeviceContext* context,
             D3D_buffer& buffer) const {}

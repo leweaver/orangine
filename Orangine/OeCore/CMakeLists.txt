@@ -94,7 +94,8 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
         "${OE_THIRDPARTY_PATH}/tinygltf"
-        #"${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
+        "${OE_THIRDPARTY_PATH}/vectormath"
+        "${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
         )
 
 # g3log

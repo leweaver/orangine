@@ -24,7 +24,6 @@
 namespace py = pybind11;
 
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace oe;
 using namespace internal;
 
@@ -295,7 +294,7 @@ void Entity_scripting_manager::tick()
 		const auto animTimePitch = static_cast<float>(fmod(elapsedTime * speed.x * XM_2PI, XM_2PI));
 		const auto animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.y * XM_2PI, XM_2PI));
 		const auto animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.z * XM_2PI, XM_2PI));
-		entity.setRotation(Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));
+		entity.setRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));
 	}
 	
 	const auto mouseSpeed = 1.0f / 600.0f;
@@ -316,14 +315,14 @@ void Entity_scripting_manager::tick()
 			renderDebugSpheres();
 		}
 
-		const auto deltaRot = Quaternion::CreateFromYawPitchRoll(_scriptData.yaw, _scriptData.pitch, 0.0f);			
-		auto cameraPosition = Vector3(DirectX::XMVector3Rotate(XMLoadFloat3(&Vector3::Forward), XMLoadFloat4(&deltaRot)));
+		const auto deltaRot = SimpleMath::Quaternion::CreateFromYawPitchRoll(_scriptData.yaw, _scriptData.pitch, 0.0f);
+		auto cameraPosition = SimpleMath::Vector3(DirectX::XMVector3Rotate(XMLoadFloat3(&SimpleMath::Vector3::Forward), XMLoadFloat4(&deltaRot)));
 		cameraPosition *= _scriptData.distance;
 
 		auto entity = _scene.mainCamera();
 		if (entity != nullptr) {
 			entity->setPosition(cameraPosition);
-			entity->lookAt(Vector3::Zero, Vector3::Up);
+			entity->lookAt(SimpleMath::Vector3::Zero, SimpleMath::Vector3::Up);
 		}
 	}
 }
@@ -411,8 +410,8 @@ void Entity_scripting_manager::renderDebugSpheres() const
 
 	for (const auto& entity : *_renderableEntityFilter) {
 		const auto& boundSphere = entity->boundSphere();
-		const auto transform = Matrix::CreateTranslation(boundSphere.Center) * entity->worldTransform();
-		devToolsManager.addDebugSphere(transform, boundSphere.Radius, Color(Colors::Gray));
+		const auto transform = SimpleMath::Matrix::CreateTranslation(boundSphere.Center) * entity->worldTransform();
+		devToolsManager.addDebugSphere(transform, boundSphere.Radius, SimpleMath::Color(Colors::Gray));
 	}
 
 	const auto mainCameraEntity = _scene.mainCamera();
@@ -421,7 +420,7 @@ void Entity_scripting_manager::renderDebugSpheres() const
 		if (cameraComponent) {
 			auto frustum = renderManager.createFrustum(*cameraComponent);
 			frustum.Far *= 0.5;
-			devToolsManager.addDebugFrustum(frustum, Color(Colors::Red));
+			devToolsManager.addDebugFrustum(frustum, SimpleMath::Color(Colors::Red));
 		}
 	}
 

@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <SimpleMath.h>
+#include <vectormath/vectormath.hpp>
 
 namespace oe {
     template <typename T, size_t N>
@@ -81,6 +82,15 @@ namespace oe {
 		if (FAILED(hr)) {
 			throw com_exception(hr, what);
 		}
+	}
+
+	inline SSE::Matrix4 toVectorMathMat4(const DirectX::SimpleMath::Matrix& matrix) {
+		return SSE::Matrix4(
+			{ matrix._11, matrix._21, matrix._31, matrix._41 },
+			{ matrix._12, matrix._22, matrix._32, matrix._42 },
+			{ matrix._13, matrix._23, matrix._33, matrix._43 },
+			{ matrix._14, matrix._24, matrix._34, matrix._44 }
+		);
 	}
 }
 

@@ -392,20 +392,28 @@ void PBR_material::applyVertexLayoutShaderCompileSettings(Shader_compile_setting
 }
 
 void PBR_material::updateVSConstantBufferValues(PBR_material_vs_constant_buffer& constants,
-	const SimpleMath::Matrix& worldMatrix,
-	const SimpleMath::Matrix& viewMatrix,
-	const SimpleMath::Matrix& projMatrix,
+	const SSE::Matrix4& worldMatrix,
+	const SSE::Matrix4& viewMatrix,
+	const SSE::Matrix4& projMatrix,
     const Renderer_animation_data& rendererAnimationData) const
 {
 	// Note that HLSL matrices are Column Major (as opposed to Row Major in DirectXMath) - so we need to transpose everything.
-    constants.viewProjection = XMMatrixMultiplyTranspose(viewMatrix, projMatrix);
-	constants.world = XMMatrixTranspose(worldMatrix);
-    constants.worldInvTranspose = XMMatrixInverse(nullptr, worldMatrix);
-    memcpy_s(&constants.morphWeights[0].x,
-        sizeof(XMFLOAT4) * array_size(constants.morphWeights),
-        rendererAnimationData.morphWeights.data(),
-        sizeof(decltype(rendererAnimationData.morphWeights)::value_type) * rendererAnimationData.morphWeights.size()
-    );
+	constants.viewProjection = viewMatrix * projMatrix;//   XMMatrixMultiplyTranspose(viewMatrix, projMatrix);
+	constants.world = worldMatrix;
+    constants.worldInvTranspose = SSE::inverse(SSE::transpose(constants.world));
+	static_assert(sizeof(SSE::Vector4) / sizeof(float) * 2 == Renderer_animation_data::morphWeightsSize);
+	constants.morphWeights[0] = {
+		rendererAnimationData.morphWeights[0],
+		rendererAnimationData.morphWeights[1],
+		rendererAnimationData.morphWeights[2],
+		rendererAnimationData.morphWeights[3]
+	};
+	constants.morphWeights[1] = {
+		rendererAnimationData.morphWeights[4],
+		rendererAnimationData.morphWeights[5],
+		rendererAnimationData.morphWeights[6],
+		rendererAnimationData.morphWeights[7]
+	};
 }
 
 void PBR_material::updatePSConstantBufferValues(PBR_material_ps_constant_buffer& constants,

@@ -134,8 +134,8 @@ namespace oe::mesh_utils {
 		std::function<bool(const Entity&)> predicate)
 	{
 		// Extents, in light view space (as defined above)
-		XMVECTOR minExtents = Vector3::Zero;
-		XMVECTOR maxExtents = Vector3::Zero;
+		XMVECTOR minExtents = SimpleMath::Vector3::Zero;
+		XMVECTOR maxExtents = SimpleMath::Vector3::Zero;
 
 		auto firstExtentsCalc = true;
 		const auto orientationMatrix = Matrix::CreateFromQuaternion(orientation);
@@ -146,12 +146,12 @@ namespace oe::mesh_utils {
 
 			const auto& boundSphere = entity->boundSphere();
             assert(boundSphere.Radius < INFINITY && boundSphere.Radius >= 0.0f);
-			const auto boundWorldCenter = Vector3::Transform(boundSphere.Center, entity->worldTransform());
-			const auto boundWorldEdge = Vector3::Transform(Vector3(boundSphere.Center) + Vector3(0, 0, boundSphere.Radius), entity->worldTransform());
+			const auto boundWorldCenter = SimpleMath::Vector3::Transform(boundSphere.Center, entity->worldTransform());
+			const auto boundWorldEdge = SimpleMath::Vector3::Transform(SimpleMath::Vector3(boundSphere.Center) + SimpleMath::Vector3(0, 0, boundSphere.Radius), entity->worldTransform());
 
 			// Bounds, in light view space (as defined above)
-			const auto boundCenter = Vector3::Transform(boundWorldCenter, orientationMatrixInv);
-			const auto boundEdge = Vector3::Transform(boundWorldEdge, orientationMatrixInv);
+			const auto boundCenter = SimpleMath::Vector3::Transform(boundWorldCenter, orientationMatrixInv);
+			const auto boundEdge = SimpleMath::Vector3::Transform(boundWorldEdge, orientationMatrixInv);
 			const auto boundRadius = XMVector3Length(XMVectorSubtract(boundEdge, boundCenter));
 
 			if (firstExtentsCalc) {
@@ -166,8 +166,8 @@ namespace oe::mesh_utils {
 		}
 
 		const auto halfVector = XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f); // OPT: does the compiler optimize this?
-		const auto center = Vector3::Transform(XMVectorMultiply(XMVectorAdd(maxExtents, minExtents), halfVector), orientationMatrix);
+		const auto center = SimpleMath::Vector3::Transform(XMVectorMultiply(XMVectorAdd(maxExtents, minExtents), halfVector), orientationMatrix);
 		const auto extents = XMVectorMultiply(XMVectorSubtract(maxExtents, minExtents), halfVector);
-		return BoundingOrientedBox(Vector3(center), Vector3(extents), orientation);
+		return BoundingOrientedBox(SimpleMath::Vector3(center), SimpleMath::Vector3(extents), orientation);
 	}
 }

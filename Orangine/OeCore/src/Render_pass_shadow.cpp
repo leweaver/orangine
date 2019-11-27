@@ -10,7 +10,6 @@
 #include "OeCore/Render_pass_shadow.h"
 
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace oe;
 
 Render_pass_shadow::Render_pass_shadow(Scene& scene, size_t maxRenderTargetViews)
@@ -78,18 +77,18 @@ void Render_pass_shadow::render(const Camera_data&)
 
 			Camera_data shadowCameraData;
 			{
-				const auto pos = Vector3(lightNearPlaneWorldTranslation);
-				const auto forward = Vector3::TransformNormal(Vector3::Forward, worldToLightViewMatrix);
-				const auto up = Vector3::TransformNormal(Vector3::Up, worldToLightViewMatrix);
-				Vector3 extents2;
+				const auto pos = SimpleMath::Vector3(lightNearPlaneWorldTranslation);
+				const auto forward = SimpleMath::Vector3::TransformNormal(SimpleMath::Vector3::Forward, worldToLightViewMatrix);
+				const auto up = SimpleMath::Vector3::TransformNormal(SimpleMath::Vector3::Up, worldToLightViewMatrix);
+				SimpleMath::Vector3 extents2;
 				XMStoreFloat3(&extents2, XMVectorScale(XMLoadFloat3(&shadowVolumeBoundingBox.Extents), 2.0f));
 
                 if (extents2.x == 0.0f)
-                    extents2 = Vector3::One;
+                    extents2 = SimpleMath::Vector3::One;
 
 				//shadowCameraData.worldMatrix = Matrix::CreateTranslation(lightNearPlaneWorldTranslation);
-				shadowCameraData.viewMatrix = Matrix::CreateLookAt(pos, pos + forward, up);
-				shadowCameraData.projectionMatrix = Matrix::CreateOrthographic(extents2.x, extents2.y, 0.01f, extents2.z);
+				shadowCameraData.viewMatrix = SimpleMath::Matrix::CreateLookAt(pos, pos + forward, up);
+				shadowCameraData.projectionMatrix = SimpleMath::Matrix::CreateOrthographic(extents2.x, extents2.y, 0.01f, extents2.z);
 				shadowCameraData.enablePixelShader = false;
 			}
 			shadowData->setWorldViewProjMatrix(

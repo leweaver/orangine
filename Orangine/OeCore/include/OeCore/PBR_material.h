@@ -11,10 +11,10 @@
 namespace oe {
 	struct PBR_material_vs_constant_buffer : Vertex_constant_buffer_base
 	{
-		DirectX::XMMATRIX world;
-        DirectX::XMMATRIX viewProjection;
-		DirectX::XMMATRIX worldInvTranspose;
-        DirectX::XMFLOAT4 morphWeights[2];
+		SSE::Matrix4 world;
+		SSE::Matrix4 viewProjection;
+		SSE::Matrix4 worldInvTranspose;
+        SSE::Vector4 morphWeights[2];
 	};
 
 	struct PBR_material_ps_constant_buffer : Pixel_constant_buffer_base
@@ -226,9 +226,9 @@ namespace oe {
         void applyVertexLayoutShaderCompileSettings(Shader_compile_settings&) const;
 
 		void updateVSConstantBufferValues(PBR_material_vs_constant_buffer& constants,
-			const DirectX::SimpleMath::Matrix& worldMatrix,
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix,
+			const SSE::Matrix4& worldMatrix,
+			const SSE::Matrix4& viewMatrix,
+			const SSE::Matrix4& projMatrix,
             const Renderer_animation_data& rendererAnimationData) const override;
 
 		void updatePSConstantBufferValues(PBR_material_ps_constant_buffer& constants,

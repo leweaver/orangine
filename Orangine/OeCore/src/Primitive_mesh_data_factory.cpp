@@ -10,7 +10,7 @@
 #include <GeometricPrimitive.h>
 
 using namespace oe;
-using namespace DirectX::SimpleMath;
+using namespace DirectX;
 
 void addIndices(Mesh_data& meshData, std::vector<uint16_t>&& indices)
 {
@@ -112,11 +112,11 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNor
 
 	// Tangents
 	{
-		auto tangentsBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(sizeof(Vector4) * vertices.size()));
+		auto tangentsBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(sizeof(SimpleMath::Vector4) * vertices.size()));
 		meshData->vertexBufferAccessors[{Vertex_attribute::Tangent, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
 			tangentsBuffer,
             Vertex_attribute_element{ {Vertex_attribute::Tangent,0}, Element_type::Vector4, Element_component::Float },
-			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(Vector4)),
+			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(SimpleMath::Vector4)),
 			0
 			);
 
@@ -133,12 +133,12 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNor
 	return meshData;
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2 &size)
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const SimpleMath::Vector2 &size)
 {
-	return createQuad(size, Vector3(-size.x * 0.5f, -size.y * 0.5f, 0.0f));
+	return createQuad(size, SimpleMath::Vector3(-size.x * 0.5f, -size.y * 0.5f, 0.0f));
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2 &size, const Vector3 &positionOffset)
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const SimpleMath::Vector2 &size, const SimpleMath::Vector3& positionOffset)
 {
 	const auto 
 		top    = positionOffset.y + size.y,
@@ -146,10 +146,10 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const Vector2
 		bottom = positionOffset.y,
 		left   = positionOffset.x;
 	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
-	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  top,    positionOffset.z }, Vector3::Backward, { 0.0f, 0.0f }));
-	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ right, top,    positionOffset.z }, Vector3::Backward, { 1.0f, 0.0f }));
-	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  bottom, positionOffset.z }, Vector3::Backward, { 0.0f, 1.0f }));
-	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ right, bottom, positionOffset.z }, Vector3::Backward, { 1.0f, 1.0f }));
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  top,    positionOffset.z }, SimpleMath::Vector3::Backward, { 0.0f, 0.0f }));
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ right, top,    positionOffset.z }, SimpleMath::Vector3::Backward, { 1.0f, 0.0f }));
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  bottom, positionOffset.z }, SimpleMath::Vector3::Backward, { 0.0f, 1.0f }));
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ right, bottom, positionOffset.z }, SimpleMath::Vector3::Backward, { 1.0f, 1.0f }));
 
 	std::vector<uint16_t> indices = {
 		0, 2, 1,
@@ -187,7 +187,7 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createSphere(float radiu
 	return md;
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createBox(const Vector3& size)
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createBox(const SimpleMath::Vector3& size)
 {
 	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
 	std::vector<uint16_t> indices;
@@ -263,7 +263,7 @@ void Primitive_mesh_data_factory::generateNormals(
 	const auto normalBufferStart = normalBufferAccessor.buffer->data + normalBufferAccessor.offset;
 
 	assert(normalBufferAccessor.stride >= sizeof(Vector3));
-	const auto normalBufferEnd = normalBufferStart + normalBufferAccessor.count * normalBufferAccessor.stride + sizeof(Vector3);
+	const auto normalBufferEnd = normalBufferStart + normalBufferAccessor.count * normalBufferAccessor.stride + sizeof(SimpleMath::Vector3);
 		
 	// Iterate over each triangle, creating a flat normal.
 	if (indexBufferAccessor.component == Element_component::Unsigned_Short)
@@ -283,19 +283,19 @@ void Primitive_mesh_data_factory::generateNormals(
 					" out of range of given vertexBuffer (numVertices=" + std::to_string(numVertices) + ")");
 			}
 
-			const auto& p0 = *reinterpret_cast<const Vector3*>(positionBufferStart + i0 * positionBufferAccessor.stride);
-			const auto& p1 = *reinterpret_cast<const Vector3*>(positionBufferStart + i1 * positionBufferAccessor.stride);
-			const auto& p2 = *reinterpret_cast<const Vector3*>(positionBufferStart + i2 * positionBufferAccessor.stride);
+			const auto& p0 = *reinterpret_cast<const SimpleMath::Vector3*>(positionBufferStart + i0 * positionBufferAccessor.stride);
+			const auto& p1 = *reinterpret_cast<const SimpleMath::Vector3*>(positionBufferStart + i1 * positionBufferAccessor.stride);
+			const auto& p2 = *reinterpret_cast<const SimpleMath::Vector3*>(positionBufferStart + i2 * positionBufferAccessor.stride);
 
 			auto normalBufferPos = normalBufferStart + i0 * normalBufferAccessor.stride;
 			assert(normalBufferPos >= normalBufferStart && normalBufferPos < normalBufferEnd);
-			auto& n0 = *reinterpret_cast<Vector3*>(normalBufferPos);
+			auto& n0 = *reinterpret_cast<SimpleMath::Vector3*>(normalBufferPos);
 			normalBufferPos = normalBufferStart + i1 * normalBufferAccessor.stride;
 			assert(normalBufferPos >= normalBufferStart && normalBufferPos < normalBufferEnd);
-			auto& n1 = *reinterpret_cast<Vector3*>(normalBufferPos);
+			auto& n1 = *reinterpret_cast<SimpleMath::Vector3*>(normalBufferPos);
 			normalBufferPos = normalBufferStart + i2 * normalBufferAccessor.stride;
 			assert(normalBufferPos >= normalBufferStart && normalBufferPos < normalBufferEnd);
-			auto& n2 = *reinterpret_cast<Vector3*>(normalBufferPos);
+			auto& n2 = *reinterpret_cast<SimpleMath::Vector3*>(normalBufferPos);
 			
 			// Create two vectors from which we calculate the normal
 			const auto v0 = p1 - p0;

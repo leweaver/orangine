@@ -28,7 +28,6 @@ using namespace oe;
 using namespace internal;
 
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace std::literals;
 
 using namespace std;
@@ -140,7 +139,7 @@ bool addLightToRenderLightData(const Entity& lightEntity, Render_light_data_impl
 	const auto directionalLight = lightEntity.getFirstComponentOfType<Directional_light_component>();
 	if (directionalLight)
 	{
-		const auto lightDirection = Vector3::Transform(Vector3::Forward, lightEntity.worldRotation());
+		const auto lightDirection = SimpleMath::Vector3::Transform(SimpleMath::Vector3::Forward, lightEntity.worldRotation());
 		const auto shadowData = dynamic_cast<Shadow_map_texture_array_slice*>(directionalLight->shadowData().get());
 
 		if (shadowData != nullptr) {
@@ -173,7 +172,7 @@ BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& c
 	const auto viewport = deviceResources().GetScreenViewport();
 	const auto aspectRatio = viewport.Width / viewport.Height;
 
-	const auto projMatrix = Matrix::CreatePerspectiveFieldOfView(
+	const auto projMatrix = SimpleMath::Matrix::CreatePerspectiveFieldOfView(
 		cameraComponent.fov(),
 		aspectRatio,
 		cameraComponent.nearPlane(),
@@ -331,7 +330,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
         // Skinned mesh?
         const auto skinnedMeshComponent = entity.getFirstComponentOfType<Skinned_mesh_component>();
         //Matrix const* worldTransform;
-        const Matrix* worldTransform;
+        const SimpleMath::Matrix* worldTransform;
         const auto skinningEnabled = _scene.manager<IMaterial_manager>().rendererFeatureEnabled().skinnedAnimation;
         if (skinningEnabled && skinnedMeshComponent != nullptr) {
 
@@ -347,7 +346,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
                     std::to_string(_rendererAnimationData.boneTransformConstants.size()));
             }
 
-            Matrix invWorld;
+			SimpleMath::Matrix invWorld;
             if (skinnedMeshComponent->skeletonTransformRoot())
                 worldTransform = &skinnedMeshComponent->skeletonTransformRoot()->worldTransform();
             else
@@ -391,7 +390,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
 }
 
 void Entity_render_manager::renderRenderable(Renderable& renderable,
-	const Matrix& worldMatrix,
+	const SimpleMath::Matrix& worldMatrix,
 	float radius,
 	const Render_pass::Camera_data& cameraData,
 	const Light_provider::Callback_type& lightDataProvider,
@@ -504,7 +503,7 @@ void Entity_render_manager::loadRendererDataToDeviceContext(const Renderer_data&
 
 void Entity_render_manager::drawRendererData(
 	const Render_pass::Camera_data& cameraData,
-	const Matrix& worldTransform,
+	const SimpleMath::Matrix& worldTransform,
 	Renderer_data& rendererData,
 	Render_pass_blend_mode blendMode,
 	const Render_light_data& renderLightData,

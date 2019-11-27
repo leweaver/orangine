@@ -5,12 +5,11 @@
 
 using namespace oe;
 using namespace DirectX;
-using namespace SimpleMath;
 
 Entity::Entity(Scene& scene, std::string&& name, Id_type id)
-	: _localRotation(Quaternion::Identity)
-	, _localPosition(Vector3::Zero)
-	, _localScale(Vector3::One)
+	: _localRotation(SimpleMath::Quaternion::Identity)
+	, _localPosition(SimpleMath::Vector3::Zero)
+	, _localScale(SimpleMath::Vector3::One)
     , _calculateWorldTransform(true)
 	, _calculateBoundSphereFromChildren(true)
 	, _id(id)
@@ -19,9 +18,9 @@ Entity::Entity(Scene& scene, std::string&& name, Id_type id)
 	, _active(true)
 	, _parent(nullptr)
 	, _scene(scene)
-	, _worldTransform(Matrix::Identity)
-	, _worldRotation(Quaternion::Identity)
-	, _worldScale(Vector3::One)
+	, _worldTransform(SimpleMath::Matrix::Identity)
+	, _worldRotation(SimpleMath::Quaternion::Identity)
+	, _worldScale(SimpleMath::Vector3::One)
 {
 }
 
@@ -30,9 +29,9 @@ void Entity::computeWorldTransform()
 	if (hasParent())
 	{
 		_worldScale = _parent->_worldScale * _localScale;
-		_worldRotation = Quaternion::Concatenate(_parent->worldRotation(), _localRotation);
+		_worldRotation = SimpleMath::Quaternion::Concatenate(_parent->worldRotation(), _localRotation);
 
-		const auto worldPosition = Vector3::Transform(_localPosition, _parent->_worldTransform);
+		const auto worldPosition = SimpleMath::Vector3::Transform(_localPosition, _parent->_worldTransform);
 
 		const auto worldT = XMMatrixTranslationFromVector(worldPosition);
 		const auto worldR = XMMatrixRotationQuaternion(_worldRotation);
@@ -60,15 +59,15 @@ Component& Entity::getComponent(size_t index) const
 
 void Entity::lookAt(const Entity& other)
 {
-	lookAt(other.position(), Vector3::Up);
+	lookAt(other.position(), SimpleMath::Vector3::Up);
 }
 
-void Entity::lookAt(const Vector3& position, const Vector3 &worldUp)
+void Entity::lookAt(const SimpleMath::Vector3& position, const SimpleMath::Vector3 &worldUp)
 {
-	Vector3 forward;
+	SimpleMath::Vector3 forward;
 	if (hasParent()) {
 		const auto parentWorldInv = _parent->_worldTransform.Invert();
-		forward = Vector3::Transform(position, parentWorldInv) - _localPosition;
+		forward = SimpleMath::Vector3::Transform(position, parentWorldInv) - _localPosition;
 	}
 	else {
 		forward = position - _localPosition;
@@ -84,14 +83,14 @@ void Entity::lookAt(const Vector3& position, const Vector3 &worldUp)
 
 	forward.Normalize();
 	
-	Vector3 right;
+	SimpleMath::Vector3 right;
 	forward.Cross(worldUp, right);
 	right.Normalize();
 
-	Vector3 up;
+	SimpleMath::Vector3 up;
 	right.Cross(forward, up);
 
-	Matrix camToWorld;
+	SimpleMath::Matrix camToWorld;
 	camToWorld._11 = right.x;
 	camToWorld._12 = right.y;
 	camToWorld._13 = right.z;
@@ -102,7 +101,7 @@ void Entity::lookAt(const Vector3& position, const Vector3 &worldUp)
 	camToWorld._32 = -forward.y;
 	camToWorld._33 = -forward.z;
 
-	_localRotation = Quaternion::CreateFromRotationMatrix(camToWorld);
+	_localRotation = SimpleMath::Quaternion::CreateFromRotationMatrix(camToWorld);
 
 	computeWorldTransform();
 }
@@ -150,17 +149,17 @@ void Entity::removeParent()
 	_parent = nullptr;
 }
 
-Vector3 Entity::worldPosition() const
+SimpleMath::Vector3 Entity::worldPosition() const
 {
 	return _worldTransform.Translation();
 }
 
-const Vector3& Entity::worldScale() const
+const SimpleMath::Vector3& Entity::worldScale() const
 {
 	return _worldScale;
 }
 
-const Quaternion& Entity::worldRotation() const
+const SimpleMath::Quaternion& Entity::worldRotation() const
 {
 	return _worldRotation;
 }

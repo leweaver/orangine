@@ -24,7 +24,6 @@
 extern void ExitGame();
 
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace oe;
 
 using Microsoft::WRL::ComPtr;
@@ -108,16 +107,16 @@ void Game::CreateCamera(bool animate)
 		cameraDollyAnchor->addComponent<Test_component>().setSpeed({0.0f, 0.1f, 0.0f});
 	
 	auto camera = entityManager.instantiate("Camera", *cameraDollyAnchor);
-	camera->setPosition(Vector3(0.0f, 0.0f, 15));
-	
+	camera->setPosition(SimpleMath::Vector3(0.0f, 0.0f, 15));
+
 	cameraDollyAnchor->computeWorldTransform();
 
-	auto &component = camera->addComponent<Camera_component>();
+	auto& component = camera->addComponent<Camera_component>();
 	component.setFov(XMConvertToRadians(60.0f));
 	component.setFarPlane(20.0f);
 	component.setNearPlane(0.5f);
 
-	camera->lookAt({ 0, 0, 0 }, Vector3::Up);
+	camera->lookAt({ 0, 0, 0 }, SimpleMath::Vector3::Up);
 
 	m_scene->setMainCamera(camera);
 }
@@ -126,31 +125,31 @@ void Game::CreateLights()
 {
 	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	int lightCount = 0;
-	auto createDirLight = [&entityManager, &lightCount](const Vector3 &normal, const Color &color, float intensity)
+	auto createDirLight = [&entityManager, &lightCount](const SimpleMath::Vector3& normal, const SimpleMath::Color& color, float intensity)
 	{
 		auto lightEntity = entityManager.instantiate("Directional Light " + std::to_string(++lightCount));
-		auto &component = lightEntity->addComponent<Directional_light_component>();
+		auto& component = lightEntity->addComponent<Directional_light_component>();
 		component.setColor(color);
 		component.setIntensity(intensity);
 
-		if (normal != Vector3::Forward)
+		if (normal != SimpleMath::Vector3::Forward)
 		{
-			Vector3 axis;
-			if (normal == Vector3::Backward)
-				axis = Vector3::Up;
+			SimpleMath::Vector3 axis;
+			if (normal == SimpleMath::Vector3::Backward)
+				axis = SimpleMath::Vector3::Up;
 			else
 			{
-				axis = Vector3::Forward.Cross(normal);
+				axis = SimpleMath::Vector3::Forward.Cross(normal);
 				axis.Normalize();
 			}
 
 			assert(normal.LengthSquared() != 0);
-			float angle = acos(Vector3::Forward.Dot(normal) / normal.Length());
-			lightEntity->setRotation(Quaternion::CreateFromAxisAngle(axis, angle));
+			float angle = acos(SimpleMath::Vector3::Forward.Dot(normal) / normal.Length());
+			lightEntity->setRotation(SimpleMath::Quaternion::CreateFromAxisAngle(axis, angle));
 		}
 		return lightEntity;
 	};
-	auto createPointLight = [&entityManager, &lightCount](const Vector3 &position, const Color &color, float intensity)
+	auto createPointLight = [&entityManager, &lightCount](const SimpleMath::Vector3 &position, const SimpleMath::Color &color, float intensity)
 	{
 		auto lightEntity = entityManager.instantiate("Point Light " + std::to_string(++lightCount));
 		auto &component = lightEntity->addComponent<Point_light_component>();
@@ -159,7 +158,7 @@ void Game::CreateLights()
 		lightEntity->setPosition(position);
 		return lightEntity;
 	};
-	auto createAmbientLight = [&entityManager, &lightCount](const Color &color, float intensity)
+	auto createAmbientLight = [&entityManager, &lightCount](const SimpleMath::Color &color, float intensity)
 	{
 		auto lightEntity = entityManager.instantiate("Ambient Light " + std::to_string(++lightCount));
 		auto &component = lightEntity->addComponent<Ambient_light_component>();
@@ -221,7 +220,7 @@ void Game::CreateGeometricPrimitives()
 	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Primitives");
 
-	auto createTeapot = [&entityManager, &root1](const Vector3& center, const Color& color, float metallic, float roughness)
+	auto createTeapot = [&entityManager, &root1](const SimpleMath::Vector3& center, const SimpleMath::Color& color, float metallic, float roughness)
 	{
 		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
 		child1->setPosition(center);
@@ -237,10 +236,10 @@ void Game::CreateGeometricPrimitives()
 
 		const auto meshData = Primitive_mesh_data_factory::createTeapot();
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
-		child1->setBoundSphere(BoundingSphere(Vector3::Zero, 1.0f));
+		child1->setBoundSphere(BoundingSphere(SimpleMath::Vector3::Zero, 1.0f));
 		child1->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 	};
-	auto createSphere = [&entityManager, &root1](const Vector3& center, const Color& color, float metallic, float roughness)
+	auto createSphere = [&entityManager, &root1](const SimpleMath::Vector3& center, const SimpleMath::Color& color, float metallic, float roughness)
 	{
 		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
 		child1->setPosition(center);
@@ -257,7 +256,7 @@ void Game::CreateGeometricPrimitives()
 
 		const auto meshData = Primitive_mesh_data_factory::createSphere();
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
-		child1->setBoundSphere(BoundingSphere(Vector3::Zero, 1.0f));
+		child1->setBoundSphere(BoundingSphere(SimpleMath::Vector3::Zero, 1.0f));
 	};
 
     int created = 0;
@@ -272,7 +271,7 @@ void Game::CreateGeometricPrimitives()
 	{
 		const auto &child2 = entityManager.instantiate("Primitive Child 2", *root1);
 		auto material = std::make_unique<PBR_material>();
-		material->setBaseColor(Color(0.7f, 0.7f, 0.7f));
+		material->setBaseColor(SimpleMath::Color(0.7f, 0.7f, 0.7f));
 
 		auto& renderable = child2->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
@@ -281,9 +280,9 @@ void Game::CreateGeometricPrimitives()
 		const auto meshData = Primitive_mesh_data_factory::createQuad({ 15, 15 });
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
-		child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
+		child2->setRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
 		child2->setPosition({ 0.0f, 0.0f, 0.0f });
-		child2->setBoundSphere(BoundingSphere(Vector3::Zero, 10.0f));
+		child2->setBoundSphere(BoundingSphere(SimpleMath::Vector3::Zero, 10.0f));
 	}
 }
 
@@ -369,7 +368,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 	}
 }
 
-void Game::AddCubeToEntity(Entity& entity, Vector3 animationSpeed, Vector3 localScale, Vector3 localPosition) const
+void Game::AddCubeToEntity(Entity& entity, SimpleMath::Vector3 animationSpeed, SimpleMath::Vector3 localScale, SimpleMath::Vector3 localPosition) const
 {
 	entity.addComponent<Test_component>().setSpeed(animationSpeed);
 

@@ -19,7 +19,6 @@
 #include <CommonStates.h>
 
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace oe;
 using namespace internal;
 
@@ -135,7 +134,7 @@ void Render_step_manager::createRenderSteps()
 			{
 				entityRenderManager.renderRenderable(
 					quad,
-					Matrix::Identity,
+					SimpleMath::Matrix::Identity,
 					0.0f,
 					Render_pass::Camera_data::identity,
 					Light_provider::no_light_provider,
@@ -448,7 +447,7 @@ void Render_step_manager::renderLights(const Render_pass::Camera_data& cameraDat
 			if (lightIndex == maxLights) {
 				entityRenderManager.renderRenderable(
 					quad,
-					Matrix::Identity,
+					SimpleMath::Matrix::Identity,
 					0.0f,
 					cameraData,
 					deferredLightProvider,
@@ -466,7 +465,7 @@ void Render_step_manager::renderLights(const Render_pass::Camera_data& cameraDat
 		if (!deferredLights.empty() || !renderedOnce) {
 			entityRenderManager.renderRenderable(
 				quad,
-				Matrix::Identity,
+				SimpleMath::Matrix::Identity,
 				0.0f,
 				cameraData,
 				deferredLightProvider,
@@ -490,8 +489,8 @@ Render_pass::Camera_data Render_step_manager::createCameraData(Camera_component&
 	// Construct camera axis vectors, to create a view matrix using lookAt.
 	const auto wt = component.entity().worldTransform();
 	const auto pos = wt.Translation();
-	const auto forward = Vector3::TransformNormal(Vector3::Forward, wt);
-	const auto up = Vector3::TransformNormal(Vector3::Up, wt);
+	const auto forward = SimpleMath::Vector3::TransformNormal(SimpleMath::Vector3::Forward, wt);
+	const auto up = SimpleMath::Vector3::TransformNormal(SimpleMath::Vector3::Up, wt);
 
 	// This optimization, while fancy, breaks our ability to read in the world pos from the depth buffer in deferred lighting.
 	//auto invFarPlane = component.farPlane() != 0.0f ? 1.0f / component.farPlane() : 0.0f;
@@ -499,8 +498,8 @@ Render_pass::Camera_data Render_step_manager::createCameraData(Camera_component&
 	//_cameraData.projectionMatrix._43 *= invFarPlane;
 
 	return {
-		Matrix::CreateLookAt(pos, pos + forward, up),
-		Matrix::CreatePerspectiveFieldOfView(
+		SimpleMath::Matrix::CreateLookAt(pos, pos + forward, up),
+		SimpleMath::Matrix::CreatePerspectiveFieldOfView(
 			component.fov(),
 			aspectRatio,
 			component.nearPlane(),

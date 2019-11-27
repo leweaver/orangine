@@ -6,7 +6,6 @@
 using namespace oe;
 using namespace std::literals;
 using namespace DirectX;
-using namespace SimpleMath;
 
 const auto g_mrt_shader_resource_count = 9;
 const auto g_mrt_sampler_state_count = 6;
@@ -165,9 +164,9 @@ void Deferred_light_material::setupEmitted(bool enabled)
 }
 
 void Deferred_light_material::updatePSConstantBufferValues(Deferred_light_material_constant_buffer& constants,
-	const Matrix& worldMatrix,
-	const Matrix& viewMatrix,
-	const Matrix& projMatrix) const
+	const SimpleMath::Matrix& worldMatrix,
+	const SimpleMath::Matrix& viewMatrix,
+	const SimpleMath::Matrix& projMatrix) const
 {
 	const auto viewMatrixInv = viewMatrix.Invert();
 
@@ -185,6 +184,6 @@ void Deferred_light_material::updatePSConstantBufferValues(Deferred_light_materi
 		*/
 
 		// Inverse of the view matrix is the camera transform matrix
-	constants.eyePosition = Vector4(viewMatrixInv._41, viewMatrixInv._42, viewMatrixInv._43, 0.0);
+	constants.eyePosition = SimpleMath::Vector4(viewMatrixInv._41, viewMatrixInv._42, viewMatrixInv._43, 0.0);
 	constants.emittedEnabled = _emittedEnabled;
 }

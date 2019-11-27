@@ -35,9 +35,9 @@ nlohmann::json Unlit_material::serialize(bool compilerPropertiesOnly) const
 }
 
 void Unlit_material::updateVSConstantBufferValues(Unlit_material_vs_constant_buffer& constants, 
-	const SimpleMath::Matrix& /* worldMatrix */,
-	const SimpleMath::Matrix& /* viewMatrix */,
-	const SimpleMath::Matrix& /* projMatrix */,
+	const SSE::Matrix4& /* worldMatrix */,
+	const SSE::Matrix4& /* viewMatrix */,
+	const SSE::Matrix4& /* projMatrix */,
     const Renderer_animation_data& /* rendererAnimationData */) const
 {
 	constants.baseColor = _baseColor;

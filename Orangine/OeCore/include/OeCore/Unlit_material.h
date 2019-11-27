@@ -29,9 +29,9 @@ namespace oe {
 	protected:
 		
 		void updateVSConstantBufferValues(Unlit_material_vs_constant_buffer& constants, 
-			const DirectX::SimpleMath::Matrix& worldMatrix,
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix,
+			const SSE::Matrix4& worldMatrix,
+			const SSE::Matrix4& viewMatrix,
+			const SSE::Matrix4& projMatrix,
             const Renderer_animation_data& rendererAnimationData) const override;
 
 	private:

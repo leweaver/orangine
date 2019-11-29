@@ -605,10 +605,10 @@ shared_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_reposi
 		});
 	};
 
-	const auto withColorParam = [&withParam, &material](const string& name, DirectX::SimpleMath::Color defaultValue, function<void(DirectX::SimpleMath::Color)> setter) {
+	const auto withColorParam = [&withParam, &material](const string& name, const Color& defaultValue, function<void(Color)> setter) {
 		withParam(name, [&setter](auto name, auto param) {
 			if (param.number_array.size() == 3) {
-				setter(DirectX::SimpleMath::Color(
+				setter(Color(
 					static_cast<float>(param.number_array[0]),
 					static_cast<float>(param.number_array[1]),
 					static_cast<float>(param.number_array[2]),
@@ -616,7 +616,7 @@ shared_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_reposi
 				));
 			}
 			else if(param.number_array.size() == 4) {
-				setter(DirectX::SimpleMath::Color(
+				setter(Color(
 					static_cast<float>(param.number_array[0]),
 					static_cast<float>(param.number_array[1]),
 					static_cast<float>(param.number_array[2]),
@@ -634,8 +634,8 @@ shared_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_reposi
 	withScalarParam(g_pbrPropertyName_metallicFactor, 1.0f, bind(&PBR_material::setMetallicFactor, material.get(), std::placeholders::_1));
 	withScalarParam(g_pbrPropertyName_roughnessFactor, 1.0f, bind(&PBR_material::setRoughnessFactor, material.get(), std::placeholders::_1));
 	withScalarParam(g_pbrPropertyName_alphaCutoff, 0.5f, bind(&PBR_material::setAlphaCutoff, material.get(), std::placeholders::_1));
-	withColorParam(g_pbrPropertyName_baseColorFactor, DirectX::SimpleMath::Color(DirectX::Colors::White), bind(&PBR_material::setBaseColor, material.get(), std::placeholders::_1));
-	withColorParam(g_pbrPropertyName_emissiveFactor, DirectX::SimpleMath::Color(DirectX::Colors::Black), bind(&PBR_material::setEmissiveFactor, material.get(), std::placeholders::_1));
+	withColorParam(g_pbrPropertyName_baseColorFactor, Colors::White, bind(&PBR_material::setBaseColor, material.get(), std::placeholders::_1));
+	withColorParam(g_pbrPropertyName_emissiveFactor, Colors::Black, bind(&PBR_material::setEmissiveFactor, material.get(), std::placeholders::_1));
 	
 	// Alpha Mode
 	withParam(g_pbrPropertyName_alphaMode, [&material](const string& name, const Parameter& param) {

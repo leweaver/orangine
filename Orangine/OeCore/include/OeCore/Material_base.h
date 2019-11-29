@@ -100,10 +100,7 @@ namespace oe {
 		{
             TVertex_shader_constants constantsVs;
 			if constexpr (std::is_assignable_v<Vertex_constant_buffer_base, TVertex_shader_constants>) {
-				constantsVs.worldViewProjection = worldMatrix * (viewMatrix * projMatrix);
-
-				// Note that HLSL matrices are Column Major (as opposed to Row Major in DirectXMath) - so we need to transpose everything.
-                //constantsVs.worldViewProjection = XMMatrixMultiplyTranspose(worldMatrix, XMMatrixMultiply(viewMatrix, projMatrix));
+				constantsVs.worldViewProjection = projMatrix * viewMatrix * worldMatrix;
 			}
 			updateVSConstantBufferValues(constantsVs, worldMatrix, viewMatrix, projMatrix, rendererAnimationData);
 
@@ -111,9 +108,9 @@ namespace oe {
 		}
 
 		void updatePSConstantBuffer(
-			const DirectX::SimpleMath::Matrix& worldMatrix,
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix,
+			const SSE::Matrix4& worldMatrix,
+			const SSE::Matrix4& viewMatrix,
+			const SSE::Matrix4& projMatrix,
 			ID3D11DeviceContext* context,
             D3D_buffer& buffer) const override final
 		{
@@ -151,9 +148,9 @@ namespace oe {
 		{};
 
 		virtual void updatePSConstantBufferValues(TPixel_shader_constants& constants,
-			const DirectX::SimpleMath::Matrix& worldMatrix,
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix) const
+			const SSE::Matrix4& worldMatrix,
+			const SSE::Matrix4& viewMatrix,
+			const SSE::Matrix4& projMatrix) const
 		{};
     };
 }

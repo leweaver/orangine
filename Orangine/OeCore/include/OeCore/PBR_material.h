@@ -7,6 +7,7 @@
 #include <array>
 #include "SimpleMath.h"
 #include "Material_base.h"
+#include "Color.h"
 
 namespace oe {
 	struct PBR_material_vs_constant_buffer : Vertex_constant_buffer_base
@@ -19,11 +20,11 @@ namespace oe {
 
 	struct PBR_material_ps_constant_buffer : Pixel_constant_buffer_base
 	{
-		DirectX::XMMATRIX world;
-		DirectX::XMFLOAT4 baseColor;
-		DirectX::XMFLOAT4 metallicRoughness; // metallic, roughness
-		DirectX::XMFLOAT4 emissive; // emissive color (RGB)
-		DirectX::XMFLOAT4 eyePosition;
+		SSE::Matrix4 world;
+		SSE::Vector4 baseColor;
+		SSE::Vector4 metallicRoughness; // metallic, roughness
+		SSE::Vector4 emissive; // emissive color (RGB)
+		SSE::Vector4 eyePosition;
 	};
 
 	class PBR_material : public Material_base<
@@ -63,11 +64,11 @@ namespace oe {
 		 * The alphaMode property specifies how alpha is interpreted. These values are linear.
 		 * If a baseColorTexture is specified, this value is multiplied with the texel values.
 		 */
-		DirectX::SimpleMath::Color baseColor() const
+		const Color& baseColor() const
 		{
 			return _baseColor;
 		}
-		void setBaseColor(const DirectX::SimpleMath::Color& color)
+		void setBaseColor(const Color& color)
 		{
 			_baseColor = color;
 		}
@@ -122,12 +123,12 @@ namespace oe {
 			_roughness = roughness;
 		}
 
-		const DirectX::SimpleMath::Color& emissiveFactor() const
+		const Color& emissiveFactor() const
 		{
 			return _emissive;
 		}
 
-		void setEmissiveFactor(const DirectX::SimpleMath::Color& emissive)
+		void setEmissiveFactor(const Color& emissive)
 		{
 			_emissive = emissive;
 		}
@@ -232,9 +233,9 @@ namespace oe {
             const Renderer_animation_data& rendererAnimationData) const override;
 
 		void updatePSConstantBufferValues(PBR_material_ps_constant_buffer& constants,
-			const DirectX::SimpleMath::Matrix& worldMatrix,
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix) const override;
+			const SSE::Matrix4& worldMatrix,
+			const SSE::Matrix4& viewMatrix,
+			const SSE::Matrix4& projMatrix) const override;
 
         bool requiresTexCoord0() const
         {
@@ -257,10 +258,10 @@ namespace oe {
 
 	private:
 
-		DirectX::SimpleMath::Color _baseColor;
+		Color _baseColor;
 		float _metallic;
 		float _roughness;
-		DirectX::SimpleMath::Color _emissive;
+		Color _emissive;
 		float _alphaCutoff;
 
 		std::array<std::shared_ptr<Texture>, NumTextureTypes> _textures;

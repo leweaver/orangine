@@ -30,7 +30,7 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	VS_OUTPUT Output;
 
 	Output.vPositionL = Input.vPosition.xyz;
-	Output.vPosition = mul(float4(Input.vPosition.xyz, 1), g_mWorldViewProjection);
+	Output.vPosition = mul(g_mWorldViewProjection, float4(Input.vPosition.xyz, 1));
 
 	return Output;
 }

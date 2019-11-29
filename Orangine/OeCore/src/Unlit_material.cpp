@@ -14,7 +14,7 @@ const std::string g_json_baseColor = "base_color";
 // Uses blended alpha, to ensure standard rendering pipeline (not deferred)
 Unlit_material::Unlit_material()
 	: Base_type(static_cast<uint8_t>(Material_type_index::Unlit), Material_alpha_mode::Blend)
-	, _baseColor(SimpleMath::Color(Colors::White))
+	, _baseColor(Colors::White)
 {
 }
 

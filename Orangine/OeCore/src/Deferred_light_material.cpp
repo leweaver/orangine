@@ -164,15 +164,13 @@ void Deferred_light_material::setupEmitted(bool enabled)
 }
 
 void Deferred_light_material::updatePSConstantBufferValues(Deferred_light_material_constant_buffer& constants,
-	const SimpleMath::Matrix& worldMatrix,
-	const SimpleMath::Matrix& viewMatrix,
-	const SimpleMath::Matrix& projMatrix) const
+	const SSE::Matrix4& worldMatrix,
+	const SSE::Matrix4& viewMatrix,
+	const SSE::Matrix4& projMatrix) const
 {
-	const auto viewMatrixInv = viewMatrix.Invert();
-
 	// Convert to LH, for DirectX. 
-	constants.viewMatrixInv = XMMatrixTranspose(viewMatrixInv);
-	constants.projMatrixInv = XMMatrixTranspose(XMMatrixInverse(nullptr, projMatrix));
+	constants.viewMatrixInv = SSE::inverse(viewMatrix);
+	constants.projMatrixInv = SSE::inverse(projMatrix);
 	/*
 	LOG(DEBUG) <<
 		"\n{" <<
@@ -183,7 +181,8 @@ void Deferred_light_material::updatePSConstantBufferValues(Deferred_light_materi
 		"\n}";
 		*/
 
-		// Inverse of the view matrix is the camera transform matrix
-	constants.eyePosition = SimpleMath::Vector4(viewMatrixInv._41, viewMatrixInv._42, viewMatrixInv._43, 0.0);
+	// Inverse of the view matrix is the camera transform matrix
+	// TODO: This is redundant, remove from the constants.
+	constants.eyePosition = { constants.viewMatrixInv.getTranslation(), 0.0 };
 	constants.emittedEnabled = _emittedEnabled;
 }

@@ -114,6 +114,7 @@ void Entity_scripting_manager::initialize()
 {
 	{
 		_scriptableEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({ Script_component::type() });
+		_testEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({ Test_component::type() });
 		_scriptableEntityFilterListener = std::make_unique<Entity_filter::Entity_filter_listener>();
 		_scriptableEntityFilterListener->onAdd = [this](Entity* entity) {
 			_addedEntities.push_back(entity->getId());
@@ -283,7 +284,7 @@ void Entity_scripting_manager::tick()
 	}
 
 	const auto elapsedTime = _scene.elapsedTime();
-	for (auto iter = _scriptableEntityFilter->begin(); iter != _scriptableEntityFilter->end(); ++iter) {
+	for (auto iter = _testEntityFilter->begin(); iter != _testEntityFilter->end(); ++iter) {
 		auto& entity = **iter;
 		auto* component = entity.getFirstComponentOfType<Test_component>();
 		if (component == nullptr)
@@ -411,7 +412,7 @@ void Entity_scripting_manager::renderDebugSpheres() const
 	for (const auto& entity : *_renderableEntityFilter) {
 		const auto& boundSphere = entity->boundSphere();
 		const auto transform = SimpleMath::Matrix::CreateTranslation(boundSphere.Center) * entity->worldTransform();
-		devToolsManager.addDebugSphere(transform, boundSphere.Radius, SimpleMath::Color(Colors::Gray));
+		devToolsManager.addDebugSphere(transform, boundSphere.Radius, Colors::Gray);
 	}
 
 	const auto mainCameraEntity = _scene.mainCamera();
@@ -420,7 +421,7 @@ void Entity_scripting_manager::renderDebugSpheres() const
 		if (cameraComponent) {
 			auto frustum = renderManager.createFrustum(*cameraComponent);
 			frustum.Far *= 0.5;
-			devToolsManager.addDebugFrustum(frustum, SimpleMath::Color(Colors::Red));
+			devToolsManager.addDebugFrustum(frustum, Colors::Red);
 		}
 	}
 

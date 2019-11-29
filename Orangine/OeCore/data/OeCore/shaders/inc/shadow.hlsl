@@ -13,7 +13,7 @@ struct ShadowSampleInputs {
 
 float3 Shadow(ShadowSampleInputs ssi)
 {
-    float4 shadowMapPosition = mul(float4(ssi.worldPosition, 1), ssi.shadowMapViewMatrix);
+    float4 shadowMapPosition = mul(ssi.shadowMapViewMatrix, float4(ssi.worldPosition, 1));
     float3 shadowCoord = float3(shadowMapPosition.xy / shadowMapPosition.w, ssi.shadowMapArrayIndex);
 
     // Bring x,y from [-1, 1] to [0, 1]

@@ -359,7 +359,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
                 auto jointToRoot = joint->worldTransform() * invWorld;
                 const auto inverseBoneTransform = inverseBindMatrices[i];
 
-                _rendererAnimationData.boneTransformConstants[i] = (inverseBoneTransform * jointToRoot).Transpose();
+                _rendererAnimationData.boneTransformConstants[i] = toVectorMathMat4(inverseBoneTransform * jointToRoot);
 
             }
             _rendererAnimationData.numBoneTransforms = static_cast<uint32_t>(joints.size());

@@ -509,7 +509,12 @@ void Material_manager::render(
 
     }
     if (materialConstants->pixelConstantBuffer != nullptr) {
-        _boundMaterial->updatePSConstantBuffer(worldMatrix, camera.viewMatrix, camera.projectionMatrix, context, *materialConstants->pixelConstantBuffer);
+        _boundMaterial->updatePSConstantBuffer(
+			toVectorMathMat4(worldMatrix),
+			toVectorMathMat4(camera.viewMatrix),
+			toVectorMathMat4(camera.projectionMatrix),
+			context,
+			*materialConstants->pixelConstantBuffer);
         ID3D11Buffer* pixelConstantBuffers[] = { materialConstants->pixelConstantBuffer->d3dBuffer, _boundLightDataConstantBuffer.Get() };
         context->PSSetConstantBuffers(0, 2, pixelConstantBuffers);
     }

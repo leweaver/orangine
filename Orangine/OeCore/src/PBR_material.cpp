@@ -40,10 +40,10 @@ const std::string g_flag_skinned_joints_sint32 = "joints_sint32";
 
 PBR_material::PBR_material()
 	: Base_type(static_cast<uint8_t>(Material_type_index::PBR))
-    , _baseColor(SimpleMath::Vector4::One)
+    , _baseColor(Colors::White)
 	, _metallic(1.0)
 	, _roughness(1.0)
-	, _emissive(0, 0, 0)
+	, _emissive(Colors::Black)
 	, _alphaCutoff(0.5)
 	, _boundTextureCount(0)
 {
@@ -62,10 +62,10 @@ nlohmann::json PBR_material::serialize(bool compilerPropertiesOnly) const
     auto j = Base_type::serialize(compilerPropertiesOnly);
 
     if (!compilerPropertiesOnly) {
-        j[g_json_baseColor] = _baseColor;
+		j[g_json_baseColor] = _baseColor;
         j[g_json_metallic] = _metallic;
         j[g_json_roughness] = _roughness;
-        j[g_json_emissive] = _emissive;
+		j[g_json_emissive] = _emissive;
         j[g_json_alphaCutoff] = _alphaCutoff;
         j[g_json_baseColorTexture] = serializeTexture(compilerPropertiesOnly, _textures[BaseColor]);
         j[g_json_metallicRoughnessTexture] = serializeTexture(compilerPropertiesOnly, _textures[MetallicRoughness]);
@@ -397,10 +397,9 @@ void PBR_material::updateVSConstantBufferValues(PBR_material_vs_constant_buffer&
 	const SSE::Matrix4& projMatrix,
     const Renderer_animation_data& rendererAnimationData) const
 {
-	// Note that HLSL matrices are Column Major (as opposed to Row Major in DirectXMath) - so we need to transpose everything.
-	constants.viewProjection = viewMatrix * projMatrix;//   XMMatrixMultiplyTranspose(viewMatrix, projMatrix);
+	constants.viewProjection = projMatrix * viewMatrix;
 	constants.world = worldMatrix;
-    constants.worldInvTranspose = SSE::inverse(SSE::transpose(constants.world));
+	constants.worldInvTranspose = SSE::inverse(SSE::transpose(constants.world));
 	static_assert(sizeof(SSE::Vector4) / sizeof(float) * 2 == Renderer_animation_data::morphWeightsSize);
 	constants.morphWeights[0] = {
 		rendererAnimationData.morphWeights[0],
@@ -417,14 +416,14 @@ void PBR_material::updateVSConstantBufferValues(PBR_material_vs_constant_buffer&
 }
 
 void PBR_material::updatePSConstantBufferValues(PBR_material_ps_constant_buffer& constants,
-	const SimpleMath::Matrix& worldMatrix,
-	const SimpleMath::Matrix& /* viewMatrix */,
-	const SimpleMath::Matrix& /* projMatrix */) const
+	const SSE::Matrix4& worldMatrix,
+	const SSE::Matrix4& /* viewMatrix */,
+	const SSE::Matrix4& /* projMatrix */) const
 {
-	// Convert to LH, for DirectX.
-	constants.world = XMMatrixTranspose(worldMatrix);
+	constants.world = worldMatrix;
 	constants.baseColor = _baseColor;
-	constants.metallicRoughness = SimpleMath::Vector4(_metallic, _roughness, 0.0, 0.0);
-	constants.emissive = SimpleMath::Vector4(_emissive.x, _emissive.y, _emissive.z, 0.0);
-	constants.eyePosition = SimpleMath::Vector4(worldMatrix._41, worldMatrix._42, worldMatrix._43, 0.0);
+	constants.metallicRoughness = { _metallic, _roughness, 0.0, 0.0 };
+	constants.emissive = {_emissive.getX(), _emissive.getY(), _emissive.getZ(), 0.0};
+	// todo: remove this, it's redundant.
+	constants.eyePosition = {worldMatrix.getTranslation(), 0.0};
 }

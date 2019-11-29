@@ -10,9 +10,9 @@ namespace oe
 	// Individual light parameters are stored in the constant buffer managed by the Render_light_data_impl class.
 	struct Deferred_light_material_constant_buffer : Pixel_constant_buffer_base
 	{
-		DirectX::XMMATRIX viewMatrixInv;
-		DirectX::XMMATRIX projMatrixInv;
-		DirectX::XMFLOAT4 eyePosition;
+		SSE::Matrix4 viewMatrixInv;
+		SSE::Matrix4 projMatrixInv;
+		SSE::Vector4 eyePosition;
 		bool emittedEnabled = false;
 	};
 
@@ -62,9 +62,9 @@ namespace oe
 		Shader_compile_settings pixelShaderSettings(const std::set<std::string>& flags) const override;
 
 		void updatePSConstantBufferValues(Deferred_light_material_constant_buffer& constants,
-			const DirectX::SimpleMath::Matrix& worldMatrix,
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix) const override;
+			const SSE::Matrix4& worldMatrix,
+			const SSE::Matrix4& viewMatrix,
+			const SSE::Matrix4& projMatrix) const override;
         		
 	private:
 		std::shared_ptr<Texture> _color0Texture;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Shadow_map_texture.h"
+#include "Color.h"
 
 namespace oe
 {
@@ -61,16 +62,16 @@ namespace oe
 			DirectX::SetDebugObjectName(_constantBuffer.Get(), L"Render_light_data constant buffer");
 		}
 
-		bool addPointLight(const DirectX::SimpleMath::Vector3& lightPosition, const DirectX::SimpleMath::Color& color, float intensity)
+		bool addPointLight(const DirectX::SimpleMath::Vector3& lightPosition, const Color& color, float intensity)
 		{
 			return _lightConstants.addLight({ Light_type::Point, lightPosition, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
 		}
-		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, const DirectX::SimpleMath::Color& color, float intensity)
+		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, const Color& color, float intensity)
 		{
 			return _lightConstants.addLight({ Light_type::Directional, lightDirection, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
 		}
 		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, 
-			const DirectX::SimpleMath::Color& color, 
+			const Color& color, 
 			float intensity, 
 			const Shadow_map_texture_array_slice& shadowMapTexture,
 			float shadowMapDepth,
@@ -91,7 +92,7 @@ namespace oe
 			}
 			return false;
 		}
-		bool addAmbientLight(const DirectX::SimpleMath::Color& color, float intensity)
+		bool addAmbientLight(const Color& color, float intensity)
 		{
 			return _lightConstants.addLight({ Light_type::Ambient, DirectX::SimpleMath::Vector3::Zero, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
 		}
@@ -179,10 +180,10 @@ namespace oe
 			int _activeLights = 0;
 		};
 
-		static DirectX::SimpleMath::Vector3 encodeColor(const DirectX::SimpleMath::Color& color, float intensity)
+		static DirectX::SimpleMath::Vector3 encodeColor(const Color& color, float intensity)
 		{
-			DirectX::SimpleMath::Vector3 dest;
-			XMStoreFloat3(&dest, XMVectorScale(color, intensity));
+			DirectX::SimpleMath::Vector3 dest = { color.getX(), color.getY(), color.getZ() };
+			XMStoreFloat3(&dest, XMVectorScale(dest, intensity));
 			return dest;
 		}
 

@@ -85,11 +85,22 @@ namespace oe {
 	}
 
 	inline SSE::Matrix4 toVectorMathMat4(const DirectX::SimpleMath::Matrix& matrix) {
+		/* Tested with:
+		
+		auto sseLookAt = SSE::Matrix4::lookAt({ 2.0f, 2.0f, 2.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
+		SSE::print(sseLookAt);
+
+		auto msLookAt = SimpleMath::Matrix::CreateLookAt({ 2.0f, 2.0f, 2.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
+
+		auto converted = toVectorMathMat4(msLookAt);
+		SSE::print(converted);
+	
+		*/
 		return SSE::Matrix4(
-			{ matrix._11, matrix._21, matrix._31, matrix._41 },
-			{ matrix._12, matrix._22, matrix._32, matrix._42 },
-			{ matrix._13, matrix._23, matrix._33, matrix._43 },
-			{ matrix._14, matrix._24, matrix._34, matrix._44 }
+			{ matrix._11, matrix._12, matrix._13, matrix._14 },
+			{ matrix._21, matrix._22, matrix._23, matrix._24 },
+			{ matrix._31, matrix._32, matrix._33, matrix._34 },
+			{ matrix._41, matrix._42, matrix._43, matrix._44 }
 		);
 	}
 }

@@ -32,10 +32,10 @@ namespace oe::internal {
         
 	    // Creates a cone, whose base sits on the XZ plane, and height goes up the Y plane.
         // The origin of the object is the midpoint, not the base.
-        void addDebugCone(const DirectX::SimpleMath::Matrix& worldTransform, float diameter, float height, const DirectX::SimpleMath::Color& color) override;
-		void addDebugSphere(const DirectX::SimpleMath::Matrix& worldTransform, float radius, const DirectX::SimpleMath::Color& color, size_t tessellation = 6) override;
-		void addDebugBoundingBox(const DirectX::BoundingOrientedBox& boundingOrientedBox, const DirectX::SimpleMath::Color& color) override;
-		void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const DirectX::SimpleMath::Color& color) override;
+        void addDebugCone(const DirectX::SimpleMath::Matrix& worldTransform, float diameter, float height, const Color& color) override;
+		void addDebugSphere(const DirectX::SimpleMath::Matrix& worldTransform, float radius, const Color& color, size_t tessellation = 6) override;
+		void addDebugBoundingBox(const DirectX::BoundingOrientedBox& boundingOrientedBox, const Color& color) override;
+		void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color) override;
 		void clearDebugShapes() override;
 		void renderDebugShapes(const Render_pass::Camera_data& cameraData) override;
         void renderImGui() override;
@@ -51,7 +51,7 @@ namespace oe::internal {
         static std::string _name;
 
 		std::shared_ptr<Unlit_material> _unlitMaterial;
-		std::vector<std::tuple<DirectX::SimpleMath::Matrix, DirectX::SimpleMath::Color, std::shared_ptr<Renderable>>> _debugShapes;
+		std::vector<std::tuple<DirectX::SimpleMath::Matrix, Color, std::shared_ptr<Renderable>>> _debugShapes;
 		LightProvider _noLightProvider;
 
         std::unique_ptr<Fps_counter> _fpsCounter;

@@ -29,6 +29,7 @@ public:
 	void CreateGeometricPrimitives();
 	void CreateSceneCubeSatellite();
 	std::shared_ptr<oe::Entity> LoadGLTF(std::string gltfName, bool animate);
+	std::shared_ptr<oe::Entity> LoadGLTFToEntity(std::string gltfName, std::shared_ptr<oe::Entity> root);
 	void CreateSceneMetalRoughSpheres(bool animate);
 	void CreateLights();
 	void CreateCamera(bool animate);
@@ -68,7 +69,7 @@ private:
     void createDeviceDependentResources();
     void createWindowSizeDependentResources();
 
-	void AddCubeToEntity(oe::Entity& entity, DirectX::SimpleMath::Vector3 animationSpeed, DirectX::SimpleMath::Vector3 localScale, DirectX::SimpleMath::Vector3 localPosition) const;
+	void AddCubeToEntity(std::shared_ptr<oe::Entity> entity, DirectX::SimpleMath::Vector3 animationSpeed, DirectX::SimpleMath::Vector3 localScale, DirectX::SimpleMath::Vector3 localPosition);
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;

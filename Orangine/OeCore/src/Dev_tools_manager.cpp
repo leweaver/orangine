@@ -54,9 +54,9 @@ const std::string& Dev_tools_manager::name() const
 }
 
 void Dev_tools_manager::renderSkeletons() {
-    const auto white = SimpleMath::Color(Colors::White);
-    const auto red = SimpleMath::Color(Colors::Red);
-    const auto green = SimpleMath::Color(Colors::Green);
+    const auto white = Colors::White;
+    const auto red = Colors::Red;
+    const auto green = Colors::Green;
 
     std::list<Entity*> bones;
     for (const auto& skinnedMeshEntity : *_skinnedMeshEntities) {
@@ -132,7 +132,7 @@ void Dev_tools_manager::destroyDeviceDependentResources()
 	}
 }
 
-void Dev_tools_manager::addDebugCone(const SimpleMath::Matrix& worldTransform, float diameter, float height, const SimpleMath::Color& color)
+void Dev_tools_manager::addDebugCone(const SimpleMath::Matrix& worldTransform, float diameter, float height, const Color& color)
 {
     auto hash = g_hashSeed_cone;
     hash_combine(hash, diameter);
@@ -145,7 +145,7 @@ void Dev_tools_manager::addDebugCone(const SimpleMath::Matrix& worldTransform, f
     _debugShapes.push_back({ worldTransform, color, renderable });
 }
 
-void Dev_tools_manager::addDebugSphere(const SimpleMath::Matrix& worldTransform, float radius, const SimpleMath::Color& color, size_t tessellation)
+void Dev_tools_manager::addDebugSphere(const SimpleMath::Matrix& worldTransform, float radius, const Color& color, size_t tessellation)
 {
     auto hash = g_hashSeed_sphere;
     hash_combine(hash, radius);
@@ -158,7 +158,7 @@ void Dev_tools_manager::addDebugSphere(const SimpleMath::Matrix& worldTransform,
 	_debugShapes.push_back({ worldTransform, color, renderable});
 }
 
-void Dev_tools_manager::addDebugBoundingBox(const BoundingOrientedBox& boundingOrientedBox, const SimpleMath::Color& color)
+void Dev_tools_manager::addDebugBoundingBox(const BoundingOrientedBox& boundingOrientedBox, const Color& color)
 {
 	auto worldTransform = XMMatrixAffineTransformation(SimpleMath::Vector3::One, SimpleMath::Vector3::Zero, XMLoadFloat4(&boundingOrientedBox.Orientation), XMLoadFloat3(&boundingOrientedBox.Center));
 
@@ -174,7 +174,7 @@ void Dev_tools_manager::addDebugBoundingBox(const BoundingOrientedBox& boundingO
 	_debugShapes.push_back({ worldTransform, color, renderable });
 }
 
-void Dev_tools_manager::addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const SimpleMath::Color& color)
+void Dev_tools_manager::addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color)
 {
     // TODO: Cache these meshes? Will require not building the transform into the mesh itself.
     auto renderable = std::make_shared<Renderable>();
@@ -194,7 +194,7 @@ void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& camera
 	auto& entityRenderManager = _scene.manager<IEntity_render_manager>();
 	for (auto& debugShape : _debugShapes) {
 		const auto& transform = std::get<SimpleMath::Matrix>(debugShape);
-		const auto& color = std::get<SimpleMath::Color>(debugShape);
+		const auto& color = std::get<Color>(debugShape);
 		auto& renderable = std::get<std::shared_ptr<Renderable>>(debugShape);
 
 		_unlitMaterial->setBaseColor(color);

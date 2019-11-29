@@ -176,7 +176,7 @@ void Render_step_manager::createRenderSteps()
 		d3DDeviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step2_setup");
 
 		// TODO: Clear the render target view in a more generic way.	 
-		d3DDeviceResources.GetD3DDeviceContext()->ClearRenderTargetView(d3DDeviceResources.GetRenderTargetView(), Colors::Black);
+		d3DDeviceResources.GetD3DDeviceContext()->ClearRenderTargetView(d3DDeviceResources.GetRenderTargetView(), DirectX::Colors::Black);
 
 		d3DDeviceResources.PIXEndEvent();
 
@@ -497,13 +497,15 @@ Render_pass::Camera_data Render_step_manager::createCameraData(Camera_component&
 	//_cameraData.projectionMatrix._33 *= invFarPlane;
 	//_cameraData.projectionMatrix._43 *= invFarPlane;
 
-	return {
-		SimpleMath::Matrix::CreateLookAt(pos, pos + forward, up),
-		SimpleMath::Matrix::CreatePerspectiveFieldOfView(
+	auto perspectiveMat = SimpleMath::Matrix::CreatePerspectiveFieldOfView(
 			component.fov(),
 			aspectRatio,
 			component.nearPlane(),
-			component.farPlane()),
+			component.farPlane());
+
+	return {
+		SimpleMath::Matrix::CreateLookAt(pos, pos + forward, up),
+		perspectiveMat,
 		component.fov(),
 		aspectRatio
 	};

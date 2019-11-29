@@ -356,7 +356,7 @@ DirectX::SimpleMath::Matrix createMatrix4FromGltfArray(const vector<double>& m)
     );
 }
 
-std::vector<DirectX::SimpleMath::Matrix> createMatrix4ArrayFromAccessor(Loader_data& loaderData, int accessorIndex)
+std::vector<SSE::Matrix4> createMatrix4ArrayFromAccessor(Loader_data& loaderData, int accessorIndex)
 {
     // Inverse bind matrices
     const auto matricesAccessor = useOrCreateBufferForAccessor<Mesh_buffer_accessor>(
@@ -366,20 +366,19 @@ std::vector<DirectX::SimpleMath::Matrix> createMatrix4ArrayFromAccessor(Loader_d
         0,
         g_createSimpleMeshAccessor);
 
-    std::vector<DirectX::SimpleMath::Matrix> matrices;
+    std::vector<SSE::Matrix4> matrices;
     matrices.reserve(matricesAccessor->count);
-
-    const auto reference = DirectX::SimpleMath::Matrix::CreateTranslation({ 1,2,3 });
     
     for (auto i = 0u; i < matricesAccessor->count; ++i) {
         const auto m = reinterpret_cast<const float*>(matricesAccessor->getIndexed(i));
         matrices.push_back(
-            DirectX::SimpleMath::Matrix(
-                m[0], m[1], m[2], m[3],
-                m[4], m[5], m[6], m[7],
-                m[8], m[9], m[10], m[11],
-                m[12], m[13], m[14], m[15]
-            ));
+			SSE::Matrix4(
+				{ m[0], m[1], m[2], m[3] },
+				{ m[4], m[5], m[6], m[7] },
+				{ m[8], m[9], m[10], m[11] },
+				{ m[12], m[13], m[14], m[15] }
+			)
+		);
     }
 
     return matrices;
@@ -468,7 +467,7 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(wstring_view fileP
                 auto& skinnedMeshComponent = childEntity->addComponent<Skinned_mesh_component>();
 
                 {
-                    std::vector<DirectX::SimpleMath::Matrix> inverseBindMatrices = createMatrix4ArrayFromAccessor(loaderData, skin.inverseBindMatrices);
+                    std::vector<SSE::Matrix4> inverseBindMatrices = createMatrix4ArrayFromAccessor(loaderData, skin.inverseBindMatrices);
 
                     // Nodes that form the skeleton hierarchy.
                     std::vector<std::shared_ptr<Entity>> joints;

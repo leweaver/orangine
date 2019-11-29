@@ -346,20 +346,22 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
                     std::to_string(_rendererAnimationData.boneTransformConstants.size()));
             }
 
-			SimpleMath::Matrix invWorld;
             if (skinnedMeshComponent->skeletonTransformRoot())
                 worldTransform = &skinnedMeshComponent->skeletonTransformRoot()->worldTransform();
             else
                 worldTransform = &entity.worldTransform();
                 
-            worldTransform->Invert(invWorld);
+			SimpleMath::Matrix invWorld2;
+            worldTransform->Invert(invWorld2);
+			auto invWorld = toVectorMathMat4(invWorld2);
 
             for (size_t i = 0; i < joints.size(); ++i) {
                 const auto joint = joints[i];
-                auto jointToRoot = joint->worldTransform() * invWorld;
+				const auto jointWorldTransform = toVectorMathMat4(joint->worldTransform());
+                auto jointToRoot = invWorld * jointWorldTransform;
                 const auto inverseBoneTransform = inverseBindMatrices[i];
 
-                _rendererAnimationData.boneTransformConstants[i] = toVectorMathMat4(inverseBoneTransform * jointToRoot);
+                _rendererAnimationData.boneTransformConstants[i] = jointToRoot * inverseBoneTransform;
 
             }
             _rendererAnimationData.numBoneTransforms = static_cast<uint32_t>(joints.size());

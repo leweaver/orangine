@@ -16,8 +16,8 @@ namespace oe {
         const std::vector<Entity*>& joints() const { return _jointsRaw; }
         void setJoints(std::vector<std::shared_ptr<Entity>>&& vector);
 
-        const std::vector<DirectX::SimpleMath::Matrix>& inverseBindMatrices() const { return _inverseBindMatrices; }
-        void setInverseBindMatrices(std::vector<DirectX::SimpleMath::Matrix>&& matrices);
+        const std::vector<SSE::Matrix4>& inverseBindMatrices() const { return _inverseBindMatrices; }
+        void setInverseBindMatrices(std::vector<SSE::Matrix4>&& matrices);
 
     private:
         // If null, this entity is used as the transform root.
@@ -29,7 +29,7 @@ namespace oe {
         // A fast lookup
         std::vector<Entity*> _jointsRaw;
 
-        std::vector<DirectX::SimpleMath::Matrix> _inverseBindMatrices;
+        std::vector<SSE::Matrix4> _inverseBindMatrices;
         
     };
 }

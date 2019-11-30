@@ -5,6 +5,8 @@
 #include "OeCore/Collision.h"
 #include "OeCore/Math_constants.h"
 
+#include "D3D11/DirectX_utils.h"
+
 #include <array>
 #include <cstddef>
 #include <GeometricPrimitive.h>
@@ -112,11 +114,11 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNor
 
 	// Tangents
 	{
-		auto tangentsBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(sizeof(SimpleMath::Vector4) * vertices.size()));
+		auto tangentsBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(sizeof(XMFLOAT4) * vertices.size()));
 		meshData->vertexBufferAccessors[{Vertex_attribute::Tangent, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
 			tangentsBuffer,
             Vertex_attribute_element{ {Vertex_attribute::Tangent,0}, Element_type::Vector4, Element_component::Float },
-			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(SimpleMath::Vector4)),
+			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(XMFLOAT4)),
 			0
 			);
 
@@ -264,8 +266,8 @@ void Primitive_mesh_data_factory::generateNormals(
 	const auto positionBufferStart = positionBufferAccessor.buffer->data + positionBufferAccessor.offset;
 	const auto normalBufferStart = normalBufferAccessor.buffer->data + normalBufferAccessor.offset;
 
-	assert(normalBufferAccessor.stride >= sizeof(Vector3));
-	const auto normalBufferEnd = normalBufferStart + normalBufferAccessor.count * normalBufferAccessor.stride + sizeof(SimpleMath::Vector3);
+	assert(normalBufferAccessor.stride >= sizeof(XMFLOAT3));
+	const auto normalBufferEnd = normalBufferStart + normalBufferAccessor.count * normalBufferAccessor.stride + sizeof(XMFLOAT3);
 		
 	// Iterate over each triangle, creating a flat normal.
 	if (indexBufferAccessor.component == Element_component::Unsigned_Short)
@@ -285,27 +287,26 @@ void Primitive_mesh_data_factory::generateNormals(
 					" out of range of given vertexBuffer (numVertices=" + std::to_string(numVertices) + ")");
 			}
 
-			const auto& p0 = *reinterpret_cast<const SimpleMath::Vector3*>(positionBufferStart + i0 * positionBufferAccessor.stride);
-			const auto& p1 = *reinterpret_cast<const SimpleMath::Vector3*>(positionBufferStart + i1 * positionBufferAccessor.stride);
-			const auto& p2 = *reinterpret_cast<const SimpleMath::Vector3*>(positionBufferStart + i2 * positionBufferAccessor.stride);
+			const auto& p0 = LoadVector3(*reinterpret_cast<const XMFLOAT3*>(positionBufferStart + i0 * positionBufferAccessor.stride));
+			const auto& p1 = LoadVector3(*reinterpret_cast<const XMFLOAT3*>(positionBufferStart + i1 * positionBufferAccessor.stride));
+			const auto& p2 = LoadVector3(*reinterpret_cast<const XMFLOAT3*>(positionBufferStart + i2 * positionBufferAccessor.stride));
 
 			auto normalBufferPos = normalBufferStart + i0 * normalBufferAccessor.stride;
 			assert(normalBufferPos >= normalBufferStart && normalBufferPos < normalBufferEnd);
-			auto& n0 = *reinterpret_cast<SimpleMath::Vector3*>(normalBufferPos);
+			auto& n0 = LoadVector3(*reinterpret_cast<XMFLOAT3*>(normalBufferPos));
 			normalBufferPos = normalBufferStart + i1 * normalBufferAccessor.stride;
 			assert(normalBufferPos >= normalBufferStart && normalBufferPos < normalBufferEnd);
-			auto& n1 = *reinterpret_cast<SimpleMath::Vector3*>(normalBufferPos);
+			auto& n1 = LoadVector3(*reinterpret_cast<XMFLOAT3*>(normalBufferPos));
 			normalBufferPos = normalBufferStart + i2 * normalBufferAccessor.stride;
 			assert(normalBufferPos >= normalBufferStart && normalBufferPos < normalBufferEnd);
-			auto& n2 = *reinterpret_cast<SimpleMath::Vector3*>(normalBufferPos);
+			auto& n2 = LoadVector3(*reinterpret_cast<XMFLOAT3*>(normalBufferPos));
 			
 			// Create two vectors from which we calculate the normal
 			const auto v0 = p1 - p0;
 			const auto v1 = p2 - p0;
 			
 			// Calculate flat normal. (Counter clockwise winding order)
-			n0 = v0.Cross(v1);
-			n0.Normalize();
+			n0 = SSE::normalize(SSE::cross(v0, v1));
 			n1 = n2 = n0;
 
 			/*

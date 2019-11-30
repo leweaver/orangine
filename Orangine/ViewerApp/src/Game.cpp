@@ -324,10 +324,10 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 
 
 		//CreateSceneCubeSatellite();
-		CreateSceneLeverArm();
+		//CreateSceneLeverArm();
 		//LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
 		
-		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
+		LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
 		//LoadGLTF("FlightHelmet", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
@@ -338,7 +338,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
         //LoadGLTF("MorphCube2", false);
         //LoadGLTF("RiggedSimple", false);
         //LoadGLTF("RiggedFigure", false);
-		LoadGLTF("CesiumMan", false)->setPosition({ 0, 0, 1.0f });
+		//LoadGLTF("CesiumMan", false)->setPosition({ 0, 0, 1.0f });
         //LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
 
 		//LoadGLTF("MetalRoughSpheres", false);

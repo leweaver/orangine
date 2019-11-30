@@ -400,7 +400,7 @@ void PBR_material::updateVSConstantBufferValues(PBR_material_vs_constant_buffer&
 	constants.viewProjection = projMatrix * viewMatrix;
 	constants.world = worldMatrix;
 	constants.worldInvTranspose = SSE::inverse(SSE::transpose(constants.world));
-	static_assert(sizeof(SSE::Vector4) / sizeof(float) * 2 == Renderer_animation_data::morphWeightsSize);
+	static_assert(sizeof(Float4) / sizeof(float) * 2 == Renderer_animation_data::morphWeightsSize);
 	constants.morphWeights[0] = {
 		rendererAnimationData.morphWeights[0],
 		rendererAnimationData.morphWeights[1],
@@ -425,5 +425,5 @@ void PBR_material::updatePSConstantBufferValues(PBR_material_ps_constant_buffer&
 	constants.metallicRoughness = { _metallic, _roughness, 0.0, 0.0 };
 	constants.emissive = {_emissive.getX(), _emissive.getY(), _emissive.getZ(), 0.0};
 	// todo: remove this, it's redundant.
-	constants.eyePosition = {worldMatrix.getTranslation(), 0.0};
+	constants.eyePosition = SSE::Vector4 {worldMatrix.getTranslation(), 0.0};
 }

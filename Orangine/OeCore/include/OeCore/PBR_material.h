@@ -8,6 +8,7 @@
 #include "SimpleMath.h"
 #include "Material_base.h"
 #include "Color.h"
+#include "Simple_types.h"
 
 namespace oe {
 	struct PBR_material_vs_constant_buffer : Vertex_constant_buffer_base
@@ -15,16 +16,16 @@ namespace oe {
 		SSE::Matrix4 world;
 		SSE::Matrix4 viewProjection;
 		SSE::Matrix4 worldInvTranspose;
-        SSE::Vector4 morphWeights[2];
+        Float4 morphWeights[2];
 	};
 
 	struct PBR_material_ps_constant_buffer : Pixel_constant_buffer_base
 	{
 		SSE::Matrix4 world;
-		SSE::Vector4 baseColor;
-		SSE::Vector4 metallicRoughness; // metallic, roughness
-		SSE::Vector4 emissive; // emissive color (RGB)
-		SSE::Vector4 eyePosition;
+		Float4 baseColor;
+		Float4 metallicRoughness; // metallic, roughness
+		Float4 emissive; // emissive color (RGB)
+		Float4 eyePosition;
 	};
 
 	class PBR_material : public Material_base<

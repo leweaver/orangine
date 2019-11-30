@@ -23,6 +23,7 @@
 #include "OeCore/Morph_weights_component.h"
 #include "OeCore/Skinned_mesh_component.h"
 #include "OeCore/Mesh_utils.h"
+#include "OeCore/Math_constants.h"
 
 using namespace oe;
 using namespace internal;
@@ -139,7 +140,7 @@ bool addLightToRenderLightData(const Entity& lightEntity, Render_light_data_impl
 	const auto directionalLight = lightEntity.getFirstComponentOfType<Directional_light_component>();
 	if (directionalLight)
 	{
-		const auto lightDirection = SimpleMath::Vector3::Transform(SimpleMath::Vector3::Forward, lightEntity.worldRotation());
+		const auto lightDirection = toVectorMathMat4(lightEntity.worldTransform()).getUpper3x3() * Math::Direction::Forward;
 		const auto shadowData = dynamic_cast<Shadow_map_texture_array_slice*>(directionalLight->shadowData().get());
 
 		if (shadowData != nullptr) {
@@ -159,7 +160,7 @@ bool addLightToRenderLightData(const Entity& lightEntity, Render_light_data_impl
 
 	const auto pointLight = lightEntity.getFirstComponentOfType<Point_light_component>();
 	if (pointLight)
-		return renderLightData.addPointLight(lightEntity.worldPosition(), pointLight->color(), pointLight->intensity());
+		return renderLightData.addPointLight(toVector3(lightEntity.worldPosition()), pointLight->color(), pointLight->intensity());
 
 	const auto ambientLight = lightEntity.getFirstComponentOfType<Ambient_light_component>();
 	if (ambientLight)

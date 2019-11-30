@@ -18,8 +18,8 @@ namespace oe {
     public:
         explicit IDev_tools_manager(Scene& scene) : Manager_base(scene) {}
 
-        virtual void addDebugCone(const DirectX::SimpleMath::Matrix& worldTransform, float diameter, float height, const Color& color) = 0;
-        virtual void addDebugSphere(const DirectX::SimpleMath::Matrix& worldTransform, float radius, const Color& color, size_t tessellation = 6) = 0;
+        virtual void addDebugCone(const SSE::Matrix4& worldTransform, float diameter, float height, const Color& color) = 0;
+		virtual void addDebugSphere(const SSE::Matrix4& worldTransform, float radius, const Color& color, size_t tessellation = 6) = 0;
         virtual void addDebugBoundingBox(const DirectX::BoundingOrientedBox& boundingOrientedBox, const Color& color) = 0;
         virtual void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color) = 0;
         virtual void clearDebugShapes() = 0;

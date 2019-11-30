@@ -22,9 +22,9 @@ namespace oe {
 
     // Create a rotation matrix from input unit vector A to B.
     bool createRotationBetweenUnitVectors(
-        DirectX::SimpleMath::Matrix& result,
-        const DirectX::SimpleMath::Vector3& directionFrom, 
-        const DirectX::SimpleMath::Vector3& directionTo);
+        SSE::Matrix4& result,
+        const SSE::Vector3& directionFrom, 
+        const SSE::Vector3& directionTo);
 
 	// Convert a wide Unicode string to an UTF8 string
 	std::string utf8_encode(const std::wstring& wstr);
@@ -102,6 +102,14 @@ namespace oe {
 			{ matrix._31, matrix._32, matrix._33, matrix._34 },
 			{ matrix._41, matrix._42, matrix._43, matrix._44 }
 		);
+	}
+
+	inline SSE::Quat toQuat(const DirectX::SimpleMath::Quaternion& quat) {
+		return { quat.x, quat.y, quat.z, quat.w };
+	}
+
+	inline SSE::Vector3 toVector3(const DirectX::SimpleMath::Vector3& vec) {
+		return { vec.x,vec.y,vec.z };
 	}
 }
 

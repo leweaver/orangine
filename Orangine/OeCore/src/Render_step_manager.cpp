@@ -134,7 +134,7 @@ void Render_step_manager::createRenderSteps()
 			{
 				entityRenderManager.renderRenderable(
 					quad,
-					SimpleMath::Matrix::Identity,
+					SSE::Matrix4::identity(),
 					0.0f,
 					Render_pass::Camera_data::identity,
 					Light_provider::no_light_provider,
@@ -377,7 +377,7 @@ void Render_step_manager::render(std::shared_ptr<Entity> cameraEntity)
 	// Block on the cull sorter, since we can't render until it is done; and it is a good place to kick off the alpha sort.
 	_cullSorter->waitThen([this, cameraEntity, cameraData](const std::vector<Entity_cull_sorter_entry>& entities) {
 		// Find the list of entities that have alpha, and sort them.
-		_alphaSorter->beginSortAsync(entities.begin(), entities.end(), cameraEntity->worldPosition());
+		_alphaSorter->beginSortAsync(entities.begin(), entities.end(), toVector3(cameraEntity->worldPosition()));
 
 		// Render steps
 		_scene.manager<IEntity_render_manager>().clearRenderStats();
@@ -447,7 +447,7 @@ void Render_step_manager::renderLights(const Render_pass::Camera_data& cameraDat
 			if (lightIndex == maxLights) {
 				entityRenderManager.renderRenderable(
 					quad,
-					SimpleMath::Matrix::Identity,
+					SSE::Matrix4::identity(),
 					0.0f,
 					cameraData,
 					deferredLightProvider,
@@ -465,7 +465,7 @@ void Render_step_manager::renderLights(const Render_pass::Camera_data& cameraDat
 		if (!deferredLights.empty() || !renderedOnce) {
 			entityRenderManager.renderRenderable(
 				quad,
-				SimpleMath::Matrix::Identity,
+				SSE::Matrix4::identity(),
 				0.0f,
 				cameraData,
 				deferredLightProvider,

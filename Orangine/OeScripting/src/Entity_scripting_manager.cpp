@@ -292,9 +292,9 @@ void Entity_scripting_manager::tick()
 		
 		const auto &speed = component->getSpeed();
 
-		const auto animTimePitch = static_cast<float>(fmod(elapsedTime * speed.x * XM_2PI, XM_2PI));
-		const auto animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.y * XM_2PI, XM_2PI));
-		const auto animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.z * XM_2PI, XM_2PI));
+		const auto animTimePitch = static_cast<float>(fmod(elapsedTime * speed.getX() * XM_2PI, XM_2PI));
+		const auto animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.getY()* XM_2PI, XM_2PI));
+		const auto animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.getZ()* XM_2PI, XM_2PI));
 		entity.setRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));
 	}
 	
@@ -412,7 +412,7 @@ void Entity_scripting_manager::renderDebugSpheres() const
 	for (const auto& entity : *_renderableEntityFilter) {
 		const auto& boundSphere = entity->boundSphere();
 		const auto transform = SimpleMath::Matrix::CreateTranslation(boundSphere.Center) * entity->worldTransform();
-		devToolsManager.addDebugSphere(transform, boundSphere.Radius, Colors::Gray);
+		devToolsManager.addDebugSphere(toVectorMathMat4(transform), boundSphere.Radius, Colors::Gray);
 	}
 
 	const auto mainCameraEntity = _scene.mainCamera();

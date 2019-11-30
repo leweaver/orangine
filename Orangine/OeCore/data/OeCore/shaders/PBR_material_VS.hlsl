@@ -106,7 +106,7 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	float3x3 worldInvTranspose = transpose(inverseMat3((float3x3)world));
 #else
 	float4x4 world = g_mWorld;
-	float4x4 worldViewProjection = g_mViewProjection;
+	float4x4 worldViewProjection = g_mWorldViewProjection;
 	float3x3 worldInvTranspose = float3x3(
         g_mWorldInvTranspose[0].xyz,
         g_mWorldInvTranspose[1].xyz,

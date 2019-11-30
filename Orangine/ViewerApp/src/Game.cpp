@@ -284,7 +284,7 @@ void Game::CreateGeometricPrimitives()
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 		renderable.setCastShadow(true);
 
-		const auto meshData = Primitive_mesh_data_factory::createQuad({ 15, 15 });
+		const auto meshData = Primitive_mesh_data_factory::createQuad(15, 15);
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
 		child2->setRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
@@ -324,7 +324,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 
 
 		//CreateSceneCubeSatellite();
-		// CreateSceneLeverArm();
+		CreateSceneLeverArm();
 		//LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
 		
 		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
@@ -375,7 +375,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 	}
 }
 
-void Game::AddCubeToEntity(std::shared_ptr<Entity> entity, SimpleMath::Vector3 animationSpeed, SimpleMath::Vector3 localScale, SimpleMath::Vector3 localPosition)
+void Game::AddCubeToEntity(std::shared_ptr<Entity> entity, SSE::Vector3 animationSpeed, SimpleMath::Vector3 localScale, SimpleMath::Vector3 localPosition)
 {
 	entity->addComponent<Test_component>().setSpeed(animationSpeed);
 

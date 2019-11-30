@@ -373,7 +373,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
         
 		drawRendererData(
 			cameraData,
-            *worldTransform,
+            toVectorMathMat4(*worldTransform),
 			*rendererData,
 			blendMode,
 			*renderLightData,
@@ -392,7 +392,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
 }
 
 void Entity_render_manager::renderRenderable(Renderable& renderable,
-	const SimpleMath::Matrix& worldMatrix,
+	const SSE::Matrix4& worldMatrix,
 	float radius,
 	const Render_pass::Camera_data& cameraData,
 	const Light_provider::Callback_type& lightDataProvider,
@@ -430,7 +430,8 @@ void Entity_render_manager::renderRenderable(Renderable& renderable,
 		_renderLights.clear();
 		_renderLightData_lit->clear();
 		BoundingSphere lightTarget;
-		lightTarget.Center = worldMatrix.Translation();
+		auto center = worldMatrix.getTranslation();
+		lightTarget.Center = {center.getX(), center.getY(), center.getZ() };
 		lightTarget.Radius = radius;
 		lightDataProvider(lightTarget, _renderLights, _renderLightData_lit->maxLights());
 		if (_renderLights.size() > _renderLightData_lit->maxLights()) {
@@ -505,7 +506,7 @@ void Entity_render_manager::loadRendererDataToDeviceContext(const Renderer_data&
 
 void Entity_render_manager::drawRendererData(
 	const Render_pass::Camera_data& cameraData,
-	const SimpleMath::Matrix& worldTransform,
+	const SSE::Matrix4& worldTransform,
 	Renderer_data& rendererData,
 	Render_pass_blend_mode blendMode,
 	const Render_light_data& renderLightData,
@@ -675,7 +676,7 @@ Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material
 {
 	auto renderable = Renderable();
 	if (renderable.meshData == nullptr)
-		renderable.meshData = Primitive_mesh_data_factory::createQuad({ 2.0f, 2.0f }, { -1.f, -1.f, 0.f });
+		renderable.meshData = Primitive_mesh_data_factory::createQuad(2.0f, 2.0f, { -1.f, -1.f, 0.f });
 
 	if (renderable.material == nullptr)
 		renderable.material = material;

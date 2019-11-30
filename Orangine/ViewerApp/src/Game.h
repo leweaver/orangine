@@ -69,7 +69,7 @@ private:
     void createDeviceDependentResources();
     void createWindowSizeDependentResources();
 
-	void AddCubeToEntity(std::shared_ptr<oe::Entity> entity, DirectX::SimpleMath::Vector3 animationSpeed, DirectX::SimpleMath::Vector3 localScale, DirectX::SimpleMath::Vector3 localPosition);
+	void AddCubeToEntity(std::shared_ptr<oe::Entity> entity, SSE::Vector3 animationSpeed, DirectX::SimpleMath::Vector3 localScale, DirectX::SimpleMath::Vector3 localPosition);
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;

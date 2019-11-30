@@ -468,7 +468,7 @@ void Material_manager::bind(
 
 void Material_manager::render(
     const Renderer_data& rendererData,
-    const SimpleMath::Matrix& worldMatrix,
+    const SSE::Matrix4& worldMatrix,
     const Renderer_animation_data& rendererAnimationData,
     const Render_pass::Camera_data& camera)
 {
@@ -483,7 +483,7 @@ void Material_manager::render(
     if (materialConstants->vertexConstantBuffer != nullptr) {
 
         _boundMaterial->updateVSConstantBuffer(
-			toVectorMathMat4(worldMatrix), 
+			worldMatrix, 
 			toVectorMathMat4(camera.viewMatrix), 
 			toVectorMathMat4(camera.projectionMatrix),
 			rendererAnimationData, 
@@ -510,7 +510,7 @@ void Material_manager::render(
     }
     if (materialConstants->pixelConstantBuffer != nullptr) {
         _boundMaterial->updatePSConstantBuffer(
-			toVectorMathMat4(worldMatrix),
+			worldMatrix,
 			toVectorMathMat4(camera.viewMatrix),
 			toVectorMathMat4(camera.projectionMatrix),
 			context,

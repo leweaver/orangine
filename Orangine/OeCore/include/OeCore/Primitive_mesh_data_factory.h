@@ -1,6 +1,6 @@
 #pragma once
 #include "Mesh_data.h"
-#include <SimpleMath.h>
+#include <vectormath/vectormath.hpp>
 
 namespace oe {
 	struct BoundingFrustumRH;
@@ -12,11 +12,11 @@ namespace oe {
 	{
 	public:
 		// Creates an indexed mesh with Position
-		static std::shared_ptr<Mesh_data> createQuad(const DirectX::SimpleMath::Vector2& size);
-		static std::shared_ptr<Mesh_data> createQuad(const DirectX::SimpleMath::Vector2& size, const DirectX::SimpleMath::Vector3& positionOffset);
+		static std::shared_ptr<Mesh_data> createQuad(float width, float height);
+		static std::shared_ptr<Mesh_data> createQuad(float width, float height, const SSE::Vector3& positionOffset);
 
 		// Creates an indexed mesh with Position, Normal, Tangent, Textcoord_0
-		static std::shared_ptr<Mesh_data> createBox(const DirectX::SimpleMath::Vector3& size);
+		static std::shared_ptr<Mesh_data> createBox(const SSE::Vector3& size);
         static std::shared_ptr<Mesh_data> createCone(float diameter, float height, size_t tessellation = 32);
 		static std::shared_ptr<Mesh_data> createTeapot(size_t tessellation = 8);
 		static std::shared_ptr<Mesh_data> createSphere(float radius = 0.5f, size_t tessellation = 16, bool invertNormals = false);

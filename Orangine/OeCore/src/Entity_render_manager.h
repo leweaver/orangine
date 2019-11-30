@@ -51,7 +51,7 @@ namespace oe::internal {
 		void destroyDeviceDependentResources() override;
 
 		void renderRenderable(Renderable& renderable,
-			const DirectX::SimpleMath::Matrix& worldMatrix,
+			const SSE::Matrix4& worldMatrix,
 			float radius,
 			const Render_pass::Camera_data& cameraData,
 			const Light_provider::Callback_type& lightDataProvider,
@@ -74,7 +74,7 @@ namespace oe::internal {
 
 		void drawRendererData(
 			const Render_pass::Camera_data& cameraData,
-			const DirectX::SimpleMath::Matrix& worldTransform,
+			const SSE::Matrix4& worldTransform,
 			Renderer_data& rendererData,
 			Render_pass_blend_mode blendMode,
 			const Render_light_data& renderLightData,

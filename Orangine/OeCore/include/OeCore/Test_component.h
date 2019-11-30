@@ -10,16 +10,16 @@ namespace oe {
 		DECLARE_COMPONENT_TYPE;
 
 		std::string _testString;
-		DirectX::SimpleMath::Vector3 _speed;
+		SSE::Vector3 _speed;
 
 	public:
 		Test_component(Entity& entity)
 			: Component(entity)
-			, _speed(DirectX::SimpleMath::Vector3::Zero)
+			, _speed(SSE::Vector3(0))
 		{			
 		}
 
-		void setSpeed(const DirectX::SimpleMath::Vector3& speed) { _speed = speed; }
-		const DirectX::SimpleMath::Vector3& getSpeed() const { return _speed; }
+		void setSpeed(const SSE::Vector3& speed) { _speed = speed; }
+		const SSE::Vector3& getSpeed() const { return _speed; }
 	};
 }

@@ -30,7 +30,7 @@ void Render_pass_skybox::render(const Camera_data& cameraData)
 	_material->setCubeMapTexture(_scene.skyboxTexture());
 	_scene.manager<IEntity_render_manager>().renderRenderable(
 		*_renderable,
-		Matrix::Identity,
+		SSE::Matrix4::identity(),
 		0.0f,
 		skyboxCamera,
 		Light_provider::no_light_provider,

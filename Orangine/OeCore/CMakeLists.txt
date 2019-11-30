@@ -45,6 +45,7 @@ add_library(${PROJECT_NAME} STATIC
         src/Light_provider.cpp
         src/Material.cpp
         src/Material_manager.cpp
+        src/Math_constants.cpp
         src/Mesh_data.cpp
         src/Mesh_data_component.cpp
         src/Mesh_utils.cpp

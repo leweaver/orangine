@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <set>
+#include <vectormath/vectormath.hpp>
 
 namespace oe {
 

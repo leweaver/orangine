@@ -3,8 +3,8 @@
 #include "OeCore/Mesh_data.h"
 #include "OeCore/Mikk_tspace_triangle_mesh_interface.h"
 #include "OeCore/Collision.h"
+#include "OeCore/Math_constants.h"
 
-#include <SimpleMath.h>
 #include <array>
 #include <cstddef>
 #include <GeometricPrimitive.h>
@@ -133,23 +133,25 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNor
 	return meshData;
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const SimpleMath::Vector2 &size)
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(float width, float height)
 {
-	return createQuad(size, SimpleMath::Vector3(-size.x * 0.5f, -size.y * 0.5f, 0.0f));
+	return createQuad(width, height, SSE::Vector3(-width * 0.5f, -height * 0.5f, 0.0f));
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(const SimpleMath::Vector2 &size, const SimpleMath::Vector3& positionOffset)
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(float width, float height, const SSE::Vector3& positionOffset)
 {
 	const auto 
-		top    = positionOffset.y + size.y,
-		right  = positionOffset.x + size.x,
-		bottom = positionOffset.y,
-		left   = positionOffset.x;
+		top    = positionOffset.getY() + height,
+		right  = positionOffset.getX() + width,
+		bottom = positionOffset.getY() + 0.0f,
+		left   = positionOffset.getX() + 0.0f;
 	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
-	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  top,    positionOffset.z }, SimpleMath::Vector3::Backward, { 0.0f, 0.0f }));
-	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ right, top,    positionOffset.z }, SimpleMath::Vector3::Backward, { 1.0f, 0.0f }));
-	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  bottom, positionOffset.z }, SimpleMath::Vector3::Backward, { 0.0f, 1.0f }));
-	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ right, bottom, positionOffset.z }, SimpleMath::Vector3::Backward, { 1.0f, 1.0f }));
+	float z = positionOffset.getZ();
+	XMFLOAT3 backward = { Math::Direction::Backward.getX(), Math::Direction::Backward.getY(), Math::Direction::Backward.getZ() };
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  top,    z }, backward, { 0.0f, 0.0f }));
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ right, top,    z }, backward, { 1.0f, 0.0f }));
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  bottom, z }, backward, { 0.0f, 1.0f }));
+	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ right, bottom, z }, backward, { 1.0f, 1.0f }));
 
 	std::vector<uint16_t> indices = {
 		0, 2, 1,
@@ -187,13 +189,13 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createSphere(float radiu
 	return md;
 }
 
-std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createBox(const SimpleMath::Vector3& size)
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createBox(const SSE::Vector3& size)
 {
 	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
 	std::vector<uint16_t> indices;
 
 	// FIXME: This doesn't seem right, as we are trying to use a RH coordinate system:
-	DirectX::GeometricPrimitive::CreateBox(vertices, indices, size, false);
+	DirectX::GeometricPrimitive::CreateBox(vertices, indices, { size.getX(), size.getY(), size.getZ() }, false);
 
 	auto md = createMeshData(move(vertices), move(indices));
 	generateTangents(md);

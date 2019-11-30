@@ -42,7 +42,7 @@ namespace oe {
 
         void render(
             const Renderer_data& rendererData,
-            const DirectX::SimpleMath::Matrix& worldMatrix,
+            const SSE::Matrix4& worldMatrix,
             const Renderer_animation_data& rendererAnimationState,
             const Render_pass::Camera_data& camera) override;
 

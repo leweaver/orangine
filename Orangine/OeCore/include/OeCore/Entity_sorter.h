@@ -64,7 +64,7 @@ namespace oe {
 	public:
 
 		template<class _RanIt>
-		void beginSortAsync(_RanIt begin, _RanIt end, const DirectX::SimpleMath::Vector3& eyePosition)
+		void beginSortAsync(_RanIt begin, _RanIt end, const SSE::Vector3& eyePosition)
 		{
 			using namespace DirectX;
 
@@ -86,7 +86,7 @@ namespace oe {
 		}
 
 	protected:
-		void sortEntities(const DirectX::SimpleMath::Vector3& eyePosition);
+		void sortEntities(const SSE::Vector3& eyePosition);
 	};
 
 	template <class TEntity_data>

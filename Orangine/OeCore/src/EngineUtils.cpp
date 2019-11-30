@@ -9,39 +9,39 @@ using namespace oe;
 using namespace std::string_literals;
 
 bool oe::createRotationBetweenUnitVectors(
-    DirectX::SimpleMath::Matrix& result,
-    const DirectX::SimpleMath::Vector3& directionFrom,
-    const DirectX::SimpleMath::Vector3& directionTo)
+    SSE::Matrix4& result,
+    const SSE::Vector3& directionFrom,
+    const SSE::Vector3& directionTo)
 {
 
 #ifdef _DEBUG
     // Verify that the inputs are unit vectors.
-    auto lenSqr = directionFrom.LengthSquared();
+    auto lenSqr = SSE::lengthSqr(directionFrom);
     // more forgiving than FLT_EPSILON as this is 
     // just to make sure we normalized, and error may actually be high.
     constexpr auto epsilon = 0.00001f;     
     assert(lenSqr < 1.0f + epsilon && lenSqr > 1.0f - epsilon);
-    lenSqr = directionTo.LengthSquared();
+    lenSqr = SSE::lengthSqr(directionTo);
     assert(lenSqr < 1.0f + epsilon && lenSqr > 1.0f - epsilon);
 #endif
     
-    const auto v = directionFrom.Cross(directionTo);
-    const auto sine = v.Length();
+    const auto v = SSE::cross(directionFrom, directionTo);
+    const auto sine = SSE::length(v);
     if (sine == 0.0f) {
         // Vectors are identical, no operation needed.
-        result = DirectX::SimpleMath::Matrix::Identity;
+        result = SSE::Matrix4::identity();
         return true;
     }
 
-    const auto cosine = directionFrom.Dot(directionTo);
+    const auto cosine = SSE::dot(directionFrom, directionTo);
     if (cosine == -1.0f) {
         // Vectors pointing directly opposite to one another.
         return false;
     }
     DirectX::XMFLOAT3X3 vx = {
-        0, v.z, -v.y,
-        -v.z, 0, v.x,
-        v.y, -v.x, 0
+        0, v.getZ(), -v.getY(),
+        -v.getZ(), 0, v.getX(),
+        v.getY(), -v.getX(), 0
     };
     const auto vxMat = XMLoadFloat3x3(&vx);
 
@@ -59,7 +59,7 @@ bool oe::createRotationBetweenUnitVectors(
 
     // Important that we store as a 3x3, so that the extra fields in the 4x4 matrix are discarded.
     XMStoreFloat3x3(&vx, resultMat);
-    result = vx;
+    result = toVectorMathMat4(vx);
     return true;
 }
 

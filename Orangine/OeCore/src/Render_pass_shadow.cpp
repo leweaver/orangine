@@ -92,7 +92,7 @@ void Render_pass_shadow::render(const Camera_data&)
 				shadowCameraData.enablePixelShader = false;
 			}
 			shadowData->setWorldViewProjMatrix(
-				XMMatrixMultiply(shadowCameraData.viewMatrix, shadowCameraData.projectionMatrix)
+				toVectorMathMat4(shadowCameraData.projectionMatrix) * toVectorMathMat4(shadowCameraData.viewMatrix)
 			);
 
 			// Now do the actual rendering to the shadow map

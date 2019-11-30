@@ -177,19 +177,21 @@ void Game::CreateLights()
 	const auto &lightRoot = entityManager.instantiate("Light Root");
 	lightRoot->setPosition({ 0, 0, 0 });
 	
-	//if (true)
+	if (true)
 	{
 		auto shadowLight1 = createDirLight({ 0.0f, -1.0f, 0.0f }, { 1, 1, 1, 1 }, 2);
 		shadowLight1->setParent(*lightRoot);
-		shadowLight1->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(false);
-
+		shadowLight1->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
+		
+		/*
 		auto shadowLight2 = createDirLight({ -0.707f, -0.707f, -0.707f }, { 1, 1, 0, 1 }, 2.75);
 		shadowLight2->setParent(*lightRoot);
 		shadowLight2->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(false);
 
 		createDirLight({ -0.666f, -0.333f, 0.666f }, { 1, 0, 1, 1 }, 4.0)->setParent(*lightRoot);
+		*/
 	}
-	//else
+	else
 	{
 		createPointLight({ 10, 0, 10 }, { 1, 1, 1, 1 }, 2*13)->setParent(*lightRoot);
 		createPointLight({ 10, 5, -10 }, { 1, 0, 1, 1 }, 2*20)->setParent(*lightRoot);
@@ -222,14 +224,15 @@ void Game::CreateScripts() {
 	scriptComponent.setScriptName("testmodule.TestComponent");
 }
 
-void Game::CreateGeometricPrimitives()
+void Game::CreateShadowTestScene()
 {
 	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Primitives");
+	int teapotCount = 0;
 
-	auto createTeapot = [&entityManager, &root1](const SimpleMath::Vector3& center, const Color& color, float metallic, float roughness)
+	auto createTeapot = [&entityManager, &root1, &teapotCount](const SimpleMath::Vector3& center, const Color& color, float metallic, float roughness)
 	{
-		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
+		const auto &child1 = entityManager.instantiate("Teapot " + std::to_string(++teapotCount), *root1);
 		child1->setPosition(center);
 
 		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
@@ -240,6 +243,7 @@ void Game::CreateGeometricPrimitives()
 		auto& renderable = child1->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 		renderable.setWireframe(false);
+		renderable.setCastShadow(true);
 
 		const auto meshData = Primitive_mesh_data_factory::createTeapot();
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
@@ -276,21 +280,29 @@ void Game::CreateGeometricPrimitives()
 
 	if (true)
 	{
+		// Create the floor
 		const auto &child2 = entityManager.instantiate("Primitive Child 2", *root1);
 		auto material = std::make_unique<PBR_material>();
 		material->setBaseColor(Color(0.7f, 0.7f, 0.7f, 1.0f));
 
 		auto& renderable = child2->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
-		renderable.setCastShadow(true);
+		renderable.setCastShadow(false);
 
-		const auto meshData = Primitive_mesh_data_factory::createQuad(15, 15);
+		const auto meshData = Primitive_mesh_data_factory::createQuad(7, 7);
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
 		child2->setRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
-		child2->setPosition({ 0.0f, 0.0f, 0.0f });
+		child2->setPosition({ 0.0f, -3.0f, 0.0f });
 		child2->setBoundSphere(BoundingSphere(SimpleMath::Vector3::Zero, 10.0f));
 	}
+
+	createTeapot({ -2, 0, -2 }, oe::Colors::Green, 1.0, 0.0f);
+	createTeapot({  2, 0, -2 }, oe::Colors::Red,   1.0, 0.25f);
+	createTeapot({ -2, 0,  2 }, oe::Colors::White, 1.0, 0.75f);
+	createTeapot({  2, 0,  2 }, oe::Colors::Black, 1.0, 0.0f);
+
+
 }
 
 // Initialize the Direct3D resources required to run.
@@ -327,7 +339,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 		//CreateSceneLeverArm();
 		//LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
 		
-		LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
+		//LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
 		//LoadGLTF("FlightHelmet", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
@@ -345,7 +357,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 
 		CreateCamera(false);
 		CreateLights();
-		//CreateGeometricPrimitives();
+		CreateShadowTestScene();
 		CreateScripts();
 
 

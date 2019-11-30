@@ -26,7 +26,7 @@ public:
 
 	void CreateSceneLeverArm();
 	void CreateScripts();
-	void CreateGeometricPrimitives();
+	void CreateShadowTestScene();
 	void CreateSceneCubeSatellite();
 	std::shared_ptr<oe::Entity> LoadGLTF(std::string gltfName, bool animate);
 	std::shared_ptr<oe::Entity> LoadGLTFToEntity(std::string gltfName, std::shared_ptr<oe::Entity> root);

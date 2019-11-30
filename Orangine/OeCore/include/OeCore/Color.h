@@ -5,7 +5,7 @@
 namespace oe {
 	class Color : public Vectormath::SSE::Vector4 {
 	public:
-		Color(float r, float b, float g, float a = 1.0f)
+		Color(float r, float g, float b, float a = 1.0f)
 			: Vectormath::SSE::Vector4(r, g, b, a) {}
 		Color() : Vectormath::SSE::Vector4() {}
 	};

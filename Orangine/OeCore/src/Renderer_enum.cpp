@@ -113,6 +113,8 @@ static_assert(static_cast<size_t>(Element_component::Num_Element_Component) == a
 std::string g_debugDisplayModeNames[] = {
     "None",
     "Normals",
+	"World_Positions",
+	"Lighting",
 };
 static_assert(static_cast<size_t>(Debug_display_mode::Num_Debug_Display_Mode) == array_size(g_debugDisplayModeNames));
 

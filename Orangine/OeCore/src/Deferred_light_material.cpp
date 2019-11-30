@@ -23,7 +23,9 @@ const std::string g_json_emittedEnabled = "emitted_enabled";
 
 const std::string g_material_type = "Deferred_light_material";
 
+const std::string g_flag_debugWorldPosition = "debug_world_positions";
 const std::string g_flag_debugNormals = "debug_normals";
+const std::string g_flag_debugLighting = "debug_lighting";
 const std::string g_flag_shadowsEnabled = "shadowsEnabled";
 const std::string g_flag_iblEnabled = "iblEnabled";
 
@@ -63,9 +65,15 @@ std::set<std::string> Deferred_light_material::configFlags(const Renderer_featur
 {
     auto flags = Base_type::configFlags(rendererFeatures, blendMode, meshBindContext);
 
+	if (rendererFeatures.debugDisplayMode == Debug_display_mode::World_Positions) {
+		flags.insert(g_flag_debugWorldPosition);
+	}
     if (rendererFeatures.debugDisplayMode == Debug_display_mode::Normals) {
         flags.insert(g_flag_debugNormals);
     }
+	if (rendererFeatures.debugDisplayMode == Debug_display_mode::Lighting) {
+		flags.insert(g_flag_debugLighting);
+	}
     if (rendererFeatures.shadowsEnabled && _shadowArrayEnabled) {
         flags.insert(g_flag_shadowsEnabled);
     }
@@ -148,13 +156,18 @@ Material::Shader_compile_settings Deferred_light_material::pixelShaderSettings(c
         settings.defines["MAP_SHADOWMAP_ARRAY"] = "1";
     }
 
-    if (flags.find(g_flag_debugNormals) != flags.end()) {
-        settings.defines["DEBUG_DISPLAY_NORMALS"] = "1";
+    if (flags.find(g_flag_debugWorldPosition) != flags.end()) {
+        settings.defines["DEBUG_DISPLAY_WORLD_POSITION"] = "1";
     }
 
-	//settings.defines["DEBUG_DISPLAY_METALLIC_ROUGHNESS"] = "1";
-	//settings.defines["DEBUG_LIGHTING_ONLY"] = "1";
-	//settings.defines["DEBUG_NO_LIGHTING"] = "1";
+	if (flags.find(g_flag_debugNormals) != flags.end()) {
+		settings.defines["DEBUG_DISPLAY_NORMALS"] = "1";
+	}
+
+	if (flags.find(g_flag_debugLighting) != flags.end()) {
+		settings.defines["DEBUG_DISPLAY_LIGHTING_ONLY"] = "1";
+	}
+
 	return settings;
 }
 
@@ -168,7 +181,6 @@ void Deferred_light_material::updatePSConstantBufferValues(Deferred_light_materi
 	const SSE::Matrix4& viewMatrix,
 	const SSE::Matrix4& projMatrix) const
 {
-	// Convert to LH, for DirectX. 
 	constants.viewMatrixInv = SSE::inverse(viewMatrix);
 	constants.projMatrixInv = SSE::inverse(projMatrix);
 	/*

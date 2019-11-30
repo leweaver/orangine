@@ -9,8 +9,8 @@ namespace oe {
 		const DirectX::BoundingOrientedBox& casterVolume() const { return _boundingOrientedBox; }
 		void setCasterVolume(const DirectX::BoundingOrientedBox& boundingOrientedBox) { _boundingOrientedBox = boundingOrientedBox; }
 
-		const DirectX::SimpleMath::Matrix& worldViewProjMatrix() const { return _worldViewProjMatrix; };
-		void setWorldViewProjMatrix(const DirectX::SimpleMath::Matrix& worldViewProjMatrix) { _worldViewProjMatrix = worldViewProjMatrix; }
+		const SSE::Matrix4& worldViewProjMatrix() const { return _worldViewProjMatrix; };
+		void setWorldViewProjMatrix(const SSE::Matrix4& worldViewProjMatrix) { _worldViewProjMatrix = worldViewProjMatrix; }
 
 		ID3D11DepthStencilView* depthStencilView() const { return _depthStencilView.Get(); }
 
@@ -22,7 +22,7 @@ namespace oe {
 		D3D11_VIEWPORT _viewport;
 		
 		DirectX::BoundingOrientedBox _boundingOrientedBox;
-		DirectX::SimpleMath::Matrix _worldViewProjMatrix;
+		SSE::Matrix4 _worldViewProjMatrix;
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> _depthStencilView;
 	};
 

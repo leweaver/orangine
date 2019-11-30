@@ -15,6 +15,7 @@
 #include "OeCore/Scene.h"
 #include "OeCore/Entity_filter.h"
 #include "OeCore/Entity.h"
+#include "OeCore/Math_constants.h"
 #include <cmath>
 #include <set>
 
@@ -316,14 +317,15 @@ void Entity_scripting_manager::tick()
 			renderDebugSpheres();
 		}
 
-		const auto deltaRot = SimpleMath::Quaternion::CreateFromYawPitchRoll(_scriptData.yaw, _scriptData.pitch, 0.0f);
-		auto cameraPosition = SimpleMath::Vector3(DirectX::XMVector3Rotate(XMLoadFloat3(&SimpleMath::Vector3::Forward), XMLoadFloat4(&deltaRot)));
+		const auto cameraRot = SSE::Matrix4::rotationY(_scriptData.yaw + Math::PI) * SSE::Matrix4::rotationX(-_scriptData.pitch);
+		auto cameraPosition = cameraRot * Math::Direction::Backward;
 		cameraPosition *= _scriptData.distance;
 
 		auto entity = _scene.mainCamera();
 		if (entity != nullptr) {
-			entity->setPosition(cameraPosition);
-			entity->lookAt(SimpleMath::Vector3::Zero, SimpleMath::Vector3::Up);
+			entity->setPosition({ cameraPosition.getX(), cameraPosition.getY(), cameraPosition.getZ() });
+			auto cameraRotQuat = SSE::Quat(cameraRot.getUpper3x3());
+			entity->setRotation({ cameraRotQuat.getX(), cameraRotQuat.getY(), cameraRotQuat.getZ(), cameraRotQuat.getW() });
 		}
 	}
 }

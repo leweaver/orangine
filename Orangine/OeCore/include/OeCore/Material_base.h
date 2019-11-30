@@ -4,6 +4,8 @@
 
 namespace oe {
 	struct Vertex_constant_buffer_empty {};
+
+	__declspec(align(16))
 	struct Vertex_constant_buffer_base {
 		SSE::Matrix4 worldViewProjection;
 	};

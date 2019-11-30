@@ -83,7 +83,7 @@ namespace oe
 				lightDirection, 
 				encodeColor(color, intensity),
 				static_cast<int32_t>(shadowMapTexture.arraySlice()),
-				XMMatrixTranspose(shadowMapTexture.worldViewProjMatrix()),
+				shadowMapTexture.worldViewProjMatrix(),
 				shadowMapDepth,
 				shadowMapBias
 			};
@@ -140,7 +140,7 @@ namespace oe
 				Float3 lightPositionDirection;
 				Float3 intensifiedColor;
 				int32_t shadowMapIndex = shadow_map_disabled_index;
-				DirectX::SimpleMath::Matrix shadowViewProjMatrix;
+				SSE::Matrix4 shadowViewProjMatrix;
 				float shadowMapDepth = 0.0f;
 				float shadowMapBias = 0.0f;
 				float unused[2];

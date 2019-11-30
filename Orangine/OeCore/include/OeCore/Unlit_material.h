@@ -2,10 +2,11 @@
 
 #include "OeCore/Material_base.h"
 #include "OeCore/Color.h"
+#include "Simple_types.h"
 
 namespace oe {
 	struct Unlit_material_vs_constant_buffer : Vertex_constant_buffer_base {
-		Color baseColor;
+		Float4 baseColor;
 	};
 
 	class Unlit_material : public Material_base<Unlit_material_vs_constant_buffer, Pixel_constant_buffer_base> {

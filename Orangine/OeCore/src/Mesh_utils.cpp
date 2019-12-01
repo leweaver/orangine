@@ -4,6 +4,7 @@
 #include "OeCore/Mesh_data.h"
 #include "OeCore/Entity_filter.h"
 #include "OeCore/Entity.h"
+#include "OeCore/EngineUtils.h"
 #include "D3D11/DirectX_utils.h"
 
 using namespace DirectX;
@@ -129,47 +130,51 @@ namespace oe::mesh_utils {
 
         return componentPos->second;
     }
-    
-	BoundingOrientedBox aabbForEntities(const Entity_filter& entities,
-		const DirectX::SimpleMath::Quaternion& orientation,
-		std::function<bool(const Entity&)> predicate)
-	{
-		// Extents, in light view space (as defined above)
-		XMVECTOR minExtents = SimpleMath::Vector3::Zero;
-		XMVECTOR maxExtents = SimpleMath::Vector3::Zero;
 
-		auto firstExtentsCalc = true;
-		const auto orientationMatrix = Matrix::CreateFromQuaternion(orientation);
-		const auto orientationMatrixInv = XMMatrixInverse(nullptr, orientationMatrix);
-		for (auto& entity : entities) {
-			if (!predicate(*entity.get()))
-				continue;
+    BoundingOrientedBox aabbForEntities(const Entity_filter& entities,
+        const SSE::Quat& orientation,
+        std::function<bool(const Entity&)> predicate)
+    {
+        // Extents, in light view space (as defined above)
+        SSE::Vector4 minExtents = SSE::Vector4(0);
+        SSE::Vector4 maxExtents = SSE::Vector4(0);
 
-			const auto& boundSphere = entity->boundSphere();
+        auto firstExtentsCalc = true;
+        const auto orientationMatrix = SSE::Matrix4(orientation, SSE::Vector3(0));
+        const auto orientationMatrixInv = SSE::inverse(orientationMatrix);
+        for (auto& entity : entities) {
+            if (!predicate(*entity.get()))
+                continue;
+
+            const auto& boundSphere = entity->boundSphere();
             assert(boundSphere.radius < INFINITY && boundSphere.radius >= 0.0f);
-            const auto boundLocalCenter = SimpleMath::Vector3(StoreVector3(boundSphere.center));
-			const auto boundWorldCenter = SimpleMath::Vector3::Transform(boundLocalCenter, entity->worldTransform());
-			const auto boundWorldEdge = SimpleMath::Vector3::Transform(boundLocalCenter + SimpleMath::Vector3(0, 0, boundSphere.radius), entity->worldTransform());
+            const auto boundWorldCenter = toVectorMathMat4(entity->worldTransform()) * SSE::Point3(boundSphere.center);
+            const auto boundWorldEdgePoint = boundSphere.center + SSE::Vector3(0, 0, boundSphere.radius);
+            const auto boundWorldEdge = toVectorMathMat4(entity->worldTransform()) * SSE::Point3(boundWorldEdgePoint);
 
-			// Bounds, in light view space (as defined above)
-			const auto boundCenter = SimpleMath::Vector3::Transform(boundWorldCenter, orientationMatrixInv);
-			const auto boundEdge = SimpleMath::Vector3::Transform(boundWorldEdge, orientationMatrixInv);
-			const auto boundRadius = XMVector3Length(XMVectorSubtract(boundEdge, boundCenter));
+            // Bounds, in light view space (as defined above)
+            const auto boundCenter = orientationMatrixInv * boundWorldCenter;
+            const auto boundEdge = orientationMatrixInv * boundWorldEdge;
+            const auto boundRadius = SSE::Vector4(SSE::length(boundEdge - boundCenter));
 
-			if (firstExtentsCalc) {
-				minExtents = XMVectorSubtract(boundCenter, boundRadius);
-				maxExtents = XMVectorAdd(boundCenter, boundRadius);
-				firstExtentsCalc = false;
-			}
-			else {
-				minExtents = XMVectorMin(minExtents, XMVectorSubtract(boundCenter, boundRadius));
-				maxExtents = XMVectorMax(maxExtents, XMVectorAdd(boundCenter, boundRadius));
-			}
-		}
+            if (firstExtentsCalc) {
+                minExtents = boundCenter - boundRadius;
+                maxExtents = boundCenter + boundRadius;
+                firstExtentsCalc = false;
+            }
+            else {
+                minExtents = SSE::minPerElem(minExtents, boundCenter - boundRadius);
+                maxExtents = SSE::maxPerElem(maxExtents, boundCenter + boundRadius);
+            }
+        }
 
-		const auto halfVector = XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f); // OPT: does the compiler optimize this?
-		const auto center = SimpleMath::Vector3::Transform(XMVectorMultiply(XMVectorAdd(maxExtents, minExtents), halfVector), orientationMatrix);
-		const auto extents = XMVectorMultiply(XMVectorSubtract(maxExtents, minExtents), halfVector);
-		return BoundingOrientedBox(SimpleMath::Vector3(center), SimpleMath::Vector3(extents), orientation);
-	}
+        const auto halfVector = SSE::Vector4(0.5f, 0.5f, 0.5f, 0.0f); // OPT: does the compiler optimize this?
+        const auto center = orientationMatrix * SSE::Point3(SSE::mulPerElem(maxExtents + minExtents, halfVector).getXYZ());
+        const auto extents = SSE::mulPerElem(maxExtents - minExtents, halfVector);
+        return BoundingOrientedBox(
+            SimpleMath::Vector3(center.getX(), center.getY(), center.getZ()),
+            SimpleMath::Vector3(extents.getX(), extents.getY(), extents.getZ()),
+            SimpleMath::Quaternion(orientation.getX(), orientation.getY(), orientation.getZ(), orientation.getW())
+        );
+    }
 }

@@ -57,7 +57,7 @@ void Render_pass_shadow::render(const Camera_data&)
 			auto worldToLightViewMatrix = DirectX::SimpleMath::Matrix::CreateFromQuaternion(lightEntity->worldRotation());
 			auto shadowVolumeBoundingBox = mesh_utils::aabbForEntities(
 				*_renderableEntities,
-				lightEntity->worldRotation(),
+				toQuat(lightEntity->worldRotation()),
 				[](const Entity& entity) {
 				const auto renderable = entity.getFirstComponentOfType<Renderable_component>();
 				assert(renderable != nullptr);

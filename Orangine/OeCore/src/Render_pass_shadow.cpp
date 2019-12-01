@@ -8,6 +8,8 @@
 #include "OeCore/Entity.h"
 #include "OeCore/Scene.h"
 #include "OeCore/Render_pass_shadow.h"
+#include "OeCore/Math_constants.h"
+#include "D3D11/DirectX_utils.h"
 
 using namespace DirectX;
 using namespace oe;
@@ -77,22 +79,33 @@ void Render_pass_shadow::render(const Camera_data&)
 
 			Camera_data shadowCameraData;
 			{
-				const auto pos = SimpleMath::Vector3(lightNearPlaneWorldTranslation);
-				const auto forward = SimpleMath::Vector3::TransformNormal(SimpleMath::Vector3::Forward, worldToLightViewMatrix);
-				const auto up = SimpleMath::Vector3::TransformNormal(SimpleMath::Vector3::Up, worldToLightViewMatrix);
+				auto wtlm = toVectorMathMat4(worldToLightViewMatrix);
+				const auto pos = toPoint3(SimpleMath::Vector3(lightNearPlaneWorldTranslation));
+				const auto forward = wtlm * Math::Direction::Forward;
+				const auto up = wtlm * Math::Direction::Up;
+
+				shadowCameraData.viewMatrix = SSE::Matrix4::lookAt(pos, pos + forward.getXYZ(), up.getXYZ());
+
 				SimpleMath::Vector3 extents2;
 				XMStoreFloat3(&extents2, XMVectorScale(XMLoadFloat3(&shadowVolumeBoundingBox.Extents), 2.0f));
 
-                if (extents2.x == 0.0f)
-                    extents2 = SimpleMath::Vector3::One;
+				if (extents2.x == 0.0f)
+					extents2 = SimpleMath::Vector3::One;
+				auto refProjectionMatrix = toVectorMathMat4(SimpleMath::Matrix::CreateOrthographic(extents2.x, extents2.y, 0.0f, extents2.z));
 
-				//shadowCameraData.worldMatrix = Matrix::CreateTranslation(lightNearPlaneWorldTranslation);
-				shadowCameraData.viewMatrix = SimpleMath::Matrix::CreateLookAt(pos, pos + forward, up);
-				shadowCameraData.projectionMatrix = SimpleMath::Matrix::CreateOrthographic(extents2.x, extents2.y, 0.01f, extents2.z);
+
+				SSE::Vector3 extents = LoadVector3(shadowVolumeBoundingBox.Extents);
+
+				if (extents.getX() == 0.0f)
+					extents = SSE::Vector3(0.5f);
+				//SimpleMath::Matrix::CreateOrthographic()
+				shadowCameraData.projectionMatrix = SSE::Matrix4::orthographic(-extents.getX(), extents.getX(), -extents.getY(), extents.getY(), -extents.getZ() * 2, extents.getZ() * 2.0f);
+
+				// Disable rendering of pixel shader when drawing objects into the shadow camera.
 				shadowCameraData.enablePixelShader = false;
 			}
 			shadowData->setWorldViewProjMatrix(
-				toVectorMathMat4(shadowCameraData.projectionMatrix) * toVectorMathMat4(shadowCameraData.viewMatrix)
+				shadowCameraData.projectionMatrix * shadowCameraData.viewMatrix
 			);
 
 			// Now do the actual rendering to the shadow map

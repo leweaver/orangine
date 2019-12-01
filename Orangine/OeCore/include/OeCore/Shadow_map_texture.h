@@ -51,15 +51,19 @@ namespace oe {
 
 		typedef std::function<Array_texture()> Array_texture_source;
 
-		Shadow_map_texture_array_slice(const D3D11_VIEWPORT& viewport, uint32_t arraySlice, Array_texture_source arrayTextureSource);
+		Shadow_map_texture_array_slice(const D3D11_VIEWPORT& viewport, uint32_t arraySlice, uint32_t dimension, Array_texture_source arrayTextureSource);
 
 		void load(ID3D11Device* device) override;
 		void unload() override;
 
 		uint32_t arraySlice() const { return _arraySlice; }
+		uint32_t textureWidth() const {
+			return _textureWidth;
+		}
 
 	private:
 		Array_texture_source _arrayTextureSource;
 		uint32_t _arraySlice;
+		uint32_t _textureWidth;
 	};
 }

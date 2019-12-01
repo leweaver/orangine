@@ -18,8 +18,8 @@ struct Light {
 	float3   intensifiedColor;
 	int      shadowMapIndex;
 	float4x4 shadowMapViewMatrix;
-	float    shadowMapDepth;
 	float    shadowMapBias;
+	int      shadowMapDimension;
 	float2   notused;
 };
 

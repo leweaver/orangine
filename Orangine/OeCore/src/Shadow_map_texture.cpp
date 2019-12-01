@@ -24,10 +24,12 @@ Shadow_map_texture_basic::Shadow_map_texture_basic(uint32_t width, uint32_t heig
 }
 
 Shadow_map_texture_array_slice::Shadow_map_texture_array_slice(const D3D11_VIEWPORT& viewport, uint32_t arraySlice,
+	uint32_t textureWidth,
 	Array_texture_source arrayTextureSource)
 	: Shadow_map_texture(viewport)
 	, _arrayTextureSource(arrayTextureSource)
 	, _arraySlice(arraySlice)
+	, _textureWidth(textureWidth)
 {
 }
 

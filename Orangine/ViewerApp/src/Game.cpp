@@ -181,15 +181,15 @@ void Game::CreateLights()
 	{
 		auto shadowLight1 = createDirLight({ 0.0f, -1.0f, 0.0f }, { 1, 1, 1, 1 }, 2);
 		shadowLight1->setParent(*lightRoot);
-		shadowLight1->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
+		shadowLight1->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(false);
 		
-		/*
+		
 		auto shadowLight2 = createDirLight({ -0.707f, -0.707f, -0.707f }, { 1, 1, 0, 1 }, 2.75);
 		shadowLight2->setParent(*lightRoot);
-		shadowLight2->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(false);
+		shadowLight2->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
 
 		createDirLight({ -0.666f, -0.333f, 0.666f }, { 1, 0, 1, 1 }, 4.0)->setParent(*lightRoot);
-		*/
+		
 	}
 	else
 	{
@@ -289,11 +289,11 @@ void Game::CreateShadowTestScene()
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 		renderable.setCastShadow(false);
 
-		const auto meshData = Primitive_mesh_data_factory::createQuad(7, 7);
+		const auto meshData = Primitive_mesh_data_factory::createQuad(20, 20);
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
 		child2->setRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
-		child2->setPosition({ 0.0f, -3.0f, 0.0f });
+		child2->setPosition({ 0.0f, -1.5f, 0.0f });
 		child2->setBoundSphere(BoundingSphere(SimpleMath::Vector3::Zero, 10.0f));
 	}
 

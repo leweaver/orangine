@@ -144,13 +144,11 @@ bool addLightToRenderLightData(const Entity& lightEntity, Render_light_data_impl
 		const auto shadowData = dynamic_cast<Shadow_map_texture_array_slice*>(directionalLight->shadowData().get());
 
 		if (shadowData != nullptr) {
-			auto shadowMapDepth = shadowData->casterVolume().Extents.z;
 			auto shadowMapBias = directionalLight->shadowMapBias();
 			return renderLightData.addDirectionalLight(lightDirection, 
 				directionalLight->color(),
 				directionalLight->intensity(), 
 				*shadowData,
-				shadowMapDepth,
 				shadowMapBias);
 		} else if (directionalLight->shadowData().get() != nullptr) {
 			throw std::logic_error("Directional lights only support texture array shadow maps.");

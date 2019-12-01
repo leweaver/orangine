@@ -75,7 +75,6 @@ namespace oe
 			const Color& color, 
 			float intensity, 
 			const Shadow_map_texture_array_slice& shadowMapTexture,
-			float shadowMapDepth,
 			float shadowMapBias)
 		{
 			typename Light_constants::Light_entry lightEntry = { 
@@ -84,8 +83,8 @@ namespace oe
 				encodeColor(color, intensity),
 				static_cast<int32_t>(shadowMapTexture.arraySlice()),
 				shadowMapTexture.worldViewProjMatrix(),
-				shadowMapDepth,
-				shadowMapBias
+				shadowMapBias,
+				static_cast<int32_t>(shadowMapTexture.textureWidth())
 			};
 
 			if (_lightConstants.addLight(std::move(lightEntry))) {
@@ -141,8 +140,8 @@ namespace oe
 				Float3 intensifiedColor;
 				int32_t shadowMapIndex = shadow_map_disabled_index;
 				SSE::Matrix4 shadowViewProjMatrix;
-				float shadowMapDepth = 0.0f;
 				float shadowMapBias = 0.0f;
+				int32_t shadowmapDimension = 0;
 				float unused[2];
 			};
 

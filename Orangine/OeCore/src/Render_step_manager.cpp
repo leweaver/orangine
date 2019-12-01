@@ -15,6 +15,7 @@
 #include "OeCore/IDev_tools_manager.h"
 #include "OeCore/Render_pass_skybox.h"
 #include "OeCore/Perf_timer.h"
+#include "OeCore/Math_constants.h"
 
 #include <CommonStates.h>
 
@@ -487,24 +488,24 @@ Render_pass::Camera_data Render_step_manager::createCameraData(Camera_component&
 
 
 	// Construct camera axis vectors, to create a view matrix using lookAt.
-	const auto wt = component.entity().worldTransform();
-	const auto pos = wt.Translation();
-	const auto forward = SimpleMath::Vector3::TransformNormal(SimpleMath::Vector3::Forward, wt);
-	const auto up = SimpleMath::Vector3::TransformNormal(SimpleMath::Vector3::Up, wt);
+	const auto wt = toVectorMathMat4(component.entity().worldTransform());
+	const auto pos = SSE::Point3(wt.getTranslation());
+	const auto forward = wt * Math::Direction::Forward;
+	const auto up = wt * Math::Direction::Up;
 
 	// This optimization, while fancy, breaks our ability to read in the world pos from the depth buffer in deferred lighting.
 	//auto invFarPlane = component.farPlane() != 0.0f ? 1.0f / component.farPlane() : 0.0f;
 	//_cameraData.projectionMatrix._33 *= invFarPlane;
 	//_cameraData.projectionMatrix._43 *= invFarPlane;
 
-	auto perspectiveMat = SimpleMath::Matrix::CreatePerspectiveFieldOfView(
+	auto perspectiveMat = SSE::Matrix4::perspective(
 			component.fov(),
 			aspectRatio,
 			component.nearPlane(),
 			component.farPlane());
 
 	return {
-		SimpleMath::Matrix::CreateLookAt(pos, pos + forward, up),
+		SSE::Matrix4::lookAt(pos, pos + forward.getXYZ(), up.getXYZ()),
 		perspectiveMat,
 		component.fov(),
 		aspectRatio

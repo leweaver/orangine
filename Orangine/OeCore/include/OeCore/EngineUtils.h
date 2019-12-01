@@ -108,6 +108,10 @@ namespace oe {
 		return { quat.x, quat.y, quat.z, quat.w };
 	}
 
+	inline SSE::Point3 toPoint3(const DirectX::SimpleMath::Vector3& vec) {
+		return { vec.x,vec.y,vec.z };
+	}
+
 	inline SSE::Vector3 toVector3(const DirectX::SimpleMath::Vector3& vec) {
 		return { vec.x,vec.y,vec.z };
 	}

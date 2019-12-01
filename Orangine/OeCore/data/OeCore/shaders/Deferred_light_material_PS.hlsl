@@ -135,8 +135,8 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 			ssi.lightColor = lightColor;
 			ssi.shadowMapArrayIndex = light.shadowMapIndex;
 			ssi.shadowMapViewMatrix = light.shadowMapViewMatrix;
-			ssi.shadowMapDepth = light.shadowMapDepth;
 			ssi.shadowMapBias = light.shadowMapBias;
+			ssi.shadowMapDimension = light.shadowMapDimension;
 			finalColor += Shadow(ssi);
 		}
 		else {

@@ -3,6 +3,7 @@
 #include "OeCore/IScene_graph_manager.h"
 #include "OeCore/Mesh_data.h"
 #include "OeCore/Fps_counter.h"
+#include "OeCore/Collision.h"
 
 namespace oe {
     class Perf_timer;
@@ -43,7 +44,7 @@ namespace oe::internal {
 
 	private:
 
-		using LightProvider = std::function<void(const DirectX::BoundingSphere& target, std::vector<Entity*>& lights, uint8_t maxLights)>;
+		using LightProvider = std::function<void(const oe::BoundingSphere& target, std::vector<Entity*>& lights, uint8_t maxLights)>;
 
         std::shared_ptr<Renderable> getOrCreateRenderable(size_t hash, std::function< std::shared_ptr<Mesh_data>()> factory);
         void renderSkeletons();

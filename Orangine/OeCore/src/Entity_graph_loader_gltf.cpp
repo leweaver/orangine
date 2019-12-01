@@ -14,6 +14,7 @@
 #include "OeCore/Animation_controller_component.h"
 #include "OeCore/Morph_weights_component.h"
 #include "OeCore/Skinned_mesh_component.h"
+#include "OeCore/Collision.h"
 
 #include <wincodec.h>
 #include <functional>
@@ -910,14 +911,12 @@ shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_reposi
 
 				// Calculate bounds?
 				if (loaderData.calculateBounds) {
-					DirectX::BoundingSphere boundingSphere;
-
                     const auto& vertexBufferAccessor = meshData->vertexBufferAccessors.at({Vertex_attribute::Position, 0});
                     assert(vertexBufferAccessor->stride >= sizeof(DirectX::SimpleMath::Vector3));
-					DirectX::BoundingSphere::CreateFromPoints(boundingSphere,
-						vertexBufferAccessor->count,
-						reinterpret_cast<DirectX::SimpleMath::Vector3*>(vertexBufferAccessor->buffer->data),
-						vertexBufferAccessor->stride);
+                    auto boundingSphere = oe::BoundingSphere::createFromPoints(
+                        reinterpret_cast<Float3*>(vertexBufferAccessor->buffer->data),
+                        vertexBufferAccessor->count,
+                        vertexBufferAccessor->stride);
 
 					primitiveEntity->setBoundSphere(boundingSphere);
 				}

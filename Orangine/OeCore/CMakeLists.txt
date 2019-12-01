@@ -78,6 +78,7 @@ add_library(${PROJECT_NAME} STATIC
         src/JsonConfigReader.cpp
         src/JsonConfigReader.h
         src/D3D11/DirectX_utils.h
+        src/D3D11/Collision.cpp
         )
 file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")

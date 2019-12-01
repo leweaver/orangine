@@ -1,8 +1,29 @@
 ﻿#pragma once
 
 #include <DirectXCollision.h>
+#include <vectormath/vectormath.hpp>
+#include "Simple_types.h"
 
 namespace oe {
+
+    struct BoundingSphere {
+        SSE::Vector3 center;
+        float radius;
+
+        BoundingSphere() noexcept : center(0, 0, 0), radius(1.f) {}
+
+        BoundingSphere(const BoundingSphere&) = default;
+        BoundingSphere& operator=(const BoundingSphere&) = default;
+
+        BoundingSphere(BoundingSphere&&) = default;
+        BoundingSphere& operator=(BoundingSphere&&) = default;
+
+        constexpr BoundingSphere(const SSE::Vector3& center, float radius)
+            : center(center), radius(radius) {}
+
+        static BoundingSphere createFromPoints(Float3* points, int numPoints, size_t strideBytes);
+        static void createMerged(BoundingSphere& out, const BoundingSphere& input1, const BoundingSphere& input2);
+    };
 
 	/*
 	 * A partial re-implementation of DirectX::BoundingFrustum that is compatible with right handed coordinate systems.
@@ -35,7 +56,7 @@ namespace oe {
 		// Methods
 		static inline void CreateFromMatrix(BoundingFrustumRH& Out, DirectX::FXMMATRIX Projection);
 
-		inline DirectX::ContainmentType Contains(const DirectX::BoundingSphere& sh) const;
+		DirectX::ContainmentType Contains(const oe::BoundingSphere& sh) const;
 
 		inline void GetCorners(DirectX::XMFLOAT3* Corners) const;
 	};

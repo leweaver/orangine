@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "OeCore/Component.h"
+#include "OeCore/Collision.h"
 
 #include <DirectXMath.h>
 #include <vector>
@@ -105,8 +106,8 @@ namespace oe {
         bool calculateWorldTransform() const { return _calculateWorldTransform; }
         void setCalculateWorldTransform(bool calculateWorldTransform) { _calculateWorldTransform = calculateWorldTransform; }
 
-		const DirectX::BoundingSphere& boundSphere() const { return _boundSphere; }
-		void setBoundSphere(const DirectX::BoundingSphere& boundSphere) { _boundSphere = boundSphere; }
+		const BoundingSphere& boundSphere() const { return _boundSphere; }
+		void setBoundSphere(const BoundingSphere& boundSphere) { _boundSphere = boundSphere; }
 
 		Scene& scene() const { return _scene; }
 
@@ -167,7 +168,7 @@ namespace oe {
 		DirectX::SimpleMath::Quaternion _worldRotation;
 		DirectX::SimpleMath::Vector3 _worldScale;
 
-		DirectX::BoundingSphere _boundSphere;
+		BoundingSphere _boundSphere;
 
 		/*
 		* Redirect events to the Scene.

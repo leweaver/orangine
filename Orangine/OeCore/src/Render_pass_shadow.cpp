@@ -125,7 +125,7 @@ void Render_pass_shadow::render(const Camera_data&)
 				if (!renderable->castShadow())
 					continue;
 
-				if (shadowVolumeBoundingBox.Contains(entity->boundSphere())) {
+				if (shadowVolumeBoundingBox.Contains(StoreBoundingSphere(entity->boundSphere()))) {
 					entityRenderManager.renderEntity(*renderable, shadowCameraData, Light_provider::no_light_provider, Render_pass_blend_mode::Opaque);
 				}
 			}

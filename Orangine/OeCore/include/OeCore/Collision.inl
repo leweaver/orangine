@@ -65,42 +65,6 @@ inline void oe::BoundingFrustumRH::CreateFromMatrix(BoundingFrustumRH& Out, Dire
 	Out.Far = XMVectorGetZ(Points[5]);
 }
 
-inline DirectX::ContainmentType oe::BoundingFrustumRH::Contains(const DirectX::BoundingSphere& sh) const
-{
-	using namespace DirectX;
-
-	// Load origin and orientation of the frustum.
-	XMVECTOR vOrigin = XMLoadFloat3(&Origin);
-	XMVECTOR vOrientation = XMLoadFloat4(&Orientation);
-
-	// Create 6 planes (do it inline to encourage use of registers)
-	XMVECTOR NearPlane = XMVectorSet(0.0f, 0.0f, 1.0f, -Near);
-	NearPlane = DirectX::Internal::XMPlaneTransform(NearPlane, vOrientation, vOrigin);
-	NearPlane = XMPlaneNormalize(NearPlane);
-
-	XMVECTOR FarPlane = XMVectorSet(0.0f, 0.0f, -1.0f, Far);
-	FarPlane = DirectX::Internal::XMPlaneTransform(FarPlane, vOrientation, vOrigin);
-	FarPlane = XMPlaneNormalize(FarPlane);
-
-	XMVECTOR RightPlane = XMVectorSet(1.0f, 0.0f, -RightSlope, 0.0f);
-	RightPlane = DirectX::Internal::XMPlaneTransform(RightPlane, vOrientation, vOrigin);
-	RightPlane = XMPlaneNormalize(RightPlane);
-
-	XMVECTOR LeftPlane = XMVectorSet(-1.0f, 0.0f, LeftSlope, 0.0f);
-	LeftPlane = DirectX::Internal::XMPlaneTransform(LeftPlane, vOrientation, vOrigin);
-	LeftPlane = XMPlaneNormalize(LeftPlane);
-
-	XMVECTOR TopPlane = XMVectorSet(0.0f, 1.0f, -TopSlope, 0.0f);
-	TopPlane = DirectX::Internal::XMPlaneTransform(TopPlane, vOrientation, vOrigin);
-	TopPlane = XMPlaneNormalize(TopPlane);
-
-	XMVECTOR BottomPlane = XMVectorSet(0.0f, -1.0f, BottomSlope, 0.0f);
-	BottomPlane = DirectX::Internal::XMPlaneTransform(BottomPlane, vOrientation, vOrigin);
-	BottomPlane = XMPlaneNormalize(BottomPlane);
-
-	return sh.ContainedBy(NearPlane, FarPlane, RightPlane, LeftPlane, TopPlane, BottomPlane);
-}
-
 inline void oe::BoundingFrustumRH::GetCorners(DirectX::XMFLOAT3* Corners) const
 {
 	using namespace DirectX;

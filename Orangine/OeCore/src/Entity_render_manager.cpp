@@ -428,10 +428,9 @@ void Entity_render_manager::renderRenderable(Renderable& renderable,
 		// Ask the caller what lights are affecting this entity.
 		_renderLights.clear();
 		_renderLightData_lit->clear();
-		BoundingSphere lightTarget;
-		auto center = worldMatrix.getTranslation();
-		lightTarget.Center = {center.getX(), center.getY(), center.getZ() };
-		lightTarget.Radius = radius;
+        BoundingSphere lightTarget;
+		lightTarget.center = worldMatrix.getTranslation();
+		lightTarget.radius = radius;
 		lightDataProvider(lightTarget, _renderLights, _renderLightData_lit->maxLights());
 		if (_renderLights.size() > _renderLightData_lit->maxLights()) {
 			throw std::logic_error("Light_provider::Callback_type added too many lights to entity");

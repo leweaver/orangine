@@ -413,8 +413,8 @@ void Entity_scripting_manager::renderDebugSpheres() const
 
 	for (const auto& entity : *_renderableEntityFilter) {
 		const auto& boundSphere = entity->boundSphere();
-		const auto transform = SimpleMath::Matrix::CreateTranslation(boundSphere.Center) * entity->worldTransform();
-		devToolsManager.addDebugSphere(toVectorMathMat4(transform), boundSphere.Radius, Colors::Gray);
+		const auto transform = toVectorMathMat4(entity->worldTransform()) * SSE::Matrix4::translation(boundSphere.center);
+		devToolsManager.addDebugSphere(transform, boundSphere.radius, Colors::Gray);
 	}
 
 	const auto mainCameraEntity = _scene.mainCamera();

@@ -4,6 +4,7 @@
 #include "OeCore/Mesh_data.h"
 #include "OeCore/Entity_filter.h"
 #include "OeCore/Entity.h"
+#include "D3D11/DirectX_utils.h"
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -145,9 +146,10 @@ namespace oe::mesh_utils {
 				continue;
 
 			const auto& boundSphere = entity->boundSphere();
-            assert(boundSphere.Radius < INFINITY && boundSphere.Radius >= 0.0f);
-			const auto boundWorldCenter = SimpleMath::Vector3::Transform(boundSphere.Center, entity->worldTransform());
-			const auto boundWorldEdge = SimpleMath::Vector3::Transform(SimpleMath::Vector3(boundSphere.Center) + SimpleMath::Vector3(0, 0, boundSphere.Radius), entity->worldTransform());
+            assert(boundSphere.radius < INFINITY && boundSphere.radius >= 0.0f);
+            const auto boundLocalCenter = SimpleMath::Vector3(StoreVector3(boundSphere.center));
+			const auto boundWorldCenter = SimpleMath::Vector3::Transform(boundLocalCenter, entity->worldTransform());
+			const auto boundWorldEdge = SimpleMath::Vector3::Transform(boundLocalCenter + SimpleMath::Vector3(0, 0, boundSphere.radius), entity->worldTransform());
 
 			// Bounds, in light view space (as defined above)
 			const auto boundCenter = SimpleMath::Vector3::Transform(boundWorldCenter, orientationMatrixInv);

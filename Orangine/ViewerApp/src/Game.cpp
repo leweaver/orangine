@@ -247,7 +247,7 @@ void Game::CreateShadowTestScene()
 
 		const auto meshData = Primitive_mesh_data_factory::createTeapot();
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
-		child1->setBoundSphere(BoundingSphere(SimpleMath::Vector3::Zero, 1.0f));
+		child1->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
 		child1->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 	};
 	auto createSphere = [&entityManager, &root1](const SimpleMath::Vector3& center, const Color& color, float metallic, float roughness)
@@ -267,7 +267,7 @@ void Game::CreateShadowTestScene()
 
 		const auto meshData = Primitive_mesh_data_factory::createSphere();
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
-		child1->setBoundSphere(BoundingSphere(SimpleMath::Vector3::Zero, 1.0f));
+		child1->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
 	};
 
     int created = 0;
@@ -294,7 +294,7 @@ void Game::CreateShadowTestScene()
 
 		child2->setRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
 		child2->setPosition({ 0.0f, -1.5f, 0.0f });
-		child2->setBoundSphere(BoundingSphere(SimpleMath::Vector3::Zero, 10.0f));
+		child2->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 10.0f));
 	}
 
 	createTeapot({ -2, 0, -2 }, oe::Colors::Green, 1.0, 0.0f);

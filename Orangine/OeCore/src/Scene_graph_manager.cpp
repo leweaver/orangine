@@ -2,6 +2,7 @@
 
 #include "Scene_graph_manager.h"
 #include "OeCore/Scene.h"
+#include "D3D11/DirectX_utils.h"
 
 #include <algorithm>
 #include <deque>
@@ -85,7 +86,7 @@ void Scene_graph_manager::updateEntity(Entity* entity)
 
             auto accumulatedBounds = children[0]->boundSphere();
             for (auto pos = children.begin() + 1; pos < children.end(); ++pos) {
-                DirectX::BoundingSphere::CreateMerged(accumulatedBounds, accumulatedBounds, (*pos)->boundSphere());
+                BoundingSphere::createMerged(accumulatedBounds, accumulatedBounds, (*pos)->boundSphere());
             }
 
             entity->setBoundSphere(accumulatedBounds);

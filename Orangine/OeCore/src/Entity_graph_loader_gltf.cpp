@@ -912,7 +912,7 @@ shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_reposi
 				// Calculate bounds?
 				if (loaderData.calculateBounds) {
                     const auto& vertexBufferAccessor = meshData->vertexBufferAccessors.at({Vertex_attribute::Position, 0});
-                    assert(vertexBufferAccessor->stride >= sizeof(DirectX::SimpleMath::Vector3));
+                    assert(vertexBufferAccessor->stride >= sizeof(Float3));
                     auto boundingSphere = oe::BoundingSphere::createFromPoints(
                         reinterpret_cast<Float3*>(vertexBufferAccessor->buffer->data),
                         vertexBufferAccessor->count,

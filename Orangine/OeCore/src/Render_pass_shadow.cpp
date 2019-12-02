@@ -69,36 +69,23 @@ void Render_pass_shadow::render(const Camera_data&)
 			shadowData->setCasterVolume(shadowVolumeBoundingBox);
 
 			// Now create a shadow camera view matrix. Its position will be the bounds center, offset by {0, 0, extents.z} in light view space.
-			const auto lightNearPlaneWorldTranslation = XMVectorAdd(
-				XMVector3Transform(XMVectorSet(0.0f, 0.0f, shadowVolumeBoundingBox.Extents.z, 0.0f), worldToLightViewMatrix),
-				XMVectorSet(shadowVolumeBoundingBox.Center.x,
-					shadowVolumeBoundingBox.Center.y,
-					shadowVolumeBoundingBox.Center.z,
-					0.0f)
-			);
+            const auto lightNearPlaneWorldTranslation =
+                SSE::Vector4(LoadVector3(shadowVolumeBoundingBox.Center), 0.0f) +
+                toVectorMathMat4(worldToLightViewMatrix) * SSE::Vector4(0, 0, shadowVolumeBoundingBox.Extents.z, 0);
 
 			Camera_data shadowCameraData;
 			{
 				auto wtlm = toVectorMathMat4(worldToLightViewMatrix);
-				const auto pos = toPoint3(SimpleMath::Vector3(lightNearPlaneWorldTranslation));
+				const auto pos = SSE::Point3(lightNearPlaneWorldTranslation.getXYZ());
 				const auto forward = wtlm * Math::Direction::Forward;
 				const auto up = wtlm * Math::Direction::Up;
 
 				shadowCameraData.viewMatrix = SSE::Matrix4::lookAt(pos, pos + forward.getXYZ(), up.getXYZ());
 
-				SimpleMath::Vector3 extents2;
-				XMStoreFloat3(&extents2, XMVectorScale(XMLoadFloat3(&shadowVolumeBoundingBox.Extents), 2.0f));
-
-				if (extents2.x == 0.0f)
-					extents2 = SimpleMath::Vector3::One;
-				auto refProjectionMatrix = toVectorMathMat4(SimpleMath::Matrix::CreateOrthographic(extents2.x, extents2.y, 0.0f, extents2.z));
-
-
 				SSE::Vector3 extents = LoadVector3(shadowVolumeBoundingBox.Extents);
 
 				if (extents.getX() == 0.0f)
 					extents = SSE::Vector3(0.5f);
-				//SimpleMath::Matrix::CreateOrthographic()
 				shadowCameraData.projectionMatrix = SSE::Matrix4::orthographic(-extents.getX(), extents.getX(), -extents.getY(), extents.getY(), -extents.getZ() * 2, extents.getZ() * 2.0f);
 
 				// Disable rendering of pixel shader when drawing objects into the shadow camera.

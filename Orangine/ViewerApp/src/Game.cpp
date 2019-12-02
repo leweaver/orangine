@@ -181,7 +181,7 @@ void Game::CreateLights()
 	{
 		auto shadowLight1 = createDirLight({ 0.0f, -1.0f, 0.0f }, { 1, 1, 1, 1 }, 2);
 		shadowLight1->setParent(*lightRoot);
-		shadowLight1->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(false);
+		shadowLight1->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
 		
 		
 		auto shadowLight2 = createDirLight({ -0.707f, -0.707f, -0.707f }, { 1, 1, 0, 1 }, 2.75);

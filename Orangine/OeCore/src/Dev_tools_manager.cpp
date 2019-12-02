@@ -80,8 +80,8 @@ void Dev_tools_manager::renderSkeletons() {
                 bones.push_back(child.get());
             }
 
-            const auto parentPos = toVector3(bone->parent()->worldPosition());
-            const auto childPos = toVector3(bone->worldPosition());
+            const auto parentPos = bone->parent()->worldPosition();
+            const auto childPos = bone->worldPosition();
 
             auto targetDirection = childPos - parentPos;
             const auto height = SSE::length(targetDirection);
@@ -104,7 +104,7 @@ void Dev_tools_manager::renderSkeletons() {
                              red);
             }
 
-            addDebugSphere(toVectorMathMat4(bone->worldTransform()) * SSE::Matrix4::scale(SSE::Vector3(height)), 0.1f, white, 3);
+            addDebugSphere(bone->worldTransform() * SSE::Matrix4::scale(SSE::Vector3(height)), 0.1f, white, 3);
         }
     }
 }

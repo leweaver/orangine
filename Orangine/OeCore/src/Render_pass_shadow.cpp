@@ -54,10 +54,10 @@ void Render_pass_shadow::render(const Camera_data&)
 			// Project the receiver bounding volume into the light space (via inverse transform), then take the min & max X, Y, Z bounding sphere extents.
 
 			// Get from world to light view space  (world space, origin of {0,0,0}; just rotated)
-			auto worldToLightViewMatrix = DirectX::SimpleMath::Matrix::CreateFromQuaternion(lightEntity->worldRotation());
+			auto worldToLightViewMatrix = SSE::Matrix4(lightEntity->worldRotation(), SSE::Vector3(0));
 			auto shadowVolumeBoundingBox = mesh_utils::aabbForEntities(
 				*_renderableEntities,
-				toQuat(lightEntity->worldRotation()),
+				lightEntity->worldRotation(),
 				[](const Entity& entity) {
 				const auto renderable = entity.getFirstComponentOfType<Renderable_component>();
 				assert(renderable != nullptr);
@@ -71,11 +71,11 @@ void Render_pass_shadow::render(const Camera_data&)
 			// Now create a shadow camera view matrix. Its position will be the bounds center, offset by {0, 0, extents.z} in light view space.
             const auto lightNearPlaneWorldTranslation =
                 SSE::Vector4(LoadVector3(shadowVolumeBoundingBox.Center), 0.0f) +
-                toVectorMathMat4(worldToLightViewMatrix) * SSE::Vector4(0, 0, shadowVolumeBoundingBox.Extents.z, 0);
+                worldToLightViewMatrix * SSE::Vector4(0, 0, shadowVolumeBoundingBox.Extents.z, 0);
 
 			Camera_data shadowCameraData;
 			{
-				auto wtlm = toVectorMathMat4(worldToLightViewMatrix);
+				auto wtlm = worldToLightViewMatrix;
 				const auto pos = SSE::Point3(lightNearPlaneWorldTranslation.getXYZ());
 				const auto forward = wtlm * Math::Direction::Forward;
 				const auto up = wtlm * Math::Direction::Up;

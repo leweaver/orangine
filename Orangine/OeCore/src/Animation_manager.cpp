@@ -11,16 +11,16 @@ using namespace DirectX;
 std::string Animation_manager::_name = "Animation_manager";
 
 template<>
-IAnimation_manager* oe::create_manager(Scene & scene)
+IAnimation_manager* oe::create_manager(Scene& scene)
 {
     return new Animation_manager(scene);
 }
 
 const std::array<std::function<void(
     Entity&,
-    const Animation_controller_component::Animation_channel& channel,
+    const Animation_controller_component::Animation_channel & channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor
-    )>, 4> g_lerp_animation_type_handlers = 
+    )>, 4> g_lerp_animation_type_handlers =
 {
     &Animation_manager::handleTranslationAnimationLerp,
     &Animation_manager::handleRotationAnimationLerp,
@@ -30,7 +30,7 @@ const std::array<std::function<void(
 
 const std::array<std::function<void(
     Entity&,
-    const Animation_controller_component::Animation_channel& channel,
+    const Animation_controller_component::Animation_channel & channel,
     uint32_t lowerValueIndex
     )>, 4> g_step_animation_type_handlers =
 {
@@ -42,9 +42,9 @@ const std::array<std::function<void(
 
 const std::array<std::function<void(
     Entity&,
-    const Animation_controller_component::Animation_channel& channel,
+    const Animation_controller_component::Animation_channel & channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor
-    )>, 4> g_cubic_spline_animation_type_handlers = 
+    )>, 4> g_cubic_spline_animation_type_handlers =
 {
     &Animation_manager::handleTranslationAnimationCubicSpline,
     &Animation_manager::handleRotationAnimationCubicSpline,
@@ -77,7 +77,7 @@ void Animation_manager::tick()
         for (auto& activeAnimation : animComponent->activeAnimations) {
             const auto& name = activeAnimation.first;
             auto& channelStates = activeAnimation.second;
-            
+
             const auto& animation = animComponent->animationByName(name);
             if (!animation) {
                 LOG(WARNING) << "Missing animation with name: " << name;
@@ -110,7 +110,7 @@ void Animation_manager::tick()
                 if (maxIndex == 0) {
                     // Will reach this point if currentTime has not yet reached the beginning of animation.
                     minIndex = 0;
-                } 
+                }
                 else if (maxIndex == keyframeTimes.size()) {
                     // Reach this point if current time is greater than the end of the animation
                     if (keyframeTimes.size() > 1) {
@@ -176,21 +176,21 @@ void Animation_manager::handleTranslationAnimationStep(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex)
 {
-    entity.setPosition(getKeyframeValue<SimpleMath::Vector3>(channel, lowerValueIndex));
+    entity.setPosition(toVector3(getKeyframeValue<SimpleMath::Vector3>(channel, lowerValueIndex)));
 }
 
 void Animation_manager::handleScaleAnimationStep(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex)
 {
-    entity.setScale(getKeyframeValue<SimpleMath::Vector3>(channel, lowerValueIndex));
+    entity.setScale(toVector3(getKeyframeValue<SimpleMath::Vector3>(channel, lowerValueIndex)));
 }
 
 void Animation_manager::handleRotationAnimationStep(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex)
 {
-    entity.setRotation(getKeyframeValue<SimpleMath::Quaternion>(channel, lowerValueIndex));
+    entity.setRotation(toQuat(getKeyframeValue<SimpleMath::Quaternion>(channel, lowerValueIndex)));
 }
 
 void Animation_manager::handleMorphAnimationStep(Entity& entity,
@@ -204,36 +204,36 @@ void Animation_manager::handleTranslationAnimationLerp(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
 {
-    entity.setPosition(SimpleMath::Vector3::Lerp(
+    entity.setPosition(toVector3(SimpleMath::Vector3::Lerp(
         getKeyframeValue<SimpleMath::Vector3>(channel, lowerValueIndex),
         getKeyframeValue<SimpleMath::Vector3>(channel, upperValueIndex),
         static_cast<float>(factor)
-    ));
+    )));
 }
 
 void Animation_manager::handleScaleAnimationLerp(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
 {
-    entity.setScale(SimpleMath::Vector3::Lerp(
+    entity.setScale(toVector3(SimpleMath::Vector3::Lerp(
         getKeyframeValue<SimpleMath::Vector3>(channel, lowerValueIndex),
         getKeyframeValue<SimpleMath::Vector3>(channel, upperValueIndex),
         static_cast<float>(factor)
-    ));
+    )));
 }
 
 void Animation_manager::handleRotationAnimationLerp(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
 {
-    entity.setRotation(SimpleMath::Quaternion::Lerp(
+    entity.setRotation(toQuat(SimpleMath::Quaternion::Lerp(
         getKeyframeValue<SimpleMath::Quaternion>(channel, lowerValueIndex),
         getKeyframeValue<SimpleMath::Quaternion>(channel, upperValueIndex),
         static_cast<float>(factor)
-    ));
+    )));
 }
 
-std::array<std::function<void(std::array<double, 8>& meshWeights, size_t meshWeightsOffset, const SimpleMath::Vector4& weights)>, 5>
+std::array<std::function<void(std::array<double, 8> & meshWeights, size_t meshWeightsOffset, const SimpleMath::Vector4 & weights)>, 5>
 g_applyWeights = {
     [](auto& meshWeights, auto meshWeightsOffset, const auto& weights) {
     },
@@ -311,10 +311,10 @@ struct Cubic_spline_value {
 
 template<class TType>
 TType Animation_manager::calculateCubicSpline(
-    const Animation_controller_component::Animation_channel& channel, 
-    uint32_t lowerValueIndex, 
-    uint32_t upperValueIndex, 
-    double factor) 
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t lowerValueIndex,
+    uint32_t upperValueIndex,
+    double factor)
 {
     const auto& lower = reinterpret_cast<const Cubic_spline_value<TType>*>(channel.keyframeValues->getIndexed(
         lowerValueIndex * channel.valuesPerKeyFrame))[0];
@@ -325,10 +325,10 @@ TType Animation_manager::calculateCubicSpline(
     const auto factor3 = factor2 * factor;
 
     // p(t) = (2t3 - 3t2 + 1)p0 + (t3 - 2t2 + t)m0 + (-2t3 + 3t2)p1 + (t3 - t2)m1
-    const auto p0 = static_cast<float>((2.0 * factor3 - 3.0 * factor2 + 1.0)) * lower.value;
-    const auto m0 = static_cast<float>((factor3 - 2.0 * factor2 + factor)) * lower.outTangent;
-    const auto p1 = static_cast<float>((-2.0 * factor3 + 3.0 * factor2)) * upper.value;
-    const auto m1 = static_cast<float>((factor3 - factor2)) * upper.inTangent;
+    const auto p0 = static_cast<float>((2.0 * factor3 - 3.0 * factor2 + 1.0))* lower.value;
+    const auto m0 = static_cast<float>((factor3 - 2.0 * factor2 + factor))* lower.outTangent;
+    const auto p1 = static_cast<float>((-2.0 * factor3 + 3.0 * factor2))* upper.value;
+    const auto m1 = static_cast<float>((factor3 - factor2))* upper.inTangent;
 
     auto result = p0 + m0 + p1 + m1;
     return result;
@@ -338,14 +338,14 @@ void Animation_manager::handleTranslationAnimationCubicSpline(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
 {
-    entity.setPosition(calculateCubicSpline<SimpleMath::Vector3>(channel, lowerValueIndex, upperValueIndex, factor));
+    entity.setPosition(toVector3(calculateCubicSpline<SimpleMath::Vector3>(channel, lowerValueIndex, upperValueIndex, factor)));
 }
 
 void Animation_manager::handleScaleAnimationCubicSpline(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
 {
-    entity.setScale(calculateCubicSpline<SimpleMath::Vector3>(channel, lowerValueIndex, upperValueIndex, factor));
+    entity.setScale(toVector3(calculateCubicSpline<SimpleMath::Vector3>(channel, lowerValueIndex, upperValueIndex, factor)));
 }
 
 void Animation_manager::handleRotationAnimationCubicSpline(Entity& entity,
@@ -354,7 +354,7 @@ void Animation_manager::handleRotationAnimationCubicSpline(Entity& entity,
 {
     auto result = calculateCubicSpline<SimpleMath::Quaternion>(channel, lowerValueIndex, upperValueIndex, factor);
     result.Normalize();
-    entity.setRotation(result);
+    entity.setRotation(toQuat(result));
 }
 
 void Animation_manager::handleMorphAnimationCubicSpline(Entity& entity,
@@ -387,10 +387,10 @@ void Animation_manager::handleMorphAnimationCubicSpline(Entity& entity,
                 channel.keyframeValues->getIndexed(upperValueIndex))[inTangentIdxOffset + targetIdx];
 
             // p(t) = (2t3 - 3t2 + 1)p0 + (t3 - 2t2 + t)m0 + (-2t3 + 3t2)p1 + (t3 - t2)m1
-            const auto p0 = static_cast<float>((2.0 * factor3 - 3.0 * factor2 + 1.0)) * lowerValue;
-            const auto m0 = static_cast<float>((factor3 - 2.0 * factor2 + factor)) * lowerInTangent;
-            const auto p1 = static_cast<float>((-2.0 * factor3 + 3.0 * factor2)) * upperValue;
-            const auto m1 = static_cast<float>((factor3 - factor2)) * upperOutTangent;
+            const auto p0 = static_cast<float>((2.0 * factor3 - 3.0 * factor2 + 1.0))* lowerValue;
+            const auto m0 = static_cast<float>((factor3 - 2.0 * factor2 + factor))* lowerInTangent;
+            const auto p1 = static_cast<float>((-2.0 * factor3 + 3.0 * factor2))* upperValue;
+            const auto m1 = static_cast<float>((factor3 - factor2))* upperOutTangent;
 
             const auto result = p0 + m0 + p1 + m1;
             morphWeightsComponent->morphWeights()[targetIdx] = result;

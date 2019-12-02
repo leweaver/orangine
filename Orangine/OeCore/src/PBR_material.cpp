@@ -211,7 +211,7 @@ std::vector<Vertex_attribute_element> PBR_material::vertexInputs(const std::set<
             throw std::runtime_error("Missing joints component flag");
 
         vertexAttributes.push_back({ { Vertex_attribute::Joints, 0 }, Element_type::Vector4, jointsComponent });
-        vertexAttributes.push_back({{ Vertex_attribute::Weights, 0 }, Element_type::Vector4, Element_component::Float });
+        vertexAttributes.push_back({ { Vertex_attribute::Weights, 0 }, Element_type::Vector4, Element_component::Float });
     }
 
     // Vertex attributes for morph targets.
@@ -229,13 +229,13 @@ std::vector<Vertex_attribute_element> PBR_material::vertexInputs(const std::set<
     uint8_t morphTangentSemanticOffset = getMorphTangentAttributeIndexOffset();
     for (auto i = 0; i < targetCount; ++i) {
         if (positionPosition >= 0) {
-            vertexAttributes.push_back({ Vertex_attribute::Position, morphPositionSemanticOffset++ });
+            vertexAttributes.push_back({ { Vertex_attribute::Position, morphPositionSemanticOffset++ }, Element_type::Vector3, Element_component::Float });
         }
         if (normalPosition >= 0) {
-            vertexAttributes.push_back({ Vertex_attribute::Normal, morphNormalSemanticOffset++ });
+            vertexAttributes.push_back({ { Vertex_attribute::Normal, morphNormalSemanticOffset++ }, Element_type::Vector3, Element_component::Float });
         }
         if (requiresTangents() && tangentPosition >= 0) {
-            vertexAttributes.push_back({ Vertex_attribute::Tangent, morphTangentSemanticOffset++ });
+            vertexAttributes.push_back({ { Vertex_attribute::Tangent, morphTangentSemanticOffset++ }, Element_type::Vector4, Element_component::Float });
         }
     }
 
@@ -284,9 +284,9 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
         uint8_t morphTangentSemanticOffset = getMorphTangentAttributeIndexOffset();
 
         std::array<std::stringstream, 3> vbMorphWeightsCalcParts;
-        vbMorphWeightsCalcParts[0] << "float4 morphedPosition = float4(skinnedPosition.xyz";
-        vbMorphWeightsCalcParts[1] << "float3 morphedNormal = float3(Input.vNormal";
-        vbMorphWeightsCalcParts[2] << "float4 morphedTangent = float4(Input.vTangent.xyz";
+        vbMorphWeightsCalcParts[0] << "positionL = float3(positionL";
+        vbMorphWeightsCalcParts[1] << "normalL = float3(Input.vNormal";
+        vbMorphWeightsCalcParts[2] << "tangentL = float4(Input.vTangent.xyz";
 
         // Build inputs.
         std::array<std::stringstream, 3> vbMorphInputsArr;
@@ -300,7 +300,7 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
                     "float3 vMorphPosition" << morphTargetIdxStr <<
                     " : POSITION" << semanticIdxStr <<
                     ";";
-                vbMorphWeightsCalcParts[0] << " + g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]" << " * Input.vMorphPosition" << morphTargetIdxStr;
+                vbMorphWeightsCalcParts[0] << " + Input.vMorphPosition" << morphTargetIdxStr << " * g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]";
                 settings.morphAttributes.push_back(
                     { Vertex_attribute::Position, semanticIdx }
                 );
@@ -312,7 +312,7 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
                     "float3 vMorphNormal" << morphTargetIdxStr <<
                     " : NORMAL" << semanticIdxStr <<
                     ";";
-                vbMorphWeightsCalcParts[1] << " + g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]" << " * Input.vMorphNormal" << morphTargetIdxStr;
+                vbMorphWeightsCalcParts[1] << " + Input.vMorphNormal" << morphTargetIdxStr << " * g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]";
                 settings.morphAttributes.push_back(
                     { Vertex_attribute::Normal, semanticIdx }
                 );
@@ -324,14 +324,14 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
                     "float3 vMorphTangent" << morphTargetIdxStr <<
                     " : TANGENT" << semanticIdxStr <<
                     ";";
-                vbMorphWeightsCalcParts[2] << " + g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]" << " * Input.vMorphTangent" << morphTargetIdxStr;
+                vbMorphWeightsCalcParts[2] << " + Input.vMorphTangent" << morphTargetIdxStr << " * g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]";
                 settings.morphAttributes.push_back(
                     { Vertex_attribute::Tangent, semanticIdx }
                 );
             }
         }
 
-        vbMorphWeightsCalcParts[0] << ", skinnedPosition.w);";
+        vbMorphWeightsCalcParts[0] << ");";
         vbMorphWeightsCalcParts[1] << ");";
         vbMorphWeightsCalcParts[2] << ", Input.vTangent.w); ";
 

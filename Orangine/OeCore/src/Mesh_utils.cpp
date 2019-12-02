@@ -148,9 +148,9 @@ namespace oe::mesh_utils {
 
             const auto& boundSphere = entity->boundSphere();
             assert(boundSphere.radius < INFINITY && boundSphere.radius >= 0.0f);
-            const auto boundWorldCenter = toVectorMathMat4(entity->worldTransform()) * SSE::Point3(boundSphere.center);
+            const auto boundWorldCenter = entity->worldTransform() * SSE::Point3(boundSphere.center);
             const auto boundWorldEdgePoint = boundSphere.center + SSE::Vector3(0, 0, boundSphere.radius);
-            const auto boundWorldEdge = toVectorMathMat4(entity->worldTransform()) * SSE::Point3(boundWorldEdgePoint);
+            const auto boundWorldEdge = entity->worldTransform() * SSE::Point3(boundWorldEdgePoint);
 
             // Bounds, in light view space (as defined above)
             const auto boundCenter = orientationMatrixInv * boundWorldCenter;

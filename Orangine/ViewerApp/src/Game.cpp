@@ -18,6 +18,7 @@
 #include <OeCore/Collision.h>
 #include <OeScripting/Script_component.h>
 #include <OeCore/Color.h>
+#include <OeCore/Math_constants.h>
 
 #include <filesystem>
 
@@ -114,7 +115,7 @@ void Game::CreateCamera(bool animate)
 		cameraDollyAnchor->addComponent<Test_component>().setSpeed({0.0f, 0.1f, 0.0f});
 	
 	auto camera = entityManager.instantiate("Camera", *cameraDollyAnchor);
-	camera->setPosition(SimpleMath::Vector3(0.0f, 0.0f, 15));
+    camera->setPosition({ 0.0f, 0.0f, 15 });
 
 	cameraDollyAnchor->computeWorldTransform();
 
@@ -123,7 +124,7 @@ void Game::CreateCamera(bool animate)
 	component.setFarPlane(20.0f);
 	component.setNearPlane(0.5f);
 
-	camera->lookAt({ 0, 0, 0 }, SimpleMath::Vector3::Up);
+	camera->lookAt({ 0, 0, 0 }, Math::Direction::Up);
 
 	m_scene->setMainCamera(camera);
 }
@@ -152,11 +153,11 @@ void Game::CreateLights()
 
 			assert(normal.LengthSquared() != 0);
 			float angle = acos(SimpleMath::Vector3::Forward.Dot(normal) / normal.Length());
-			lightEntity->setRotation(SimpleMath::Quaternion::CreateFromAxisAngle(axis, angle));
+			lightEntity->setRotation(toQuat(SimpleMath::Quaternion::CreateFromAxisAngle(axis, angle)));
 		}
 		return lightEntity;
 	};
-	auto createPointLight = [&entityManager, &lightCount](const SimpleMath::Vector3 &position, const Color &color, float intensity)
+	auto createPointLight = [&entityManager, &lightCount](const SSE::Vector3& position, const Color& color, float intensity)
 	{
 		auto lightEntity = entityManager.instantiate("Point Light " + std::to_string(++lightCount));
 		auto &component = lightEntity->addComponent<Point_light_component>();
@@ -230,7 +231,7 @@ void Game::CreateShadowTestScene()
 	const auto &root1 = entityManager.instantiate("Primitives");
 	int teapotCount = 0;
 
-	auto createTeapot = [&entityManager, &root1, &teapotCount](const SimpleMath::Vector3& center, const Color& color, float metallic, float roughness)
+	auto createTeapot = [&entityManager, &root1, &teapotCount](const SSE::Vector3& center, const Color& color, float metallic, float roughness)
 	{
 		const auto &child1 = entityManager.instantiate("Teapot " + std::to_string(++teapotCount), *root1);
 		child1->setPosition(center);
@@ -250,7 +251,7 @@ void Game::CreateShadowTestScene()
 		child1->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
 		child1->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 	};
-	auto createSphere = [&entityManager, &root1](const SimpleMath::Vector3& center, const Color& color, float metallic, float roughness)
+	auto createSphere = [&entityManager, &root1](const SSE::Vector3& center, const Color& color, float metallic, float roughness)
 	{
 		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
 		child1->setPosition(center);
@@ -292,7 +293,7 @@ void Game::CreateShadowTestScene()
 		const auto meshData = Primitive_mesh_data_factory::createQuad(20, 20);
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
-		child2->setRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
+		child2->setRotation(toQuat(SimpleMath::Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0)));
 		child2->setPosition({ 0.0f, -1.5f, 0.0f });
 		child2->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 10.0f));
 	}
@@ -344,20 +345,20 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 		//LoadGLTF("FlightHelmet", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
         //LoadGLTF("InterpolationTest", false);
-        //LoadGLTF("MorphPrimitivesTest", false)->setPosition({0, -3.0f, 0});
-        //LoadGLTF("AnimatedMorphCube", false)->setPosition({ 0, -3.0f, 0 });
+        //LoadGLTF("MorphPrimitivesTest", false)->setScale({2, 2, 2});
+        LoadGLTF("AnimatedMorphCube", false)->setPosition({ 0, -3.0f, 0 });
         //LoadGLTF("Alien", false)->setScale({ 10.01f, 10.01f, 10.01f });
         //LoadGLTF("MorphCube2", false);
         //LoadGLTF("RiggedSimple", false);
         //LoadGLTF("RiggedFigure", false);
-		//LoadGLTF("CesiumMan", false)->setPosition({ 0, 0, 1.0f });
+		LoadGLTF("CesiumMan", false)->setPosition({ 0, 0, 1.0f });
         //LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
 
 		//LoadGLTF("MetalRoughSpheres", false);
 
 		CreateCamera(false);
 		CreateLights();
-		CreateShadowTestScene();
+		//CreateShadowTestScene();
 		CreateScripts();
 
 
@@ -387,7 +388,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 	}
 }
 
-void Game::AddCubeToEntity(std::shared_ptr<Entity> entity, SSE::Vector3 animationSpeed, SimpleMath::Vector3 localScale, SimpleMath::Vector3 localPosition)
+void Game::AddCubeToEntity(std::shared_ptr<Entity> entity, SSE::Vector3 animationSpeed, SSE::Vector3 localScale, SSE::Vector3 localPosition)
 {
 	entity->addComponent<Test_component>().setSpeed(animationSpeed);
 

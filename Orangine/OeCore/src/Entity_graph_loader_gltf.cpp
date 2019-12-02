@@ -679,9 +679,9 @@ void setEntityTransform(Entity&  entity, const Node&  node)
 		DirectX::SimpleMath::Vector3 translation;
 		trs.Decompose(scale, rotation, translation);
 
-		entity.setScale(scale);
-		entity.setRotation(rotation);
-		entity.setPosition(translation);
+		entity.setScale(toVector3(scale));
+		entity.setRotation(toQuat(rotation));
+		entity.setPosition(toVector3(translation));
 	}
 	else
 	{

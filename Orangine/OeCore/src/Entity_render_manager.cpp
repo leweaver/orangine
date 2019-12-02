@@ -15,6 +15,7 @@
 #include "CommonStates.h"
 #include "GeometricPrimitive.h"
 #include "OeCore/Render_pass.h"
+#include "D3D11/DirectX_utils.h"
 
 #include <set>
 #include <functional>
@@ -140,7 +141,7 @@ bool addLightToRenderLightData(const Entity& lightEntity, Render_light_data_impl
 	const auto directionalLight = lightEntity.getFirstComponentOfType<Directional_light_component>();
 	if (directionalLight)
 	{
-		const auto lightDirection = toVectorMathMat4(lightEntity.worldTransform()).getUpper3x3() * Math::Direction::Forward;
+		const auto lightDirection = lightEntity.worldTransform().getUpper3x3() * Math::Direction::Forward;
 		const auto shadowData = dynamic_cast<Shadow_map_texture_array_slice*>(directionalLight->shadowData().get());
 
 		if (shadowData != nullptr) {
@@ -158,7 +159,7 @@ bool addLightToRenderLightData(const Entity& lightEntity, Render_light_data_impl
 
 	const auto pointLight = lightEntity.getFirstComponentOfType<Point_light_component>();
 	if (pointLight)
-		return renderLightData.addPointLight(toVector3(lightEntity.worldPosition()), pointLight->color(), pointLight->intensity());
+		return renderLightData.addPointLight(lightEntity.worldPosition(), pointLight->color(), pointLight->intensity());
 
 	const auto ambientLight = lightEntity.getFirstComponentOfType<Ambient_light_component>();
 	if (ambientLight)
@@ -178,8 +179,8 @@ BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& c
 		cameraComponent.farPlane());
 	auto frustum = BoundingFrustumRH(projMatrix);
 	const auto& entity = cameraComponent.entity();
-	frustum.Origin = entity.worldPosition();
-	frustum.Orientation = entity.worldRotation();
+	frustum.Origin = StoreVector3(entity.worldPosition());
+	frustum.Orientation = StoreQuat(entity.worldRotation());
 
 	return frustum;
 }
@@ -329,7 +330,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
         // Skinned mesh?
         const auto skinnedMeshComponent = entity.getFirstComponentOfType<Skinned_mesh_component>();
         //Matrix const* worldTransform;
-        const SimpleMath::Matrix* worldTransform;
+        const SSE::Matrix4* worldTransform;
         const auto skinningEnabled = _scene.manager<IMaterial_manager>().rendererFeatureEnabled().skinnedAnimation;
         if (skinningEnabled && skinnedMeshComponent != nullptr) {
 
@@ -350,13 +351,10 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
             else
                 worldTransform = &entity.worldTransform();
                 
-			SimpleMath::Matrix invWorld2;
-            worldTransform->Invert(invWorld2);
-			auto invWorld = toVectorMathMat4(invWorld2);
-
+			auto invWorld = SSE::inverse(*worldTransform);
             for (size_t i = 0; i < joints.size(); ++i) {
                 const auto joint = joints[i];
-				const auto jointWorldTransform = toVectorMathMat4(joint->worldTransform());
+				const auto jointWorldTransform = joint->worldTransform();
                 auto jointToRoot = invWorld * jointWorldTransform;
                 const auto inverseBoneTransform = inverseBindMatrices[i];
 
@@ -372,7 +370,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
         
 		drawRendererData(
 			cameraData,
-            toVectorMathMat4(*worldTransform),
+            *worldTransform,
 			*rendererData,
 			blendMode,
 			*renderLightData,
@@ -558,7 +556,7 @@ void Entity_render_manager::drawRendererData(
 
 	} catch (std::exception& ex) {
 		rendererData.failedRendering = true;
-		LOG(WARNING) << "Failed to drawRendererData, marking failedRendering to true. (" << ex.what() << ")";
+		LOG(FATAL) << "Failed to drawRendererData, marking failedRendering to true. (" << ex.what() << ")";
 	}
 }
 

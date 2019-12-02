@@ -296,7 +296,7 @@ void Entity_scripting_manager::tick()
 		const auto animTimePitch = static_cast<float>(fmod(elapsedTime * speed.getX() * XM_2PI, XM_2PI));
 		const auto animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.getY()* XM_2PI, XM_2PI));
 		const auto animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.getZ()* XM_2PI, XM_2PI));
-		entity.setRotation(SimpleMath::Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));
+		entity.setRotation(toQuat(SimpleMath::Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll)));
 	}
 	
 	const auto mouseSpeed = 1.0f / 600.0f;
@@ -413,7 +413,7 @@ void Entity_scripting_manager::renderDebugSpheres() const
 
 	for (const auto& entity : *_renderableEntityFilter) {
 		const auto& boundSphere = entity->boundSphere();
-		const auto transform = toVectorMathMat4(entity->worldTransform()) * SSE::Matrix4::translation(boundSphere.center);
+		const auto transform = entity->worldTransform() * SSE::Matrix4::translation(boundSphere.center);
 		devToolsManager.addDebugSphere(transform, boundSphere.radius, Colors::Gray);
 	}
 

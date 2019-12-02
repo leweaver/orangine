@@ -378,7 +378,7 @@ void Render_step_manager::render(std::shared_ptr<Entity> cameraEntity)
 	// Block on the cull sorter, since we can't render until it is done; and it is a good place to kick off the alpha sort.
 	_cullSorter->waitThen([this, cameraEntity, cameraData](const std::vector<Entity_cull_sorter_entry>& entities) {
 		// Find the list of entities that have alpha, and sort them.
-		_alphaSorter->beginSortAsync(entities.begin(), entities.end(), toVector3(cameraEntity->worldPosition()));
+		_alphaSorter->beginSortAsync(entities.begin(), entities.end(), cameraEntity->worldPosition());
 
 		// Render steps
 		_scene.manager<IEntity_render_manager>().clearRenderStats();
@@ -488,7 +488,7 @@ Render_pass::Camera_data Render_step_manager::createCameraData(Camera_component&
 
 
 	// Construct camera axis vectors, to create a view matrix using lookAt.
-	const auto wt = toVectorMathMat4(component.entity().worldTransform());
+	const auto wt = component.entity().worldTransform();
 	const auto pos = SSE::Point3(wt.getTranslation());
 	const auto forward = wt * Math::Direction::Forward;
 	const auto up = wt * Math::Direction::Up;

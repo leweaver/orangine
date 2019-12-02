@@ -13,6 +13,12 @@ namespace oe {
 	inline SSE::Vector4 LoadVector4(const DirectX::XMFLOAT4& floats) {
 		return { floats.x, floats.y, floats.z, floats.w };
 	}
+    inline DirectX::XMFLOAT4 StoreVector4(const SSE::Vector4& vec) {
+        return { vec.getX(), vec.getY(), vec.getZ(), vec.getW() };
+    }
+    inline DirectX::XMFLOAT4 StoreQuat(const SSE::Quat& vec) {
+        return { vec.getX(), vec.getY(), vec.getZ(), vec.getW() };
+    }
     inline DirectX::BoundingSphere StoreBoundingSphere(const oe::BoundingSphere& bs) {
         return DirectX::BoundingSphere(
             StoreVector3(bs.center),

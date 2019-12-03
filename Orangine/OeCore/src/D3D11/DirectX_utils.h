@@ -16,6 +16,9 @@ namespace oe {
     inline DirectX::XMFLOAT4 StoreVector4(const SSE::Vector4& vec) {
         return { vec.getX(), vec.getY(), vec.getZ(), vec.getW() };
     }
+    inline SSE::Quat LoadQuat(const DirectX::XMFLOAT4& floats) {
+        return { floats.x, floats.y, floats.z, floats.w };
+    }
     inline DirectX::XMFLOAT4 StoreQuat(const SSE::Quat& vec) {
         return { vec.getX(), vec.getY(), vec.getZ(), vec.getW() };
     }

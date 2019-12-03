@@ -97,14 +97,6 @@ namespace oe {
         rotMat.setCol2(rotMat.getCol2() / scale.getZ());
         rotation = SSE::Quat(rotMat);
     }
-
-	inline SSE::Quat toQuat(const DirectX::SimpleMath::Quaternion& quat) {
-		return { quat.x, quat.y, quat.z, quat.w };
-	}
-
-	inline SSE::Vector3 toVector3(const DirectX::SimpleMath::Vector3& vec) {
-		return { vec.x,vec.y,vec.z };
-	}
 }
 
 namespace DX {

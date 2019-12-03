@@ -11,6 +11,7 @@
 #include "OeCore/Renderable_component.h"
 #include "OeCore/Fps_counter.h"
 #include "OeCore/Math_constants.h"
+#include "D3D11/DirectX_utils.h"
 
 #include <OeThirdParty/imgui.h>
 #include <OeThirdParty/imgui_stdlib.h>
@@ -164,8 +165,8 @@ void Dev_tools_manager::addDebugSphere(const SSE::Matrix4& worldTransform, float
 void Dev_tools_manager::addDebugBoundingBox(const BoundingOrientedBox& boundingOrientedBox, const Color& color)
 {
 	auto worldTransform = SSE::Transform3(
-		toQuat(boundingOrientedBox.Orientation),
-		toVector3(boundingOrientedBox.Center)
+		LoadQuat(boundingOrientedBox.Orientation),
+        LoadVector3(boundingOrientedBox.Center)
 	);
 
     auto hash = g_hashSeed_boundingBox;

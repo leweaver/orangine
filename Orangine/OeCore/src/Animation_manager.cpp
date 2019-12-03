@@ -166,31 +166,51 @@ void Animation_manager::tick()
     }
 }
 
-template<class TType>
-const TType& getKeyframeValue(const Animation_controller_component::Animation_channel& channel, uint32_t index)
+template<class TTypeIn, class TTypeOut>
+void convertSplineElement(const TTypeIn& in, TTypeOut& out) {}
+
+template<>
+void convertSplineElement(const Float3& in, SSE::Vector3& out) {
+    out = SSE::Vector3(in.x, in.y, in.z);
+}
+template<>
+void convertSplineElement(const Float4& in, SSE::Quat& out) {
+    out = SSE::Quat(in.x, in.y, in.z, in.w);
+}
+
+template<class TTypeIn, class TTypeOut>
+const TTypeOut getKeyframeValue(const Animation_controller_component::Animation_channel& channel, uint32_t index)
 {
-    return reinterpret_cast<const TType*>(channel.keyframeValues->getIndexed(index))[0];
+    auto val = reinterpret_cast<const TTypeIn*>(channel.keyframeValues->getIndexed(index))[0];
+    TTypeOut outVal;
+    convertSplineElement(val, outVal);
+    return outVal;
+}
+
+const float getKeyframeValueFloat(const Animation_controller_component::Animation_channel& channel, uint32_t index)
+{
+    return reinterpret_cast<const float*>(channel.keyframeValues->getIndexed(index))[0];
 }
 
 void Animation_manager::handleTranslationAnimationStep(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex)
 {
-    entity.setPosition(toVector3(getKeyframeValue<SimpleMath::Vector3>(channel, lowerValueIndex)));
+    entity.setPosition(getKeyframeValue<Float3, SSE::Vector3>(channel, lowerValueIndex));
 }
 
 void Animation_manager::handleScaleAnimationStep(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex)
 {
-    entity.setScale(toVector3(getKeyframeValue<SimpleMath::Vector3>(channel, lowerValueIndex)));
+    entity.setScale(getKeyframeValue<Float3, SSE::Vector3>(channel, lowerValueIndex));
 }
 
 void Animation_manager::handleRotationAnimationStep(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex)
 {
-    entity.setRotation(toQuat(getKeyframeValue<SimpleMath::Quaternion>(channel, lowerValueIndex)));
+    entity.setRotation(getKeyframeValue<Float4, SSE::Quat>(channel, lowerValueIndex));
 }
 
 void Animation_manager::handleMorphAnimationStep(Entity& entity,
@@ -204,33 +224,33 @@ void Animation_manager::handleTranslationAnimationLerp(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
 {
-    entity.setPosition(toVector3(SimpleMath::Vector3::Lerp(
-        getKeyframeValue<SimpleMath::Vector3>(channel, lowerValueIndex),
-        getKeyframeValue<SimpleMath::Vector3>(channel, upperValueIndex),
-        static_cast<float>(factor)
-    )));
+    entity.setPosition(SSE::lerp(
+        static_cast<float>(factor),
+        getKeyframeValue<Float3, SSE::Vector3>(channel, lowerValueIndex),
+        getKeyframeValue<Float3, SSE::Vector3>(channel, upperValueIndex)
+    ));
 }
 
 void Animation_manager::handleScaleAnimationLerp(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
 {
-    entity.setScale(toVector3(SimpleMath::Vector3::Lerp(
-        getKeyframeValue<SimpleMath::Vector3>(channel, lowerValueIndex),
-        getKeyframeValue<SimpleMath::Vector3>(channel, upperValueIndex),
-        static_cast<float>(factor)
-    )));
+    entity.setScale(SSE::lerp(
+        static_cast<float>(factor),
+        getKeyframeValue<Float3, SSE::Vector3>(channel, lowerValueIndex),
+        getKeyframeValue<Float3, SSE::Vector3>(channel, upperValueIndex)
+    ));
 }
 
 void Animation_manager::handleRotationAnimationLerp(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
 {
-    entity.setRotation(toQuat(SimpleMath::Quaternion::Lerp(
-        getKeyframeValue<SimpleMath::Quaternion>(channel, lowerValueIndex),
-        getKeyframeValue<SimpleMath::Quaternion>(channel, upperValueIndex),
-        static_cast<float>(factor)
-    )));
+    entity.setRotation(SSE::slerp(
+        static_cast<float>(factor),
+        getKeyframeValue<Float4, SSE::Quat>(channel, lowerValueIndex),
+        getKeyframeValue<Float4, SSE::Quat>(channel, upperValueIndex)
+    ));
 }
 
 std::array<std::function<void(std::array<double, 8> & meshWeights, size_t meshWeightsOffset, const SimpleMath::Vector4 & weights)>, 5>
@@ -271,8 +291,8 @@ void Animation_manager::handleMorphAnimationLerp(Entity& entity,
         auto upperWeights = SimpleMath::Vector4();
         if (morphTargetCount <= 4) {
             for (uint8_t targetIdx = 0u; targetIdx < morphTargetCount; ++targetIdx) {
-                (&lowerWeights.x)[targetIdx] = getKeyframeValue<float>(channel, lowerValueIndex + targetIdx);
-                (&upperWeights.x)[targetIdx] = getKeyframeValue<float>(channel, upperValueIndex + targetIdx);
+                (&lowerWeights.x)[targetIdx] = getKeyframeValueFloat(channel, lowerValueIndex + targetIdx);
+                (&upperWeights.x)[targetIdx] = getKeyframeValueFloat(channel, upperValueIndex + targetIdx);
             }
 
             const auto weights = SimpleMath::Vector4::Lerp(lowerWeights, upperWeights, static_cast<float>(factor));
@@ -283,16 +303,16 @@ void Animation_manager::handleMorphAnimationLerp(Entity& entity,
             assert(morphTargetCount <= 8);
 
             for (uint8_t targetIdx = 0u; targetIdx < 4u; ++targetIdx) {
-                (&lowerWeights.x)[targetIdx] = getKeyframeValue<float>(channel, lowerValueIndex + targetIdx);
-                (&upperWeights.x)[targetIdx] = getKeyframeValue<float>(channel, upperValueIndex + targetIdx);
+                (&lowerWeights.x)[targetIdx] = getKeyframeValueFloat(channel, lowerValueIndex + targetIdx);
+                (&upperWeights.x)[targetIdx] = getKeyframeValueFloat(channel, upperValueIndex + targetIdx);
             }
 
             auto weights = SimpleMath::Vector4::Lerp(lowerWeights, upperWeights, static_cast<float>(factor));
             g_applyWeights.at(4)(morphWeightsComponent->morphWeights(), 0, weights);
 
             for (uint8_t targetIdx = 4u; targetIdx < morphTargetCount; ++targetIdx) {
-                (&lowerWeights.x)[targetIdx] = getKeyframeValue<float>(channel, lowerValueIndex + targetIdx);
-                (&upperWeights.x)[targetIdx] = getKeyframeValue<float>(channel, upperValueIndex + targetIdx);
+                (&lowerWeights.x)[targetIdx] = getKeyframeValueFloat(channel, lowerValueIndex + targetIdx);
+                (&upperWeights.x)[targetIdx] = getKeyframeValueFloat(channel, upperValueIndex + targetIdx);
             }
 
             weights = SimpleMath::Vector4::Lerp(lowerWeights, upperWeights, static_cast<float>(factor));
@@ -308,18 +328,6 @@ struct Cubic_spline_value {
     TType value;
     TType outTangent;
 };
-
-template<class TTypeIn, class TTypeOut>
-void convertSplineElement(const TTypeIn& in, TTypeOut& out) {}
-
-template<>
-void convertSplineElement(const Float3& in, SSE::Vector3& out) {
-    out = SSE::Vector3(in.x, in.y, in.z);
-}
-template<>
-void convertSplineElement(const Float4& in, SSE::Quat& out) {
-    out = SSE::Quat(in.x, in.y, in.z, in.w);
-}
 
 template<class TTypeIn, class TTypeOut>
 TTypeOut Animation_manager::calculateCubicSpline(

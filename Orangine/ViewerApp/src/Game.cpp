@@ -133,27 +133,29 @@ void Game::CreateLights()
 {
 	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	int lightCount = 0;
-	auto createDirLight = [&entityManager, &lightCount](const SimpleMath::Vector3& normal, const Color& color, float intensity)
+	auto createDirLight = [&entityManager, &lightCount](const SSE::Vector3& normal, const Color& color, float intensity)
 	{
 		auto lightEntity = entityManager.instantiate("Directional Light " + std::to_string(++lightCount));
 		auto& component = lightEntity->addComponent<Directional_light_component>();
 		component.setColor(color);
 		component.setIntensity(intensity);
 
-		if (normal != SimpleMath::Vector3::Forward)
+        // if normal is NOT forward vector
+		if (SSE::lengthSqr(normal - Math::Direction::Forward) != 0.0f)
 		{
-			SimpleMath::Vector3 axis;
-			if (normal == SimpleMath::Vector3::Backward)
-				axis = SimpleMath::Vector3::Up;
-			else
-			{
-				axis = SimpleMath::Vector3::Forward.Cross(normal);
-				axis.Normalize();
+			SSE::Vector3 axis;
+            // if normal is backward vector
+			if (SSE::lengthSqr(normal - Math::Direction::Backward) == 0.0f)
+                axis = Math::Direction::Up;
+            else
+            {
+                axis = SSE::cross(Math::Direction::Forward, normal);
+				axis = SSE::normalize(axis);
 			}
 
-			assert(normal.LengthSquared() != 0);
-			float angle = acos(SimpleMath::Vector3::Forward.Dot(normal) / normal.Length());
-			lightEntity->setRotation(toQuat(SimpleMath::Quaternion::CreateFromAxisAngle(axis, angle)));
+			assert(SSE::lengthSqr(normal) != 0);
+			float angle = acos(SSE::dot(Math::Direction::Forward, normal) / SSE::length(normal));
+			lightEntity->setRotation(SSE::Quat::rotation(angle, axis));
 		}
 		return lightEntity;
 	};
@@ -293,7 +295,7 @@ void Game::CreateShadowTestScene()
 		const auto meshData = Primitive_mesh_data_factory::createQuad(20, 20);
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
-		child2->setRotation(toQuat(SimpleMath::Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0)));
+        child2->setRotation(SSE::Quat::rotationX(XM_PI * -0.5f));
 		child2->setPosition({ 0.0f, -1.5f, 0.0f });
 		child2->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 10.0f));
 	}
@@ -344,7 +346,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
 		//LoadGLTF("FlightHelmet", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
-        LoadGLTF("InterpolationTest", false);
+        //LoadGLTF("InterpolationTest", false);
         //LoadGLTF("MorphPrimitivesTest", false)->setScale({2, 2, 2});
         //LoadGLTF("AnimatedMorphCube", false)->setPosition({ 0, -3.0f, 0 });
         //LoadGLTF("Alien", false)->setScale({ 10.01f, 10.01f, 10.01f });
@@ -360,7 +362,7 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 
 		CreateCamera(false);
 		CreateLights();
-		//CreateShadowTestScene();
+		CreateShadowTestScene();
 		CreateScripts();
 
 

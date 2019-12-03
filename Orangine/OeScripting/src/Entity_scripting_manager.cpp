@@ -293,10 +293,10 @@ void Entity_scripting_manager::tick()
 		
 		const auto &speed = component->getSpeed();
 
-		const auto animTimePitch = static_cast<float>(fmod(elapsedTime * speed.getX() * XM_2PI, XM_2PI));
-		const auto animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.getY()* XM_2PI, XM_2PI));
-		const auto animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.getZ()* XM_2PI, XM_2PI));
-		entity.setRotation(toQuat(SimpleMath::Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll)));
+		const auto animTimePitch = SSE::Quat::rotationX(static_cast<float>(fmod(elapsedTime * speed.getX() * XM_2PI, XM_2PI)));
+		const auto animTimeYaw = SSE::Quat::rotationY(static_cast<float>(fmod(elapsedTime * speed.getY()* XM_2PI, XM_2PI)));
+		const auto animTimeRoll = SSE::Quat::rotationZ(static_cast<float>(fmod(elapsedTime * speed.getZ()* XM_2PI, XM_2PI)));
+		entity.setRotation(animTimeYaw * animTimePitch * animTimeRoll);
 	}
 	
 	const auto mouseSpeed = 1.0f / 600.0f;

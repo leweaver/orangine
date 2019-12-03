@@ -89,16 +89,18 @@ void Dev_tools_manager::renderSkeletons() {
             if (height != 0.0f) {
                 targetDirection /= height;
 
-				SSE::Matrix4 rotation;
+				SSE::Matrix3 rotation;
                 if (!createRotationBetweenUnitVectors(rotation, Math::Direction::Up, targetDirection)) {
-                    rotation = SSE::Matrix4::rotationX(Math::PI);
+                    rotation = SSE::Matrix3::rotationX(Math::PI);
                 }
 
-                const auto worldPosition = parentPos + (rotation * SSE::Vector3 { 0, height * 0.5f, 0 }).getXYZ();
+                const auto worldPosition = parentPos + (rotation * SSE::Vector3 { 0, height * 0.5f, 0 });
                 const auto transform = SSE::Matrix4::translation(worldPosition);
 				const auto scale = SSE::Matrix4::scale(SSE::Vector3(height));
+                auto rotation4x4 = SSE::Matrix4::identity();
+                rotation4x4.setUpper3x3(rotation);
 
-                addDebugCone(transform * rotation * scale,
+                addDebugCone(transform * rotation4x4 * scale,
                              0.1f,
                              1.0f,
                              red);

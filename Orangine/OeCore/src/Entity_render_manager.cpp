@@ -15,6 +15,7 @@
 #include "CommonStates.h"
 #include "GeometricPrimitive.h"
 #include "OeCore/Render_pass.h"
+#include "D3D11/DirectX_utils.h"
 
 #include <set>
 #include <functional>
@@ -23,12 +24,12 @@
 #include "OeCore/Morph_weights_component.h"
 #include "OeCore/Skinned_mesh_component.h"
 #include "OeCore/Mesh_utils.h"
+#include "OeCore/Math_constants.h"
 
 using namespace oe;
 using namespace internal;
 
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace std::literals;
 
 using namespace std;
@@ -140,17 +141,15 @@ bool addLightToRenderLightData(const Entity& lightEntity, Render_light_data_impl
 	const auto directionalLight = lightEntity.getFirstComponentOfType<Directional_light_component>();
 	if (directionalLight)
 	{
-		const auto lightDirection = Vector3::Transform(Vector3::Forward, lightEntity.worldRotation());
+		const auto lightDirection = lightEntity.worldTransform().getUpper3x3() * Math::Direction::Forward;
 		const auto shadowData = dynamic_cast<Shadow_map_texture_array_slice*>(directionalLight->shadowData().get());
 
 		if (shadowData != nullptr) {
-			auto shadowMapDepth = shadowData->casterVolume().Extents.z;
 			auto shadowMapBias = directionalLight->shadowMapBias();
 			return renderLightData.addDirectionalLight(lightDirection, 
 				directionalLight->color(),
 				directionalLight->intensity(), 
 				*shadowData,
-				shadowMapDepth,
 				shadowMapBias);
 		} else if (directionalLight->shadowData().get() != nullptr) {
 			throw std::logic_error("Directional lights only support texture array shadow maps.");
@@ -173,15 +172,15 @@ BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& c
 	const auto viewport = deviceResources().GetScreenViewport();
 	const auto aspectRatio = viewport.Width / viewport.Height;
 
-	const auto projMatrix = Matrix::CreatePerspectiveFieldOfView(
+	const auto projMatrix = SimpleMath::Matrix::CreatePerspectiveFieldOfView(
 		cameraComponent.fov(),
 		aspectRatio,
 		cameraComponent.nearPlane(),
 		cameraComponent.farPlane());
 	auto frustum = BoundingFrustumRH(projMatrix);
 	const auto& entity = cameraComponent.entity();
-	frustum.Origin = entity.worldPosition();
-	frustum.Orientation = entity.worldRotation();
+	frustum.Origin = StoreVector3(entity.worldPosition());
+	frustum.Orientation = StoreQuat(entity.worldRotation());
 
 	return frustum;
 }
@@ -331,7 +330,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
         // Skinned mesh?
         const auto skinnedMeshComponent = entity.getFirstComponentOfType<Skinned_mesh_component>();
         //Matrix const* worldTransform;
-        const Matrix* worldTransform;
+        const SSE::Matrix4* worldTransform;
         const auto skinningEnabled = _scene.manager<IMaterial_manager>().rendererFeatureEnabled().skinnedAnimation;
         if (skinningEnabled && skinnedMeshComponent != nullptr) {
 
@@ -347,20 +346,19 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
                     std::to_string(_rendererAnimationData.boneTransformConstants.size()));
             }
 
-            Matrix invWorld;
             if (skinnedMeshComponent->skeletonTransformRoot())
                 worldTransform = &skinnedMeshComponent->skeletonTransformRoot()->worldTransform();
             else
                 worldTransform = &entity.worldTransform();
                 
-            worldTransform->Invert(invWorld);
-
+			auto invWorld = SSE::inverse(*worldTransform);
             for (size_t i = 0; i < joints.size(); ++i) {
                 const auto joint = joints[i];
-                auto jointToRoot = joint->worldTransform() * invWorld;
+				const auto jointWorldTransform = joint->worldTransform();
+                auto jointToRoot = invWorld * jointWorldTransform;
                 const auto inverseBoneTransform = inverseBindMatrices[i];
 
-                _rendererAnimationData.boneTransformConstants[i] = (inverseBoneTransform * jointToRoot).Transpose();
+                _rendererAnimationData.boneTransformConstants[i] = jointToRoot * inverseBoneTransform;
 
             }
             _rendererAnimationData.numBoneTransforms = static_cast<uint32_t>(joints.size());
@@ -391,7 +389,7 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
 }
 
 void Entity_render_manager::renderRenderable(Renderable& renderable,
-	const Matrix& worldMatrix,
+	const SSE::Matrix4& worldMatrix,
 	float radius,
 	const Render_pass::Camera_data& cameraData,
 	const Light_provider::Callback_type& lightDataProvider,
@@ -428,9 +426,9 @@ void Entity_render_manager::renderRenderable(Renderable& renderable,
 		// Ask the caller what lights are affecting this entity.
 		_renderLights.clear();
 		_renderLightData_lit->clear();
-		BoundingSphere lightTarget;
-		lightTarget.Center = worldMatrix.Translation();
-		lightTarget.Radius = radius;
+        BoundingSphere lightTarget;
+		lightTarget.center = worldMatrix.getTranslation();
+		lightTarget.radius = radius;
 		lightDataProvider(lightTarget, _renderLights, _renderLightData_lit->maxLights());
 		if (_renderLights.size() > _renderLightData_lit->maxLights()) {
 			throw std::logic_error("Light_provider::Callback_type added too many lights to entity");
@@ -504,7 +502,7 @@ void Entity_render_manager::loadRendererDataToDeviceContext(const Renderer_data&
 
 void Entity_render_manager::drawRendererData(
 	const Render_pass::Camera_data& cameraData,
-	const Matrix& worldTransform,
+	const SSE::Matrix4& worldTransform,
 	Renderer_data& rendererData,
 	Render_pass_blend_mode blendMode,
 	const Render_light_data& renderLightData,
@@ -558,7 +556,7 @@ void Entity_render_manager::drawRendererData(
 
 	} catch (std::exception& ex) {
 		rendererData.failedRendering = true;
-		LOG(WARNING) << "Failed to drawRendererData, marking failedRendering to true. (" << ex.what() << ")";
+		LOG(FATAL) << "Failed to drawRendererData, marking failedRendering to true. (" << ex.what() << ")";
 	}
 }
 
@@ -674,7 +672,7 @@ Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material
 {
 	auto renderable = Renderable();
 	if (renderable.meshData == nullptr)
-		renderable.meshData = Primitive_mesh_data_factory::createQuad({ 2.0f, 2.0f }, { -1.f, -1.f, 0.f });
+		renderable.meshData = Primitive_mesh_data_factory::createQuad(2.0f, 2.0f, { -1.f, -1.f, 0.f });
 
 	if (renderable.material == nullptr)
 		renderable.material = material;

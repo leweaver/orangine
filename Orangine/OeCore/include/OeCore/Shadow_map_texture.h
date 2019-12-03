@@ -9,8 +9,8 @@ namespace oe {
 		const DirectX::BoundingOrientedBox& casterVolume() const { return _boundingOrientedBox; }
 		void setCasterVolume(const DirectX::BoundingOrientedBox& boundingOrientedBox) { _boundingOrientedBox = boundingOrientedBox; }
 
-		const DirectX::SimpleMath::Matrix& worldViewProjMatrix() const { return _worldViewProjMatrix; };
-		void setWorldViewProjMatrix(const DirectX::SimpleMath::Matrix& worldViewProjMatrix) { _worldViewProjMatrix = worldViewProjMatrix; }
+		const SSE::Matrix4& worldViewProjMatrix() const { return _worldViewProjMatrix; };
+		void setWorldViewProjMatrix(const SSE::Matrix4& worldViewProjMatrix) { _worldViewProjMatrix = worldViewProjMatrix; }
 
 		ID3D11DepthStencilView* depthStencilView() const { return _depthStencilView.Get(); }
 
@@ -22,7 +22,7 @@ namespace oe {
 		D3D11_VIEWPORT _viewport;
 		
 		DirectX::BoundingOrientedBox _boundingOrientedBox;
-		DirectX::SimpleMath::Matrix _worldViewProjMatrix;
+		SSE::Matrix4 _worldViewProjMatrix;
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> _depthStencilView;
 	};
 
@@ -51,15 +51,19 @@ namespace oe {
 
 		typedef std::function<Array_texture()> Array_texture_source;
 
-		Shadow_map_texture_array_slice(const D3D11_VIEWPORT& viewport, uint32_t arraySlice, Array_texture_source arrayTextureSource);
+		Shadow_map_texture_array_slice(const D3D11_VIEWPORT& viewport, uint32_t arraySlice, uint32_t dimension, Array_texture_source arrayTextureSource);
 
 		void load(ID3D11Device* device) override;
 		void unload() override;
 
 		uint32_t arraySlice() const { return _arraySlice; }
+		uint32_t textureWidth() const {
+			return _textureWidth;
+		}
 
 	private:
 		Array_texture_source _arrayTextureSource;
 		uint32_t _arraySlice;
+		uint32_t _textureWidth;
 	};
 }

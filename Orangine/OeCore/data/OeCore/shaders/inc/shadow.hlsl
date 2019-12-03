@@ -9,33 +9,34 @@ struct ShadowSampleInputs {
 
     float shadowMapDepth;
     float shadowMapBias;
+	int shadowMapDimension;
 }; 
 
 float3 Shadow(ShadowSampleInputs ssi)
 {
-    float4 shadowMapPosition = mul(float4(ssi.worldPosition, 1), ssi.shadowMapViewMatrix);
+    float4 shadowMapPosition = mul(ssi.shadowMapViewMatrix, float4(ssi.worldPosition, 1));
     float3 shadowCoord = float3(shadowMapPosition.xy / shadowMapPosition.w, ssi.shadowMapArrayIndex);
 
     // Bring x,y from [-1, 1] to [0, 1]
     // TODO: Why do we need to y-flip here?
     shadowCoord = shadowCoord * float3(0.5, -0.5, 1) + float3(0.5, 0.5, 0);
 
-    uint3 mapSize;
-    g_shadowMapStencilTexture.GetDimensions(mapSize.x, mapSize.y, mapSize.z);
-
     const float depthSample = g_shadowMapDepthTexture.Sample(g_shadowMapSampler, shadowCoord.rgb).r;
     const uint stencilSample = g_shadowMapStencilTexture.Load(int4(
-        shadowCoord.xy * mapSize.xy,
+        shadowCoord.xy * ssi.shadowMapDimension,
         ssi.shadowMapArrayIndex,
         0)
     ).g;
 
     float3 outputColor = ssi.lightColor;
-    if (stencilSample != 0) {
-        float shadowSample = depthSample * ssi.shadowMapDepth + ssi.shadowMapBias;
-        if (shadowMapPosition.z > shadowSample)
+	float shadowSample = depthSample + ssi.shadowMapBias;
+	
+    /* logic of below formula:
+	if (stencilSample != 0) {
+        if (shadowMapPosition.z >= shadowSample)
             outputColor = float3(0, 0, 0);
-    }
+    }*/
+	float multiplier = max(1 - stencilSample, step(shadowMapPosition.z, shadowSample));
 
-    return outputColor;
+	return outputColor * multiplier;
 }

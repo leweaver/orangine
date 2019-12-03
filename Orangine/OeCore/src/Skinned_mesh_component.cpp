@@ -12,7 +12,7 @@ void Skinned_mesh_component::setJoints(std::vector<std::shared_ptr<Entity>>&& ve
     std::transform(_joints.begin(), _joints.end(), _jointsRaw.begin(), [](const auto& ptr) { return ptr.get(); });
 }
 
-void Skinned_mesh_component::setInverseBindMatrices(std::vector<DirectX::SimpleMath::Matrix>&& matrices)
+void Skinned_mesh_component::setInverseBindMatrices(std::vector<SSE::Matrix4>&& matrices)
 {
     _inverseBindMatrices = std::move(matrices);
 }

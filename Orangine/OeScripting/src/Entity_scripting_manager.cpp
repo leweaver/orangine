@@ -15,6 +15,7 @@
 #include "OeCore/Scene.h"
 #include "OeCore/Entity_filter.h"
 #include "OeCore/Entity.h"
+#include "OeCore/Math_constants.h"
 #include <cmath>
 #include <set>
 
@@ -24,7 +25,6 @@
 namespace py = pybind11;
 
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace oe;
 using namespace internal;
 
@@ -115,6 +115,7 @@ void Entity_scripting_manager::initialize()
 {
 	{
 		_scriptableEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({ Script_component::type() });
+		_testEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter({ Test_component::type() });
 		_scriptableEntityFilterListener = std::make_unique<Entity_filter::Entity_filter_listener>();
 		_scriptableEntityFilterListener->onAdd = [this](Entity* entity) {
 			_addedEntities.push_back(entity->getId());
@@ -284,7 +285,7 @@ void Entity_scripting_manager::tick()
 	}
 
 	const auto elapsedTime = _scene.elapsedTime();
-	for (auto iter = _scriptableEntityFilter->begin(); iter != _scriptableEntityFilter->end(); ++iter) {
+	for (auto iter = _testEntityFilter->begin(); iter != _testEntityFilter->end(); ++iter) {
 		auto& entity = **iter;
 		auto* component = entity.getFirstComponentOfType<Test_component>();
 		if (component == nullptr)
@@ -292,10 +293,10 @@ void Entity_scripting_manager::tick()
 		
 		const auto &speed = component->getSpeed();
 
-		const auto animTimePitch = static_cast<float>(fmod(elapsedTime * speed.x * XM_2PI, XM_2PI));
-		const auto animTimeYaw = static_cast<float>(fmod(elapsedTime * speed.y * XM_2PI, XM_2PI));
-		const auto animTimeRoll = static_cast<float>(fmod(elapsedTime * speed.z * XM_2PI, XM_2PI));
-		entity.setRotation(Quaternion::CreateFromYawPitchRoll(animTimeYaw, animTimePitch, animTimeRoll));
+		const auto animTimePitch = SSE::Quat::rotationX(static_cast<float>(fmod(elapsedTime * speed.getX() * XM_2PI, XM_2PI)));
+		const auto animTimeYaw = SSE::Quat::rotationY(static_cast<float>(fmod(elapsedTime * speed.getY()* XM_2PI, XM_2PI)));
+		const auto animTimeRoll = SSE::Quat::rotationZ(static_cast<float>(fmod(elapsedTime * speed.getZ()* XM_2PI, XM_2PI)));
+		entity.setRotation(animTimeYaw * animTimePitch * animTimeRoll);
 	}
 	
 	const auto mouseSpeed = 1.0f / 600.0f;
@@ -316,14 +317,15 @@ void Entity_scripting_manager::tick()
 			renderDebugSpheres();
 		}
 
-		const auto deltaRot = Quaternion::CreateFromYawPitchRoll(_scriptData.yaw, _scriptData.pitch, 0.0f);			
-		auto cameraPosition = Vector3(DirectX::XMVector3Rotate(XMLoadFloat3(&Vector3::Forward), XMLoadFloat4(&deltaRot)));
+		const auto cameraRot = SSE::Matrix4::rotationY(_scriptData.yaw + Math::PI) * SSE::Matrix4::rotationX(-_scriptData.pitch);
+		auto cameraPosition = cameraRot * Math::Direction::Backward;
 		cameraPosition *= _scriptData.distance;
 
 		auto entity = _scene.mainCamera();
 		if (entity != nullptr) {
-			entity->setPosition(cameraPosition);
-			entity->lookAt(Vector3::Zero, Vector3::Up);
+			entity->setPosition({ cameraPosition.getX(), cameraPosition.getY(), cameraPosition.getZ() });
+			auto cameraRotQuat = SSE::Quat(cameraRot.getUpper3x3());
+			entity->setRotation({ cameraRotQuat.getX(), cameraRotQuat.getY(), cameraRotQuat.getZ(), cameraRotQuat.getW() });
 		}
 	}
 }
@@ -411,8 +413,8 @@ void Entity_scripting_manager::renderDebugSpheres() const
 
 	for (const auto& entity : *_renderableEntityFilter) {
 		const auto& boundSphere = entity->boundSphere();
-		const auto transform = Matrix::CreateTranslation(boundSphere.Center) * entity->worldTransform();
-		devToolsManager.addDebugSphere(transform, boundSphere.Radius, Color(Colors::Gray));
+		const auto transform = entity->worldTransform() * SSE::Matrix4::translation(boundSphere.center);
+		devToolsManager.addDebugSphere(transform, boundSphere.radius, Colors::Gray);
 	}
 
 	const auto mainCameraEntity = _scene.mainCamera();
@@ -421,7 +423,7 @@ void Entity_scripting_manager::renderDebugSpheres() const
 		if (cameraComponent) {
 			auto frustum = renderManager.createFrustum(*cameraComponent);
 			frustum.Far *= 0.5;
-			devToolsManager.addDebugFrustum(frustum, Color(Colors::Red));
+			devToolsManager.addDebugFrustum(frustum, Colors::Red);
 		}
 	}
 

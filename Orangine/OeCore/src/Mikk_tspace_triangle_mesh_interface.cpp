@@ -2,7 +2,7 @@
 
 #include "OeCore/Mikk_tspace_triangle_mesh_interface.h"
 #include "OeCore/Mesh_utils.h"
-#include <SimpleMath.h>
+#include "OeCore/Simple_types.h"
 
 using namespace oe;
 using namespace std::literals;
@@ -80,21 +80,21 @@ int Mikk_tspace_triangle_mesh_interface::getNumVerticesOfFace(const SMikkTSpaceC
 void readVector3Accessor(float* fvPosOut, const Mesh_vertex_buffer_accessor*  const vertexAccessor, const uint32_t indexValue)
 {
 	assert(indexValue <= vertexAccessor->count);
-	assert(sizeof(DirectX::SimpleMath::Vector3) <= vertexAccessor->stride);
+	assert(sizeof(Float3) <= vertexAccessor->stride);
 	const auto* pos = vertexAccessor->buffer->data + vertexAccessor->offset + indexValue * vertexAccessor->stride;
-	const auto vector = reinterpret_cast<const DirectX::SimpleMath::Vector3*>(pos);
+	const auto vector = reinterpret_cast<const Float3*>(pos);
 
 	fvPosOut[0] = vector->x;
 	fvPosOut[1] = vector->y;
 	fvPosOut[2] = vector->z;
 }
 
-void writeVector4Accessor(DirectX::SimpleMath::Vector4 src, Mesh_vertex_buffer_accessor* vertexAccessor, const uint32_t indexValue)
+void writeVector4Accessor(SSE::Vector4 src, Mesh_vertex_buffer_accessor* vertexAccessor, const uint32_t indexValue)
 {
 	assert(indexValue <= vertexAccessor->count);
-	assert(sizeof(DirectX::SimpleMath::Vector4) <= vertexAccessor->stride);
+	assert(sizeof(Float4) <= vertexAccessor->stride);
 	auto* pos = vertexAccessor->buffer->data + vertexAccessor->offset + indexValue * vertexAccessor->stride;
-	const auto vector = reinterpret_cast<DirectX::SimpleMath::Vector4*>(pos);
+	const auto vector = reinterpret_cast<Float4*>(pos);
 
 	*vector = src;
 }
@@ -102,9 +102,9 @@ void writeVector4Accessor(DirectX::SimpleMath::Vector4 src, Mesh_vertex_buffer_a
 void readVector2Accessor(float* fvPosOut, const Mesh_vertex_buffer_accessor*  const vertexAccessor, const uint32_t indexValue)
 {
 	assert(indexValue <= vertexAccessor->count);
-	assert(sizeof(DirectX::SimpleMath::Vector2) <= vertexAccessor->stride);
+	assert(sizeof(Float2) <= vertexAccessor->stride);
 	const auto* pos = vertexAccessor->buffer->data + vertexAccessor->offset + indexValue * vertexAccessor->stride;
-	const auto vector = reinterpret_cast<const DirectX::SimpleMath::Vector2*>(pos);
+	const auto vector = reinterpret_cast<const Float2*>(pos);
 
 	fvPosOut[0] = vector->x;
 	fvPosOut[1] = vector->y;

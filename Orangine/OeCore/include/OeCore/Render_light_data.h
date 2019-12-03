@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Shadow_map_texture.h"
+#include "Color.h"
+#include "Simple_types.h"
 
 namespace oe
 {
@@ -61,19 +63,18 @@ namespace oe
 			DirectX::SetDebugObjectName(_constantBuffer.Get(), L"Render_light_data constant buffer");
 		}
 
-		bool addPointLight(const DirectX::SimpleMath::Vector3& lightPosition, const DirectX::SimpleMath::Color& color, float intensity)
+		bool addPointLight(const SSE::Vector3& lightPosition, const Color& color, float intensity)
 		{
 			return _lightConstants.addLight({ Light_type::Point, lightPosition, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
 		}
-		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, const DirectX::SimpleMath::Color& color, float intensity)
+		bool addDirectionalLight(const SSE::Vector3& lightDirection, const Color& color, float intensity)
 		{
 			return _lightConstants.addLight({ Light_type::Directional, lightDirection, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
 		}
-		bool addDirectionalLight(const DirectX::SimpleMath::Vector3& lightDirection, 
-			const DirectX::SimpleMath::Color& color, 
+		bool addDirectionalLight(const SSE::Vector3& lightDirection, 
+			const Color& color, 
 			float intensity, 
 			const Shadow_map_texture_array_slice& shadowMapTexture,
-			float shadowMapDepth,
 			float shadowMapBias)
 		{
 			typename Light_constants::Light_entry lightEntry = { 
@@ -81,9 +82,9 @@ namespace oe
 				lightDirection, 
 				encodeColor(color, intensity),
 				static_cast<int32_t>(shadowMapTexture.arraySlice()),
-				XMMatrixTranspose(shadowMapTexture.worldViewProjMatrix()),
-				shadowMapDepth,
-				shadowMapBias
+				shadowMapTexture.worldViewProjMatrix(),
+				shadowMapBias,
+				static_cast<int32_t>(shadowMapTexture.textureWidth())
 			};
 
 			if (_lightConstants.addLight(std::move(lightEntry))) {
@@ -91,9 +92,9 @@ namespace oe
 			}
 			return false;
 		}
-		bool addAmbientLight(const DirectX::SimpleMath::Color& color, float intensity)
+		bool addAmbientLight(const Color& color, float intensity)
 		{
-			return _lightConstants.addLight({ Light_type::Ambient, DirectX::SimpleMath::Vector3::Zero, encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
+			return _lightConstants.addLight({ Light_type::Ambient, SSE::Vector3(0), encodeColor(color, intensity), Light_constants::shadow_map_disabled_index });
 		}
 		void setEnvironmentIblMap(
 			std::shared_ptr<Texture> brdf,
@@ -126,7 +127,6 @@ namespace oe
 		}
 
 	private:
-
 		class alignas(16) Light_constants {
 		public:
 
@@ -135,13 +135,14 @@ namespace oe
 			// sizeof must be a multiple of 16 for the shader arrays to behave correctly
 			struct Light_entry {
 				Light_type type = Light_type::Directional;
-				DirectX::SimpleMath::Vector3 lightPositionDirection;
-				DirectX::SimpleMath::Vector3 intensifiedColor;
+				//  If you change this to a Vector3, note that  SSE::Vector3 is actually sizeof(Vector4), since it uses __m128!
+				Float3 lightPositionDirection;
+				Float3 intensifiedColor;
 				int32_t shadowMapIndex = shadow_map_disabled_index;
-				DirectX::SimpleMath::Matrix shadowViewProjMatrix;
-				float shadowMapDepth = 0.0f;
+				SSE::Matrix4 shadowViewProjMatrix;
 				float shadowMapBias = 0.0f;
-				DirectX::SimpleMath::Vector2 notUsed;
+				int32_t shadowmapDimension = 0;
+				float unused[2];
 			};
 
 			Light_constants()
@@ -179,11 +180,9 @@ namespace oe
 			int _activeLights = 0;
 		};
 
-		static DirectX::SimpleMath::Vector3 encodeColor(const DirectX::SimpleMath::Color& color, float intensity)
+		static SSE::Vector3 encodeColor(const Color& color, float intensity)
 		{
-			DirectX::SimpleMath::Vector3 dest;
-			XMStoreFloat3(&dest, XMVectorScale(color, intensity));
-			return dest;
+			return color.getXYZ() * intensity;
 		}
 
 		Light_constants _lightConstants;

@@ -20,7 +20,6 @@
 
 using namespace oe;
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace std::literals;
 
 const auto g_max_material_index = UINT8_MAX;
@@ -65,7 +64,7 @@ const std::wstring& Material_manager::shaderPath() const {
 void Material_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
 {
     // Animation constant buffer
-    std::array<Matrix, g_max_bone_transforms> initDataMem;
+    std::array<SimpleMath::Matrix, g_max_bone_transforms> initDataMem;
     constexpr auto dataSize = initDataMem.size() * sizeof(decltype(initDataMem)::value_type);
 
     // Fill in a buffer description.
@@ -469,7 +468,7 @@ void Material_manager::bind(
 
 void Material_manager::render(
     const Renderer_data& rendererData,
-    const Matrix& worldMatrix,
+    const SSE::Matrix4& worldMatrix,
     const Renderer_animation_data& rendererAnimationData,
     const Render_pass::Camera_data& camera)
 {
@@ -483,7 +482,13 @@ void Material_manager::render(
     // Update constant buffers
     if (materialConstants->vertexConstantBuffer != nullptr) {
 
-        _boundMaterial->updateVSConstantBuffer(worldMatrix, camera.viewMatrix, camera.projectionMatrix, rendererAnimationData, context, *materialConstants->vertexConstantBuffer);
+        _boundMaterial->updateVSConstantBuffer(
+			worldMatrix, 
+			camera.viewMatrix, 
+			camera.projectionMatrix,
+			rendererAnimationData, 
+			context, 
+			*materialConstants->vertexConstantBuffer);
 
         if (rendererAnimationData.numBoneTransforms) {
             assert(_boneTransformConstantBuffer &&
@@ -504,7 +509,12 @@ void Material_manager::render(
 
     }
     if (materialConstants->pixelConstantBuffer != nullptr) {
-        _boundMaterial->updatePSConstantBuffer(worldMatrix, camera.viewMatrix, camera.projectionMatrix, context, *materialConstants->pixelConstantBuffer);
+        _boundMaterial->updatePSConstantBuffer(
+			worldMatrix,
+			camera.viewMatrix,
+			camera.projectionMatrix,
+			context,
+			*materialConstants->pixelConstantBuffer);
         ID3D11Buffer* pixelConstantBuffers[] = { materialConstants->pixelConstantBuffer->d3dBuffer, _boundLightDataConstantBuffer.Get() };
         context->PSSetConstantBuffers(0, 2, pixelConstantBuffers);
     }

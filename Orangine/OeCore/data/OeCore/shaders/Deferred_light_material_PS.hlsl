@@ -135,8 +135,8 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 			ssi.lightColor = lightColor;
 			ssi.shadowMapArrayIndex = light.shadowMapIndex;
 			ssi.shadowMapViewMatrix = light.shadowMapViewMatrix;
-			ssi.shadowMapDepth = light.shadowMapDepth;
 			ssi.shadowMapBias = light.shadowMapBias;
+			ssi.shadowMapDimension = light.shadowMapDimension;
 			finalColor += Shadow(ssi);
 		}
 		else {
@@ -146,6 +146,11 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 		finalColor += lightColor;
 #endif
 	}
+
+
+#if DEBUG_DISPLAY_LIGHTING_ONLY
+	float3 lightingColor = finalColor;
+#endif
 
 	// TODO: turn into an ifdef?
 	if (g_emittedEnabled)
@@ -173,6 +178,10 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 	return float4(metallic, roughness, 0, 1);
 #elif DEBUG_DISPLAY_NORMALS
 	return float4((finalColor.rgb * 0.001) + brdf.worldNormal * 0.5 + 0.5, 1);
+#elif DEBUG_DISPLAY_WORLD_POSITION
+	return float4((finalColor.rgb * 0.001) + brdf.worldPosition, 1);
+#elif DEBUG_DISPLAY_LIGHTING_ONLY
+	return float4((finalColor.rgb * 0.001) + lightingColor, 1);
 #else
 	return float4(finalColor, 1);
 #endif
@@ -189,11 +198,11 @@ float3 worldPosFromDepth(float2 texCoord)
 	float y = (1 - texCoord.y) * 2 - 1;
 	float z = depth;
 	float4 clipSpacePosition = float4(x, y, z, 1.0f);
-	float4 viewSpacePosition = mul(clipSpacePosition, g_projMatrixInv);
+	float4 viewSpacePosition = mul(g_projMatrixInv, clipSpacePosition);
 
 	// Perspective division (go from homogenious to 3d space)
 	viewSpacePosition /= viewSpacePosition.w;
 
 	// Convert from view to world space
-	return mul(viewSpacePosition, g_viewMatrixInv).xyz;
+	return mul(g_viewMatrixInv, viewSpacePosition).xyz;
 }

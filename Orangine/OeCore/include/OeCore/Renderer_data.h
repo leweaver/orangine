@@ -1,9 +1,11 @@
 #pragma once
 
-#include <memory>
-#include <array>
 #include "Renderer_enum.h"
 #include "Material_context.h"
+
+#include <memory>
+#include <array>
+#include <vectormath/vectormath.hpp>
 
 namespace oe 
 {
@@ -28,10 +30,11 @@ namespace oe
 	};
 
     struct Renderer_animation_data {
-        std::array<float, 8> morphWeights;
+		static constexpr size_t morphWeightsSize = 8;
+        std::array<float, morphWeightsSize> morphWeights;
 
         uint32_t numBoneTransforms = 0;
-        std::array<DirectX::SimpleMath::Matrix, g_max_bone_transforms> boneTransformConstants;
+        std::array<SSE::Matrix4, g_max_bone_transforms> boneTransformConstants;
     };
 
 	struct Renderer_data

@@ -28,6 +28,7 @@ namespace oe::internal {
         static std::string _name;
 
 		std::shared_ptr<Entity_filter> _scriptableEntityFilter;
+		std::shared_ptr<Entity_filter> _testEntityFilter;
         std::shared_ptr<Entity_filter::Entity_filter_listener> _scriptableEntityFilterListener;
         std::vector<unsigned> _addedEntities;
 		std::vector<unsigned> _removedEntities;

@@ -2,187 +2,174 @@
 #include "OeCore/Entity.h"
 #include "Scene_graph_manager.h"
 #include "OeCore/Scene.h"
+#include "OeCore/Math_constants.h"
 
 using namespace oe;
 using namespace DirectX;
-using namespace SimpleMath;
 
 Entity::Entity(Scene& scene, std::string&& name, Id_type id)
-	: _localRotation(Quaternion::Identity)
-	, _localPosition(Vector3::Zero)
-	, _localScale(Vector3::One)
+    : _localRotation(SSE::Quat::identity())
+    , _localPosition({ 0, 0, 0 })
+    , _localScale({ 1.0f, 1.0f, 1.0f })
     , _calculateWorldTransform(true)
-	, _calculateBoundSphereFromChildren(true)
-	, _id(id)
-	, _name(std::move(name))
-	, _state(Entity_state::Uninitialized)
-	, _active(true)
-	, _parent(nullptr)
-	, _scene(scene)
-	, _worldTransform(Matrix::Identity)
-	, _worldRotation(Quaternion::Identity)
-	, _worldScale(Vector3::One)
+    , _calculateBoundSphereFromChildren(true)
+    , _id(id)
+    , _name(std::move(name))
+    , _state(Entity_state::Uninitialized)
+    , _active(true)
+    , _parent(nullptr)
+    , _scene(scene)
+    , _worldTransform(SSE::Matrix4::identity())
+    , _worldRotation(SSE::Quat::identity())
+    , _worldScale({ 1.0f, 1.0f, 1.0f })
 {
 }
 
 void Entity::computeWorldTransform()
 {
-	if (hasParent())
-	{
-		_worldScale = _parent->_worldScale * _localScale;
-		_worldRotation = Quaternion::Concatenate(_parent->worldRotation(), _localRotation);
+    SSE::Matrix4 t;
+    if (hasParent())
+    {
+        _worldScale = mulPerElem(_parent->_worldScale, _localScale);
+        _worldRotation = _parent->worldRotation() * _localRotation;
 
-		const auto worldPosition = Vector3::Transform(_localPosition, _parent->_worldTransform);
+        const auto worldPosition = _parent->_worldTransform * SSE::Point3(_localPosition);
+        t = SSE::Matrix4::translation(worldPosition.getXYZ());
+    }
+    else
+    {
+        _worldRotation = _localRotation;
+        _worldScale = _localScale;
 
-		const auto worldT = XMMatrixTranslationFromVector(worldPosition);
-		const auto worldR = XMMatrixRotationQuaternion(_worldRotation);
-		const auto worldS = XMMatrixScalingFromVector(_worldScale);
-		
-		_worldTransform = XMMatrixMultiply(XMMatrixMultiply(worldS, worldR), worldT);
-	}
-	else
-	{
-		_worldRotation = _localRotation;
-		_worldScale = _localScale;
+        t = SSE::Matrix4::translation(_localPosition);
+    }
 
-		const auto localT = XMMatrixTranslationFromVector(_localPosition);
-		const auto localR = XMMatrixRotationQuaternion(_worldRotation);
-		const auto localS = XMMatrixScalingFromVector(_worldScale);
+    const auto r = SSE::Matrix4::rotation(_worldRotation);
+    const auto s = SSE::Matrix4::scale(_worldScale);
 
-		_worldTransform = XMMatrixMultiply(XMMatrixMultiply(localS, localR), localT);
-	}
+    _worldTransform = t * r * s;
 }
 
 Component& Entity::getComponent(size_t index) const
 {
-	return *_components[index];
+    return *_components[index];
 }
 
 void Entity::lookAt(const Entity& other)
 {
-	lookAt(other.position(), Vector3::Up);
+    lookAt(other.position(), Math::Direction::Up);
 }
 
-void Entity::lookAt(const Vector3& position, const Vector3 &worldUp)
+void Entity::lookAt(const SSE::Vector3& position, const SSE::Vector3& worldUp)
 {
-	Vector3 forward;
-	if (hasParent()) {
-		const auto parentWorldInv = _parent->_worldTransform.Invert();
-		forward = Vector3::Transform(position, parentWorldInv) - _localPosition;
-	}
-	else {
-		forward = position - _localPosition;
-	}
+    SSE::Vector3 forward;
+    if (hasParent()) {
+        const auto parentWorldInv = SSE::inverse(_parent->_worldTransform);
+        forward = (parentWorldInv * position).getXYZ() - _localPosition;
+    }
+    else {
+        forward = position - _localPosition;
+    }
 
-	if (forward.LengthSquared() == 0)
-		return;
+    if (SSE::lengthSqr(forward) == 0)
+        return;
 
-	// The DirectX LookAt function creates a view matrix; we want to create a transform
-	// to rotate this object towards a target. So, we need to create the matrix manually.
-	// (This also gives us the benefit of skipping the translation calculations; since they
-	// are not used)
+    // The DirectX LookAt function creates a view matrix; we want to create a transform
+    // to rotate this object towards a target. So, we need to create the matrix manually.
+    // (This also gives us the benefit of skipping the translation calculations; since they
+    // are not used)
 
-	forward.Normalize();
-	
-	Vector3 right;
-	forward.Cross(worldUp, right);
-	right.Normalize();
+    forward = SSE::normalize(forward);
 
-	Vector3 up;
-	right.Cross(forward, up);
+    SSE::Vector3 right = SSE::normalize(SSE::cross(forward, worldUp));
+    SSE::Vector3 up = SSE::cross(right, forward);
 
-	Matrix camToWorld;
-	camToWorld._11 = right.x;
-	camToWorld._12 = right.y;
-	camToWorld._13 = right.z;
-	camToWorld._21 = up.x;
-	camToWorld._22 = up.y;
-	camToWorld._23 = up.z;
-	camToWorld._31 = -forward.x;
-	camToWorld._32 = -forward.y;
-	camToWorld._33 = -forward.z;
+    auto camToWorld = SSE::Matrix3(right, up, -forward);
 
-	_localRotation = Quaternion::CreateFromRotationMatrix(camToWorld);
+    _localRotation = SSE::Quat(camToWorld);
 
-	computeWorldTransform();
+    computeWorldTransform();
 }
 
 void Entity::setActive(bool bActive)
 {
-	_active = bActive;
+    _active = bActive;
 }
 
 void Entity::setParent(Entity& newParent)
 {
-	// TODO: Check that we don't create a cycle?
-	if (hasParent())
-	{
-		removeParent();
-	}
+    // TODO: Check that we don't create a cycle?
+    if (hasParent())
+    {
+        removeParent();
+    }
 
-	auto &entityManager = _scene.manager<IScene_graph_manager>();
-	const auto thisPtr = entityManager.getEntityPtrById(getId());
-	entityManager.removeFromRoot(thisPtr);
+    auto& entityManager = _scene.manager<IScene_graph_manager>();
+    const auto thisPtr = entityManager.getEntityPtrById(getId());
+    entityManager.removeFromRoot(thisPtr);
 
-	auto newParentPtr = entityManager.getEntityPtrById(newParent.getId());
-	newParentPtr->_children.push_back(thisPtr);
+    auto newParentPtr = entityManager.getEntityPtrById(newParent.getId());
+    newParentPtr->_children.push_back(thisPtr);
 
-	_parent = newParentPtr.get();
+    _parent = newParentPtr.get();
 }
 
 void Entity::removeParent()
 {
-	if (_parent == nullptr)
-		return;
+    if (_parent == nullptr)
+        return;
 
-	Entity_ptr_vec& children = _parent->_children;
-	for (auto it = children.begin(); it != children.end(); ++it) {
-		const auto child = (*it).get();
-		if (child->getId() == getId()) {
-			children.erase(it);
-			break;
-		}
-	}
+    Entity_ptr_vec& children = _parent->_children;
+    for (auto it = children.begin(); it != children.end(); ++it) {
+        const auto child = (*it).get();
+        if (child->getId() == getId()) {
+            children.erase(it);
+            break;
+        }
+    }
 
-	auto &entityManager = _scene.manager<IScene_graph_manager>();
-	const auto thisPtr = entityManager.getEntityPtrById(getId());
-	entityManager.addToRoot(thisPtr);
-	_parent = nullptr;
+    auto& entityManager = _scene.manager<IScene_graph_manager>();
+    const auto thisPtr = entityManager.getEntityPtrById(getId());
+    entityManager.addToRoot(thisPtr);
+    _parent = nullptr;
 }
 
-Vector3 Entity::worldPosition() const
+SSE::Vector3 Entity::worldPosition() const
 {
-	return _worldTransform.Translation();
+    return _worldTransform.getTranslation();
 }
 
-const Vector3& Entity::worldScale() const
+const SSE::Vector3& Entity::worldScale() const
 {
-	return _worldScale;
+    return _worldScale;
 }
 
-const Quaternion& Entity::worldRotation() const
+const SSE::Quat& Entity::worldRotation() const
 {
-	return _worldRotation;
+    return _worldRotation;
+}
+void Entity::setTransform(const SSE::Matrix4& transform) {
+    decomposeMatrix(transform, _localPosition, _localRotation, _localScale);
 }
 
 std::shared_ptr<Entity> Entity::verifyEntityPtr() const
 {
-	const auto thisPtr = _scene.manager<IScene_graph_manager>().getEntityPtrById(getId());
-	if (!thisPtr)
-		throw std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(getId()) + ")");
+    const auto thisPtr = _scene.manager<IScene_graph_manager>().getEntityPtrById(getId());
+    if (!thisPtr)
+        throw std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(getId()) + ")");
 
-	return thisPtr;
+    return thisPtr;
 }
 
 void Entity::onComponentAdded(Component& component)
 {
-	_scene.onComponentAdded(*this, component);
+    _scene.onComponentAdded(*this, component);
 }
 
 Entity& EntityRef::get() const
 {
-	const auto ptr = scene.manager<IScene_graph_manager>().getEntityPtrById(id);
-	if (!ptr)
-		throw std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(id) + ")");
-	return *ptr.get();
+    const auto ptr = scene.manager<IScene_graph_manager>().getEntityPtrById(id);
+    if (!ptr)
+        throw std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(id) + ")");
+    return *ptr.get();
 }

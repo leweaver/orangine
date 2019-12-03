@@ -8,9 +8,10 @@
 #include "OeCore/Entity.h"
 #include "OeCore/Scene.h"
 #include "OeCore/Render_pass_shadow.h"
+#include "OeCore/Math_constants.h"
+#include "D3D11/DirectX_utils.h"
 
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace oe;
 
 Render_pass_shadow::Render_pass_shadow(Scene& scene, size_t maxRenderTargetViews)
@@ -53,7 +54,7 @@ void Render_pass_shadow::render(const Camera_data&)
 			// Project the receiver bounding volume into the light space (via inverse transform), then take the min & max X, Y, Z bounding sphere extents.
 
 			// Get from world to light view space  (world space, origin of {0,0,0}; just rotated)
-			auto worldToLightViewMatrix = DirectX::SimpleMath::Matrix::CreateFromQuaternion(lightEntity->worldRotation());
+			auto worldToLightViewMatrix = SSE::Matrix4(lightEntity->worldRotation(), SSE::Vector3(0));
 			auto shadowVolumeBoundingBox = mesh_utils::aabbForEntities(
 				*_renderableEntities,
 				lightEntity->worldRotation(),
@@ -68,32 +69,30 @@ void Render_pass_shadow::render(const Camera_data&)
 			shadowData->setCasterVolume(shadowVolumeBoundingBox);
 
 			// Now create a shadow camera view matrix. Its position will be the bounds center, offset by {0, 0, extents.z} in light view space.
-			const auto lightNearPlaneWorldTranslation = XMVectorAdd(
-				XMVector3Transform(XMVectorSet(0.0f, 0.0f, shadowVolumeBoundingBox.Extents.z, 0.0f), worldToLightViewMatrix),
-				XMVectorSet(shadowVolumeBoundingBox.Center.x,
-					shadowVolumeBoundingBox.Center.y,
-					shadowVolumeBoundingBox.Center.z,
-					0.0f)
-			);
+            const auto lightNearPlaneWorldTranslation =
+                SSE::Vector4(LoadVector3(shadowVolumeBoundingBox.Center), 0.0f) +
+                worldToLightViewMatrix * SSE::Vector4(0, 0, shadowVolumeBoundingBox.Extents.z, 0);
 
 			Camera_data shadowCameraData;
 			{
-				const auto pos = Vector3(lightNearPlaneWorldTranslation);
-				const auto forward = Vector3::TransformNormal(Vector3::Forward, worldToLightViewMatrix);
-				const auto up = Vector3::TransformNormal(Vector3::Up, worldToLightViewMatrix);
-				Vector3 extents2;
-				XMStoreFloat3(&extents2, XMVectorScale(XMLoadFloat3(&shadowVolumeBoundingBox.Extents), 2.0f));
+				auto wtlm = worldToLightViewMatrix;
+				const auto pos = SSE::Point3(lightNearPlaneWorldTranslation.getXYZ());
+				const auto forward = wtlm * Math::Direction::Forward;
+				const auto up = wtlm * Math::Direction::Up;
 
-                if (extents2.x == 0.0f)
-                    extents2 = Vector3::One;
+				shadowCameraData.viewMatrix = SSE::Matrix4::lookAt(pos, pos + forward.getXYZ(), up.getXYZ());
 
-				//shadowCameraData.worldMatrix = Matrix::CreateTranslation(lightNearPlaneWorldTranslation);
-				shadowCameraData.viewMatrix = Matrix::CreateLookAt(pos, pos + forward, up);
-				shadowCameraData.projectionMatrix = Matrix::CreateOrthographic(extents2.x, extents2.y, 0.01f, extents2.z);
+				SSE::Vector3 extents = LoadVector3(shadowVolumeBoundingBox.Extents);
+
+				if (extents.getX() == 0.0f)
+					extents = SSE::Vector3(0.5f);
+				shadowCameraData.projectionMatrix = SSE::Matrix4::orthographic(-extents.getX(), extents.getX(), -extents.getY(), extents.getY(), -extents.getZ() * 2, extents.getZ() * 2.0f);
+
+				// Disable rendering of pixel shader when drawing objects into the shadow camera.
 				shadowCameraData.enablePixelShader = false;
 			}
 			shadowData->setWorldViewProjMatrix(
-				XMMatrixMultiply(shadowCameraData.viewMatrix, shadowCameraData.projectionMatrix)
+				shadowCameraData.projectionMatrix * shadowCameraData.viewMatrix
 			);
 
 			// Now do the actual rendering to the shadow map
@@ -113,7 +112,7 @@ void Render_pass_shadow::render(const Camera_data&)
 				if (!renderable->castShadow())
 					continue;
 
-				if (shadowVolumeBoundingBox.Contains(entity->boundSphere())) {
+				if (shadowVolumeBoundingBox.Contains(StoreBoundingSphere(entity->boundSphere()))) {
 					entityRenderManager.renderEntity(*renderable, shadowCameraData, Light_provider::no_light_provider, Render_pass_blend_mode::Opaque);
 				}
 			}

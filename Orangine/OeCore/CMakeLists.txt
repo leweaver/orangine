@@ -25,6 +25,7 @@ add_library(${PROJECT_NAME} STATIC
         src/Animation_manager.cpp
         src/Asset_manager.cpp
         src/Camera_component.cpp
+        src/Color.cpp
         src/Clear_gbuffer_material.cpp
         src/Component.cpp
         src/D3D_resources_manager.cpp
@@ -44,6 +45,7 @@ add_library(${PROJECT_NAME} STATIC
         src/Light_provider.cpp
         src/Material.cpp
         src/Material_manager.cpp
+        src/Math_constants.cpp
         src/Mesh_data.cpp
         src/Mesh_data_component.cpp
         src/Mesh_utils.cpp
@@ -73,7 +75,11 @@ add_library(${PROJECT_NAME} STATIC
         src/User_interface_manager.cpp
         src/EngineUtils.cpp
         src/VectorLog.cpp
-        src/JsonConfigReader.cpp src/JsonConfigReader.h)
+        src/JsonConfigReader.cpp
+        src/JsonConfigReader.h
+        src/D3D11/DirectX_utils.h
+        src/D3D11/Collision.cpp
+        )
 file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
@@ -94,7 +100,8 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
         "${OE_THIRDPARTY_PATH}/tinygltf"
-        #"${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
+        "${OE_THIRDPARTY_PATH}/vectormath"
+        "${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
         )
 
 # g3log

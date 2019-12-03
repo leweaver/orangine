@@ -59,6 +59,7 @@ struct VS_OUTPUT
 
 // https://github.com/glslify/glsl-inverse/blob/master/index.glsl
 float3x3 inverseMat3(float3x3 inMatrix) {
+	// For skinned meshes, need to calculate inverse world in the vertex shader. Oof! 
     float a00 = inMatrix[0][0], a01 = inMatrix[0][1], a02 = inMatrix[0][2];
     float a10 = inMatrix[1][0], a11 = inMatrix[1][1], a12 = inMatrix[1][2];
     float a20 = inMatrix[2][0], a21 = inMatrix[2][1], a22 = inMatrix[2][2];
@@ -93,9 +94,6 @@ VS_OUTPUT VSMain(VS_INPUT Input)
     VB_MORPH_WEIGHTS_CALC
 #endif
 
-    float4x4 world = g_mWorld;
-    float3x3 worldInvTranspose;
-
 #if VB_SKINNED
     float4x4 skinInfluence =
         g_boneTransforms[Input.vJoints[0]] * Input.vWeights[0] +
@@ -103,29 +101,29 @@ VS_OUTPUT VSMain(VS_INPUT Input)
         g_boneTransforms[Input.vJoints[2]] * Input.vWeights[2] +
         g_boneTransforms[Input.vJoints[3]] * Input.vWeights[3];
 
-    world = mul(skinInfluence, world);
-
-    // For skinned meshes, need to calculate inverse world. Oof! 
-    worldInvTranspose = transpose(inverseMat3((float3x3)world));
+	float4x4 world = mul(g_mWorld, skinInfluence);
+	float4x4 worldViewProjection = mul(g_mViewProjection, world);
+	float3x3 worldInvTranspose = transpose(inverseMat3((float3x3)world));
 #else
-    worldInvTranspose = float3x3(
+	float4x4 world = g_mWorld;
+	float4x4 worldViewProjection = g_mWorldViewProjection;
+	float3x3 worldInvTranspose = float3x3(
         g_mWorldInvTranspose[0].xyz,
         g_mWorldInvTranspose[1].xyz,
         g_mWorldInvTranspose[2].xyz);
 #endif
     
-    float4x4 worldViewProjection = mul(world, g_mViewProjection);
-	Output.vPosition = mul(float4(positionL, 1.0f), worldViewProjection);
+	Output.vPosition = mul(worldViewProjection, float4(positionL, 1.0f));
 
 #if VB_NORMAL
     // Normalize as the world matrix may have scaling applied.
-    Output.vWorldNormal = normalize(mul(normalL.xyz, worldInvTranspose));
+    Output.vWorldNormal = normalize(mul(worldInvTranspose, normalL.xyz));
 #endif
 
 #if VB_TANGENT
 	Output.vTangent = float4(tangentL, Input.vTangent.w);
     // Normalize as the world matrix may have scaling applied.
-    Output.vWorldTangent = normalize(mul(tangentL.xyz, (float3x3)world));
+    Output.vWorldTangent = normalize(mul((float3x3)world, tangentL.xyz));
 #endif
 
 #if VB_TEXCOORD0

@@ -19,18 +19,19 @@ void Render_pass_skybox::render(const Camera_data& cameraData)
 	Camera_data skyboxCamera;
 
 	skyboxCamera.enablePixelShader = cameraData.enablePixelShader;
-	skyboxCamera.projectionMatrix = Matrix::CreatePerspectiveFieldOfView(
+	skyboxCamera.projectionMatrix = SSE::Matrix4::perspective(
 		cameraData.fov,
 		cameraData.aspectRatio,
-		0.5f,
+		0.01f,
 		1.0f);
 
-	skyboxCamera.viewMatrix = Matrix::CreateFromQuaternion(Quaternion::CreateFromRotationMatrix(cameraData.viewMatrix));
+	// Discard the position
+	skyboxCamera.viewMatrix = SSE::Matrix4(cameraData.viewMatrix.getUpper3x3(), SSE::Vector3(0));
 
 	_material->setCubeMapTexture(_scene.skyboxTexture());
 	_scene.manager<IEntity_render_manager>().renderRenderable(
 		*_renderable,
-		Matrix::Identity,
+		SSE::Matrix4::identity(),
 		0.0f,
 		skyboxCamera,
 		Light_provider::no_light_provider,

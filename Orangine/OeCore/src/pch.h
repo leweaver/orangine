@@ -8,6 +8,8 @@
 #include "OeCore/WindowsDefines.h"
 
 #include <SimpleMath.h>
+#include <vectormath/vectormath.hpp>
+
 #include <g3log/g3log.hpp>
 
 #include <algorithm>

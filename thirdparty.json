@@ -27,6 +27,10 @@
         "url": "git@github.com:pybind/pybind11.git",
         "ref": "v2.3.0"
     },
+    "vectormath/vectormath": {
+        "url": "git@github.com:glampert/vectormath.git",
+        "ref": "master"
+    },
     "The-Forge": {
         "url": "git@github.com:ConfettiFX/The-Forge.git",
         "ref": "v1.37"

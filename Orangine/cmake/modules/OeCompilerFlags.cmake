@@ -28,9 +28,9 @@ if(OE_COMPILER_IS_MSVC)
             GET_FILENAME_COMPONENT(OE_MSVC_INCLUDE "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\VisualStudio\\SxS\\VS7;15.0]" REALPATH)
         endif()
 
-        add_compile_definitions("_UNICODE;UNICODE;WIN32;_WINDOWS;_LIB;HAVE_SNPRINTF")
+        add_compile_definitions("_UNICODE;UNICODE;WIN32;_WINDOWS;_LIB;HAVE_SNPRINTF;_ENABLE_EXTENDED_ALIGNED_STORAGE")
 
-		add_compile_options(/EHsc)
+        add_compile_options(/EHsc)
 
         if(CMAKE_BUILD_TYPE MATCHES Debug)
                 add_compile_definitions("_DEBUG")

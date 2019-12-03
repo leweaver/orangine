@@ -161,6 +161,8 @@ namespace oe {
     enum class Debug_display_mode {
         None = 0,
         Normals,
+		World_Positions,
+		Lighting,
 
         Num_Debug_Display_Mode
     };

@@ -96,7 +96,7 @@ void Shadow_map_texture_pool::createDeviceDependentResources(DX::DeviceResources
 	);
 
 	for (uint32_t slice = 0; slice < _textureArraySize; ++slice) {
-		auto shadowMap = std::make_unique<Shadow_map_texture_array_slice>(viewport, _textureArraySize - slice - 1, arrayTextureRetriever);
+		auto shadowMap = std::make_unique<Shadow_map_texture_array_slice>(viewport, _textureArraySize - slice - 1, _dimension, arrayTextureRetriever);
 		_shadowMaps.push_back(move(shadowMap));
 	}
 }

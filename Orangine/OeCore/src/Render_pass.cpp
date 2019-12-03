@@ -6,8 +6,8 @@ using namespace oe;
 
 // Static initialization order means we can't use Matrix::Identity here.
 const Render_pass::Camera_data Render_pass::Camera_data::identity = {
-	{ 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f },
-	{ 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f },
+	SSE::Matrix4::identity(),
+	SSE::Matrix4::identity(),
 };
 
 void Render_pass::setRenderTargets(

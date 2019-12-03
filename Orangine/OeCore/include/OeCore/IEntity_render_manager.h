@@ -36,7 +36,7 @@ namespace oe {
         virtual BoundingFrustumRH createFrustum(const Camera_component& cameraComponent) = 0;
 
         virtual void renderRenderable(Renderable& renderable,
-            const DirectX::SimpleMath::Matrix& worldMatrix,
+            const SSE::Matrix4& worldMatrix,
             float radius,
             const Render_pass::Camera_data& cameraData,
             const Light_provider::Callback_type& lightDataProvider,

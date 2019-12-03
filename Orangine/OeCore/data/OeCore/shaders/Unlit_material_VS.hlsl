@@ -29,7 +29,7 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 {
 	VS_OUTPUT Output;
 	
-	Output.vPosition = mul(Input.vPosition, g_mWorldViewProjection);
+	Output.vPosition = mul(g_mWorldViewProjection, Input.vPosition);
 	Output.vPosition = float4(Output.vPosition.xyz / Output.vPosition.w, 1);
 
 	Output.vColor = g_baseColor;

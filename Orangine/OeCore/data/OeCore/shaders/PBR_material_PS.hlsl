@@ -146,5 +146,5 @@ float3 NormalSampleToWorldNormal(float3 sampleT, float3 normalW, float3 tangentW
 	sampleT = sampleT * 2.0 - 1.0;
 
 	// Transform to world space
-	return mul(sampleT, TBN);
+	return mul(TBN, sampleT);
 }

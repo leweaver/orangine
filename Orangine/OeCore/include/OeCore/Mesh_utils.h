@@ -56,6 +56,6 @@ namespace oe::mesh_utils {
     DXGI_FORMAT getDxgiFormat(Element_type type, Element_component component);
     
 	DirectX::BoundingOrientedBox aabbForEntities(const Entity_filter& entities,
-		const DirectX::SimpleMath::Quaternion& orientation,
+		const SSE::Quat& orientation,
 		std::function<bool(const Entity&)> predicate);
 }

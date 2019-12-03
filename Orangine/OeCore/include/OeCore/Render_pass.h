@@ -9,8 +9,8 @@ namespace oe {
 	public:
 		struct Camera_data
 		{
-			DirectX::SimpleMath::Matrix viewMatrix;
-			DirectX::SimpleMath::Matrix projectionMatrix;
+			SSE::Matrix4 viewMatrix;
+			SSE::Matrix4 projectionMatrix;
 			float fov;
 			float aspectRatio;
 			bool enablePixelShader = true;

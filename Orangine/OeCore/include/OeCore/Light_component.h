@@ -1,28 +1,29 @@
 ﻿#pragma once
 
 #include "Component.h"
+#include "Color.h"
 
 namespace oe {
 	class Shadow_map_texture;
 
 	class Light_component : public Component
 	{
-		DirectX::SimpleMath::Color _color{};
+		Color _color{};
 		float _intensity;
 
 	public:
 		
 		Light_component(Entity& entity)
 			: Component(entity)
-			, _color(DirectX::Colors::White)
+			, _color(Colors::White)
 			, _intensity(1.0)
 		{
 		}
 
 		~Light_component();
 
-		const DirectX::SimpleMath::Color& color() const { return _color; }
-		void setColor(const DirectX::SimpleMath::Color& color) { _color = color; }
+		const Color& color() const { return _color; }
+		void setColor(const Color& color) { _color = color; }
 
 		float intensity() const { return _intensity; }
 		void setIntensity(float intensity) { _intensity = intensity; }

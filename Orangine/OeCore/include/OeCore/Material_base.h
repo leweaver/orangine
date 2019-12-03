@@ -4,8 +4,10 @@
 
 namespace oe {
 	struct Vertex_constant_buffer_empty {};
+
+	__declspec(align(16))
 	struct Vertex_constant_buffer_base {
-		DirectX::SimpleMath::Matrix worldViewProjection;
+		SSE::Matrix4 worldViewProjection;
 	};
 	
 	struct Pixel_constant_buffer_empty {};
@@ -91,17 +93,16 @@ namespace oe {
             return vsInputs;
 		}
 
-		void updateVSConstantBuffer(const DirectX::SimpleMath::Matrix& worldMatrix,
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix,
+		void updateVSConstantBuffer(const SSE::Matrix4& worldMatrix,
+			const SSE::Matrix4& viewMatrix,
+			const SSE::Matrix4& projMatrix,
             const Renderer_animation_data& rendererAnimationData,
 			ID3D11DeviceContext* context,
             D3D_buffer& buffer) const override final
 		{
             TVertex_shader_constants constantsVs;
 			if constexpr (std::is_assignable_v<Vertex_constant_buffer_base, TVertex_shader_constants>) {
-				// Note that HLSL matrices are Column Major (as opposed to Row Major in DirectXMath) - so we need to transpose everything.
-                constantsVs.worldViewProjection = XMMatrixMultiplyTranspose(worldMatrix, XMMatrixMultiply(viewMatrix, projMatrix));
+				constantsVs.worldViewProjection = projMatrix * viewMatrix * worldMatrix;
 			}
 			updateVSConstantBufferValues(constantsVs, worldMatrix, viewMatrix, projMatrix, rendererAnimationData);
 
@@ -109,9 +110,9 @@ namespace oe {
 		}
 
 		void updatePSConstantBuffer(
-			const DirectX::SimpleMath::Matrix& worldMatrix,
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix,
+			const SSE::Matrix4& worldMatrix,
+			const SSE::Matrix4& viewMatrix,
+			const SSE::Matrix4& projMatrix,
 			ID3D11DeviceContext* context,
             D3D_buffer& buffer) const override final
 		{
@@ -142,16 +143,16 @@ namespace oe {
 		}
 
 		virtual void updateVSConstantBufferValues(TVertex_shader_constants& constants,
-			const DirectX::SimpleMath::Matrix& matrix,
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix,
+			const SSE::Matrix4& matrix,
+			const SSE::Matrix4& viewMatrix,
+			const SSE::Matrix4& projMatrix,
             const Renderer_animation_data& rendererAnimationData) const
 		{};
 
 		virtual void updatePSConstantBufferValues(TPixel_shader_constants& constants,
-			const DirectX::SimpleMath::Matrix& worldMatrix,
-			const DirectX::SimpleMath::Matrix& viewMatrix,
-			const DirectX::SimpleMath::Matrix& projMatrix) const
+			const SSE::Matrix4& worldMatrix,
+			const SSE::Matrix4& viewMatrix,
+			const SSE::Matrix4& projMatrix) const
 		{};
     };
 }

@@ -40,10 +40,10 @@ const std::string g_flag_skinned_joints_sint32 = "joints_sint32";
 
 PBR_material::PBR_material()
 	: Base_type(static_cast<uint8_t>(Material_type_index::PBR))
-    , _baseColor(SimpleMath::Vector4::One)
+    , _baseColor(Colors::White)
 	, _metallic(1.0)
 	, _roughness(1.0)
-	, _emissive(0, 0, 0)
+	, _emissive(Colors::Black)
 	, _alphaCutoff(0.5)
 	, _boundTextureCount(0)
 {
@@ -62,10 +62,10 @@ nlohmann::json PBR_material::serialize(bool compilerPropertiesOnly) const
     auto j = Base_type::serialize(compilerPropertiesOnly);
 
     if (!compilerPropertiesOnly) {
-        j[g_json_baseColor] = _baseColor;
+		j[g_json_baseColor] = _baseColor;
         j[g_json_metallic] = _metallic;
         j[g_json_roughness] = _roughness;
-        j[g_json_emissive] = _emissive;
+		j[g_json_emissive] = _emissive;
         j[g_json_alphaCutoff] = _alphaCutoff;
         j[g_json_baseColorTexture] = serializeTexture(compilerPropertiesOnly, _textures[BaseColor]);
         j[g_json_metallicRoughnessTexture] = serializeTexture(compilerPropertiesOnly, _textures[MetallicRoughness]);
@@ -211,7 +211,7 @@ std::vector<Vertex_attribute_element> PBR_material::vertexInputs(const std::set<
             throw std::runtime_error("Missing joints component flag");
 
         vertexAttributes.push_back({ { Vertex_attribute::Joints, 0 }, Element_type::Vector4, jointsComponent });
-        vertexAttributes.push_back({{ Vertex_attribute::Weights, 0 }, Element_type::Vector4, Element_component::Float });
+        vertexAttributes.push_back({ { Vertex_attribute::Weights, 0 }, Element_type::Vector4, Element_component::Float });
     }
 
     // Vertex attributes for morph targets.
@@ -229,13 +229,13 @@ std::vector<Vertex_attribute_element> PBR_material::vertexInputs(const std::set<
     uint8_t morphTangentSemanticOffset = getMorphTangentAttributeIndexOffset();
     for (auto i = 0; i < targetCount; ++i) {
         if (positionPosition >= 0) {
-            vertexAttributes.push_back({ Vertex_attribute::Position, morphPositionSemanticOffset++ });
+            vertexAttributes.push_back({ { Vertex_attribute::Position, morphPositionSemanticOffset++ }, Element_type::Vector3, Element_component::Float });
         }
         if (normalPosition >= 0) {
-            vertexAttributes.push_back({ Vertex_attribute::Normal, morphNormalSemanticOffset++ });
+            vertexAttributes.push_back({ { Vertex_attribute::Normal, morphNormalSemanticOffset++ }, Element_type::Vector3, Element_component::Float });
         }
         if (requiresTangents() && tangentPosition >= 0) {
-            vertexAttributes.push_back({ Vertex_attribute::Tangent, morphTangentSemanticOffset++ });
+            vertexAttributes.push_back({ { Vertex_attribute::Tangent, morphTangentSemanticOffset++ }, Element_type::Vector4, Element_component::Float });
         }
     }
 
@@ -284,9 +284,9 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
         uint8_t morphTangentSemanticOffset = getMorphTangentAttributeIndexOffset();
 
         std::array<std::stringstream, 3> vbMorphWeightsCalcParts;
-        vbMorphWeightsCalcParts[0] << "float4 morphedPosition = float4(skinnedPosition.xyz";
-        vbMorphWeightsCalcParts[1] << "float3 morphedNormal = float3(Input.vNormal";
-        vbMorphWeightsCalcParts[2] << "float4 morphedTangent = float4(Input.vTangent.xyz";
+        vbMorphWeightsCalcParts[0] << "positionL = float3(positionL";
+        vbMorphWeightsCalcParts[1] << "normalL = float3(Input.vNormal";
+        vbMorphWeightsCalcParts[2] << "tangentL = float4(Input.vTangent.xyz";
 
         // Build inputs.
         std::array<std::stringstream, 3> vbMorphInputsArr;
@@ -300,7 +300,7 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
                     "float3 vMorphPosition" << morphTargetIdxStr <<
                     " : POSITION" << semanticIdxStr <<
                     ";";
-                vbMorphWeightsCalcParts[0] << " + g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]" << " * Input.vMorphPosition" << morphTargetIdxStr;
+                vbMorphWeightsCalcParts[0] << " + Input.vMorphPosition" << morphTargetIdxStr << " * g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]";
                 settings.morphAttributes.push_back(
                     { Vertex_attribute::Position, semanticIdx }
                 );
@@ -312,7 +312,7 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
                     "float3 vMorphNormal" << morphTargetIdxStr <<
                     " : NORMAL" << semanticIdxStr <<
                     ";";
-                vbMorphWeightsCalcParts[1] << " + g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]" << " * Input.vMorphNormal" << morphTargetIdxStr;
+                vbMorphWeightsCalcParts[1] << " + Input.vMorphNormal" << morphTargetIdxStr << " * g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]";
                 settings.morphAttributes.push_back(
                     { Vertex_attribute::Normal, semanticIdx }
                 );
@@ -324,14 +324,14 @@ Material::Shader_compile_settings PBR_material::vertexShaderSettings(const std::
                     "float3 vMorphTangent" << morphTargetIdxStr <<
                     " : TANGENT" << semanticIdxStr <<
                     ";";
-                vbMorphWeightsCalcParts[2] << " + g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]" << " * Input.vMorphTangent" << morphTargetIdxStr;
+                vbMorphWeightsCalcParts[2] << " + Input.vMorphTangent" << morphTargetIdxStr << " * g_morphWeights" << (morphTargetIdx / 4) << "[" << (morphTargetIdx % 4) << "]";
                 settings.morphAttributes.push_back(
                     { Vertex_attribute::Tangent, semanticIdx }
                 );
             }
         }
 
-        vbMorphWeightsCalcParts[0] << ", skinnedPosition.w);";
+        vbMorphWeightsCalcParts[0] << ");";
         vbMorphWeightsCalcParts[1] << ");";
         vbMorphWeightsCalcParts[2] << ", Input.vTangent.w); ";
 
@@ -392,31 +392,38 @@ void PBR_material::applyVertexLayoutShaderCompileSettings(Shader_compile_setting
 }
 
 void PBR_material::updateVSConstantBufferValues(PBR_material_vs_constant_buffer& constants,
-	const SimpleMath::Matrix& worldMatrix,
-	const SimpleMath::Matrix& viewMatrix,
-	const SimpleMath::Matrix& projMatrix,
+	const SSE::Matrix4& worldMatrix,
+	const SSE::Matrix4& viewMatrix,
+	const SSE::Matrix4& projMatrix,
     const Renderer_animation_data& rendererAnimationData) const
 {
-	// Note that HLSL matrices are Column Major (as opposed to Row Major in DirectXMath) - so we need to transpose everything.
-    constants.viewProjection = XMMatrixMultiplyTranspose(viewMatrix, projMatrix);
-	constants.world = XMMatrixTranspose(worldMatrix);
-    constants.worldInvTranspose = XMMatrixInverse(nullptr, worldMatrix);
-    memcpy_s(&constants.morphWeights[0].x,
-        sizeof(XMFLOAT4) * array_size(constants.morphWeights),
-        rendererAnimationData.morphWeights.data(),
-        sizeof(decltype(rendererAnimationData.morphWeights)::value_type) * rendererAnimationData.morphWeights.size()
-    );
+	constants.viewProjection = projMatrix * viewMatrix;
+	constants.world = worldMatrix;
+	constants.worldInvTranspose = SSE::inverse(SSE::transpose(constants.world));
+	static_assert(sizeof(Float4) / sizeof(float) * 2 == Renderer_animation_data::morphWeightsSize);
+	constants.morphWeights[0] = {
+		rendererAnimationData.morphWeights[0],
+		rendererAnimationData.morphWeights[1],
+		rendererAnimationData.morphWeights[2],
+		rendererAnimationData.morphWeights[3]
+	};
+	constants.morphWeights[1] = {
+		rendererAnimationData.morphWeights[4],
+		rendererAnimationData.morphWeights[5],
+		rendererAnimationData.morphWeights[6],
+		rendererAnimationData.morphWeights[7]
+	};
 }
 
 void PBR_material::updatePSConstantBufferValues(PBR_material_ps_constant_buffer& constants,
-	const SimpleMath::Matrix& worldMatrix,
-	const SimpleMath::Matrix& /* viewMatrix */,
-	const SimpleMath::Matrix& /* projMatrix */) const
+	const SSE::Matrix4& worldMatrix,
+	const SSE::Matrix4& /* viewMatrix */,
+	const SSE::Matrix4& /* projMatrix */) const
 {
-	// Convert to LH, for DirectX.
-	constants.world = XMMatrixTranspose(worldMatrix);
+	constants.world = worldMatrix;
 	constants.baseColor = _baseColor;
-	constants.metallicRoughness = SimpleMath::Vector4(_metallic, _roughness, 0.0, 0.0);
-	constants.emissive = SimpleMath::Vector4(_emissive.x, _emissive.y, _emissive.z, 0.0);
-	constants.eyePosition = SimpleMath::Vector4(worldMatrix._41, worldMatrix._42, worldMatrix._43, 0.0);
+	constants.metallicRoughness = { _metallic, _roughness, 0.0, 0.0 };
+	constants.emissive = {_emissive.getX(), _emissive.getY(), _emissive.getZ(), 0.0};
+	// todo: remove this, it's redundant.
+	constants.eyePosition = SSE::Vector4 {worldMatrix.getTranslation(), 0.0};
 }

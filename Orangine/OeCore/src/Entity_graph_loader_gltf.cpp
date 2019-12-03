@@ -14,6 +14,7 @@
 #include "OeCore/Animation_controller_component.h"
 #include "OeCore/Morph_weights_component.h"
 #include "OeCore/Skinned_mesh_component.h"
+#include "OeCore/Collision.h"
 
 #include <wincodec.h>
 #include <functional>
@@ -135,7 +136,7 @@ const std::map<int, Element_type> g_gltfType_elementType = {
 };
 const std::map<int, Element_component> g_gltfComponent_elementComponent = {
     //{ TINYGLTF_COMPONENT_TYPE_BYTE, },
-    //{ TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, },
+    { TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, Element_component::Unsigned_Byte },
     //{ TINYGLTF_COMPONENT_TYPE_SHORT, },
     { TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT, Element_component::Unsigned_Short },
     //{ TINYGLTF_COMPONENT_TYPE_INT, },
@@ -283,7 +284,7 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(size_t accessorIn
     if (pos == loaderData.accessorIdxToMeshBuffers.end()) {
 
         // Convert index buffers from 8-bit to 32 bit.
-        if (elementType == Element_type::Scalar && expectedBufferViewTarget == TINYGLTF_TARGET_ARRAY_BUFFER &&
+        if (elementType == Element_type::Scalar && expectedBufferViewTarget == TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER &&
             (elementComponent == Element_component::Unsigned_Byte || elementComponent == Element_component::Signed_Byte)) {
             // Transform the data to a known format
             const auto convertedIndexAccessor = mesh_utils::create_index_buffer(
@@ -340,23 +341,20 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(size_t accessorIn
         */
 }
 
-DirectX::SimpleMath::Matrix createMatrix4FromGltfArray(const vector<double>& m)
+SSE::Matrix4 createMatrix4FromGltfArray(const vector<double>& m)
 {
-    // glTF matrices are RHS, Column Major
-    // Orangine matrices are RHS, Row Major
-    // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#data-alignment
-    // buffer is: |m00|m10|m20|m30|m01|m11|m21|m31|m02|m12|m22|m32|m03|m13|m23|m33|
-    // output is: |m00|m01|m02|m03|m10|m11|m12|m13|m20|m21|m22|m23|m30|m31|m32|m33|
-    const auto f = [m](size_t index) { return static_cast<float>(m[index]); };
-    return DirectX::SimpleMath::Matrix(
-        static_cast<float>(m[0]), static_cast<float>(m[1]), static_cast<float>(m[2]), static_cast<float>(m[3]),
-        static_cast<float>(m[4]), static_cast<float>(m[5]), static_cast<float>(m[6]), static_cast<float>(m[7]),
-        static_cast<float>(m[8]), static_cast<float>(m[9]), static_cast<float>(m[10]), static_cast<float>(m[11]),
-        static_cast<float>(m[12]), static_cast<float>(m[13]), static_cast<float>(m[14]), static_cast<float>(m[15])
+    // glTF matrices are Column Major
+    // SSE matrices are Column Major
+
+    return SSE::Matrix4(
+        { static_cast<float>(m[0]), static_cast<float>(m[1]), static_cast<float>(m[2]), static_cast<float>(m[3]) },
+        { static_cast<float>(m[4]), static_cast<float>(m[5]), static_cast<float>(m[6]), static_cast<float>(m[7]) },
+        { static_cast<float>(m[8]), static_cast<float>(m[9]), static_cast<float>(m[10]), static_cast<float>(m[11]) },
+        { static_cast<float>(m[12]), static_cast<float>(m[13]), static_cast<float>(m[14]), static_cast<float>(m[15]) }
     );
 }
 
-std::vector<DirectX::SimpleMath::Matrix> createMatrix4ArrayFromAccessor(Loader_data& loaderData, int accessorIndex)
+std::vector<SSE::Matrix4> createMatrix4ArrayFromAccessor(Loader_data& loaderData, int accessorIndex)
 {
     // Inverse bind matrices
     const auto matricesAccessor = useOrCreateBufferForAccessor<Mesh_buffer_accessor>(
@@ -366,20 +364,19 @@ std::vector<DirectX::SimpleMath::Matrix> createMatrix4ArrayFromAccessor(Loader_d
         0,
         g_createSimpleMeshAccessor);
 
-    std::vector<DirectX::SimpleMath::Matrix> matrices;
+    std::vector<SSE::Matrix4> matrices;
     matrices.reserve(matricesAccessor->count);
-
-    const auto reference = DirectX::SimpleMath::Matrix::CreateTranslation({ 1,2,3 });
     
     for (auto i = 0u; i < matricesAccessor->count; ++i) {
         const auto m = reinterpret_cast<const float*>(matricesAccessor->getIndexed(i));
         matrices.push_back(
-            DirectX::SimpleMath::Matrix(
-                m[0], m[1], m[2], m[3],
-                m[4], m[5], m[6], m[7],
-                m[8], m[9], m[10], m[11],
-                m[12], m[13], m[14], m[15]
-            ));
+			SSE::Matrix4(
+				{ m[0], m[1], m[2], m[3] },
+				{ m[4], m[5], m[6], m[7] },
+				{ m[8], m[9], m[10], m[11] },
+				{ m[12], m[13], m[14], m[15] }
+			)
+		);
     }
 
     return matrices;
@@ -468,7 +465,7 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(wstring_view fileP
                 auto& skinnedMeshComponent = childEntity->addComponent<Skinned_mesh_component>();
 
                 {
-                    std::vector<DirectX::SimpleMath::Matrix> inverseBindMatrices = createMatrix4ArrayFromAccessor(loaderData, skin.inverseBindMatrices);
+                    std::vector<SSE::Matrix4> inverseBindMatrices = createMatrix4ArrayFromAccessor(loaderData, skin.inverseBindMatrices);
 
                     // Nodes that form the skeleton hierarchy.
                     std::vector<std::shared_ptr<Entity>> joints;
@@ -605,10 +602,10 @@ shared_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_reposi
 		});
 	};
 
-	const auto withColorParam = [&withParam, &material](const string& name, DirectX::SimpleMath::Color defaultValue, function<void(DirectX::SimpleMath::Color)> setter) {
+	const auto withColorParam = [&withParam, &material](const string& name, const Color& defaultValue, function<void(Color)> setter) {
 		withParam(name, [&setter](auto name, auto param) {
 			if (param.number_array.size() == 3) {
-				setter(DirectX::SimpleMath::Color(
+				setter(Color(
 					static_cast<float>(param.number_array[0]),
 					static_cast<float>(param.number_array[1]),
 					static_cast<float>(param.number_array[2]),
@@ -616,7 +613,7 @@ shared_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_reposi
 				));
 			}
 			else if(param.number_array.size() == 4) {
-				setter(DirectX::SimpleMath::Color(
+				setter(Color(
 					static_cast<float>(param.number_array[0]),
 					static_cast<float>(param.number_array[1]),
 					static_cast<float>(param.number_array[2]),
@@ -634,8 +631,8 @@ shared_ptr<oe::Material> create_material(const Primitive& prim, IMaterial_reposi
 	withScalarParam(g_pbrPropertyName_metallicFactor, 1.0f, bind(&PBR_material::setMetallicFactor, material.get(), std::placeholders::_1));
 	withScalarParam(g_pbrPropertyName_roughnessFactor, 1.0f, bind(&PBR_material::setRoughnessFactor, material.get(), std::placeholders::_1));
 	withScalarParam(g_pbrPropertyName_alphaCutoff, 0.5f, bind(&PBR_material::setAlphaCutoff, material.get(), std::placeholders::_1));
-	withColorParam(g_pbrPropertyName_baseColorFactor, DirectX::SimpleMath::Color(DirectX::Colors::White), bind(&PBR_material::setBaseColor, material.get(), std::placeholders::_1));
-	withColorParam(g_pbrPropertyName_emissiveFactor, DirectX::SimpleMath::Color(DirectX::Colors::Black), bind(&PBR_material::setEmissiveFactor, material.get(), std::placeholders::_1));
+	withColorParam(g_pbrPropertyName_baseColorFactor, Colors::White, bind(&PBR_material::setBaseColor, material.get(), std::placeholders::_1));
+	withColorParam(g_pbrPropertyName_emissiveFactor, Colors::Black, bind(&PBR_material::setEmissiveFactor, material.get(), std::placeholders::_1));
 	
 	// Alpha Mode
 	withParam(g_pbrPropertyName_alphaMode, [&material](const string& name, const Parameter& param) {
@@ -672,16 +669,7 @@ void setEntityTransform(Entity&  entity, const Node&  node)
 {
 	if (node.matrix.size() == 16)
 	{
-        auto trs = createMatrix4FromGltfArray(node.matrix);
-
-		DirectX::SimpleMath::Vector3 scale;
-		DirectX::SimpleMath::Quaternion rotation;
-		DirectX::SimpleMath::Vector3 translation;
-		trs.Decompose(scale, rotation, translation);
-
-		entity.setScale(scale);
-		entity.setRotation(rotation);
-		entity.setPosition(translation);
+        entity.setTransform(createMatrix4FromGltfArray(node.matrix));
 	}
 	else
 	{
@@ -911,14 +899,12 @@ shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, IEntity_reposi
 
 				// Calculate bounds?
 				if (loaderData.calculateBounds) {
-					DirectX::BoundingSphere boundingSphere;
-
                     const auto& vertexBufferAccessor = meshData->vertexBufferAccessors.at({Vertex_attribute::Position, 0});
-                    assert(vertexBufferAccessor->stride >= sizeof(DirectX::SimpleMath::Vector3));
-					DirectX::BoundingSphere::CreateFromPoints(boundingSphere,
-						vertexBufferAccessor->count,
-						reinterpret_cast<DirectX::SimpleMath::Vector3*>(vertexBufferAccessor->buffer->data),
-						vertexBufferAccessor->stride);
+                    assert(vertexBufferAccessor->stride >= sizeof(Float3));
+                    auto boundingSphere = oe::BoundingSphere::createFromPoints(
+                        reinterpret_cast<Float3*>(vertexBufferAccessor->buffer->data),
+                        vertexBufferAccessor->count,
+                        vertexBufferAccessor->stride);
 
 					primitiveEntity->setBoundSphere(boundingSphere);
 				}

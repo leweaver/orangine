@@ -56,8 +56,8 @@ namespace oe {
             const Animation_controller_component::Animation_channel& channel,
             uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor);
 
-        template<class TType>
-        static TType calculateCubicSpline(const Animation_controller_component::Animation_channel& channel,
+        template<class TTypeIn, class TTypeOut>
+        static TTypeOut calculateCubicSpline(const Animation_controller_component::Animation_channel& channel,
             uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor);
 
         static void handleTranslationAnimationCubicSpline(

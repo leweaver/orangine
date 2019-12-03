@@ -17,6 +17,8 @@
 #include <OeCore/PBR_material.h>
 #include <OeCore/Collision.h>
 #include <OeScripting/Script_component.h>
+#include <OeCore/Color.h>
+#include <OeCore/Math_constants.h>
 
 #include <filesystem>
 
@@ -24,7 +26,6 @@
 extern void ExitGame();
 
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace oe;
 
 using Microsoft::WRL::ComPtr;
@@ -56,16 +57,16 @@ Game::~Game()
 void Game::CreateSceneCubeSatellite()
 {
 	auto& entityManager = m_scene->manager<IScene_graph_manager>();
-	const auto &root1 = entityManager.instantiate("Root 1");
+	const auto root1 = entityManager.instantiate("Root 1");
 	//root1->AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
 
-	const auto &child1 = entityManager.instantiate("Child 1", *root1);
-	const auto &child2 = entityManager.instantiate("Child 2", *root1);
-	const auto &child3 = entityManager.instantiate("Child 3", *root1);
+	const auto child1 = entityManager.instantiate("Child 1", *root1);
+	const auto child2 = entityManager.instantiate("Child 2", *root1);
+	const auto child3 = entityManager.instantiate("Child 3", *root1);
 
-	AddCubeToEntity(*child1, {0.5f, 0.0f, 0.0f}, {2, 1, 1}, { 4, 0, 0});
-	AddCubeToEntity(*child2, {0.0f, 0.5f, 0.0f}, {1, 2, 1}, { 0, 0, 0});
-	AddCubeToEntity(*child3, {0.0f, 0.0f, 0.5f}, {1, 1, 2}, {-4, 0, 0});
+	AddCubeToEntity(child1, {0.5f, 0.0f, 0.0f}, {2, 1, 1}, { 4, 0, 0});
+	AddCubeToEntity(child2, {0.0f, 0.5f, 0.0f}, {1, 2, 1}, { 0, 0, 0});
+	AddCubeToEntity(child3, {0.0f, 0.0f, 0.5f}, {1, 1, 2}, {-4, 0, 0});
 }
 
 std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
@@ -76,6 +77,12 @@ std::shared_ptr<Entity> Game::LoadGLTF(std::string gltfName, bool animate)
 	if (animate)
 		root->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 
+	return LoadGLTFToEntity(gltfName, root);
+}
+
+
+
+std::shared_ptr<Entity> Game::LoadGLTFToEntity(std::string gltfName, std::shared_ptr<Entity> root) {
     const auto gltfPathSubfolder = "/" + gltfName + "/glTF/" + gltfName + ".gltf";
     auto gltfPath = m_scene->manager<IAsset_manager>().makeAbsoluteAssetPath(
             utf8_decode("ViewerApp/data/meshes" + gltfPathSubfolder));
@@ -108,16 +115,16 @@ void Game::CreateCamera(bool animate)
 		cameraDollyAnchor->addComponent<Test_component>().setSpeed({0.0f, 0.1f, 0.0f});
 	
 	auto camera = entityManager.instantiate("Camera", *cameraDollyAnchor);
-	camera->setPosition(Vector3(0.0f, 0.0f, 15));
-	
+    camera->setPosition({ 0.0f, 0.0f, 15 });
+
 	cameraDollyAnchor->computeWorldTransform();
 
-	auto &component = camera->addComponent<Camera_component>();
+	auto& component = camera->addComponent<Camera_component>();
 	component.setFov(XMConvertToRadians(60.0f));
 	component.setFarPlane(20.0f);
 	component.setNearPlane(0.5f);
 
-	camera->lookAt({ 0, 0, 0 }, Vector3::Up);
+	camera->lookAt({ 0, 0, 0 }, Math::Direction::Up);
 
 	m_scene->setMainCamera(camera);
 }
@@ -126,31 +133,33 @@ void Game::CreateLights()
 {
 	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	int lightCount = 0;
-	auto createDirLight = [&entityManager, &lightCount](const Vector3 &normal, const Color &color, float intensity)
+	auto createDirLight = [&entityManager, &lightCount](const SSE::Vector3& normal, const Color& color, float intensity)
 	{
 		auto lightEntity = entityManager.instantiate("Directional Light " + std::to_string(++lightCount));
-		auto &component = lightEntity->addComponent<Directional_light_component>();
+		auto& component = lightEntity->addComponent<Directional_light_component>();
 		component.setColor(color);
 		component.setIntensity(intensity);
 
-		if (normal != Vector3::Forward)
+        // if normal is NOT forward vector
+		if (SSE::lengthSqr(normal - Math::Direction::Forward) != 0.0f)
 		{
-			Vector3 axis;
-			if (normal == Vector3::Backward)
-				axis = Vector3::Up;
-			else
-			{
-				axis = Vector3::Forward.Cross(normal);
-				axis.Normalize();
+			SSE::Vector3 axis;
+            // if normal is backward vector
+			if (SSE::lengthSqr(normal - Math::Direction::Backward) == 0.0f)
+                axis = Math::Direction::Up;
+            else
+            {
+                axis = SSE::cross(Math::Direction::Forward, normal);
+				axis = SSE::normalize(axis);
 			}
 
-			assert(normal.LengthSquared() != 0);
-			float angle = acos(Vector3::Forward.Dot(normal) / normal.Length());
-			lightEntity->setRotation(Quaternion::CreateFromAxisAngle(axis, angle));
+			assert(SSE::lengthSqr(normal) != 0);
+			float angle = acos(SSE::dot(Math::Direction::Forward, normal) / SSE::length(normal));
+			lightEntity->setRotation(SSE::Quat::rotation(angle, axis));
 		}
 		return lightEntity;
 	};
-	auto createPointLight = [&entityManager, &lightCount](const Vector3 &position, const Color &color, float intensity)
+	auto createPointLight = [&entityManager, &lightCount](const SSE::Vector3& position, const Color& color, float intensity)
 	{
 		auto lightEntity = entityManager.instantiate("Point Light " + std::to_string(++lightCount));
 		auto &component = lightEntity->addComponent<Point_light_component>();
@@ -171,22 +180,24 @@ void Game::CreateLights()
 	const auto &lightRoot = entityManager.instantiate("Light Root");
 	lightRoot->setPosition({ 0, 0, 0 });
 	
-	//if (true)
+	if (true)
 	{
-		auto shadowLight1 = createDirLight({ 0.0f, -1.0f, 0.0f }, { 1, 1, 1 }, 2);
+		auto shadowLight1 = createDirLight({ 0.0f, -1.0f, 0.0f }, { 1, 1, 1, 1 }, 2);
 		shadowLight1->setParent(*lightRoot);
-		shadowLight1->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(false);
-
-		auto shadowLight2 = createDirLight({ -0.707f, -0.707f, -0.707f }, { 1, 1, 0 }, 2.75);
+		shadowLight1->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
+		
+		
+		auto shadowLight2 = createDirLight({ -0.707f, -0.707f, -0.707f }, { 1, 1, 0, 1 }, 2.75);
 		shadowLight2->setParent(*lightRoot);
-		shadowLight2->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(false);
+		shadowLight2->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
 
-		createDirLight({ -0.666f, -0.333f, 0.666f }, { 1, 0, 1 }, 4.0)->setParent(*lightRoot);
+		createDirLight({ -0.666f, -0.333f, 0.666f }, { 1, 0, 1, 1 }, 4.0)->setParent(*lightRoot);
+		
 	}
-	//else
+	else
 	{
-		createPointLight({ 10, 0, 10 }, { 1, 1, 1 }, 2*13)->setParent(*lightRoot);
-		createPointLight({ 10, 5, -10 }, { 1, 0, 1 }, 2*20)->setParent(*lightRoot);
+		createPointLight({ 10, 0, 10 }, { 1, 1, 1, 1 }, 2*13)->setParent(*lightRoot);
+		createPointLight({ 10, 5, -10 }, { 1, 0, 1, 1 }, 2*20)->setParent(*lightRoot);
 	}
 
 	//createAmbientLight({ 1, 1, 1 }, 0.2f)->setParent(*lightRoot);
@@ -195,16 +206,16 @@ void Game::CreateLights()
 void Game::CreateSceneLeverArm()
 {
 	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
-	const auto &root1 = entityManager.instantiate("Root 1");
+	const auto root1 = entityManager.instantiate("Root 1");
 	root1->setPosition({ 5, 0, 5 });
 
-	const auto &child1 = entityManager.instantiate("Child 1", *root1);
-	const auto &child2 = entityManager.instantiate("Child 2", *child1);
-	const auto &child3 = entityManager.instantiate("Child 3", *child2);
+	const auto child1 = entityManager.instantiate("Child 1", *root1);
+	const auto child2 = entityManager.instantiate("Child 2", *child1);
+	const auto child3 = entityManager.instantiate("Child 3", *child2);
 
-	AddCubeToEntity(*child1, { 0, 0, 0.1f }, { 0.5f, 0.5f, 1.0f }, { 0, 0, 0 });
-	AddCubeToEntity(*child2, { 0, 0.25, 0 }, { 1.0f, 2.0f, 0.5f }, { 2, 0, 0 });
-	AddCubeToEntity(*child3, { 0.5f, 0, 0 }, { 2.0f, 0.50f, 1.0f }, { 0, 2, 0});
+	AddCubeToEntity(child1, { 0, 0, 0.1f }, { 0.5f, 0.5f, 1.0f }, { 0, 0, 0 });
+	AddCubeToEntity(child2, { 0, 0.25, 0 }, { 1.0f, 2.0f, 0.5f }, { 0, 0, 2 });
+	AddCubeToEntity(child3, { 0.5f, 0, 0 }, { 2.0f, 0.50f, 1.0f }, { 0, 2, 0});
 }
 
 void Game::CreateScripts() {
@@ -216,14 +227,15 @@ void Game::CreateScripts() {
 	scriptComponent.setScriptName("testmodule.TestComponent");
 }
 
-void Game::CreateGeometricPrimitives()
+void Game::CreateShadowTestScene()
 {
 	IScene_graph_manager& entityManager = m_scene->manager<IScene_graph_manager>();
 	const auto &root1 = entityManager.instantiate("Primitives");
+	int teapotCount = 0;
 
-	auto createTeapot = [&entityManager, &root1](const Vector3& center, const Color& color, float metallic, float roughness)
+	auto createTeapot = [&entityManager, &root1, &teapotCount](const SSE::Vector3& center, const Color& color, float metallic, float roughness)
 	{
-		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
+		const auto &child1 = entityManager.instantiate("Teapot " + std::to_string(++teapotCount), *root1);
 		child1->setPosition(center);
 
 		std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
@@ -234,13 +246,14 @@ void Game::CreateGeometricPrimitives()
 		auto& renderable = child1->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
 		renderable.setWireframe(false);
+		renderable.setCastShadow(true);
 
 		const auto meshData = Primitive_mesh_data_factory::createTeapot();
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
-		child1->setBoundSphere(BoundingSphere(Vector3::Zero, 1.0f));
+		child1->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
 		child1->addComponent<Test_component>().setSpeed({ 0.0f, 0.1f, 0.0f });
 	};
-	auto createSphere = [&entityManager, &root1](const Vector3& center, const Color& color, float metallic, float roughness)
+	auto createSphere = [&entityManager, &root1](const SSE::Vector3& center, const Color& color, float metallic, float roughness)
 	{
 		const auto &child1 = entityManager.instantiate("Primitive Child 1", *root1);
 		child1->setPosition(center);
@@ -257,7 +270,7 @@ void Game::CreateGeometricPrimitives()
 
 		const auto meshData = Primitive_mesh_data_factory::createSphere();
 		child1->addComponent<Mesh_data_component>().setMeshData(meshData);
-		child1->setBoundSphere(BoundingSphere(Vector3::Zero, 1.0f));
+		child1->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
 	};
 
     int created = 0;
@@ -270,21 +283,29 @@ void Game::CreateGeometricPrimitives()
 
 	if (true)
 	{
+		// Create the floor
 		const auto &child2 = entityManager.instantiate("Primitive Child 2", *root1);
 		auto material = std::make_unique<PBR_material>();
-		material->setBaseColor(Color(0.7f, 0.7f, 0.7f));
+		material->setBaseColor(Color(0.7f, 0.7f, 0.7f, 1.0f));
 
 		auto& renderable = child2->addComponent<Renderable_component>();
 		renderable.setMaterial(std::unique_ptr<Material>(material.release()));
-		renderable.setCastShadow(true);
+		renderable.setCastShadow(false);
 
-		const auto meshData = Primitive_mesh_data_factory::createQuad({ 15, 15 });
+		const auto meshData = Primitive_mesh_data_factory::createQuad(20, 20);
 		child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
-		child2->setRotation(Quaternion::CreateFromYawPitchRoll(0.0, XM_PI * -0.5f, 0.0));
-		child2->setPosition({ 0.0f, 0.0f, 0.0f });
-		child2->setBoundSphere(BoundingSphere(Vector3::Zero, 10.0f));
+        child2->setRotation(SSE::Quat::rotationX(XM_PI * -0.5f));
+		child2->setPosition({ 0.0f, -1.5f, 0.0f });
+		child2->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 10.0f));
 	}
+
+	createTeapot({ -2, 0, -2 }, oe::Colors::Green, 1.0, 0.0f);
+	createTeapot({  2, 0, -2 }, oe::Colors::Red,   1.0, 0.25f);
+	createTeapot({ -2, 0,  2 }, oe::Colors::White, 1.0, 0.75f);
+	createTeapot({  2, 0,  2 }, oe::Colors::Black, 1.0, 0.0f);
+
+
 }
 
 // Initialize the Direct3D resources required to run.
@@ -326,20 +347,22 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 		//LoadGLTF("FlightHelmet", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
         //LoadGLTF("InterpolationTest", false);
-        //LoadGLTF("MorphPrimitivesTest", false)->setPosition({0, -3.0f, 0});
+        //LoadGLTF("MorphPrimitivesTest", false)->setScale({2, 2, 2});
         //LoadGLTF("AnimatedMorphCube", false)->setPosition({ 0, -3.0f, 0 });
         //LoadGLTF("Alien", false)->setScale({ 10.01f, 10.01f, 10.01f });
         //LoadGLTF("MorphCube2", false);
         //LoadGLTF("RiggedSimple", false);
         //LoadGLTF("RiggedFigure", false);
-		LoadGLTF("CesiumMan", false)->setPosition({ 0, 0, 1.0f });
+		//LoadGLTF("CesiumMan", false)->setPosition({ 0, 0, 1.0f });
+
+        //LoadGLTF("VC", false)->setPosition({ 0, 0, 0 });
         //LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
 
-		LoadGLTF("MetalRoughSpheres", false);
+		//LoadGLTF("MetalRoughSpheres", false);
 
 		CreateCamera(false);
 		CreateLights();
-		//CreateGeometricPrimitives();
+		CreateShadowTestScene();
 		CreateScripts();
 
 
@@ -369,14 +392,14 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 	}
 }
 
-void Game::AddCubeToEntity(Entity& entity, Vector3 animationSpeed, Vector3 localScale, Vector3 localPosition) const
+void Game::AddCubeToEntity(std::shared_ptr<Entity> entity, SSE::Vector3 animationSpeed, SSE::Vector3 localScale, SSE::Vector3 localPosition)
 {
-	entity.addComponent<Test_component>().setSpeed(animationSpeed);
+	entity->addComponent<Test_component>().setSpeed(animationSpeed);
 
-	entity.setScale(localScale);
-	entity.setPosition(localPosition);
+	entity->setScale(localScale);
+	entity->setPosition(localPosition);
 	
-	m_scene->loadEntities(L"data/meshes/Cube/Cube.gltf", entity);
+	auto child = LoadGLTFToEntity("Cube", entity);
 }
 
 #pragma region Frame Update

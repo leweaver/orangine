@@ -15,11 +15,11 @@
 #include "OeCore/IDev_tools_manager.h"
 #include "OeCore/Render_pass_skybox.h"
 #include "OeCore/Perf_timer.h"
+#include "OeCore/Math_constants.h"
 
 #include <CommonStates.h>
 
 using namespace DirectX;
-using namespace SimpleMath;
 using namespace oe;
 using namespace internal;
 
@@ -135,7 +135,7 @@ void Render_step_manager::createRenderSteps()
 			{
 				entityRenderManager.renderRenderable(
 					quad,
-					Matrix::Identity,
+					SSE::Matrix4::identity(),
 					0.0f,
 					Render_pass::Camera_data::identity,
 					Light_provider::no_light_provider,
@@ -177,7 +177,7 @@ void Render_step_manager::createRenderSteps()
 		d3DDeviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step2_setup");
 
 		// TODO: Clear the render target view in a more generic way.	 
-		d3DDeviceResources.GetD3DDeviceContext()->ClearRenderTargetView(d3DDeviceResources.GetRenderTargetView(), Colors::Black);
+		d3DDeviceResources.GetD3DDeviceContext()->ClearRenderTargetView(d3DDeviceResources.GetRenderTargetView(), DirectX::Colors::Black);
 
 		d3DDeviceResources.PIXEndEvent();
 
@@ -448,7 +448,7 @@ void Render_step_manager::renderLights(const Render_pass::Camera_data& cameraDat
 			if (lightIndex == maxLights) {
 				entityRenderManager.renderRenderable(
 					quad,
-					Matrix::Identity,
+					SSE::Matrix4::identity(),
 					0.0f,
 					cameraData,
 					deferredLightProvider,
@@ -466,7 +466,7 @@ void Render_step_manager::renderLights(const Render_pass::Camera_data& cameraDat
 		if (!deferredLights.empty() || !renderedOnce) {
 			entityRenderManager.renderRenderable(
 				quad,
-				Matrix::Identity,
+				SSE::Matrix4::identity(),
 				0.0f,
 				cameraData,
 				deferredLightProvider,
@@ -489,22 +489,24 @@ Render_pass::Camera_data Render_step_manager::createCameraData(Camera_component&
 
 	// Construct camera axis vectors, to create a view matrix using lookAt.
 	const auto wt = component.entity().worldTransform();
-	const auto pos = wt.Translation();
-	const auto forward = Vector3::TransformNormal(Vector3::Forward, wt);
-	const auto up = Vector3::TransformNormal(Vector3::Up, wt);
+	const auto pos = SSE::Point3(wt.getTranslation());
+	const auto forward = wt * Math::Direction::Forward;
+	const auto up = wt * Math::Direction::Up;
 
 	// This optimization, while fancy, breaks our ability to read in the world pos from the depth buffer in deferred lighting.
 	//auto invFarPlane = component.farPlane() != 0.0f ? 1.0f / component.farPlane() : 0.0f;
 	//_cameraData.projectionMatrix._33 *= invFarPlane;
 	//_cameraData.projectionMatrix._43 *= invFarPlane;
 
-	return {
-		Matrix::CreateLookAt(pos, pos + forward, up),
-		Matrix::CreatePerspectiveFieldOfView(
+	auto perspectiveMat = SSE::Matrix4::perspective(
 			component.fov(),
 			aspectRatio,
 			component.nearPlane(),
-			component.farPlane()),
+			component.farPlane());
+
+	return {
+		SSE::Matrix4::lookAt(pos, pos + forward.getXYZ(), up.getXYZ()),
+		perspectiveMat,
 		component.fov(),
 		aspectRatio
 	};

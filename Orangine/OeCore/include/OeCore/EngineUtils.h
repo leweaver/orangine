@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <SimpleMath.h>
+#include <vectormath/vectormath.hpp>
 
 namespace oe {
     template <typename T, size_t N>
@@ -21,9 +22,9 @@ namespace oe {
 
     // Create a rotation matrix from input unit vector A to B.
     bool createRotationBetweenUnitVectors(
-        DirectX::SimpleMath::Matrix& result,
-        const DirectX::SimpleMath::Vector3& directionFrom, 
-        const DirectX::SimpleMath::Vector3& directionTo);
+        SSE::Matrix3& result,
+        const SSE::Vector3& directionFrom, 
+        const SSE::Vector3& directionTo);
 
 	// Convert a wide Unicode string to an UTF8 string
 	std::string utf8_encode(const std::wstring& wstr);
@@ -82,6 +83,20 @@ namespace oe {
 			throw com_exception(hr, what);
 		}
 	}
+
+    inline void decomposeMatrix(const SSE::Matrix4& mat, SSE::Vector3& pos, SSE::Quat& rotation, SSE::Vector3& scale) {
+        pos = mat.getTranslation();
+        auto rotMat = mat.getUpper3x3();
+        scale = SSE::Vector3(
+            SSE::length(rotMat.getCol0()),
+            SSE::length(rotMat.getCol1()),
+            SSE::length(rotMat.getCol2())
+        );
+        rotMat.setCol0(rotMat.getCol0() / scale.getX());
+        rotMat.setCol1(rotMat.getCol1() / scale.getY());
+        rotMat.setCol2(rotMat.getCol2() / scale.getZ());
+        rotation = SSE::Quat(rotMat);
+    }
 }
 
 namespace DX {

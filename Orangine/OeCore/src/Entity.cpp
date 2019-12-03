@@ -148,6 +148,9 @@ const SSE::Quat& Entity::worldRotation() const
 {
     return _worldRotation;
 }
+void Entity::setTransform(const SSE::Matrix4& transform) {
+    decomposeMatrix(transform, _localPosition, _localRotation, _localScale);
+}
 
 std::shared_ptr<Entity> Entity::verifyEntityPtr() const
 {

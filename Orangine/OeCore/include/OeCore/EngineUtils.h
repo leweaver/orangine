@@ -84,6 +84,20 @@ namespace oe {
 		}
 	}
 
+    inline void decomposeMatrix(const SSE::Matrix4& mat, SSE::Vector3& pos, SSE::Quat& rotation, SSE::Vector3& scale) {
+        pos = mat.getTranslation();
+        auto rotMat = mat.getUpper3x3();
+        scale = SSE::Vector3(
+            SSE::length(rotMat.getCol0()),
+            SSE::length(rotMat.getCol1()),
+            SSE::length(rotMat.getCol2())
+        );
+        rotMat.setCol0(rotMat.getCol0() / scale.getX());
+        rotMat.setCol1(rotMat.getCol1() / scale.getY());
+        rotMat.setCol2(rotMat.getCol2() / scale.getZ());
+        rotation = SSE::Quat(rotMat);
+    }
+
 	inline SSE::Quat toQuat(const DirectX::SimpleMath::Quaternion& quat) {
 		return { quat.x, quat.y, quat.z, quat.w };
 	}

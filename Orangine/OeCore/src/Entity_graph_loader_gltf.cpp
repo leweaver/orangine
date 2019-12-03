@@ -136,7 +136,7 @@ const std::map<int, Element_type> g_gltfType_elementType = {
 };
 const std::map<int, Element_component> g_gltfComponent_elementComponent = {
     //{ TINYGLTF_COMPONENT_TYPE_BYTE, },
-    //{ TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, },
+    { TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, Element_component::Unsigned_Byte },
     //{ TINYGLTF_COMPONENT_TYPE_SHORT, },
     { TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT, Element_component::Unsigned_Short },
     //{ TINYGLTF_COMPONENT_TYPE_INT, },
@@ -284,7 +284,7 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(size_t accessorIn
     if (pos == loaderData.accessorIdxToMeshBuffers.end()) {
 
         // Convert index buffers from 8-bit to 32 bit.
-        if (elementType == Element_type::Scalar && expectedBufferViewTarget == TINYGLTF_TARGET_ARRAY_BUFFER &&
+        if (elementType == Element_type::Scalar && expectedBufferViewTarget == TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER &&
             (elementComponent == Element_component::Unsigned_Byte || elementComponent == Element_component::Signed_Byte)) {
             // Transform the data to a known format
             const auto convertedIndexAccessor = mesh_utils::create_index_buffer(
@@ -341,19 +341,16 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(size_t accessorIn
         */
 }
 
-DirectX::SimpleMath::Matrix createMatrix4FromGltfArray(const vector<double>& m)
+SSE::Matrix4 createMatrix4FromGltfArray(const vector<double>& m)
 {
-    // glTF matrices are RHS, Column Major
-    // Orangine matrices are RHS, Row Major
-    // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#data-alignment
-    // buffer is: |m00|m10|m20|m30|m01|m11|m21|m31|m02|m12|m22|m32|m03|m13|m23|m33|
-    // output is: |m00|m01|m02|m03|m10|m11|m12|m13|m20|m21|m22|m23|m30|m31|m32|m33|
-    const auto f = [m](size_t index) { return static_cast<float>(m[index]); };
-    return DirectX::SimpleMath::Matrix(
-        static_cast<float>(m[0]), static_cast<float>(m[1]), static_cast<float>(m[2]), static_cast<float>(m[3]),
-        static_cast<float>(m[4]), static_cast<float>(m[5]), static_cast<float>(m[6]), static_cast<float>(m[7]),
-        static_cast<float>(m[8]), static_cast<float>(m[9]), static_cast<float>(m[10]), static_cast<float>(m[11]),
-        static_cast<float>(m[12]), static_cast<float>(m[13]), static_cast<float>(m[14]), static_cast<float>(m[15])
+    // glTF matrices are Column Major
+    // SSE matrices are Column Major
+
+    return SSE::Matrix4(
+        { static_cast<float>(m[0]), static_cast<float>(m[1]), static_cast<float>(m[2]), static_cast<float>(m[3]) },
+        { static_cast<float>(m[4]), static_cast<float>(m[5]), static_cast<float>(m[6]), static_cast<float>(m[7]) },
+        { static_cast<float>(m[8]), static_cast<float>(m[9]), static_cast<float>(m[10]), static_cast<float>(m[11]) },
+        { static_cast<float>(m[12]), static_cast<float>(m[13]), static_cast<float>(m[14]), static_cast<float>(m[15]) }
     );
 }
 
@@ -672,16 +669,7 @@ void setEntityTransform(Entity&  entity, const Node&  node)
 {
 	if (node.matrix.size() == 16)
 	{
-        auto trs = createMatrix4FromGltfArray(node.matrix);
-
-		DirectX::SimpleMath::Vector3 scale;
-		DirectX::SimpleMath::Quaternion rotation;
-		DirectX::SimpleMath::Vector3 translation;
-		trs.Decompose(scale, rotation, translation);
-
-		entity.setScale(toVector3(scale));
-		entity.setRotation(toQuat(rotation));
-		entity.setPosition(toVector3(translation));
+        entity.setTransform(createMatrix4FromGltfArray(node.matrix));
 	}
 	else
 	{

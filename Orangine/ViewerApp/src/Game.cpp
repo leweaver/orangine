@@ -344,14 +344,16 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 		//LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
 		//LoadGLTF("FlightHelmet", false)->setScale({ 7, 7, 7 });
 		//LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
-        //LoadGLTF("InterpolationTest", false);
+        LoadGLTF("InterpolationTest", false);
         //LoadGLTF("MorphPrimitivesTest", false)->setScale({2, 2, 2});
-        LoadGLTF("AnimatedMorphCube", false)->setPosition({ 0, -3.0f, 0 });
+        //LoadGLTF("AnimatedMorphCube", false)->setPosition({ 0, -3.0f, 0 });
         //LoadGLTF("Alien", false)->setScale({ 10.01f, 10.01f, 10.01f });
         //LoadGLTF("MorphCube2", false);
         //LoadGLTF("RiggedSimple", false);
         //LoadGLTF("RiggedFigure", false);
-		LoadGLTF("CesiumMan", false)->setPosition({ 0, 0, 1.0f });
+		//LoadGLTF("CesiumMan", false)->setPosition({ 0, 0, 1.0f });
+
+        //LoadGLTF("VC", false)->setPosition({ 0, 0, 0 });
         //LoadGLTF("WaterBottle", true)->setScale({ 40, 40, 40 });
 
 		//LoadGLTF("MetalRoughSpheres", false);

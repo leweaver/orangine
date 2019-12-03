@@ -20,6 +20,8 @@ namespace oe {
 		Float3(float x, float y, float z) : x(x), y(y), z(z) { }
 		Float3(const SSE::Vector3& vec) : x(vec.getX()), y(vec.getY()), z(vec.getZ()) { }
 
+        SSE::Vector3 toVector3() const { return { x, y, z }; }
+
 		float x, y, z;
 	};
 
@@ -27,6 +29,9 @@ namespace oe {
 		Float4() : x(0.0f), y(0.0f), z(0.0f), w(0.0f) { }
 		Float4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) { }
 		Float4(const SSE::Vector4& vec) : x(vec.getX()), y(vec.getY()), z(vec.getZ()), w(vec.getW()) { }
+
+        SSE::Vector4 toVector4() const { return { x, y, z, w }; }
+        SSE::Quat toQuaternion() const { return { x, y, z, w }; }
 
 		float x, y, z, w;
 	};

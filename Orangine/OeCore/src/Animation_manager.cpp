@@ -309,26 +309,45 @@ struct Cubic_spline_value {
     TType outTangent;
 };
 
-template<class TType>
-TType Animation_manager::calculateCubicSpline(
+template<class TTypeIn, class TTypeOut>
+void convertSplineElement(const TTypeIn& in, TTypeOut& out) {}
+
+template<>
+void convertSplineElement(const Float3& in, SSE::Vector3& out) {
+    out = SSE::Vector3(in.x, in.y, in.z);
+}
+template<>
+void convertSplineElement(const Float4& in, SSE::Quat& out) {
+    out = SSE::Quat(in.x, in.y, in.z, in.w);
+}
+
+template<class TTypeIn, class TTypeOut>
+TTypeOut Animation_manager::calculateCubicSpline(
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex,
     uint32_t upperValueIndex,
     double factor)
 {
-    const auto& lower = reinterpret_cast<const Cubic_spline_value<TType>*>(channel.keyframeValues->getIndexed(
+    const auto& lower = reinterpret_cast<const Cubic_spline_value<TTypeIn>*>(channel.keyframeValues->getIndexed(
         lowerValueIndex * channel.valuesPerKeyFrame))[0];
-    const auto& upper = reinterpret_cast<const Cubic_spline_value<TType>*>(channel.keyframeValues->getIndexed(
+    const auto& upper = reinterpret_cast<const Cubic_spline_value<TTypeIn>*>(channel.keyframeValues->getIndexed(
         upperValueIndex * channel.valuesPerKeyFrame))[0];
 
     const auto factor2 = factor * factor;
     const auto factor3 = factor2 * factor;
 
+    // TODO: The splines should be pre-converted when loading the glTF
+    TTypeOut lowerValue, outTangent, upperValue, inTangent;
+    convertSplineElement(lower.value, lowerValue);
+    convertSplineElement(lower.outTangent, outTangent);
+    convertSplineElement(upper.value, upperValue);
+    convertSplineElement(upper.inTangent, inTangent);
+
     // p(t) = (2t3 - 3t2 + 1)p0 + (t3 - 2t2 + t)m0 + (-2t3 + 3t2)p1 + (t3 - t2)m1
-    const auto p0 = static_cast<float>((2.0 * factor3 - 3.0 * factor2 + 1.0))* lower.value;
-    const auto m0 = static_cast<float>((factor3 - 2.0 * factor2 + factor))* lower.outTangent;
-    const auto p1 = static_cast<float>((-2.0 * factor3 + 3.0 * factor2))* upper.value;
-    const auto m1 = static_cast<float>((factor3 - factor2))* upper.inTangent;
+    const auto p0 = static_cast<float>((2.0 * factor3 - 3.0 * factor2 + 1.0))* lowerValue;
+    const auto m0 = static_cast<float>((factor3 - 2.0 * factor2 + factor))* outTangent;
+    const auto p1 = static_cast<float>((-2.0 * factor3 + 3.0 * factor2))* upperValue;
+    const auto m1 = static_cast<float>((factor3 - factor2))* inTangent;
 
     auto result = p0 + m0 + p1 + m1;
     return result;
@@ -338,23 +357,22 @@ void Animation_manager::handleTranslationAnimationCubicSpline(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
 {
-    entity.setPosition(toVector3(calculateCubicSpline<SimpleMath::Vector3>(channel, lowerValueIndex, upperValueIndex, factor)));
+    entity.setPosition(calculateCubicSpline<Float3, SSE::Vector3>(channel, lowerValueIndex, upperValueIndex, factor));
 }
 
 void Animation_manager::handleScaleAnimationCubicSpline(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
 {
-    entity.setScale(toVector3(calculateCubicSpline<SimpleMath::Vector3>(channel, lowerValueIndex, upperValueIndex, factor)));
+    entity.setScale(calculateCubicSpline<Float3, SSE::Vector3>(channel, lowerValueIndex, upperValueIndex, factor));
 }
 
 void Animation_manager::handleRotationAnimationCubicSpline(Entity& entity,
     const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
 {
-    auto result = calculateCubicSpline<SimpleMath::Quaternion>(channel, lowerValueIndex, upperValueIndex, factor);
-    result.Normalize();
-    entity.setRotation(toQuat(result));
+    auto result = calculateCubicSpline<Float4, SSE::Quat>(channel, lowerValueIndex, upperValueIndex, factor);
+    entity.setRotation(SSE::normalize(result));
 }
 
 void Animation_manager::handleMorphAnimationCubicSpline(Entity& entity,

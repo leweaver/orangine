@@ -99,6 +99,8 @@ namespace oe {
         void setScale(const SSE::Vector3& vector) { _localScale = vector; }
         void setScale(float scale) { _localScale = SSE::Vector3(scale, scale, scale); }
 
+        void setTransform(const SSE::Matrix4& transform);
+
         bool calculateBoundSphereFromChildren() const { return _calculateBoundSphereFromChildren; }
         void setCalculateBoundSphereFromChildren(bool calculateBoundSphereFromChildren) { _calculateBoundSphereFromChildren = calculateBoundSphereFromChildren; }
 

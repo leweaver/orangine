@@ -1,13 +1,15 @@
 #pragma once
 
+#include "Renderer_enum.h"
+#include "Collision.h"
+
 #include <dxgiformat.h>
+
 #include <cstdint>
 #include <cassert>
 #include <stdexcept>
 #include <memory>
 #include <vector>
-
-#include "Renderer_enum.h"
 
 namespace oe {
 	struct Mesh_buffer;
@@ -55,7 +57,7 @@ namespace oe::mesh_utils {
     std::unique_ptr<Mesh_index_buffer_accessor> create_index_buffer(const std::vector<uint8_t>& sourceData, UINT srcElementCount, Element_component elementComponent, UINT sourceStride, UINT sourceOffset);
     DXGI_FORMAT getDxgiFormat(Element_type type, Element_component component);
     
-	DirectX::BoundingOrientedBox aabbForEntities(const Entity_filter& entities,
+	oe::BoundingOrientedBox aabbForEntities(const Entity_filter& entities,
 		const SSE::Quat& orientation,
 		std::function<bool(const Entity&)> predicate);
 }

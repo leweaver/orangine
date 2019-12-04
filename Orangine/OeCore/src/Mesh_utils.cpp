@@ -7,9 +7,6 @@
 #include "OeCore/EngineUtils.h"
 #include "D3D11/DirectX_utils.h"
 
-using namespace DirectX;
-using namespace DirectX::SimpleMath;
-
 namespace oe::mesh_utils {
 
 	std::shared_ptr<Mesh_buffer> create_buffer(UINT elementSize, UINT elementCount, const std::vector<uint8_t>& sourceData, UINT sourceStride, UINT sourceOffset)
@@ -131,7 +128,7 @@ namespace oe::mesh_utils {
         return componentPos->second;
     }
 
-    BoundingOrientedBox aabbForEntities(const Entity_filter& entities,
+    oe::BoundingOrientedBox aabbForEntities(const Entity_filter& entities,
         const SSE::Quat& orientation,
         std::function<bool(const Entity&)> predicate)
     {
@@ -171,10 +168,6 @@ namespace oe::mesh_utils {
         const auto halfVector = SSE::Vector4(0.5f, 0.5f, 0.5f, 0.0f); // OPT: does the compiler optimize this?
         const auto center = orientationMatrix * SSE::Point3(SSE::mulPerElem(maxExtents + minExtents, halfVector).getXYZ());
         const auto extents = SSE::mulPerElem(maxExtents - minExtents, halfVector);
-        return BoundingOrientedBox(
-            SimpleMath::Vector3(center.getX(), center.getY(), center.getZ()),
-            SimpleMath::Vector3(extents.getX(), extents.getY(), extents.getZ()),
-            SimpleMath::Quaternion(orientation.getX(), orientation.getY(), orientation.getZ(), orientation.getW())
-        );
+        return oe::BoundingOrientedBox(center.getXYZ(), extents.getXYZ(), orientation);
     }
 }

@@ -70,8 +70,8 @@ void Render_pass_shadow::render(const Camera_data&)
 
 			// Now create a shadow camera view matrix. Its position will be the bounds center, offset by {0, 0, extents.z} in light view space.
             const auto lightNearPlaneWorldTranslation =
-                SSE::Vector4(LoadVector3(shadowVolumeBoundingBox.Center), 0.0f) +
-                worldToLightViewMatrix * SSE::Vector4(0, 0, shadowVolumeBoundingBox.Extents.z, 0);
+                SSE::Vector4(shadowVolumeBoundingBox.center, 0.0f) +
+                worldToLightViewMatrix * SSE::Vector4(0, 0, shadowVolumeBoundingBox.extents.getZ(), 0);
 
 			Camera_data shadowCameraData;
 			{
@@ -82,7 +82,7 @@ void Render_pass_shadow::render(const Camera_data&)
 
 				shadowCameraData.viewMatrix = SSE::Matrix4::lookAt(pos, pos + forward.getXYZ(), up.getXYZ());
 
-				SSE::Vector3 extents = LoadVector3(shadowVolumeBoundingBox.Extents);
+				auto extents = shadowVolumeBoundingBox.extents;
 
 				if (extents.getX() == 0.0f)
 					extents = SSE::Vector3(0.5f);
@@ -112,7 +112,7 @@ void Render_pass_shadow::render(const Camera_data&)
 				if (!renderable->castShadow())
 					continue;
 
-				if (shadowVolumeBoundingBox.Contains(StoreBoundingSphere(entity->boundSphere()))) {
+				if (shadowVolumeBoundingBox.contains(entity->boundSphere())) {
 					entityRenderManager.renderEntity(*renderable, shadowCameraData, Light_provider::no_light_provider, Render_pass_blend_mode::Opaque);
 				}
 			}

@@ -17,14 +17,15 @@
 #include "OeCore/Render_pass.h"
 #include "D3D11/DirectX_utils.h"
 
-#include <set>
-#include <functional>
-#include <optional>
 #include "OeCore/IMaterial_manager.h"
 #include "OeCore/Morph_weights_component.h"
 #include "OeCore/Skinned_mesh_component.h"
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Math_constants.h"
+
+#include <set>
+#include <functional>
+#include <optional>
 
 using namespace oe;
 using namespace internal;
@@ -172,15 +173,16 @@ BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& c
 	const auto viewport = deviceResources().GetScreenViewport();
 	const auto aspectRatio = viewport.Width / viewport.Height;
 
-	const auto projMatrix = SimpleMath::Matrix::CreatePerspectiveFieldOfView(
-		cameraComponent.fov(),
-		aspectRatio,
-		cameraComponent.nearPlane(),
-		cameraComponent.farPlane());
-	auto frustum = BoundingFrustumRH(projMatrix);
+    const auto projMatrix = SSE::Matrix4::perspective(
+        cameraComponent.fov(),
+        aspectRatio,
+        cameraComponent.nearPlane(),
+        cameraComponent.farPlane());
+
+    oe::BoundingFrustumRH frustum = oe::BoundingFrustumRH(projMatrix);
 	const auto& entity = cameraComponent.entity();
-	frustum.Origin = StoreVector3(entity.worldPosition());
-	frustum.Orientation = StoreQuat(entity.worldRotation());
+	frustum.origin = entity.worldPosition();
+	frustum.orientation = entity.worldRotation();
 
 	return frustum;
 }

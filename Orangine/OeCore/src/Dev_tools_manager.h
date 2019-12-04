@@ -35,7 +35,7 @@ namespace oe::internal {
         // The origin of the object is the midpoint, not the base.
         void addDebugCone(const SSE::Matrix4& worldTransform, float diameter, float height, const Color& color) override;
 		void addDebugSphere(const SSE::Matrix4& worldTransform, float radius, const Color& color, size_t tessellation = 6) override;
-		void addDebugBoundingBox(const DirectX::BoundingOrientedBox& boundingOrientedBox, const Color& color) override;
+		void addDebugBoundingBox(const oe::BoundingOrientedBox& boundingOrientedBox, const Color& color) override;
 		void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color) override;
 		void clearDebugShapes() override;
 		void renderDebugShapes(const Render_pass::Camera_data& cameraData) override;

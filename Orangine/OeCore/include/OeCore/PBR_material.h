@@ -5,7 +5,6 @@
 
 #include <memory>
 #include <array>
-#include "SimpleMath.h"
 #include "Material_base.h"
 #include "Color.h"
 #include "Simple_types.h"

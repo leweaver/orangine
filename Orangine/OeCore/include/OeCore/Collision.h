@@ -25,6 +25,33 @@ namespace oe {
         static void createMerged(BoundingSphere& out, const BoundingSphere& input1, const BoundingSphere& input2);
     };
 
+    //-------------------------------------------------------------------------------------
+    // Oriented bounding box
+    //-------------------------------------------------------------------------------------
+    struct BoundingOrientedBox
+    {
+        static const size_t CORNER_COUNT = 8;
+
+        SSE::Vector3 center;            // Center of the box.
+        SSE::Vector3 extents;           // Distance from the center to each side.
+        SSE::Quat    orientation;       // Unit quaternion representing rotation (box -> world).
+
+        // Creators
+        BoundingOrientedBox() noexcept : center(0, 0, 0), extents(1.f, 1.f, 1.f), orientation(0, 0, 0, 1.f) {}
+
+        BoundingOrientedBox(const BoundingOrientedBox&) = default;
+        BoundingOrientedBox& operator=(const BoundingOrientedBox&) = default;
+
+        BoundingOrientedBox(BoundingOrientedBox&&) = default;
+        BoundingOrientedBox& operator=(BoundingOrientedBox&&) = default;
+
+        constexpr BoundingOrientedBox(const SSE::Vector3& center, const SSE::Vector3& extents, const SSE::Quat& orientation)
+            : center(center), extents(extents), orientation(orientation) {}
+
+        // Methods
+        bool contains(const BoundingSphere& boundingSphere) const;
+    };
+
 	/*
 	 * A partial re-implementation of DirectX::BoundingFrustum that is compatible with right handed coordinate systems.
 	 */
@@ -32,33 +59,33 @@ namespace oe {
 
 		static const size_t CORNER_COUNT = 8;
 
-		DirectX::XMFLOAT3 Origin;            // Origin of the frustum (and projection).
-		DirectX::XMFLOAT4 Orientation;       // Quaternion representing rotation.
+		SSE::Vector3 origin;            // Origin of the frustum (and projection).
+        SSE::Quat    orientation;       // Quaternion representing rotation.
 
-		float RightSlope;           // Positive X slope (X/Z).
-		float LeftSlope;            // Negative X slope.
-		float TopSlope;             // Positive Y slope (Y/Z).
-		float BottomSlope;          // Negative Y slope.
-		float Near, Far;            // Z of the near plane and far plane.
+		float rightSlope;           // Positive X slope (X/Z).
+		float leftSlope;            // Negative X slope.
+		float topSlope;             // Positive Y slope (Y/Z).
+		float bottomSlope;          // Negative Y slope.
+		float nearPlane, farPlane;            // Z of the near plane and far plane.
 
 		// Creators
-		BoundingFrustumRH() : Origin(0, 0, 0), Orientation(0, 0, 0, 1.f), RightSlope(1.f), LeftSlope(-1.f),
-			TopSlope(1.f), BottomSlope(-1.f), Near(0), Far(-1.f) {}
-		XM_CONSTEXPR BoundingFrustumRH(_In_ const DirectX::XMFLOAT3& _Origin, _In_ const DirectX::XMFLOAT4& _Orientation,
-			_In_ float _RightSlope, _In_ float _LeftSlope, _In_ float _TopSlope, _In_ float _BottomSlope,
-			_In_ float _Near, _In_ float _Far)
-			: Origin(_Origin), Orientation(_Orientation),
-			RightSlope(_RightSlope), LeftSlope(_LeftSlope), TopSlope(_TopSlope), BottomSlope(_BottomSlope),
-			Near(_Near), Far(_Far) {}
-		BoundingFrustumRH(_In_ const BoundingFrustumRH& fr) = default;
-		explicit BoundingFrustumRH(_In_ DirectX::CXMMATRIX Projection) { CreateFromMatrix(*this, Projection); }
+		BoundingFrustumRH() : origin(0, 0, 0), orientation(0, 0, 0, 1.f), rightSlope(1.f), leftSlope(-1.f),
+            topSlope(1.f), bottomSlope(-1.f), nearPlane(0), farPlane(-1.f) {}
+        constexpr BoundingFrustumRH(const SSE::Vector3& _origin, const SSE::Quat& _orientation,
+            float _rightSlope, float _leftSlope, float _topSlope, float _bottomSlope,
+            float _near, float _far)
+            : origin(_origin), orientation(_orientation),
+			rightSlope(_rightSlope), leftSlope(_leftSlope), topSlope(_topSlope), bottomSlope(_bottomSlope),
+            nearPlane(_near), farPlane(_far) {}
+		BoundingFrustumRH(const BoundingFrustumRH& fr) = default;
+		explicit BoundingFrustumRH(const SSE::Matrix4& projection) { CreateFromMatrix(*this, projection); }
 
 		// Methods
-		static inline void CreateFromMatrix(BoundingFrustumRH& Out, DirectX::FXMMATRIX Projection);
+		static void CreateFromMatrix(BoundingFrustumRH& Out, const SSE::Matrix4& Projection);
 
 		DirectX::ContainmentType Contains(const oe::BoundingSphere& sh) const;
 
-		inline void GetCorners(DirectX::XMFLOAT3* Corners) const;
+		void GetCorners(SSE::Vector3* Corners) const;
 	};
 }
 

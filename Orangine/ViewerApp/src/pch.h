@@ -55,5 +55,4 @@
 #include <dxgidebug.h>
 #endif
 
-#include <SimpleMath.h>
 #include <g3log/g3log.hpp>

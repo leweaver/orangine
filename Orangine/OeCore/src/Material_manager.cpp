@@ -64,7 +64,7 @@ const std::wstring& Material_manager::shaderPath() const {
 void Material_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
 {
     // Animation constant buffer
-    std::array<SimpleMath::Matrix, g_max_bone_transforms> initDataMem;
+    std::array<SSE::Matrix4, g_max_bone_transforms> initDataMem;
     constexpr auto dataSize = initDataMem.size() * sizeof(decltype(initDataMem)::value_type);
 
     // Fill in a buffer description.

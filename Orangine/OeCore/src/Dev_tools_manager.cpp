@@ -162,20 +162,20 @@ void Dev_tools_manager::addDebugSphere(const SSE::Matrix4& worldTransform, float
 	_debugShapes.push_back({ worldTransform, color, renderable});
 }
 
-void Dev_tools_manager::addDebugBoundingBox(const BoundingOrientedBox& boundingOrientedBox, const Color& color)
+void Dev_tools_manager::addDebugBoundingBox(const oe::BoundingOrientedBox& boundingOrientedBox, const Color& color)
 {
 	auto worldTransform = SSE::Transform3(
-		LoadQuat(boundingOrientedBox.Orientation),
-        LoadVector3(boundingOrientedBox.Center)
+		boundingOrientedBox.orientation,
+        boundingOrientedBox.center
 	);
 
     auto hash = g_hashSeed_boundingBox;
-    hash_combine(hash, boundingOrientedBox.Extents.x);
-    hash_combine(hash, boundingOrientedBox.Extents.y);
-    hash_combine(hash, boundingOrientedBox.Extents.z);
+    hash_combine(hash, static_cast<float>(boundingOrientedBox.extents.getX()));
+    hash_combine(hash, static_cast<float>(boundingOrientedBox.extents.getY()));
+    hash_combine(hash, static_cast<float>(boundingOrientedBox.extents.getZ()));
 
     auto renderable = getOrCreateRenderable(hash, [&boundingOrientedBox]() {
-		return Primitive_mesh_data_factory::createBox({ boundingOrientedBox.Extents.x * 2.0f, boundingOrientedBox.Extents.y * 2.0f, boundingOrientedBox.Extents.z * 2.0f });
+		return Primitive_mesh_data_factory::createBox({ boundingOrientedBox.extents.getX() * 2.0f, boundingOrientedBox.extents.getY() * 2.0f, boundingOrientedBox.extents.getZ() * 2.0f });
     });
 	
 	_debugShapes.push_back({ SSE::Matrix4(worldTransform), color, renderable });

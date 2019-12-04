@@ -6,8 +6,8 @@
 namespace oe {
 	class Shadow_map_texture : public Texture {
 	public:
-		const DirectX::BoundingOrientedBox& casterVolume() const { return _boundingOrientedBox; }
-		void setCasterVolume(const DirectX::BoundingOrientedBox& boundingOrientedBox) { _boundingOrientedBox = boundingOrientedBox; }
+		const oe::BoundingOrientedBox& casterVolume() const { return _boundingOrientedBox; }
+		void setCasterVolume(const oe::BoundingOrientedBox& boundingOrientedBox) { _boundingOrientedBox = boundingOrientedBox; }
 
 		const SSE::Matrix4& worldViewProjMatrix() const { return _worldViewProjMatrix; };
 		void setWorldViewProjMatrix(const SSE::Matrix4& worldViewProjMatrix) { _worldViewProjMatrix = worldViewProjMatrix; }
@@ -21,7 +21,7 @@ namespace oe {
 
 		D3D11_VIEWPORT _viewport;
 		
-		DirectX::BoundingOrientedBox _boundingOrientedBox;
+		oe::BoundingOrientedBox _boundingOrientedBox;
 		SSE::Matrix4 _worldViewProjMatrix;
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> _depthStencilView;
 	};

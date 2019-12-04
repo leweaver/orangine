@@ -50,6 +50,7 @@ const map<string, Vertex_attribute_semantic> g_gltfMorphAttributeMapping = {
     { s_primAttrName_position, {Vertex_attribute::Position, 0}},
     { s_primAttrName_normal, {Vertex_attribute::Normal, 0}},
     { s_primAttrName_tangent, {Vertex_attribute::Tangent, 0}}
+
 };
 
 const map<string, Animation_interpolation> g_animationSamplerInterpolationToTypeMap = {
@@ -475,10 +476,6 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(wstring_view fileP
                             throw std::domain_error("invalid joint index: " + to_string(jointNodeIdx));
 
                         auto jointEntity = loaderData.nodeIdxToEntity.at(jointNodeIdx);
-                        //jointEntity->setCalculateWorldTransform(false);
-                        //jointEntity->setScale({ 1,1,1 });
-                        //jointEntity->setRotation(DirectX::SimpleMath::Quaternion::Identity);
-                        //jointEntity->setPosition({ 0, 0, 0 });
                         joints.push_back(jointEntity);
                     }
                     skinnedMeshComponent.setJoints(move(joints));

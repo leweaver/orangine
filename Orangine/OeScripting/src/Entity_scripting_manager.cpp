@@ -422,7 +422,7 @@ void Entity_scripting_manager::renderDebugSpheres() const
 		const auto cameraComponent = mainCameraEntity->getFirstComponentOfType<Camera_component>();
 		if (cameraComponent) {
 			auto frustum = renderManager.createFrustum(*cameraComponent);
-			frustum.Far *= 0.5;
+			frustum.farPlane *= 0.5;
 			devToolsManager.addDebugFrustum(frustum, Colors::Red);
 		}
 	}

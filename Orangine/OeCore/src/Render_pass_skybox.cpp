@@ -5,7 +5,6 @@
 #include "OeCore/Skybox_material.h"
 
 using namespace oe;
-using namespace DirectX::SimpleMath;
 
 Render_pass_skybox::Render_pass_skybox(Scene& scene)
 	: _scene(scene)

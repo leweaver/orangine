@@ -174,6 +174,10 @@ void convertSplineElement(const Float3& in, SSE::Vector3& out) {
     out = SSE::Vector3(in.x, in.y, in.z);
 }
 template<>
+void convertSplineElement(const Float4& in, SSE::Vector4& out) {
+    out = SSE::Vector4(in.x, in.y, in.z, in.w);
+}
+template<>
 void convertSplineElement(const Float4& in, SSE::Quat& out) {
     out = SSE::Quat(in.x, in.y, in.z, in.w);
 }
@@ -253,7 +257,7 @@ void Animation_manager::handleRotationAnimationLerp(Entity& entity,
     ));
 }
 
-std::array<std::function<void(std::array<double, 8> & meshWeights, size_t meshWeightsOffset, const SimpleMath::Vector4 & weights)>, 5>
+std::array<std::function<void(std::array<double, 8> & meshWeights, size_t meshWeightsOffset, const Float4& weights)>, 5>
 g_applyWeights = {
     [](auto& meshWeights, auto meshWeightsOffset, const auto& weights) {
     },
@@ -287,35 +291,32 @@ void Animation_manager::handleMorphAnimationLerp(Entity& entity,
         lowerValueIndex *= channel.valuesPerKeyFrame;
         upperValueIndex *= channel.valuesPerKeyFrame;
 
-        auto lowerWeights = SimpleMath::Vector4();
-        auto upperWeights = SimpleMath::Vector4();
+        auto lowerWeights = SSE::Vector4();
+        auto upperWeights = SSE::Vector4();
         if (morphTargetCount <= 4) {
             for (uint8_t targetIdx = 0u; targetIdx < morphTargetCount; ++targetIdx) {
-                (&lowerWeights.x)[targetIdx] = getKeyframeValueFloat(channel, lowerValueIndex + targetIdx);
-                (&upperWeights.x)[targetIdx] = getKeyframeValueFloat(channel, upperValueIndex + targetIdx);
+                lowerWeights.setElem(targetIdx, getKeyframeValueFloat(channel, lowerValueIndex + targetIdx));
+                upperWeights.setElem(targetIdx, getKeyframeValueFloat(channel, upperValueIndex + targetIdx));
             }
 
-            const auto weights = SimpleMath::Vector4::Lerp(lowerWeights, upperWeights, static_cast<float>(factor));
+            const auto weights = SSE::lerp(static_cast<float>(factor), lowerWeights, upperWeights);
             const auto numToApply = std::min(4u, morphTargetCount);
             g_applyWeights.at(numToApply)(morphWeightsComponent->morphWeights(), 0, weights);
         }
         else {
             assert(morphTargetCount <= 8);
+            lowerWeights = getKeyframeValue<Float4, SSE::Vector4>(channel, lowerValueIndex);
+            upperWeights = getKeyframeValue<Float4, SSE::Vector4>(channel, upperValueIndex);
 
-            for (uint8_t targetIdx = 0u; targetIdx < 4u; ++targetIdx) {
-                (&lowerWeights.x)[targetIdx] = getKeyframeValueFloat(channel, lowerValueIndex + targetIdx);
-                (&upperWeights.x)[targetIdx] = getKeyframeValueFloat(channel, upperValueIndex + targetIdx);
-            }
-
-            auto weights = SimpleMath::Vector4::Lerp(lowerWeights, upperWeights, static_cast<float>(factor));
+            auto weights = SSE::lerp(static_cast<float>(factor), lowerWeights, upperWeights);
             g_applyWeights.at(4)(morphWeightsComponent->morphWeights(), 0, weights);
 
             for (uint8_t targetIdx = 4u; targetIdx < morphTargetCount; ++targetIdx) {
-                (&lowerWeights.x)[targetIdx] = getKeyframeValueFloat(channel, lowerValueIndex + targetIdx);
-                (&upperWeights.x)[targetIdx] = getKeyframeValueFloat(channel, upperValueIndex + targetIdx);
+                lowerWeights.setElem(targetIdx, getKeyframeValueFloat(channel, lowerValueIndex + targetIdx));
+                upperWeights.setElem(targetIdx, getKeyframeValueFloat(channel, upperValueIndex + targetIdx));
             }
 
-            weights = SimpleMath::Vector4::Lerp(lowerWeights, upperWeights, static_cast<float>(factor));
+            weights = SSE::lerp(static_cast<float>(factor), lowerWeights, upperWeights);
             const auto numToApply = std::min(4u, morphTargetCount - 4u);
             g_applyWeights.at(numToApply)(morphWeightsComponent->morphWeights(), 4, weights);
         }

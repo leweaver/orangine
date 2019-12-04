@@ -2,6 +2,7 @@
 #include "Manager_base.h"
 #include "Render_pass.h"
 #include "Color.h"
+#include "Collision.h"
 
 namespace oe {
     class VectorLog;
@@ -20,7 +21,7 @@ namespace oe {
 
         virtual void addDebugCone(const SSE::Matrix4& worldTransform, float diameter, float height, const Color& color) = 0;
 		virtual void addDebugSphere(const SSE::Matrix4& worldTransform, float radius, const Color& color, size_t tessellation = 6) = 0;
-        virtual void addDebugBoundingBox(const DirectX::BoundingOrientedBox& boundingOrientedBox, const Color& color) = 0;
+        virtual void addDebugBoundingBox(const oe::BoundingOrientedBox& boundingOrientedBox, const Color& color) = 0;
         virtual void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color) = 0;
         virtual void clearDebugShapes() = 0;
 

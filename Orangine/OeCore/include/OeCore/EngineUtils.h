@@ -2,7 +2,6 @@
 
 #include <string>
 #include <string_view>
-#include <SimpleMath.h>
 #include <vectormath/vectormath.hpp>
 
 namespace oe {

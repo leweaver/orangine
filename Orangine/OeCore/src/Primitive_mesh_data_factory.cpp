@@ -226,7 +226,7 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createFrustumLines(const
 	//    |    |  |    |
 	//    |    |  |    |
 	//    3----2  7----6
-	auto corners = std::array<DirectX::XMFLOAT3, numVertices>();
+	auto corners = std::array<SSE::Vector3, numVertices>();
 	frustum.GetCorners(corners.data());
 
 	std::vector<uint16_t> indices = {
@@ -237,7 +237,7 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createFrustumLines(const
 
 	auto vertices = std::vector<DirectX::VertexPosition>(8);
 	for (size_t i = 0; i < vertices.size(); ++i) {
-		vertices[i].position = corners[i];
+		vertices[i].position = StoreVector3(corners[i]);
 	}
 
 	auto md = createMeshData(move(vertices), move(indices));

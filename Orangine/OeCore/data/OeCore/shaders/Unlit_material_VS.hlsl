@@ -14,6 +14,9 @@ cbuffer cbPerObject : register(b0)
 struct VS_INPUT
 {
 	float4 vPosition    : POSITION;
+#if VB_VERTEX_COLORS
+    float4 vColor       : COLOR;
+#endif
 };
 
 struct VS_OUTPUT
@@ -32,7 +35,11 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	Output.vPosition = mul(g_mWorldViewProjection, Input.vPosition);
 	Output.vPosition = float4(Output.vPosition.xyz / Output.vPosition.w, 1);
 
-	Output.vColor = g_baseColor;
+#if VB_VERTEX_COLORS
+    Output.vColor = g_baseColor * Input.vColor;
+#else 
+    Output.vColor = g_baseColor;
+#endif
 
 	return Output;
 }

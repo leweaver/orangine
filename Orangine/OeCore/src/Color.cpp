@@ -8,4 +8,5 @@ extern const Color Colors::Gray = { 0.501960814f, 0.501960814f, 0.501960814f, 1.
 extern const Color Colors::Black = { 0.0f, 0.0f, 0.0f, 1.0f };
 extern const Color Colors::Red = { 1.0f, 0.0f, 0.0f, 1.0f };
 extern const Color Colors::Green = { 0.0f, 1.0f, 0.0f, 1.0f };
+extern const Color Colors::Blue = { 0.0f, 0.0f, 1.0f, 1.0f };
 extern const Color Colors::Transparent = { 0.0f, 0.0f, 0.0f, 0.0f };

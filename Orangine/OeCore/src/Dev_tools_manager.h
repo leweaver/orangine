@@ -37,6 +37,7 @@ namespace oe::internal {
 		void addDebugSphere(const SSE::Matrix4& worldTransform, float radius, const Color& color, size_t tessellation = 6) override;
 		void addDebugBoundingBox(const oe::BoundingOrientedBox& boundingOrientedBox, const Color& color) override;
 		void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color) override;
+        void addDebugAxisWidget(const SSE::Matrix4& worldTransform) override;
 		void clearDebugShapes() override;
 		void renderDebugShapes(const Render_pass::Camera_data& cameraData) override;
         void renderImGui() override;
@@ -47,6 +48,7 @@ namespace oe::internal {
 		using LightProvider = std::function<void(const oe::BoundingSphere& target, std::vector<Entity*>& lights, uint8_t maxLights)>;
 
         std::shared_ptr<Renderable> getOrCreateRenderable(size_t hash, std::function< std::shared_ptr<Mesh_data>()> factory);
+        void renderAxisWidgets();
         void renderSkeletons();
 
         static std::string _name;

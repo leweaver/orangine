@@ -16,6 +16,7 @@ namespace oe {
 		extern const Color Black;
 		extern const Color Red;
 		extern const Color Green;
+        extern const Color Blue;
 		extern const Color Transparent;
 	};
 }

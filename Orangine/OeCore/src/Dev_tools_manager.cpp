@@ -23,7 +23,7 @@ using namespace internal;
 const auto g_hashSeed_sphere = std::hash<std::string>{}("sphere");
 const auto g_hashSeed_cone = std::hash<std::string>{}("cone");
 const auto g_hashSeed_boundingBox = std::hash<std::string>{}("boundingBox");
-const auto g_hashSeed_debugFrustum = std::hash<std::string>{}("debugFrustum");
+const auto g_hashSeed_axisWidget = std::hash<std::string>{}("axisWidget");
 
 std::string Dev_tools_manager::_name = "Dev_tools_manager";
 
@@ -39,11 +39,13 @@ void Dev_tools_manager::initialize()
     _fpsCounter = std::make_unique<Fps_counter>();
     _animationControllers = _scene.manager<IScene_graph_manager>().getEntityFilter({ Animation_controller_component::type() });
     _skinnedMeshEntities = _scene.manager<IScene_graph_manager>().getEntityFilter({ Skinned_mesh_component::type() });
+
+    _unlitMaterial = std::make_shared<Unlit_material>();
 }
 
 void Dev_tools_manager::shutdown()
 {
-	assert(!_unlitMaterial);
+    _unlitMaterial.reset();
 	_debugShapes.resize(0);
     _animationControllers = nullptr;
     _skinnedMeshEntities = nullptr;
@@ -55,10 +57,13 @@ const std::string& Dev_tools_manager::name() const
     return _name;
 }
 
+void Dev_tools_manager::renderAxisWidgets() {
+    addDebugAxisWidget(SSE::Matrix4::identity());
+}
+
 void Dev_tools_manager::renderSkeletons() {
-    const auto white = Colors::White;
-    const auto red = Colors::Red;
-    const auto green = Colors::Green;
+    const auto white = oe::Colors::White;
+    const auto red = oe::Colors::Red;
 
     std::list<Entity*> bones;
     for (const auto& skinnedMeshEntity : *_skinnedMeshEntities) {
@@ -118,17 +123,17 @@ void Dev_tools_manager::tick()
     if (_renderSkeletons)
         renderSkeletons();
 
+    renderAxisWidgets();
+
     _fpsCounter->mark();
 }
 
 void Dev_tools_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
 {
-	_unlitMaterial = std::make_shared<Unlit_material>();
 }
 
 void Dev_tools_manager::destroyDeviceDependentResources()
 {
-	_unlitMaterial.reset();
 	for (auto& debugShape : _debugShapes) {
         const auto& renderable = std::get<std::shared_ptr<Renderable>>(debugShape);
         renderable->rendererData.reset();
@@ -191,6 +196,16 @@ void Dev_tools_manager::addDebugFrustum(const BoundingFrustumRH& boundingFrustum
 	_debugShapes.push_back({ SSE::Matrix4::identity(), color, renderable });
 }
 
+void Dev_tools_manager::addDebugAxisWidget(const SSE::Matrix4& worldTransform) 
+{
+    auto hash = g_hashSeed_axisWidget;
+    auto renderable = getOrCreateRenderable(hash, []() {
+        return Primitive_mesh_data_factory::createAxisWidgetLines();
+        });
+
+    _debugShapes.push_back({ SSE::Matrix4(worldTransform), oe::Colors::Red, renderable });
+}
+
 void Dev_tools_manager::clearDebugShapes()
 {
 	_debugShapes.clear();
@@ -212,8 +227,6 @@ void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& camera
 void Dev_tools_manager::renderImGui()
 {
     // Display contents in a scrolling region
-    auto scrollAmount = 0.0f;
-
     ImGui::SetNextWindowSize(ImVec2(554, 300), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Renderer Features")) {
         auto featuresEnabled = _scene.manager<IMaterial_manager>().rendererFeatureEnabled();

@@ -22,6 +22,7 @@ namespace oe {
 		static std::shared_ptr<Mesh_data> createSphere(float radius = 0.5f, size_t tessellation = 16, bool invertNormals = false);
 
 		static std::shared_ptr<Mesh_data> createFrustumLines(const BoundingFrustumRH& frustum);
+        static std::shared_ptr<Mesh_data> createAxisWidgetLines();
 
 		/*
 		 * Generates flat normals for the given triangles (ie, does not interpolate neighbours)

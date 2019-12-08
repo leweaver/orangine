@@ -3,6 +3,7 @@
 #include "OeCore/Mesh_data.h"
 #include "OeCore/Mikk_tspace_triangle_mesh_interface.h"
 #include "OeCore/Collision.h"
+#include "OeCore/Color.h"
 #include "OeCore/Math_constants.h"
 
 #include "D3D11/DirectX_utils.h"
@@ -14,7 +15,7 @@
 using namespace oe;
 using namespace DirectX;
 
-void addIndices(Mesh_data& meshData, std::vector<uint16_t>&& indices)
+void addIndicesAccessor(Mesh_data& meshData, std::vector<uint16_t>&& indices)
 {
 	// Indices
 	const auto srcSize = sizeof(std::remove_reference_t<decltype(indices)>::value_type) * indices.size();
@@ -30,10 +31,74 @@ void addIndices(Mesh_data& meshData, std::vector<uint16_t>&& indices)
         0);
 }
 
+template <class TVertex_type, int TSemantic_index = 0>
+void addPositionBufferAccessor(std::shared_ptr<Mesh_data> meshData, std::shared_ptr<Mesh_buffer> meshBuffer, const std::vector<TVertex_type>& vertices) {
+    constexpr auto vertexSize = sizeof(TVertex_type);
+    meshData->vertexBufferAccessors[{Vertex_attribute::Position, TSemantic_index}] = std::make_unique<Mesh_vertex_buffer_accessor>(
+        meshBuffer,
+        Vertex_attribute_element{ {Vertex_attribute::Position, TSemantic_index}, Element_type::Vector3, Element_component::Float },
+        static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
+        static_cast<uint32_t>(offsetof(TVertex_type, position))
+        );
+}
+
+template <class TVertex_type, int TSemantic_index = 0>
+void addColorBufferAccessor(std::shared_ptr<Mesh_data> meshData, std::shared_ptr<Mesh_buffer> meshBuffer, const std::vector<TVertex_type>& vertices) {
+    constexpr auto vertexSize = sizeof(TVertex_type);
+    meshData->vertexBufferAccessors[{Vertex_attribute::Color, TSemantic_index}] = std::make_unique<Mesh_vertex_buffer_accessor>(
+        meshBuffer,
+        Vertex_attribute_element{ {Vertex_attribute::Color, TSemantic_index}, Element_type::Vector4, Element_component::Float },
+        static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
+        static_cast<uint32_t>(offsetof(TVertex_type, color))
+        );
+}
+
+template <class TVertex_type, int TSemantic_index = 0>
+void addNormalBufferAccessor(std::shared_ptr<Mesh_data> meshData, std::shared_ptr<Mesh_buffer> meshBuffer, const std::vector<TVertex_type>& vertices) {
+    constexpr auto vertexSize = sizeof(TVertex_type);
+    meshData->vertexBufferAccessors[{Vertex_attribute::Normal, TSemantic_index}] = std::make_unique<Mesh_vertex_buffer_accessor>(
+        meshBuffer,
+        Vertex_attribute_element{ {Vertex_attribute::Normal, TSemantic_index}, Element_type::Vector3, Element_component::Float },
+        static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
+        static_cast<uint32_t>(offsetof(TVertex_type, normal))
+        );
+}
+
+template <class TVertex_type, int TSemantic_index = 0>
+void addTextureBufferAccessor(std::shared_ptr<Mesh_data> meshData, std::shared_ptr<Mesh_buffer> meshBuffer, const std::vector<TVertex_type>& vertices) {
+    constexpr auto vertexSize = sizeof(TVertex_type);
+    meshData->vertexBufferAccessors[{Vertex_attribute::Tex_Coord, TSemantic_index}] = std::make_unique<Mesh_vertex_buffer_accessor>(
+        meshBuffer,
+        Vertex_attribute_element{ {Vertex_attribute::Tex_Coord, TSemantic_index}, Element_type::Vector2, Element_component::Float },
+        static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
+        static_cast<uint32_t>(offsetof(TVertex_type, textureCoordinate))
+        );
+}
+
+template <class TVertex_type, int TSemantic_index = 0>
+void addTangentBufferAccessor(std::shared_ptr<Mesh_data> meshData, const std::vector<TVertex_type>& vertices) {
+    auto tangentsBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(sizeof(XMFLOAT4) * vertices.size()));
+    meshData->vertexBufferAccessors[{Vertex_attribute::Tangent, TSemantic_index}] = std::make_unique<Mesh_vertex_buffer_accessor>(
+        tangentsBuffer,
+        Vertex_attribute_element{ {Vertex_attribute::Tangent, TSemantic_index}, Element_type::Vector4, Element_component::Float },
+        static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(XMFLOAT4)),
+        0
+        );
+
+    Mikk_tspace_triangle_mesh_interface generator(meshData);
+    SMikkTSpaceContext context;
+
+    context.m_pUserData = generator.userData();
+    context.m_pInterface = generator.getInterface();
+    if (!genTangSpaceDefault(&context)) {
+        throw std::exception("Failed to generate tangents");
+    }
+}
+
 template <class TVertex_type>
 std::shared_ptr<Mesh_data> createMeshData(std::vector<TVertex_type>&& vertices, std::vector<uint16_t>&& indices)
 {
-	// Unsupported vertex type
+	// Unsupported vertex type; add a specialization below
 
 	// ReSharper disable once CppStaticAssertFailure
 	static_assert(false);
@@ -47,37 +112,59 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPosition>&&
 	auto meshData = std::make_shared<Mesh_data>(Mesh_vertex_layout({
         {Vertex_attribute::Position, 0}
         }));
-	addIndices(*meshData.get(), move(indices));
+    addIndicesAccessor(*meshData.get(), move(indices));
 
-	using TVertex_type = DirectX::VertexPosition;
+    using TVertex_type = DirectX::VertexPosition;
 
-	const auto vertexSize = sizeof(TVertex_type);
-	const auto srcBufferSize = vertexSize * vertices.size();
-	assert(srcBufferSize < static_cast<unsigned long long>(INT32_MAX));
+    const auto vertexSize = sizeof(TVertex_type);
+    const auto srcBufferSize = vertexSize * vertices.size();
+    assert(srcBufferSize < static_cast<unsigned long long>(INT32_MAX));
 
-	auto posNormalTexBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(srcBufferSize));
-	memcpy_s(posNormalTexBuffer->data, posNormalTexBuffer->dataSize, vertices.data(), srcBufferSize);
+    auto posNormalTexBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(srcBufferSize));
+    memcpy_s(posNormalTexBuffer->data, posNormalTexBuffer->dataSize, vertices.data(), srcBufferSize);
 
-	// Position
-    meshData->vertexBufferAccessors[{Vertex_attribute::Position, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
-		posNormalTexBuffer,
-        Vertex_attribute_element{ {Vertex_attribute::Position,0}, Element_type::Vector3, Element_component::Float },
-		static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
-		static_cast<uint32_t>(offsetof(TVertex_type, position))
-		);
+    // Position
+    addPositionBufferAccessor(meshData, posNormalTexBuffer, vertices);
 
-	return meshData;
+    return meshData;
+}
+
+template <>
+std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionColor>&& vertices, std::vector<uint16_t>&& indices)
+{
+    auto meshData = std::make_shared<Mesh_data>(Mesh_vertex_layout({
+        {Vertex_attribute::Position, 0},
+        {Vertex_attribute::Color, 0}
+        }));
+    addIndicesAccessor(*meshData.get(), move(indices));
+
+    using TVertex_type = DirectX::VertexPositionColor;
+
+    const auto vertexSize = sizeof(TVertex_type);
+    const auto srcBufferSize = vertexSize * vertices.size();
+    assert(srcBufferSize < static_cast<unsigned long long>(INT32_MAX));
+
+    auto meshBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(srcBufferSize));
+    memcpy_s(meshBuffer->data, meshBuffer->dataSize, vertices.data(), srcBufferSize);
+
+    // Position
+    addPositionBufferAccessor(meshData, meshBuffer, vertices);
+
+    // Color
+    addColorBufferAccessor(meshData, meshBuffer, vertices);
+
+    return meshData;
 }
 
 template <>
 std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNormalTexture>&& vertices, std::vector<uint16_t>&& indices)
 {
-	auto meshData = std::make_shared<Mesh_data>(Mesh_vertex_layout({
+    auto meshData = std::make_shared<Mesh_data>(Mesh_vertex_layout({
         {Vertex_attribute::Position, 0},
         {Vertex_attribute::Normal, 0},
         {Vertex_attribute::Tex_Coord, 0}
         }));
-	addIndices(*meshData.get(), move(indices));
+    addIndicesAccessor(*meshData.get(), move(indices));
 
 	using TVertex_type = DirectX::VertexPositionNormalTexture;
 
@@ -89,48 +176,16 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNor
 	memcpy_s(posNormalTexBuffer->data, posNormalTexBuffer->dataSize, vertices.data(), srcBufferSize);
 
 	// Position
-    meshData->vertexBufferAccessors[{Vertex_attribute::Position, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
-		posNormalTexBuffer,
-        Vertex_attribute_element{ {Vertex_attribute::Position,0}, Element_type::Vector3, Element_component::Float },
-		static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
-		static_cast<uint32_t>(offsetof(TVertex_type, position))
-		);
+    addPositionBufferAccessor(meshData, posNormalTexBuffer, vertices);
 
 	// Normal
-	meshData->vertexBufferAccessors[{Vertex_attribute::Normal, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
-		posNormalTexBuffer,
-        Vertex_attribute_element{ {Vertex_attribute::Normal,0}, Element_type::Vector3, Element_component::Float },
-		static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
-		static_cast<uint32_t>(offsetof(TVertex_type, normal))
-		);
+    addNormalBufferAccessor(meshData, posNormalTexBuffer, vertices);
 
 	// Texcoord
-	meshData->vertexBufferAccessors[{Vertex_attribute::Tex_Coord, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
-		posNormalTexBuffer,
-        Vertex_attribute_element{ {Vertex_attribute::Tex_Coord,0}, Element_type::Vector2, Element_component::Float },
-		static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
-		static_cast<uint32_t>(offsetof(TVertex_type, textureCoordinate))
-		);
+    addTextureBufferAccessor(meshData, posNormalTexBuffer, vertices);
 
 	// Tangents
-	{
-		auto tangentsBuffer = std::make_shared<Mesh_buffer>(static_cast<int>(sizeof(XMFLOAT4) * vertices.size()));
-		meshData->vertexBufferAccessors[{Vertex_attribute::Tangent, 0}] = std::make_unique<Mesh_vertex_buffer_accessor>(
-			tangentsBuffer,
-            Vertex_attribute_element{ {Vertex_attribute::Tangent,0}, Element_type::Vector4, Element_component::Float },
-			static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(sizeof(XMFLOAT4)),
-			0
-			);
-
-		Mikk_tspace_triangle_mesh_interface generator(meshData);
-		SMikkTSpaceContext context;
-
-		context.m_pUserData = generator.userData();
-		context.m_pInterface = generator.getInterface();
-		if (!genTangSpaceDefault(&context)) {
-			throw std::exception("Failed to generate tangents");
-		}
-	}
+    addTangentBufferAccessor(meshData, vertices);
 
 	return meshData;
 }
@@ -243,6 +298,30 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createFrustumLines(const
 	auto md = createMeshData(move(vertices), move(indices));
 	md->m_meshIndexType = Mesh_index_type::Lines;
 	return md;
+}
+
+std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createAxisWidgetLines() {
+    /*
+        y
+        |    -z
+        |  /
+        | /
+        |/______ x
+        o
+    */
+    std::vector<DirectX::VertexPositionColor> vertices = {
+        { { 0, 0, 0 }, StoreVector4(oe::Colors::Red) },
+        { { 1, 0, 0 }, StoreVector4(oe::Colors::Red) },
+        { { 0, 0, 0 }, StoreVector4(oe::Colors::Green) },
+        { { 0, 1, 0 }, StoreVector4(oe::Colors::Green) },
+        { { 0, 0, 0 }, StoreVector4(oe::Colors::Blue) },
+        { { 0, 0,-1 }, StoreVector4(oe::Colors::Blue) }
+    }; 
+    std::vector<uint16_t> indices = { 0,1, 2,3, 4,5 };
+
+    auto md = createMeshData(move(vertices), move(indices));
+    md->m_meshIndexType = Mesh_index_type::Lines;
+    return md;
 }
 
 void Primitive_mesh_data_factory::generateNormals(

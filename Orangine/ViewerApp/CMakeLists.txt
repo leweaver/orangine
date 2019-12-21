@@ -75,11 +75,11 @@ add_custom_command(OUTPUT "${ViewerApp_DATA_PATHS_CONFIG_FILE}"
 add_custom_command(OUTPUT "${ViewerApp_BUILD_CONFIG_FILE}"
 		COMMENT "Creating build configuration file"
 		COMMAND "${Python3_EXECUTABLE}" "${Orangine_SOURCE_DIR}/cmake/scripts/merge_config.py" "${ViewerApp_SOURCE_CONFIG_FILE}" "${ViewerApp_DATA_PATHS_CONFIG_FILE}" > "${ViewerApp_BUILD_CONFIG_FILE}"
-		DEPENDS "${ViewerApp_SOURCE_CONFIG_FILE}"
+		DEPENDS "${ViewerApp_SOURCE_CONFIG_FILE}" "${ViewerApp_DATA_PATHS_CONFIG_FILE}"
 		)
 add_custom_target(
 		${PROJECT_NAME}_CONFIG
-		DEPENDS "${ViewerApp_DATA_PATHS_CONFIG_FILE}" "${ViewerApp_BUILD_CONFIG_FILE}"
+		DEPENDS "${ViewerApp_BUILD_CONFIG_FILE}"
 )
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_CONFIG)
 

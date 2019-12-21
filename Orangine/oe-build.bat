@@ -85,6 +85,8 @@ if NOT "!OE_BUILD_CONFIG!" EQU "" (
     cd !OE_BUILD_DIR!
 )
 
+echo OE_BUILD_DIR=%OE_BUILD_DIR%
+
 if "!OE_ACTION_CLEAN!" == "1" (
     echo Task: Clean !OE_BUILD_CONFIG!
     ninja clean
@@ -103,6 +105,8 @@ EXIT /B 0
 
 REM Helper to generate cmake caches
 :cmake_generate
+
+setlocal
 set OE_CONFIGURE_BUILD_CONFIG=Debug
 set OE_BUILD_DIR=%OE_ROOT%\cmake-ninjabuild-x64-!OE_CONFIGURE_BUILD_CONFIG!
 IF NOT EXIST "!OE_BUILD_DIR!" md !OE_BUILD_DIR!
@@ -114,5 +118,6 @@ set OE_BUILD_DIR=%OE_ROOT%\cmake-ninjabuild-x64-!OE_CONFIGURE_BUILD_CONFIG!
 IF NOT EXIST "!OE_BUILD_DIR!" md !OE_BUILD_DIR!
 cd !OE_BUILD_DIR!
 "%OE_CMAKE_EXE%" -G "Ninja" -DCMAKE_CXX_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_C_COMPILER:FILEPATH="%VCToolsInstallDir%bin\HostX64\x64\cl.exe" -DCMAKE_MAKE_PROGRAM="%OE_NINJA_EXE%" -DCMAKE_INSTALL_PREFIX:PATH="%OE_ROOT%\..\bin\x64\!OE_CONFIGURE_BUILD_CONFIG!" -DCMAKE_BUILD_TYPE="!OE_CONFIGURE_BUILD_CONFIG!" "%OE_ROOT%"
+endlocal
 
 EXIT /B 0

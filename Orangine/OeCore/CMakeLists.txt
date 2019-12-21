@@ -123,9 +123,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         )
 
 # The-Forge
-find_package(theforge REQUIRED)
-target_include_directories(${PROJECT_NAME} PUBLIC ${THEFORGE_INCLUDE_DIR})
-target_link_libraries(${PROJECT_NAME} PUBLIC ${THEFORGE_STATIC_LIBRARIES})
+# find_package(theforge REQUIRED)
+# target_include_directories(${PROJECT_NAME} PUBLIC ${THEFORGE_INCLUDE_DIR})
+# target_link_libraries(${PROJECT_NAME} PUBLIC ${THEFORGE_STATIC_LIBRARIES})
 
 # DirectXTK
 find_package(directxtk REQUIRED)

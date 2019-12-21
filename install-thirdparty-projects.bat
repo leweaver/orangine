@@ -55,11 +55,6 @@ if "%VSCMD_ARG_TGT_ARCH%"=="x86" (
     call "%VCINSTALLDIR%\Auxiliary\Build\vcvars64.bat"
 )
 
-if not "%VisualStudioVersion%" == "15.0" (
-    echo "The-Forge doesn't support VS 2019 yet (blah!). Please run this from the VS 2017 Developer Command Prompt."
-    goto:eof
-) 
-
 set "OE_CMAKE_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\CMake\bin\cmake.exe"
 set "OE_NINJA_EXE=%DevEnvDir%COMMONEXTENSIONS\MICROSOFT\CMAKE\Ninja\ninja.exe"
 set "OE_INSTALL_PREFIX=%OE_ROOT%\bin\x64"
@@ -121,14 +116,19 @@ msbuild %OE_DXTK_SLN%.sln /p:Configuration=Release /p:Platform="x64" >> %OE_DIRE
 call :oe_verify_errorlevel "msbuild DirectXTK Release" || goto:eof
 
 rem The-Forge
-set "OE_THEFORGE_LOGFILE=%OE_ROOT%\thirdparty\build_The-Forge.txt"
-echo The-Forge build output: %OE_THEFORGE_LOGFILE%
 
-cd "%OE_ROOT%\thirdparty\The-Forge\Examples_3\Unit_Tests\PC Visual Studio 2017"
-msbuild Unit_Tests.sln /p:Configuration=DebugDx /p:Platform="x64" -target:OS;Renderer\RendererDX12 > %OE_THEFORGE_LOGFILE%
-call :oe_verify_errorlevel "msbuild The-Forge DebugDx" || goto:eof
-msbuild Unit_Tests.sln /p:Configuration=ReleaseDx /p:Platform="x64" -target:OS;Renderer\RendererDX12 > %OE_THEFORGE_LOGFILE%
-call :oe_verify_errorlevel "msbuild The-Forge ReleaseDx" || goto:eof
+rem if not "%VisualStudioVersion%" == "15.0" (
+rem    echo "The-Forge doesn't support VS 2019 yet (blah!). Please run this from the VS 2017 Developer Command Prompt."
+rem    goto:eof
+rem )
+rem set "OE_THEFORGE_LOGFILE=%OE_ROOT%\thirdparty\build_The-Forge.txt"
+rem echo The-Forge build output: %OE_THEFORGE_LOGFILE%
+
+rem cd "%OE_ROOT%\thirdparty\The-Forge\Examples_3\Unit_Tests\PC Visual Studio 2017"
+rem msbuild Unit_Tests.sln /p:Configuration=DebugDx /p:Platform="x64" -target:OS;Renderer\RendererDX12 > %OE_THEFORGE_LOGFILE%
+rem call :oe_verify_errorlevel "msbuild The-Forge DebugDx" || goto:eof
+rem msbuild Unit_Tests.sln /p:Configuration=ReleaseDx /p:Platform="x64" -target:OS;Renderer\RendererDX12 > %OE_THEFORGE_LOGFILE%
+rem call :oe_verify_errorlevel "msbuild The-Forge ReleaseDx" || goto:eof
 
 rem ******************************
 rem End of main script.

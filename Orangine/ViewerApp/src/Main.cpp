@@ -12,6 +12,7 @@
 #include "VectorLogSink.h"
 
 #include <wrl/wrappers/corewrappers.h>
+#include <filesystem>
 
 using namespace DirectX;
 
@@ -23,6 +24,7 @@ namespace
 const std::string path_to_log_file = "./";
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+typedef void(__cdecl* GamePluginInitFn)(oe::Scene&);
 
 // Indicates to hybrid graphics systems to prefer the discrete part by default
 extern "C"
@@ -72,6 +74,20 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	if (FAILED(hr))
 		return 1;
 #endif
+    
+    HINSTANCE pluginHinstance = nullptr;
+    GamePluginInitFn pluginInitFn = nullptr;
+    if (std::filesystem::exists("App.dll")) {
+        pluginHinstance = LoadLibrary(TEXT("App.dll"));
+    } else if (std::filesystem::exists("App_d.dll")) {
+        pluginHinstance = LoadLibrary(TEXT("App_d.dll"));
+    }
+
+    // If the handle is valid, try to get the function address.
+    if (pluginHinstance != nullptr)
+    {
+        pluginInitFn = (GamePluginInitFn)GetProcAddress(pluginHinstance, "oe_initialize");
+    }
 
     g_game = std::make_unique<Game>();
 
@@ -126,6 +142,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 		if (!g_game->hasFatalError()) {
 			g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(vectorLog.get());
 		}
+
+        if (pluginInitFn != nullptr) {
+            pluginInitFn(g_game->scene());
+        }
     }
 
     // Main message loop
@@ -147,6 +167,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     g_game.reset();
 
     CoUninitialize();
+
+    if (pluginHinstance != nullptr) {
+        FreeLibrary(pluginHinstance);
+    }
 
     return (int) msg.wParam;
 }

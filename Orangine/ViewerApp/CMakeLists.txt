@@ -31,7 +31,9 @@ add_executable(${PROJECT_NAME} WIN32
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
-        "${PROJECT_BINARY_DIR}/include/"
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
 )
 
 # Precompiled Headers
@@ -96,6 +98,13 @@ install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
         INCLUDES DESTINATION include
+        PUBLIC_HEADER DESTINATION include/${PROJECT_NAME}
+        )
+install(
+        EXPORT ViewerAppTargets
+        FILE ViewerAppTargets.cmake
+        NAMESPACE Oe::
+        DESTINATION lib/cmake/${PROJECT_NAME}
         )
 
 # Install PDB
@@ -113,4 +122,13 @@ add_custom_command(TARGET ${PROJECT_NAME}
 		)
 install(FILES ${IMPORTED_LOCATION_g3logger}
         DESTINATION bin
+)
+
+# Config.cmake files
+configure_file(ViewerAppConfig.cmake.in ViewerAppConfig.cmake @ONLY)
+configure_file(ViewerAppConfigVersion.cmake.in ViewerAppConfigVersion.cmake @ONLY)
+install(
+        FILES "${CMAKE_CURRENT_BINARY_DIR}/ViewerAppConfig.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/ViewerAppConfigVersion.cmake"
+        DESTINATION lib/cmake/ViewerApp
 )

@@ -304,22 +304,26 @@ void Render_step_manager::destroyDeviceDependentResources()
 {
 	// Unload shadow maps
 	auto& shadowmapManager = _scene.manager<IShadowmap_manager>();
-	for (const auto& lightEntity : *_lightEntities) {
-		// Directional light only, right now
-		const auto component = lightEntity->getFirstComponentOfType<Directional_light_component>();
-		if (component && component->shadowsEnabled()) {
-			if (component->shadowData())
-				shadowmapManager.returnTexture(std::move(component->shadowData()));
-			else
-				assert(!component->shadowData());
-		}
-	}
+    if (_lightEntities) {
+        for (const auto& lightEntity : *_lightEntities) {
+            // Directional light only, right now
+            const auto component = lightEntity->getFirstComponentOfType<Directional_light_component>();
+            if (component && component->shadowsEnabled()) {
+                if (component->shadowData())
+                    shadowmapManager.returnTexture(std::move(component->shadowData()));
+                else
+                    assert(!component->shadowData());
+            }
+        }
+    }
 
     // Unload renderable contexts
-    for (const auto& renderableEntity : *_renderableEntities) {
-        const auto component = renderableEntity->getFirstComponentOfType<Renderable_component>();
-        if (component && component->materialContext()) {
-            component->setMaterialContext(std::make_unique<Material_context>());
+    if (_renderableEntities) {
+        for (const auto& renderableEntity : *_renderableEntities) {
+            const auto component = renderableEntity->getFirstComponentOfType<Renderable_component>();
+            if (component && component->materialContext()) {
+                component->setMaterialContext(std::make_unique<Material_context>());
+            }
         }
     }
 
@@ -340,13 +344,22 @@ void Render_step_manager::destroyDeviceDependentResources()
 
 void Render_step_manager::destroyWindowSizeDependentResources()
 {
-	std::get<0>(_renderStep_shadowMap.renderPasses)->clearRenderTargets();
-	std::get<0>(_renderStep_entityDeferred.renderPasses)->clearRenderTargets();
-	std::get<1>(_renderStep_entityDeferred.renderPasses)->clearRenderTargets();
-	std::get<2>(_renderStep_entityDeferred.renderPasses)->clearRenderTargets();
-	std::get<0>(_renderStep_entityStandard.renderPasses)->clearRenderTargets();
-	std::get<0>(_renderStep_debugElements.renderPasses)->clearRenderTargets();
-	std::get<0>(_renderStep_skybox.renderPasses)->clearRenderTargets();
+    std::array<Render_pass*, 7> renderSteps = {
+    std::get<0>(_renderStep_shadowMap.renderPasses).get(),
+    std::get<0>(_renderStep_entityDeferred.renderPasses).get(),
+    std::get<1>(_renderStep_entityDeferred.renderPasses).get(),
+    std::get<2>(_renderStep_entityDeferred.renderPasses).get(),
+    std::get<0>(_renderStep_entityStandard.renderPasses).get(),
+    std::get<0>(_renderStep_debugElements.renderPasses).get(),
+    std::get<0>(_renderStep_skybox.renderPasses).get()
+     };
+    for (auto renderStep : renderSteps) {
+        if (renderStep) {
+            renderStep->clearRenderTargets();
+            
+        }
+        
+    }
 }
 
 void Render_step_manager::clearDepthStencil(float depth, uint8_t stencil) const
@@ -582,9 +595,11 @@ template<int TRender_pass_idx, class TData, class... TRender_passes>
 void Render_step_manager::destroyRenderStepResources(Render_step<TData, TRender_passes...>& step)
 {
 	auto& pass = std::get<TRender_pass_idx>(step.renderPasses);
-	pass->setBlendState(nullptr);
-	pass->setDepthStencilState(nullptr);
-	pass->destroyDeviceDependentResources();
+    if (pass) {
+        pass->setBlendState(nullptr);
+        pass->setDepthStencilState(nullptr);
+        pass->destroyDeviceDependentResources();
+    }
 
 	if constexpr (TRender_pass_idx + 1 < sizeof...(TRender_passes)) {
 		destroyRenderStepResources<TRender_pass_idx + 1, TData, TRender_passes...>(step);

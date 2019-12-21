@@ -96,7 +96,7 @@ void Scene::initialize()
         configReader = std::make_unique<JsonConfigReader>(CONFIG_FILE_NAME);
     }
     catch (std::exception& ex) {
-        LOG(WARNING) << "Failed to read config file: " << CONFIG_FILE_NAME << "(" << ex.what() << ")";
+        LOG(WARNING) << "Failed to read config file: " << utf8_encode(CONFIG_FILE_NAME) << "(" << ex.what() << ")";
         throw std::runtime_error(std::string("Scene init failed reading config. ") + ex.what());
     }
 

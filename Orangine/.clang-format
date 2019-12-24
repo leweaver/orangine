@@ -1,0 +1,11 @@
+AccessModifierOffset: -1
+BasedOnStyle: LLVM
+BreakBeforeBraces: Stroustrup
+ColumnLimit: 100
+DerivePointerAlignment: false
+IndentWidth: 2
+Language: Cpp
+PenaltyBreakBeforeFirstCallParameter: 100
+PenaltyBreakComment: 100
+PenaltyBreakString: 100
+PointerAlignment: Left

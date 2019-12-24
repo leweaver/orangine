@@ -16,6 +16,18 @@
           "type": "STRING"
         }
       ]
+    },
+    {
+      "name": "x86-RelWithDebInfo",
+      "generator": "Ninja",
+      "configurationType": "RelWithDebInfo",
+      "inheritEnvironments": [ "msvc_x86" ],
+      "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+      "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": "",
+      "addressSanitizerEnabled": true,
+      "variables": []
     }
   ]
 }

@@ -1,12 +1,16 @@
 ﻿#include "pch.h"
 
 #include "OeCore/EngineUtils.h"
+#include <DirectXMath.h>
 
 #include <Stringapiset.h>
 #include <comdef.h>
 
 using namespace oe;
 using namespace std::string_literals;
+
+float oe::degreesToRadians(float degrees) { return DirectX::XMConvertToRadians(degrees); }
+float oe::radiansToDegrees(float radians) { return DirectX::XMConvertToDegrees(radians); }
 
 bool oe::createRotationBetweenUnitVectors(
     SSE::Matrix3& result,

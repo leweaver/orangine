@@ -13,7 +13,7 @@ target_compile_features(OeCompilerFlags INTERFACE cxx_std_17)
 
 if(OE_COMPILER_IS_MSVC)
         if(NOT DEFINED OE_WINSDK_PATH)
-                set(OE_WINSDK_VERSION 10.0.17134.0)
+                set(OE_WINSDK_VERSION 10.0.18362.0)
         endif()
 
         # SDK Locations
@@ -23,14 +23,14 @@ if(OE_COMPILER_IS_MSVC)
                 set(OE_WINSDK_PATH "${OE_WINSDK_PATH}/Include/${OE_WINSDK_VERSION}")
         endif()
 
-        # HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\SxS\VS7
-        if(NOT DEFINED OE_MSVC_INCLUDE)
-            GET_FILENAME_COMPONENT(OE_MSVC_INCLUDE "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\VisualStudio\\SxS\\VS7;15.0]" REALPATH)
-        endif()
-
         add_compile_definitions("_UNICODE;UNICODE;WIN32;_WINDOWS;_LIB;HAVE_SNPRINTF;_ENABLE_EXTENDED_ALIGNED_STORAGE")
 
         add_compile_options(/EHsc)
+
+        # ASan support in VS2019 (142) and above
+        #if ("${MSVC_TOOLSET_VERSION}" GREATER "141")
+        #        add_compile_options(/fsanitize=address)
+        #endif()
 
         if(CMAKE_BUILD_TYPE MATCHES Debug)
                 add_compile_definitions("_DEBUG")

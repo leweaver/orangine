@@ -39,6 +39,19 @@ target_include_directories(${PROJECT_NAME}
         )
 
 # Python
+add_custom_target(...
+    COMMAND ${CMAKE_COMMAND} -E env "PATH=C:/Some/Path;$ENV{PATH}" <real_command> args...
+)
+
+# TODO: Yeuck.
+if ("${CMAKE_SIZEOF_VOID_P}" MATCHES "4")
+        set(ENV{PATH} "$ENV{LOCALAPPDATA}/Programs/Python/Python37-32/;$ENV{LOCALAPPDATA}/Programs/Python/Python37-32/Scripts/;$ENV{PATH}")
+elseif ("${CMAKE_SIZEOF_VOID_P}" MATCHES "8")
+        set(ENV{PATH} "$ENV{LOCALAPPDATA}/Programs/Python/Python37/;$ENV{LOCALAPPDATA}/Programs/Python/Python37/Scripts/;$ENV{PATH}")
+else ()
+    MESSAGE(ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+endif ()
+
 find_package(Python3 COMPONENTS Development)
 target_include_directories(${PROJECT_NAME}
         PUBLIC ${PYTHON_INCLUDE_DIRS})
@@ -49,6 +62,7 @@ set(PYBIND11_CPP_STANDARD /std:c++17)
 find_package(pybind11 REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE pybind11::embed)
 
+# --------------------------------
 # Install
 install(TARGETS ${PROJECT_NAME}
         EXPORT OeScriptingTargets

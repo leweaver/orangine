@@ -9,11 +9,19 @@ project(Orangine VERSION 1.0
 
 # Update module path
 list(APPEND CMAKE_MODULE_PATH "${Orangine_SOURCE_DIR}/CMake;${Orangine_SOURCE_DIR}/cmake/modules")
-list(APPEND CMAKE_PREFIX_PATH "${Orangine_SOURCE_DIR}/../bin/x64/${CMAKE_BUILD_TYPE}/lib/cmake")
-list(APPEND CMAKE_PREFIX_PATH "${Orangine_SOURCE_DIR}/../bin/x64/${CMAKE_BUILD_TYPE}/share/cmake")
+if ("${CMAKE_SIZEOF_VOID_P}" MATCHES "4")
+    set (Orangine_ARCHITECTURE x86)
+elseif ("${CMAKE_SIZEOF_VOID_P}" MATCHES "8")
+    set (Orangine_ARCHITECTURE x64)
+else ()
+    MESSAGE(ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+endif ()
+list(APPEND CMAKE_PREFIX_PATH "${Orangine_SOURCE_DIR}/../bin/${Orangine_ARCHITECTURE}/${CMAKE_BUILD_TYPE}/lib/cmake")
+list(APPEND CMAKE_PREFIX_PATH "${Orangine_SOURCE_DIR}/../bin/${Orangine_ARCHITECTURE}/${CMAKE_BUILD_TYPE}/share/cmake")
 
 include(OeCompilerFlags)
 
 add_subdirectory(OeCore)
 add_subdirectory(OeScripting)
+add_subdirectory(OeApp)
 add_subdirectory(ViewerApp)

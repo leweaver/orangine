@@ -50,19 +50,27 @@ if "!OE_VALID_INPUT!" EQU "0" (
 
 set "OE_ROOT=%cd%"
 
-rem This line MUST be run at root scope. otherwise weirdness.
-FOR /f "tokens=1-2* delims= " %%a in ( 'reg query "HKLM\Software\WOW6432Node\Microsoft\VisualStudio\SxS\VS7" /V 15.0 ^| find "REG_SZ" ' ) do set OE_VS15DIR=%%c
-
 if not defined VSINSTALLDIR (
-    IF EXIST "%OE_VS15DIR%VC\Auxiliary\Build\vcvars64.bat" (
-        call "%OE_VS15DIR%VC\Auxiliary\Build\vcvars64.bat"
+    powershell -command "Get-VSSetupInstance" > NUL
+    rem If this failed, run the following in a regular powershell window:
+    rem Install-Module VSSetup -Scope CurrentUser
+    if not %errorlevel% == 0 ( 
+        "Could not find Get-VSSetupInstance powershell utility"
+        goto:eof
+    )
+
+    for /f "tokens=*" %%a in ('powershell -command "Get-VSSetupInstance | Select-VSSetupInstance -Require Microsoft.VisualStudio.Workload.NativeDesktop -Latest | Select-Object -ExpandProperty InstallationPath"') do @set "OE_VC_INSTALL_PATH=%%a"
+
+    IF EXIST "!OE_VC_INSTALL_PATH!\VC\Auxiliary\Build\vcvars64.bat" (
+        echo Using visual studio at: !OE_VC_INSTALL_PATH!
+        call "!OE_VC_INSTALL_PATH!\VC\Auxiliary\Build\vcvars64.bat"
     ) ELSE (
-        echo "Could not find vcvars64.bat. Is visual studio 2017 community edition installed?"
+        echo "Could not find vcvars64.bat. Is VSSetup powershell module, and visual studio community edition installed?"
         goto:eof
     )
 )
 
-if not "%VSCMD_ARG_TGT_ARCH%"=="x64" (
+if "%VSCMD_ARG_TGT_ARCH%"=="x86" (
     call "%VCINSTALLDIR%\Auxiliary\Build\vcvars64.bat"
 )
 
@@ -84,8 +92,6 @@ if NOT "!OE_BUILD_CONFIG!" EQU "" (
     )
     cd !OE_BUILD_DIR!
 )
-
-echo OE_BUILD_DIR=%OE_BUILD_DIR%
 
 if "!OE_ACTION_CLEAN!" == "1" (
     echo Task: Clean !OE_BUILD_CONFIG!

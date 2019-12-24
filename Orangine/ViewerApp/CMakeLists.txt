@@ -4,8 +4,8 @@ project(ViewerApp VERSION 1.0
 
 set(ViewerApp_THIRDPARTY_PATH ${CMAKE_SOURCE_DIR}/../thirdparty)
 configure_file (
-		"${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
-		"${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
+        "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
+        "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
 )
 
 # Use this for embedding in the built application, but also for some build scripts in CMake
@@ -15,19 +15,10 @@ find_package(Python3 COMPONENTS Development Interpreter)
 # Library Definition
 add_executable(${PROJECT_NAME} WIN32
         ${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h
-        resource.rc
-        resource.aps
-        settings.manifest
         src/pch.h
         src/pch.cpp
-        src/Game.h
-        src/Game.cpp
-        src/Main.cpp
-        src/LogFileSink.h
-        src/LogFileSink.cpp
-        src/VectorLogSink.h
-        src/VectorLogSink.cpp
-        src/filesinkhelper.ipp)
+        src/ViewerApp.cpp
+        )
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -44,8 +35,9 @@ add_precompiled_header(${PROJECT_NAME} pch.h
 target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
 
 set(ViewerApp_DATA_DIRECTORIES "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data")
-target_link_libraries(${PROJECT_NAME} PRIVATE Oe::Core Oe::Scripting)
+target_link_libraries(${PROJECT_NAME} PRIVATE Oe::Core Oe::Scripting Oe::App)
 list(APPEND ViewerApp_DATA_DIRECTORIES "OeCore=${OeCore_DATA_SOURCE_DIR}")
+list(APPEND ViewerApp_DATA_DIRECTORIES "OeApp=${OeApp_DATA_SOURCE_DIR}")
 list(APPEND ViewerApp_DATA_DIRECTORIES "OeScripting=${OeScripting_DATA_SOURCE_DIR}")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE WindowsApp.lib)
@@ -87,7 +79,7 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_CONFIG)
 # Installation
 
 # Install Data and Assets
-install(DIRECTORY data;${OeCore_DATA_PATH};${OeScripting_DATA_PATH}
+install(DIRECTORY data;${OeCore_DATA_PATH};${OeScripting_DATA_PATH};${OeApp_DATA_PATH}
         DESTINATION bin
         )
 

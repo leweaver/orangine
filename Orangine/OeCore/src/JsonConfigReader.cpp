@@ -5,7 +5,7 @@
 
 using namespace oe;
 
-JsonConfigReader::JsonConfigReader(const std::wstring &configFileName) {
+JsonConfigReader::JsonConfigReader(const std::wstring &configFileName) : _configJson("") {
     const auto jsonStr = get_file_contents(configFileName.c_str());
     _configJson = nlohmann::json::parse(jsonStr.begin(), jsonStr.end());
 }

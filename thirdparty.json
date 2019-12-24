@@ -1,4 +1,12 @@
 {
+    "python32": {
+        "type": "downloadzip",
+        "url": "https://www.python.org/ftp/python/3.7.3/python-3.7.3-embed-win32.zip"
+    },
+    "python64": {
+        "type": "downloadzip",
+        "url": "https://www.python.org/ftp/python/3.7.3/python-3.7.3-embed-amd64.zip"
+    },
     "imgui/imgui": {
         "url": "git@github.com:ocornut/imgui.git",
         "ref": "7a5058e3bfea4149acef2ad98d8fdd62605a0f4c"
@@ -13,7 +21,7 @@
     },
     "DirectXTK": {
         "url": "git@github.com:Microsoft/DirectXTK.git",
-        "ref": "jun2019"
+        "ref": "dec2019"
     },
     "googletest": {
         "url": "git@github.com:google/googletest.git",

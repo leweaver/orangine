@@ -45,8 +45,13 @@ rem ******************************
 rem Top of the build tree
 rem ******************************
 
+setlocal
 call :build_all x86 || goto:eof
+endlocal
+
+setlocal
 call :build_all x64 || goto:eof
+endlocal
 
 rem ******************************
 rem End of main script.
@@ -64,7 +69,7 @@ rem *****************************
 rem Takes 1 arg; architecture
 set "CM_ARCHITECTURE=%~1"
 
-call :check_python || EXIT /B 1
+call :init_python || EXIT /B 1
 
 if not "%CM_ARCHITECTURE%"=="%VSCMD_ARG_TGT_ARCH%" (
     if "%CM_ARCHITECTURE%"=="x64" (
@@ -149,14 +154,15 @@ EXIT /B 0
 
 
 
-:check_python
+:init_python
 if "%CM_ARCHITECTURE%" == "x64" ( 
     set PY_ARCHITECTURE=64
-    set "PATH=%LOCALAPPDATA%\Programs\Python\Python37\;%LOCALAPPDATA%\Programs\Python\Python37\Scripts\;%PATH%"
+    set CM_EXPECTED_PYTHON_PATH=%LOCALAPPDATA%\Programs\Python\Python37\
 ) else (
     set PY_ARCHITECTURE=32
-    set "PATH=%LOCALAPPDATA%\Programs\Python\Python37-32\;%LOCALAPPDATA%\Programs\Python\Python37-32\Scripts\;%PATH%"
+    set CM_EXPECTED_PYTHON_PATH=%LOCALAPPDATA%\Programs\Python\Python37-32\
 )
+set "PATH=%CM_EXPECTED_PYTHON_PATH%;%CM_EXPECTED_PYTHON_PATH%Scripts\;%PATH%"
 
 rem Check that the correct python version is installed for this architecture.
 for /f "tokens=*" %%a in ('python -c "exec(""import platform\n(bits,linkage)=platform.architecture()\n(major,minor,patch)=platform.python_version_tuple()\nprint('Python',major,bits,'OK' if int(major)==3 and int(minor)>=6 else 'TOO_OLD')"")"') do @set "PYTHON_VERSION_OK=%%a"
@@ -164,20 +170,20 @@ for /f "tokens=*" %%a in ('python --version') do @set "PYTHON_VERSION=%%a"
 if NOT "%PYTHON_VERSION_OK%" == "Python 3 %PY_ARCHITECTURE%bit OK" (
     echo * detected major version/arch: %PYTHON_VERSION_OK%
     echo * detected minor version: %PYTHON_VERSION%
-    echo * [[31mFailed[0m] Invalid python version. Must have 3.6 %PY_ARCHITECTURE% bit or greater.
-    goto:eof
+    echo * [[31mFailed[0m] Invalid python version. Must have 3.6 %PY_ARCHITECTURE% bit or greater at %CM_EXPECTED_PYTHON_PATH%.
+    EXIT /B 1
 ) else (
     echo * [[32mOK[0m] Python version: %PYTHON_VERSION%, %PYTHON_VERSION_OK%
 )
 rem check that pip is installed
 python -m pip -V > NUL
-call :oe_verify_errorlevel "check python PIP is installed" || goto:eof
+call :oe_verify_errorlevel "check python PIP is installed" || EXIT /B 1
 
 rem install pytest if it's missing
 python -m pip show pytest > NUL
 if "%errorlevel%" == "1" (
     python -m pip install pytest > NUL
-    call :oe_verify_errorlevel "python -m pip install pytest" || goto:eof
+    call :oe_verify_errorlevel "python -m pip install pytest" || EXIT /B 1
 ) else (
     rem this should always succeed, just using it for a nicely formatted OK message
     call :oe_verify_errorlevel "check pytest installed"

@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <string>
+
 namespace oe {
 
     inline const uint32_t g_max_bone_transforms = 96;

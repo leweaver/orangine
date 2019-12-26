@@ -2,7 +2,12 @@
 
 #include "Renderer_enum.h"
 #include "Mesh_vertex_layout.h"
+
 #include <cstdint>
+#include <memory>
+#include <string>
+#include <map>
+#include <stdexcept>
 
 namespace oe
 {

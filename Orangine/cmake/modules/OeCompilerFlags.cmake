@@ -25,7 +25,7 @@ if(OE_COMPILER_IS_MSVC)
 
         add_compile_definitions("_UNICODE;UNICODE;WIN32;_WINDOWS;_LIB;HAVE_SNPRINTF;_ENABLE_EXTENDED_ALIGNED_STORAGE")
 
-        add_compile_options(/EHsc)
+        add_compile_options(/EHsc /Gd /GS /FC /diagnostics:column)
 
         # ASan support in VS2019 (142) and above
         #if ("${MSVC_TOOLSET_VERSION}" GREATER "141")

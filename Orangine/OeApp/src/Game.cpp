@@ -7,6 +7,7 @@
 #include "Game.h"
 
 #include "OeAppConfig.h"
+#include <g3log/g3log.hpp>
 
 #include <filesystem>
 

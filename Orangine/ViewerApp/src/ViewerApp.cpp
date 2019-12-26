@@ -2,7 +2,7 @@
 
 #include "ViewerAppConfig.h"
 
-#include <OeApp/App.h>
+#include <OeCore/WindowsDefines.h>
 #include <OeCore/Camera_component.h>
 #include <OeCore/Collision.h>
 #include <OeCore/Color.h>
@@ -15,6 +15,9 @@
 #include <OeCore/Scene.h>
 #include <OeCore/Test_component.h>
 #include <OeScripting/Script_component.h>
+#include <OeApp/App.h>
+
+#include <g3log/g3log.hpp>
 
 #include <filesystem>
 
@@ -282,13 +285,6 @@ class ViewerApp : public oe::App {
  protected:
   void onSceneInitialized(Scene& scene)
   {
-    // TODO: Change the timer settings if you want something other than the default variable
-    // timestep mode. e.g. for 60 FPS fixed timestep update logic, call:
-    /*
-    m_timer.SetFixedTimeStep(true);
-    m_timer.SetTargetElapsedSeconds(1.0 / 60);
-    */
-
     // CreateSceneCubeSatellite();
     // CreateSceneLeverArm();
     // LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
@@ -331,6 +327,8 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
   UNREFERENCED_PARAMETER(hInstance);
   UNREFERENCED_PARAMETER(hPrevInstance);
   UNREFERENCED_PARAMETER(lpCmdLine);
+
+  nlohmann::json::value_type configJson;
 
   auto startSettings = App_start_settings();
   startSettings.fullScreen = nCmdShow == SW_SHOWMAXIMIZED;

@@ -41,8 +41,7 @@ add_precompiled_header(${PROJECT_NAME} pch.h
 # Use this for embedding in the built application, but also for some build scripts in CMake
 find_package(Python3 COMPONENTS Development Interpreter)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
-target_link_libraries(${PROJECT_NAME} PRIVATE Oe::Core Oe::Scripting Oe::App)
+target_link_libraries(${PROJECT_NAME} PUBLIC Oe::App)
 
 # Manually copy the python DLL for builds, to keep the Py_SetPythonHome path < 260 characters.
 set(Python3_DLL_NAME "python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}$<$<CONFIG:debug>:_d>$<$<CONFIG:release>:>.dll")

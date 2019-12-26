@@ -38,7 +38,7 @@ add_precompiled_header(${PROJECT_NAME} pch.h
 
 target_link_libraries(${PROJECT_NAME} 
         PUBLIC OeCompilerFlags WindowsApp.lib
-        PRIVATE Oe::Core Oe::Scripting)
+        PUBLIC Oe::Core Oe::Scripting)
 
 # Public headers
 target_include_directories(${PROJECT_NAME}

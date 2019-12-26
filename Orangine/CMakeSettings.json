@@ -18,6 +18,23 @@
       ]
     },
     {
+      "name": "x86-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x86" ],
+      "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+      "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "CMAKE_CXX_FLAGS",
+          "value": "-std:c++17",
+          "type": "STRING"
+        }
+      ]
+    },
+    {
       "name": "x86-RelWithDebInfo",
       "generator": "Ninja",
       "configurationType": "RelWithDebInfo",

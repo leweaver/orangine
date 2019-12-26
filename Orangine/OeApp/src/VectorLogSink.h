@@ -2,6 +2,9 @@
 
 #include "OeCore/VectorLog.h"
 
+#include <g3log/g3log.hpp>
+#include <memory>
+
 namespace oe {
 class VectorLogSink {
  public:

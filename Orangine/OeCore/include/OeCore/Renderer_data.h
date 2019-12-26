@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <array>
+#include <map>
 #include <vectormath/vectormath.hpp>
 
 namespace oe 

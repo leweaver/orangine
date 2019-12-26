@@ -10,6 +10,7 @@
 #include <OeApp/App.h>
 
 #include <OeCore/EngineUtils.h>
+#include <OeCore/WindowsDefines.h>
 
 #include <g3log/logworker.hpp>
 
@@ -31,10 +32,11 @@ typedef void(__cdecl* GamePluginInitFn)(oe::Scene&);
 extern "C" {
 __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-IMAGE_DOS_HEADER __ImageBase;
 }
 
-#define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
+// Do NOT do this in 64 bit builds, it is incompatible with json.hpp for some reason.
+//EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+//#define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
 
 // Entry point
 int oe::App::run(const oe::App_start_settings& settings)
@@ -82,7 +84,9 @@ int oe::App::run(const oe::App_start_settings& settings)
   }
 #endif
 
-  HINSTANCE hInstance = HINST_THISCOMPONENT;
+  // TODO: We should try and get the hInstance that was passed to WinMain somehow.
+  // BUT... using the HINST_THISCOMPONENT macro defined above seems to break 64bit builds.
+  HINSTANCE hInstance = 0;
   g_game = std::make_unique<Game>();
 
   // Register class and create window

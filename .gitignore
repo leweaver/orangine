@@ -11,8 +11,7 @@ obj/
 /Prototype/imgui.ini
 Engine/cmake-build
 cmake-build*
-cmake-ninjabuild-x64-Debug/
-cmake-ninjabuild-x64-Release/
+cmake-ninjabuild-*
 Orangine/Build/
 Orangine/imgui.ini
 Orangine/.idea/

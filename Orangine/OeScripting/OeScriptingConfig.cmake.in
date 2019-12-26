@@ -13,3 +13,5 @@ include("${OESCRIPTING_CMAKE_DIR}/OeScriptingTargets.cmake")
 
 # These are IMPORTED targets created by OeScriptingTargets.cmake
 set(OESCRIPTING_LIBRARIES OeScripting)
+
+set(OeScripting_DATA_SOURCE_DIR "@CMAKE_INSTALL_PREFIX@/bin/data")

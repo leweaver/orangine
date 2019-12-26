@@ -1,5 +1,5 @@
 project(OeApp VERSION 1.0
-        DESCRIPTION "Orangine Core Library"
+        DESCRIPTION "Orangine App Library"
         LANGUAGES CXX)
 
 configure_file (
@@ -37,7 +37,7 @@ add_precompiled_header(${PROJECT_NAME} pch.h
         SOURCE_CXX src/pch.cpp)
 
 target_link_libraries(${PROJECT_NAME} 
-        PUBLIC OeCompilerFlags
+        PUBLIC OeCompilerFlags WindowsApp.lib
         PRIVATE Oe::Core Oe::Scripting)
 
 # Public headers

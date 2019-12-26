@@ -5,11 +5,13 @@
 #  FOOBAR_EXECUTABLE   - the bar executable
 
 # Compute paths
-get_filename_component(OECORE_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-set(OECORE_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+get_filename_component(OEAPP_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+set(OEAPP_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
 
 # Our library dependencies (contains definitions for IMPORTED targets)
-include("${OECORE_CMAKE_DIR}/OeCoreTargets.cmake")
+include("${OEAPP_CMAKE_DIR}/OeAppTargets.cmake")
 
-# These are IMPORTED targets created by OeCoreTargets.cmake
-set(OECORE_LIBRARIES OeImgui MikktSpace)
+# These are IMPORTED targets created by OeAppTargets.cmake
+set(OEAPP_LIBRARIES OeImgui MikktSpace)
+
+set(OeApp_DATA_SOURCE_DIR "@CMAKE_INSTALL_PREFIX@/bin/data")

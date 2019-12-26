@@ -145,10 +145,8 @@ rem Hacky Steps:
 rem For some reason, the g3logger cmake find_module needs these directories to exist. Even though they are empty.
 IF NOT EXIST "%OE_INSTALL_PREFIX%\Debug\COMPONENT" md "%OE_INSTALL_PREFIX%\Debug\COMPONENT"
 IF NOT EXIST "%OE_INSTALL_PREFIX%\Release\COMPONENT" md "%OE_INSTALL_PREFIX%\Release\COMPONENT"
-IF NOT EXIST "%OE_INSTALL_PREFIX%\RelWithDebInfo\COMPONENT" md "%OE_INSTALL_PREFIX%\RelWithDebInfo\COMPONENT"
 IF NOT EXIST "%OE_INSTALL_PREFIX%\Debug\libraries" md "%OE_INSTALL_PREFIX%\Debug\libraries"
 IF NOT EXIST "%OE_INSTALL_PREFIX%\Release\libraries" md "%OE_INSTALL_PREFIX%\Release\libraries"
-IF NOT EXIST "%OE_INSTALL_PREFIX%\RelWithDebInfo\libraries" md "%OE_INSTALL_PREFIX%\RelWithDebInfo\libraries"
 
 EXIT /B 0
 
@@ -214,7 +212,7 @@ call :oe_verify_errorlevel "cmake" || EXIT /B 1
 ninja install >> %CM_LOGFILE%
 call :oe_verify_errorlevel "ninja install" || EXIT /B 1
 
-set OE_GENERATE_BUILD_CONFIG=RelWithDebInfo
+set OE_GENERATE_BUILD_CONFIG=Release
 set "CM_NINJA_BUILD_PATH=%OE_ROOT%\thirdparty\cmake-%CM_TARGET_NAME%-ninjabuild-%CM_ARCHITECTURE%-!OE_GENERATE_BUILD_CONFIG!"
 IF NOT EXIST "!CM_NINJA_BUILD_PATH!" md !CM_NINJA_BUILD_PATH!
 cd !CM_NINJA_BUILD_PATH!

@@ -319,7 +319,7 @@ class ViewerApp : public oe::App {
     // Load the skybox
     auto skyBoxTexture =
         std::make_shared<File_texture>(scene.manager<IAsset_manager>().makeAbsoluteAssetPath(
-            L"ViewerApp/textures/park-cubemap.dds"));
+            L"OeApp/textures/park-cubemap.dds"));
     scene.setSkyboxTexture(skyBoxTexture);
   }
 };

@@ -106,8 +106,7 @@ target_include_directories(${PROJECT_NAME}
 
 # g3log
 find_package(g3logger REQUIRED)
-target_include_directories(${PROJECT_NAME}
-        PUBLIC ${G3LOG_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PUBLIC ${G3LOG_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC g3logger)
 
 # Third Party (imgui, MikktSpace)

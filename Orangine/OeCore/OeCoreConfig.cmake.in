@@ -13,3 +13,5 @@ include("${OECORE_CMAKE_DIR}/OeCoreTargets.cmake")
 
 # These are IMPORTED targets created by OeCoreTargets.cmake
 set(OECORE_LIBRARIES OeImgui MikktSpace)
+
+set(OeCore_DATA_SOURCE_DIR "@CMAKE_INSTALL_PREFIX@/bin/data")

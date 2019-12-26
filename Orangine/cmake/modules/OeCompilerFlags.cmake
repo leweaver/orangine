@@ -12,17 +12,6 @@ add_library(OeCompilerFlags INTERFACE)
 target_compile_features(OeCompilerFlags INTERFACE cxx_std_17)
 
 if(OE_COMPILER_IS_MSVC)
-        if(NOT DEFINED OE_WINSDK_PATH)
-                set(OE_WINSDK_VERSION 10.0.18362.0)
-        endif()
-
-        # SDK Locations
-        # HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\Windows\v10.0
-        if(NOT DEFINED OE_WINSDK_PATH)
-                GET_FILENAME_COMPONENT(OE_WINSDK_PATH "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Microsoft SDKs\\Windows\\v10.0;InstallationFolder]" ABSOLUTE CACHE)
-                set(OE_WINSDK_PATH "${OE_WINSDK_PATH}/Include/${OE_WINSDK_VERSION}")
-        endif()
-
         add_compile_definitions("_UNICODE;UNICODE;WIN32;_WINDOWS;_LIB;HAVE_SNPRINTF;_ENABLE_EXTENDED_ALIGNED_STORAGE")
 
         add_compile_options(/EHsc /Gd /GS /FC /diagnostics:column)

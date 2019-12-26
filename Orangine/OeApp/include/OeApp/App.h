@@ -1,10 +1,13 @@
 #pragma once
 
+#include <string>
+
 namespace oe {
 class Scene;
 
 struct App_start_settings {
   bool fullScreen = false;
+  std::wstring title = L"";
 };
 
 class App {

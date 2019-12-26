@@ -103,7 +103,7 @@ int oe::App::run(const oe::App_start_settings& settings)
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = nullptr;
-    wcex.lpszClassName = L"ViewerAppWindowClass";
+    wcex.lpszClassName = L"OeAppWindowClass";
     wcex.hIconSm = LoadIcon(wcex.hInstance, L"IDI_ICON");
     if (!RegisterClassEx(&wcex)) {
       LOG(WARNING) << "Failed to register window class: " << getlasterror_to_str();
@@ -124,7 +124,7 @@ int oe::App::run(const oe::App_start_settings& settings)
 
     auto dwExStyle = settings.fullScreen ? WS_EX_TOPMOST : 0;
     auto dwStyle = settings.fullScreen ? WS_POPUP : WS_OVERLAPPEDWINDOW;
-    HWND hwnd = CreateWindowEx(dwExStyle, L"ViewerAppWindowClass", L"ViewerApp", dwStyle,
+    HWND hwnd = CreateWindowEx(dwExStyle, L"OeAppWindowClass", settings.title.c_str(), dwStyle,
                                CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top,
                                nullptr, nullptr, hInstance, nullptr);
 

@@ -5,7 +5,6 @@
 
 #include <memory>
 #include <array>
-#include "Light_provider.h"
 
 namespace oe {
     class Camera_component;
@@ -23,7 +22,7 @@ namespace oe {
         public Manager_windowDependent
     {
     public:
-        IRender_step_manager(Scene& scene)
+        explicit IRender_step_manager(Scene& scene)
             : Manager_base(scene)
         {}
 
@@ -40,7 +39,7 @@ namespace oe {
 
         // IRender_step_manager
         virtual void createRenderSteps() = 0;
-        virtual Render_pass::Camera_data createCameraData(Camera_component& component) = 0;
+        virtual Render_pass::Camera_data createCameraData(Camera_component& component) const = 0;
         virtual void render(std::shared_ptr<Entity> cameraEntity) = 0;
 
     };

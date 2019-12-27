@@ -99,18 +99,11 @@ void Game::Render()
     return;
   }
 
-  // TODO: Add your rendering code here.
-  // const auto mouseState = m_scene->manager<IInput_manager>().mouseState().lock();
-  // if (IInput_manager::Mouse_state::Button_state::RELEASED == mouseState->right) {
-  if (m_scene->mainCamera()) {
-    m_scene->manager<IRender_step_manager>().render(m_scene->mainCamera());
-  }
-
+  m_scene->manager<IRender_step_manager>().render(m_scene->mainCamera());
   m_scene->manager<IUser_interface_manager>().render();
 
   // Show the new frame.
   m_deviceResources->Present();
-  //}
 }
 #pragma endregion
 

@@ -14,7 +14,7 @@ cmake-build*
 cmake-ninjabuild-*
 Orangine/Build/
 Orangine/imgui.ini
-Orangine/.idea/
+Orangine/.idea/workspace.xml
 Orangine/ViewerApp/data/lib/__pycache__/
 Orangine/ViewerApp/data/scripts/__pycache__/
 

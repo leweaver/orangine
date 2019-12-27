@@ -99,11 +99,11 @@ void CreateCamera(Scene& scene, bool animate)
   cameraDollyAnchor->computeWorldTransform();
 
   auto& component = camera->addComponent<Camera_component>();
-  component.setFov(degreesToRadians(60.0f));
+  component.setFov(degrees_to_radians(60.0f));
   component.setFarPlane(20.0f);
   component.setNearPlane(0.5f);
 
-  camera->lookAt({0, 0, 0}, Math::Direction::Up);
+  camera->lookAt({0, 0, 0}, math::up);
 
   scene.setMainCamera(camera);
 }
@@ -121,18 +121,18 @@ void CreateLights(Scene& scene)
     component.setIntensity(intensity);
 
     // if normal is NOT forward vector
-    if (SSE::lengthSqr(normal - Math::Direction::Forward) != 0.0f) {
+    if (SSE::lengthSqr(normal - math::forward) != 0.0f) {
       SSE::Vector3 axis;
       // if normal is backward vector
-      if (SSE::lengthSqr(normal - Math::Direction::Backward) == 0.0f)
-        axis = Math::Direction::Up;
+      if (SSE::lengthSqr(normal - math::backward) == 0.0f)
+        axis = math::up;
       else {
-        axis = SSE::cross(Math::Direction::Forward, normal);
+        axis = SSE::cross(math::forward, normal);
         axis = SSE::normalize(axis);
       }
 
       assert(SSE::lengthSqr(normal) != 0);
-      float angle = acos(SSE::dot(Math::Direction::Forward, normal) / SSE::length(normal));
+      float angle = acos(SSE::dot(math::forward, normal) / SSE::length(normal));
       lightEntity->setRotation(SSE::Quat::rotation(angle, axis));
     }
     return lightEntity;
@@ -270,7 +270,7 @@ void CreateShadowTestScene(Scene& scene)
     const auto meshData = Primitive_mesh_data_factory::createQuad(20, 20);
     child2->addComponent<Mesh_data_component>().setMeshData(meshData);
 
-    child2->setRotation(SSE::Quat::rotationX(Math::PI * -0.5f));
+    child2->setRotation(SSE::Quat::rotationX(math::pi * -0.5f));
     child2->setPosition({0.0f, -1.5f, 0.0f});
     child2->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 10.0f));
   }

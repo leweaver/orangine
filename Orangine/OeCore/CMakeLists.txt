@@ -84,6 +84,7 @@ file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
 set_target_properties(OeCore PROPERTIES PUBLIC_HEADER "${OeCore_HEADERS}")
+target_compile_features(OeCore PUBLIC cxx_std_17)
 add_library(Oe::Core ALIAS OeCore)
 
 # Precompiled Headers

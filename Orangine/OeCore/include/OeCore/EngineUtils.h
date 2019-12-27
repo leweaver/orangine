@@ -1,11 +1,13 @@
 ﻿#pragma once
 
+#include <OeCore/Math_constants.h>
+
 #include <string>
 #include <string_view>
 #include <vectormath/vectormath.hpp>
 
 namespace oe {
-template <typename T, size_t N> constexpr size_t array_size(const T (&)[N]) { return N; }
+template <typename T, size_t TN> constexpr size_t array_size(const T (&)[TN]) { return TN; }
 
 // From boost
 template <class T> void hash_combine(std::size_t& seed, const T& v)
@@ -14,15 +16,15 @@ template <class T> void hash_combine(std::size_t& seed, const T& v)
   seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
-float degreesToRadians(float degrees);
-float radiansToDegrees(float radians);
+constexpr float degrees_to_radians(float degrees) { return degrees * (oe::math::pi / 180.0f); }
+constexpr float radians_to_degrees(float radians) { return radians * (180.0f / oe::math::pi); }
 
 // Create a rotation matrix from input unit vector A to B.
-bool createRotationBetweenUnitVectors(SSE::Matrix3& result, const SSE::Vector3& directionFrom,
+bool create_rotation_between_unit_vectors(SSE::Matrix3& result, const SSE::Vector3& directionFrom,
                                       const SSE::Vector3& directionTo);
 
 // Convert a wide Unicode string to an UTF8 string
-std::string utf8_encode(const std::wstring& wstr);
+std::string utf8_encode(const std::wstring& wstring);
 
 // Convert an UTF8 string to a wide Unicode String
 std::wstring utf8_decode(const std::string& str);
@@ -33,7 +35,7 @@ bool str_ends(const std::string& str, const std::string& suffix);
 bool str_starts(const std::wstring& str, const std::wstring& prefix);
 bool str_ends(const std::wstring& str, const std::wstring& suffix);
 
-std::vector<std::string> str_split(const std::string& str, const std::string& delims = " ");
+std::vector<std::string> str_split(const std::string& str, const std::string& delimeters = " ");
 
 std::string str_replace_all(std::string str, const std::string& from, const std::string& to);
 
@@ -77,7 +79,7 @@ inline void ThrowIfFailed(HRESULT hr, const std::string_view what)
   }
 }
 
-inline void decomposeMatrix(const SSE::Matrix4& mat, SSE::Vector3& pos, SSE::Quat& rotation,
+inline void decompose_matrix(const SSE::Matrix4& mat, SSE::Vector3& pos, SSE::Quat& rotation,
                             SSE::Vector3& scale)
 {
   pos = mat.getTranslation();

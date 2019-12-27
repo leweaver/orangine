@@ -50,7 +50,7 @@ namespace oe::internal {
 		ScriptData _scriptData;
 
 		struct EngineInternalPythonModule {
-			EngineInternalPythonModule(pybind11::module engine_internal);
+			EngineInternalPythonModule(pybind11::module engineInternal);
 
 			pybind11::module engine_internal;
 			pybind11::detail::str_attr_accessor reset_output_streams;

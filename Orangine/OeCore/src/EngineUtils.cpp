@@ -9,10 +9,7 @@
 using namespace oe;
 using namespace std::string_literals;
 
-float oe::degreesToRadians(float degrees) { return DirectX::XMConvertToRadians(degrees); }
-float oe::radiansToDegrees(float radians) { return DirectX::XMConvertToDegrees(radians); }
-
-bool oe::createRotationBetweenUnitVectors(
+bool oe::create_rotation_between_unit_vectors(
     SSE::Matrix3& result,
     const SSE::Vector3& directionFrom,
     const SSE::Vector3& directionTo)

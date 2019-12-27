@@ -8,9 +8,6 @@ endif()
 # The flags on oe_compiler_flags are needed when using/building Orangine
 add_library(OeCompilerFlags INTERFACE)
 
-# setup that we need C++17 support
-target_compile_features(OeCompilerFlags INTERFACE cxx_std_17)
-
 if(OE_COMPILER_IS_MSVC)
         add_compile_definitions("_UNICODE;UNICODE;WIN32;_WINDOWS;_LIB;HAVE_SNPRINTF;_ENABLE_EXTENDED_ALIGNED_STORAGE")
 
@@ -38,6 +35,7 @@ write_basic_package_version_file(
 # Install
 install(TARGETS OeCompilerFlags
         EXPORT OeCompilerFlagsTargets
+
         )
 
 

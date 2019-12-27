@@ -57,7 +57,7 @@ Component& Entity::getComponent(size_t index) const
 
 void Entity::lookAt(const Entity& other)
 {
-    lookAt(other.position(), Math::Direction::Up);
+    lookAt(other.position(), math::up);
 }
 
 void Entity::lookAt(const SSE::Vector3& position, const SSE::Vector3& worldUp)
@@ -149,7 +149,7 @@ const SSE::Quat& Entity::worldRotation() const
     return _worldRotation;
 }
 void Entity::setTransform(const SSE::Matrix4& transform) {
-    decomposeMatrix(transform, _localPosition, _localRotation, _localScale);
+    decompose_matrix(transform, _localPosition, _localRotation, _localScale);
 }
 
 std::shared_ptr<Entity> Entity::verifyEntityPtr() const

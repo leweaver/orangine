@@ -77,8 +77,8 @@ void Render_pass_shadow::render(const Camera_data&)
 			{
 				auto wtlm = worldToLightViewMatrix;
 				const auto pos = SSE::Point3(lightNearPlaneWorldTranslation.getXYZ());
-				const auto forward = wtlm * Math::Direction::Forward;
-				const auto up = wtlm * Math::Direction::Up;
+				const auto forward = wtlm * math::forward;
+				const auto up = wtlm * math::up;
 
 				shadowCameraData.viewMatrix = SSE::Matrix4::lookAt(pos, pos + forward.getXYZ(), up.getXYZ());
 

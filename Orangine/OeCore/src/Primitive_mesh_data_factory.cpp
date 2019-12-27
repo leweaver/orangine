@@ -204,7 +204,7 @@ std::shared_ptr<Mesh_data> Primitive_mesh_data_factory::createQuad(float width, 
 		left   = positionOffset.getX() + 0.0f;
 	std::vector<DirectX::GeometricPrimitive::VertexType> vertices;
 	float z = positionOffset.getZ();
-	XMFLOAT3 backward = { Math::Direction::Backward.getX(), Math::Direction::Backward.getY(), Math::Direction::Backward.getZ() };
+	XMFLOAT3 backward = { math::backward.getX(), math::backward.getY(), math::backward.getZ() };
 	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  top,    z }, backward, { 0.0f, 0.0f }));
 	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ right, top,    z }, backward, { 1.0f, 0.0f }));
 	vertices.push_back(DirectX::GeometricPrimitive::VertexType({ left,  bottom, z }, backward, { 0.0f, 1.0f }));

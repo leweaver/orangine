@@ -39,6 +39,19 @@ std::vector<std::string> str_split(const std::string& str, const std::string& de
 
 std::string str_replace_all(std::string str, const std::string& from, const std::string& to);
 
+template <typename... TArgs>
+std::string string_format(const std::string& format, TArgs... args)
+{
+  // From: https://stackoverflow.com/a/26221725
+  const size_t size = std::snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
+  if (size <= 0) {
+    throw std::invalid_argument("Invalid format string: " + format);
+  }
+  const std::unique_ptr<char[]> buf(new char[size]);
+  std::snprintf(buf.get(), size, format.c_str(), args...);
+  return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
+}
+
 std::string hr_to_string(HRESULT hr);
 std::wstring hr_to_wstring(HRESULT hr);
 

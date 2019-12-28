@@ -1,38 +1,40 @@
 #pragma once
 
-#include <set>
 #include <memory>
+#include <unordered_set>
 
 namespace oe {
-	class Entity;
+class Entity;
 
-	class Entity_filter
-	{
-	public:
-	    struct Entity_filter_listener {
-            std::function<void(Entity*)> onAdd = [](Entity*){};
-            std::function<void(Entity*)> onRemove = [](Entity*){};
-	    };
+class Entity_filter {
+ public:
+  struct Entity_filter_listener {
+    std::function<void(Entity*)> onAdd = [](Entity*) {};
+    std::function<void(Entity*)> onRemove = [](Entity*) {};
+  };
 
-		using container = std::set<std::shared_ptr<Entity>>;
-		using iterator = container::iterator;
-		using const_iterator = container::const_iterator;
-		Entity_filter() = default;
-		virtual ~Entity_filter() = default;
+  using Container = std::unordered_set<std::shared_ptr<Entity>>;
+  using Iterator = Container::iterator;
+  using Const_iterator = Container::const_iterator;
 
-		bool empty() const { return _entities.empty(); }
+  Entity_filter() = default;
+  virtual ~Entity_filter() = default;
+  Entity_filter(const Entity_filter&) = default;
+  Entity_filter& operator=(const Entity_filter&) = default;
+  Entity_filter(Entity_filter&&) = default;
+  Entity_filter& operator=(Entity_filter&&) = default;
 
-		iterator begin() { return _entities.begin(); }
-		iterator end() { return _entities.end(); }
+  bool empty() const { return _entities.empty(); }
 
-		const_iterator begin() const { return _entities.begin(); }
-		const_iterator end() const { return _entities.end(); }
+  Iterator begin() { return _entities.begin(); }
+  Iterator end() { return _entities.end(); }
 
-		virtual void add_listener(std::weak_ptr<Entity_filter_listener> callback) = 0;
+  Const_iterator begin() const { return _entities.begin(); }
+  Const_iterator end() const { return _entities.end(); }
 
-    protected:
-        container _entities;
+  virtual void add_listener(std::weak_ptr<Entity_filter_listener> callback) = 0;
 
-	};
-}
-
+ protected:
+  Container _entities;
+};
+} // namespace oe

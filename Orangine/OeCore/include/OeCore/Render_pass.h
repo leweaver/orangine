@@ -2,6 +2,8 @@
 
 #include "Render_target_texture.h"
 
+#include <vectormath/vectormath.hpp>
+
 namespace oe {
 class Render_target_view_texture;
 

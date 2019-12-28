@@ -1,7 +1,8 @@
 ﻿#pragma once
 
 #include "Manager_base.h"
-#include "Simple_types.h"
+
+#include <map>
 #include <string>
 
 namespace oe {

@@ -28,8 +28,6 @@ using namespace DirectX;
 using namespace oe;
 using namespace internal;
 
-std::string Entity_scripting_manager::_name = "Entity_scripting_manager";
-
 Entity_scripting_manager::EngineInternalPythonModule::EngineInternalPythonModule(
     py::module engineInternal)
     : engine_internal(engineInternal),
@@ -321,9 +319,9 @@ void Entity_scripting_manager::tick()
                                                -mouseSpeed));
     //}
 
-    if (mouseState->right == IInput_manager::Mouse_state::Button_state::HELD) {
-      renderDebugSpheres();
-    }
+    //if (mouseState->right == IInput_manager::Mouse_state::Button_state::HELD) {
+    //  renderDebugSpheres();
+    //}
 
     const auto cameraRot = SSE::Matrix4::rotationY(_scriptData.yaw + math::pi) *
                            SSE::Matrix4::rotationX(-_scriptData.pitch);
@@ -331,12 +329,14 @@ void Entity_scripting_manager::tick()
     cameraPosition *= _scriptData.distance;
 
     auto entity = _scene.mainCamera();
+    /*
     if (entity != nullptr) {
       entity->setPosition({cameraPosition.getX(), cameraPosition.getY(), cameraPosition.getZ()});
       auto cameraRotQuat = SSE::Quat(cameraRot.getUpper3x3());
       entity->setRotation(
           {cameraRotQuat.getX(), cameraRotQuat.getY(), cameraRotQuat.getZ(), cameraRotQuat.getW()});
     }
+    */
   }
 }
 
@@ -416,8 +416,6 @@ bool Entity_scripting_manager::commandSuggestions(const std::string& command,
   // TODO: provide some suggestions!
   return false;
 }
-
-const std::string& Entity_scripting_manager::name() const { return _name; }
 
 void Entity_scripting_manager::renderDebugSpheres() const
 {

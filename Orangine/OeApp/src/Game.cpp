@@ -77,17 +77,13 @@ void Game::Initialize(HWND window, int dpi, int width, int height)
 // Executes the basic game loop.
 void Game::Tick()
 {
-  m_timer.Tick([&]() { Update(m_timer); });
 
-  Render();
+  // Updates the world.
+  m_timer.Tick([&]() {
+    m_scene->tick(m_timer);
+  });
 }
 
-// Updates the world.
-void Game::Update(DX::StepTimer const& timer)
-{
-  // TODO: Add your game logic here.
-  m_scene->tick(timer);
-}
 #pragma endregion
 
 #pragma region Frame Render

@@ -2,6 +2,7 @@
 
 #include "Manager_base.h"
 #include "Render_pass.h"
+#include "Viewport.h"
 
 #include <memory>
 #include <array>
@@ -40,6 +41,7 @@ namespace oe {
         // IRender_step_manager
         virtual void createRenderSteps() = 0;
         virtual Render_pass::Camera_data createCameraData(Camera_component& component) const = 0;
+        virtual Viewport screenViewport() const = 0;
         virtual void render(std::shared_ptr<Entity> cameraEntity) = 0;
 
     };

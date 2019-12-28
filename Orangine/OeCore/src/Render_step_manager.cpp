@@ -538,10 +538,18 @@ Render_pass::Camera_data Render_step_manager::createCameraData(const SSE::Matrix
           aspectRatio};
 }
 
+Viewport Render_step_manager::screenViewport() const
+{
+  const auto viewport = deviceResources().GetScreenViewport();
+  return {viewport.TopLeftX, viewport.TopLeftY, viewport.Width,
+          viewport.Height,   viewport.MinDepth, viewport.MaxDepth};
+}
+
 template <int TRender_pass_idx, class TData, class... TRender_passes>
 void Render_step_manager::createRenderStepResources(Render_step<TData, TRender_passes...>& step)
 {
-  using Render_pass_config_type = typename std::tuple_element<TRender_pass_idx, decltype(step.renderPassConfigs)>::type;
+  using Render_pass_config_type =
+      typename std::tuple_element<TRender_pass_idx, decltype(step.renderPassConfigs)>::type;
   auto& pass = *std::get<TRender_pass_idx>(step.renderPasses);
 
   auto& d3DResourcesManager = _scene.manager<ID3D_resources_manager>();
@@ -558,10 +566,12 @@ void Render_step_manager::createRenderStepResources(Render_step<TData, TRender_p
   // Depth/Stencil
   D3D11_DEPTH_STENCIL_DESC desc = {};
 
-  constexpr auto depthReadEnabled = Render_pass_config_type::depthMode() == Render_pass_depth_mode::ReadOnly ||
-                                    Render_pass_config_type::depthMode() == Render_pass_depth_mode::ReadWrite;
-  constexpr auto depthWriteEnabled = Render_pass_config_type::depthMode() == Render_pass_depth_mode::WriteOnly ||
-                                     Render_pass_config_type::depthMode() == Render_pass_depth_mode::ReadWrite;
+  constexpr auto depthReadEnabled =
+      Render_pass_config_type::depthMode() == Render_pass_depth_mode::ReadOnly ||
+      Render_pass_config_type::depthMode() == Render_pass_depth_mode::ReadWrite;
+  constexpr auto depthWriteEnabled =
+      Render_pass_config_type::depthMode() == Render_pass_depth_mode::WriteOnly ||
+      Render_pass_config_type::depthMode() == Render_pass_depth_mode::ReadWrite;
 
   desc.DepthEnable = depthReadEnabled || depthWriteEnabled ? TRUE : FALSE;
   desc.DepthWriteMask =

@@ -6,8 +6,7 @@
 #include "Entity_filter_mode.h"
 
 #include <vector>
-#include <set>
-#include <vectormath/vectormath.hpp>
+#include <unordered_set>
 
 namespace oe {
 
@@ -16,7 +15,7 @@ namespace oe {
         public Manager_tickable {
     public:
 
-        using Component_type_set = std::set<Component::Component_type>;
+        using Component_type_set = std::unordered_set<Component::Component_type>;
 
         IScene_graph_manager(Scene& scene)
             : Manager_base(scene)

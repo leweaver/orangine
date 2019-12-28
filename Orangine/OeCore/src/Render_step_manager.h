@@ -30,6 +30,7 @@ class Render_step_manager : public IRender_step_manager {
   // IRender_step_manager implementation
   void createRenderSteps() override;
   Render_pass::Camera_data createCameraData(Camera_component& component) const override;
+  Viewport screenViewport() const override;
   void render(std::shared_ptr<Entity> cameraEntity) override;
 
  private:

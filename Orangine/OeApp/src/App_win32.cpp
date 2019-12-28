@@ -163,6 +163,9 @@ int oe::App::run(const oe::App_start_settings& settings)
     else {
       onSceneTick(g_game->scene());
       g_game->Tick();
+
+      onScenePreRender(g_game->scene());
+      g_game->Render();
     }
   }
 

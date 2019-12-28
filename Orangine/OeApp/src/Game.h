@@ -31,6 +31,7 @@ class Game : public oe::App, public DX::IDeviceNotify {
 
   // Basic game loop
   void Tick();
+  void Render();
 
   // IDeviceNotify
   void OnDeviceLost() override;
@@ -50,8 +51,6 @@ class Game : public oe::App, public DX::IDeviceNotify {
   oe::Scene& scene() const { return *m_scene; }
 
  private:
-  void Update(DX::StepTimer const& timer);
-  void Render();
 
   void createDeviceDependentResources();
   void createWindowSizeDependentResources();

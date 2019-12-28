@@ -24,6 +24,7 @@ add_library(${PROJECT_NAME} STATIC
         src/Animation_controller_component.cpp
         src/Animation_manager.cpp
         src/Asset_manager.cpp
+        src/Behavior_manager.cpp
         src/Camera_component.cpp
         src/Color.cpp
         src/Clear_gbuffer_material.cpp

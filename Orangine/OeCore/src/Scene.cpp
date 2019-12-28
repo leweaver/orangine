@@ -13,7 +13,6 @@
 
 #include "JsonConfigReader.h"
 #include "OeCore/FileUtils.h"
-#include "OeCore/IConfigReader.h"
 #include "OeCore/IMaterial_manager.h"
 #include "OeCore/Perf_timer.h"
 
@@ -189,7 +188,6 @@ void Scene::shutdown()
       if (tickTimes[idx] > 0.0) {
         ss << "  " << manager->name() << ": " << (1000.0 * tickTimes[idx] / tickCount) << std::endl;
       }
-      ++idx;
     };
     forEachOfType(_managers, timesLog);
     LOG(INFO) << "Manager average tick times (ms): " << std::endl << ss.str();
@@ -299,6 +297,7 @@ Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& de
   createManager<IUser_interface_manager>();
   createManager<IAnimation_manager>();
   createManager<IMaterial_manager>();
+  createManager<IBehavior_manager>();
 }
 
 void Scene_device_resource_aware::initialize() { Scene::initialize(); }

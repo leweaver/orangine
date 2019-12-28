@@ -22,8 +22,8 @@
 
 #include "CommonStates.h"
 #include "D3D11/DirectX_utils.h"
-#include "GeometricPrimitive.h"
 
+#include <cinttypes>
 #include <functional>
 #include <optional>
 #include <set>
@@ -136,8 +136,7 @@ bool addLightToRenderLightData(const Entity& lightEntity,
 {
   const auto directionalLight = lightEntity.getFirstComponentOfType<Directional_light_component>();
   if (directionalLight) {
-    const auto lightDirection =
-        lightEntity.worldTransform().getUpper3x3() * math::forward;
+    const auto lightDirection = lightEntity.worldTransform().getUpper3x3() * math::forward;
     const auto shadowData =
         dynamic_cast<Shadow_map_texture_array_slice*>(directionalLight->shadowData().get());
 
@@ -578,7 +577,7 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
   rendererData->vertexCount = meshData->getVertexCount();
   for (auto vertexAttrElement : vertexAttributes) {
     const auto& vertexAttr = vertexAttrElement.semantic;
-    Mesh_vertex_buffer_accessor* meshAccessor = nullptr;
+    Mesh_vertex_buffer_accessor* meshAccessor;
     auto vbAccessorPos = meshData->vertexBufferAccessors.find(vertexAttr);
     if (vbAccessorPos != meshData->vertexBufferAccessors.end()) {
       meshAccessor = vbAccessorPos->second.get();
@@ -618,13 +617,24 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
         throw std::runtime_error("Could not find morph attribute in mesh morph target layout");
       }
 
-      meshAccessor =
-          meshData->attributeMorphBufferAccessors.at(morphTargetIdx).at(morphLayoutOffset).get();
-    }
+      if (meshData->attributeMorphBufferAccessors.size() >=
+          static_cast<size_t>(morphLayoutOffset)) {
+        throw std::runtime_error(string_format("CreateRendererData: Failed to read morph target "
+                                               "%" PRIi32 " for vertex attribute: %s",
+                                               morphTargetIdx,
+                                               Vertex_attribute_meta::vsInputName(vertexAttr)));
+      }
+      if (meshData->attributeMorphBufferAccessors.at(morphTargetIdx).size() >=
+          static_cast<size_t>(morphTargetIdx)) {
+        throw std::runtime_error(string_format("CreateRendererData: Failed to read morph target "
+                                               "%" PRIi32 " layout offset %" PRIi32
+                                               "for vertex attribute: %s",
+                                               morphTargetIdx, morphLayoutOffset,
+                                               Vertex_attribute_meta::vsInputName(vertexAttr)));
+      }
 
-    if (meshAccessor == nullptr) {
-      throw std::runtime_error("CreateRendererData: Missing vertex attribute: "s.append(
-          Vertex_attribute_meta::vsInputName(vertexAttr)));
+      meshAccessor =
+          meshData->attributeMorphBufferAccessors[morphTargetIdx][morphLayoutOffset].get();
     }
 
     auto d3DAccessor =

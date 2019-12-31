@@ -1,92 +1,124 @@
 ﻿#pragma once
 
+#include "Simple_types.h"
+
 #include <DirectXCollision.h>
 #include <vectormath/vectormath.hpp>
-#include "Simple_types.h"
 
 namespace oe {
 
-    struct BoundingSphere {
-        SSE::Vector3 center;
-        float radius;
+struct Ray {
+  SSE::Point3 origin;
+  SSE::Vector3 directionNormal;
+};
 
-        BoundingSphere() noexcept : center(0, 0, 0), radius(1.f) {}
+struct BoundingSphere {
+  SSE::Vector3 center;
+  float radius;
 
-        BoundingSphere(const BoundingSphere&) = default;
-        BoundingSphere& operator=(const BoundingSphere&) = default;
+  BoundingSphere() noexcept : center(0, 0, 0), radius(1.f) {}
 
-        BoundingSphere(BoundingSphere&&) = default;
-        BoundingSphere& operator=(BoundingSphere&&) = default;
+  BoundingSphere(const BoundingSphere&) = default;
+  BoundingSphere& operator=(const BoundingSphere&) = default;
 
-        constexpr BoundingSphere(const SSE::Vector3& center, float radius)
-            : center(center), radius(radius) {}
+  BoundingSphere(BoundingSphere&&) = default;
+  BoundingSphere& operator=(BoundingSphere&&) = default;
 
-        static BoundingSphere createFromPoints(Float3* points, int numPoints, size_t strideBytes);
-        static void createMerged(BoundingSphere& out, const BoundingSphere& input1, const BoundingSphere& input2);
-    };
+  constexpr BoundingSphere(const SSE::Vector3& center, float radius)
+      : center(center), radius(radius)
+  {
+  }
 
-    //-------------------------------------------------------------------------------------
-    // Oriented bounding box
-    //-------------------------------------------------------------------------------------
-    struct BoundingOrientedBox
-    {
-        static const size_t CORNER_COUNT = 8;
+  static BoundingSphere createFromPoints(Float3* points, int numPoints, size_t strideBytes);
+  static void createMerged(BoundingSphere& out, const BoundingSphere& input1,
+                           const BoundingSphere& input2);
+};
 
-        SSE::Vector3 center;            // Center of the box.
-        SSE::Vector3 extents;           // Distance from the center to each side.
-        SSE::Quat    orientation;       // Unit quaternion representing rotation (box -> world).
+//-------------------------------------------------------------------------------------
+// Oriented bounding box
+//-------------------------------------------------------------------------------------
+struct BoundingOrientedBox {
+  static const size_t CORNER_COUNT = 8;
 
-        // Creators
-        BoundingOrientedBox() noexcept : center(0, 0, 0), extents(1.f, 1.f, 1.f), orientation(0, 0, 0, 1.f) {}
+  SSE::Vector3 center;   // Center of the box.
+  SSE::Vector3 extents;  // Distance from the center to each side.
+  SSE::Quat orientation; // Unit quaternion representing rotation (box -> world).
 
-        BoundingOrientedBox(const BoundingOrientedBox&) = default;
-        BoundingOrientedBox& operator=(const BoundingOrientedBox&) = default;
+  // Creators
+  BoundingOrientedBox() noexcept
+      : center(0, 0, 0), extents(1.f, 1.f, 1.f), orientation(0, 0, 0, 1.f)
+  {
+  }
 
-        BoundingOrientedBox(BoundingOrientedBox&&) = default;
-        BoundingOrientedBox& operator=(BoundingOrientedBox&&) = default;
+  BoundingOrientedBox(const BoundingOrientedBox&) = default;
+  BoundingOrientedBox& operator=(const BoundingOrientedBox&) = default;
 
-        constexpr BoundingOrientedBox(const SSE::Vector3& center, const SSE::Vector3& extents, const SSE::Quat& orientation)
-            : center(center), extents(extents), orientation(orientation) {}
+  BoundingOrientedBox(BoundingOrientedBox&&) = default;
+  BoundingOrientedBox& operator=(BoundingOrientedBox&&) = default;
 
-        // Methods
-        bool contains(const BoundingSphere& boundingSphere) const;
-    };
+  constexpr BoundingOrientedBox(const SSE::Vector3& center, const SSE::Vector3& extents,
+                                const SSE::Quat& orientation)
+      : center(center), extents(extents), orientation(orientation)
+  {
+  }
 
-	/*
-	 * A partial re-implementation of DirectX::BoundingFrustum that is compatible with right handed coordinate systems.
-	 */
-	struct BoundingFrustumRH {
+  // Methods
+  bool contains(const BoundingSphere& boundingSphere) const;
+};
 
-		static const size_t CORNER_COUNT = 8;
+/*
+ * A partial re-implementation of DirectX::BoundingFrustum that is compatible with right handed
+ * coordinate systems.
+ */
+struct BoundingFrustumRH {
 
-		SSE::Vector3 origin;            // Origin of the frustum (and projection).
-        SSE::Quat    orientation;       // Quaternion representing rotation.
+  static const size_t CORNER_COUNT = 8;
 
-		float rightSlope;           // Positive X slope (X/Z).
-		float leftSlope;            // Negative X slope.
-		float topSlope;             // Positive Y slope (Y/Z).
-		float bottomSlope;          // Negative Y slope.
-		float nearPlane, farPlane;            // Z of the near plane and far plane.
+  SSE::Vector3 origin;   // Origin of the frustum (and projection).
+  SSE::Quat orientation; // Quaternion representing rotation.
 
-		// Creators
-		BoundingFrustumRH() : origin(0, 0, 0), orientation(0, 0, 0, 1.f), rightSlope(1.f), leftSlope(-1.f),
-            topSlope(1.f), bottomSlope(-1.f), nearPlane(0), farPlane(-1.f) {}
-        constexpr BoundingFrustumRH(const SSE::Vector3& _origin, const SSE::Quat& _orientation,
-            float _rightSlope, float _leftSlope, float _topSlope, float _bottomSlope,
-            float _near, float _far)
-            : origin(_origin), orientation(_orientation),
-			rightSlope(_rightSlope), leftSlope(_leftSlope), topSlope(_topSlope), bottomSlope(_bottomSlope),
-            nearPlane(_near), farPlane(_far) {}
-		BoundingFrustumRH(const BoundingFrustumRH& fr) = default;
-		explicit BoundingFrustumRH(const SSE::Matrix4& projection) { CreateFromMatrix(*this, projection); }
+  float rightSlope;          // Positive X slope (X/Z).
+  float leftSlope;           // Negative X slope.
+  float topSlope;            // Positive Y slope (Y/Z).
+  float bottomSlope;         // Negative Y slope.
+  float nearPlane, farPlane; // Z of the near plane and far plane.
 
-		// Methods
-		static void CreateFromMatrix(BoundingFrustumRH& Out, const SSE::Matrix4& Projection);
+  // Creators
+  BoundingFrustumRH()
+      : origin(0, 0, 0), orientation(0, 0, 0, 1.f), rightSlope(1.f), leftSlope(-1.f), topSlope(1.f),
+        bottomSlope(-1.f), nearPlane(0), farPlane(-1.f)
+  {
+  }
+  constexpr BoundingFrustumRH(const SSE::Vector3& _origin, const SSE::Quat& _orientation,
+                              float _rightSlope, float _leftSlope, float _topSlope,
+                              float _bottomSlope, float _near, float _far)
+      : origin(_origin), orientation(_orientation), rightSlope(_rightSlope), leftSlope(_leftSlope),
+        topSlope(_topSlope), bottomSlope(_bottomSlope), nearPlane(_near), farPlane(_far)
+  {
+  }
+  BoundingFrustumRH(const BoundingFrustumRH& fr) = default;
+  explicit BoundingFrustumRH(const SSE::Matrix4& projection)
+  {
+    CreateFromMatrix(*this, projection);
+  }
 
-		DirectX::ContainmentType Contains(const oe::BoundingSphere& sh) const;
+  // Methods
+  static void CreateFromMatrix(BoundingFrustumRH& Out, const SSE::Matrix4& Projection);
 
-		void GetCorners(SSE::Vector3* Corners) const;
-	};
-}
+  DirectX::ContainmentType Contains(const oe::BoundingSphere& sh) const;
+
+  void GetCorners(SSE::Vector3* Corners) const;
+};
+
+struct Ray_intersection {
+  SSE::Point3 position = {0.0f, 0.0f, 0.0f};
+  float distance = 0.0f;
+};
+
+// Ref: Real-time collision detection, Christer Ericson
+bool intersect_ray_sphere(const Ray& ray, const BoundingSphere& sphere,
+                          Ray_intersection& intersection);
+bool test_ray_sphere(const Ray& ray, const BoundingSphere& sphere);
+} // namespace oe
 
 #include "Collision.inl"

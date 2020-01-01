@@ -205,6 +205,8 @@ void Dev_tools_manager::addDebugAxisWidget(const SSE::Matrix4& worldTransform)
   _debugShapes.push_back({SSE::Matrix4(worldTransform), oe::Colors::Red, renderable});
 }
 
+void Dev_tools_manager::setGuiDebugText(const std::string& text) { _guiDebugText = text; }
+
 void Dev_tools_manager::clearDebugShapes() { _debugShapes.clear(); }
 
 void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& cameraData)
@@ -392,9 +394,12 @@ void Dev_tools_manager::renderImGui()
   }
   ImGui::End();
 
-  if (ImGui::Begin("Statistics")) {
+  if (ImGui::Begin("Debug Statistics")) {
     ImGui::TextColored(ImVec4(1, 0, 1, 1), "Frame Time (s): %.4f", _fpsCounter->avgFrameTime());
     ImGui::TextColored(ImVec4(1, 0, 1, 1), "FPS: %.2f", _fpsCounter->avgFps());
+    if (_guiDebugText.size()) {
+      ImGui::Text(_guiDebugText.c_str());
+    }
   }
   ImGui::End();
 }

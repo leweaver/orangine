@@ -24,6 +24,7 @@ namespace oe {
         virtual void addDebugBoundingBox(const oe::BoundingOrientedBox& boundingOrientedBox, const Color& color) = 0;
         virtual void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color) = 0;
         virtual void addDebugAxisWidget(const SSE::Matrix4& worldTransform) = 0;
+        virtual void setGuiDebugText(const std::string& text) = 0;
         virtual void clearDebugShapes() = 0;
 
         virtual void renderDebugShapes(const Render_pass::Camera_data& cameraData) = 0;

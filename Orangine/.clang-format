@@ -1,7 +1,20 @@
 AccessModifierOffset: -1
+AlignAfterOpenBracket: AlwaysBreak
+AlignEscapedNewlinesLeft: true
+AllowAllParametersOfDeclarationOnNextLine: false
+AlwaysBreakBeforeMultilineStrings: true
 BasedOnStyle: LLVM
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
 BreakBeforeBraces: Stroustrup
 ColumnLimit: 100
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
+Cpp11BracedListStyle: true
 DerivePointerAlignment: false
 IndentWidth: 2
 Language: Cpp
@@ -9,3 +22,4 @@ PenaltyBreakBeforeFirstCallParameter: 100
 PenaltyBreakComment: 100
 PenaltyBreakString: 100
 PointerAlignment: Left
+ReflowComments: true

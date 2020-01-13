@@ -18,7 +18,7 @@ namespace oe {
 			bool calculateBounds) const override;
 
 	private:
-		Microsoft::WRL::ComPtr<IWICImagingFactory> _imagingFactory;
+		Microsoft::WRL::ComPtr<IWICImagingFactory> _imagingFactory = nullptr;
 	};
 
 }

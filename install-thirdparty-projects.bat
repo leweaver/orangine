@@ -41,6 +41,34 @@ if not exist "%OE_ROOT%\thirdparty\glTF-Sample-Models" (
 python Orangine\cmake\scripts\update-thirdparty.py 1> %OE_THIRDPARTY_OUTPUT% 2>&1
 call :oe_verify_errorlevel "update-thirdparty.py" || goto:eof
 
+
+rem ******************************
+rem Python environments
+rem ******************************
+if not exist "%OE_ROOT%\thirdparty\pyenv_37" (
+    python -m venv %OE_ROOT%\thirdparty\pyenv_37
+)
+%OE_ROOT%\thirdparty\pyenv_37\Scripts\activate.bat
+pip install numpy==1.18.0
+pip install vectormath==0.2.2
+pip install jsonschema==3.0.2
+%OE_ROOT%\thirdparty\pyenv_37\Scripts\deactivate.bat
+
+if not exist "%OE_ROOT%\thirdparty\pyenv_37_d" (
+    python -m venv %OE_ROOT%\thirdparty\pyenv_37_d
+)
+%OE_ROOT%\thirdparty\pyenv_37_d\Scripts\activate.bat
+rem Need to install numpy with build isolation, so that we can use the debug version of cython.
+python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug wheel
+python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug cython==0.29.14
+python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug --no-build-isolation numpy==1.18.0
+
+python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug ptvsd==4.3.2
+python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug vectormath==0.2.2
+python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug jsonschema==3.0.2
+python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug argparse==1.4.0
+%OE_ROOT%\thirdparty\pyenv_37_d\Scripts\deactivate.bat
+
 rem ******************************
 rem Top of the build tree
 rem ******************************

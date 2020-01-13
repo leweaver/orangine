@@ -20,7 +20,7 @@
 
 #include <cmath>
 #include <filesystem>
-#include <set>
+#include <fstream>
 
 namespace py = pybind11;
 
@@ -28,33 +28,36 @@ using namespace DirectX;
 using namespace oe;
 using namespace internal;
 
+#ifdef _DEBUG
+#ifndef Py_DEBUG
+// Well this was an evening wasted! When linking against a debug build of python, you must also set
+// this flag in the consuming application.
+#error Py_DEBUG must be defined if linking with debug python library.
+#endif
+#endif
+
 Entity_scripting_manager::EngineInternalPythonModule::EngineInternalPythonModule(
     py::module engineInternal)
-    : engine_internal(engineInternal),
-      reset_output_streams(engineInternal.attr("reset_output_streams"))
-{
-}
+    : engine_internal(engineInternal)
+    , reset_output_streams(engineInternal.attr("reset_output_streams"))
+    , enable_remote_debugging(engineInternal.attr("enable_remote_debugging")) {}
 
-template <> IEntity_scripting_manager* oe::create_manager(Scene& scene)
-{
+template <> IEntity_scripting_manager* oe::create_manager(Scene& scene) {
   return new Entity_scripting_manager(scene);
 }
 
-Entity_scripting_manager::Entity_scripting_manager(Scene& scene) : IEntity_scripting_manager(scene)
-{
-}
+Entity_scripting_manager::Entity_scripting_manager(Scene& scene)
+    : IEntity_scripting_manager(scene) {}
 
 Scene* g_scene;
-Scene* get_scene()
-{
+Scene* get_scene() {
   if (!g_scene) {
     LOG(FATAL) << "Python script attempting to access an uninitialized scene";
   }
   return g_scene;
 }
 
-void engine_log_func(const std::string& message, LEVELS level)
-{
+void engine_log_func(const std::string& message, LEVELS level) {
   if (!g3::logLevel(level)) {
     return;
   }
@@ -76,8 +79,7 @@ void engine_log_func(const std::string& message, LEVELS level)
 
       LogCapture(filename.c_str(), lineno, function.c_str(), level).stream() << message;
     }
-  }
-  else {
+  } else {
     LOG(level) << "[python] " << message;
   }
 }
@@ -90,12 +92,14 @@ bool engine_log_warning_enabled_func() { return g3::logLevel(WARNING); }
 
 void engine_log_warning_func(const std::string& message) { engine_log_func(message, WARNING); }
 
-PYBIND11_EMBEDDED_MODULE(engine, m)
-{
+PYBIND11_EMBEDDED_MODULE(engine, m) {
   m.doc() = "Orangine scripting API";
 
-  m.def("scene", &get_scene, py::return_value_policy::reference,
-        "A function which returns the Scene singleton");
+  m.def(
+      "scene",
+      &get_scene,
+      py::return_value_policy::reference,
+      "A function which returns the Scene singleton");
 
   m.def("log_info_enabled", &engine_log_info_enabled_func);
   m.def("log_info", &engine_log_info_func);
@@ -104,8 +108,20 @@ PYBIND11_EMBEDDED_MODULE(engine, m)
   m.def("log_warning", &engine_log_warning_func);
 }
 
-void Entity_scripting_manager::initialize()
-{
+void Entity_scripting_manager::preInit_addAbsoluteScriptsPath(const std::wstring& path) {
+  if (_pythonInitialized) {
+    throw std::logic_error(
+        "preInit_addAbsoluteScriptsPath can only be called prior to manager initialization.");
+  }
+  if (!std::filesystem::exists(path)) {
+    throw std::runtime_error(
+        "Attempting to add python script path that does not exist, or is inaccessible: " +
+        utf8_encode(path));
+  }
+  _preInit_additionalPaths.push_back(path);
+}
+
+void Entity_scripting_manager::initialize() {
   {
     _scriptableEntityFilter =
         _scene.manager<IScene_graph_manager>().getEntityFilter({Script_component::type()});
@@ -122,18 +138,17 @@ void Entity_scripting_manager::initialize()
 
     _renderableEntityFilter =
         _scene.manager<IScene_graph_manager>().getEntityFilter({Renderable_component::type()});
-    _lightEntityFilter =
-        _scene.manager<IScene_graph_manager>().getEntityFilter({Directional_light_component::type(),
-                                                                Point_light_component::type(),
-                                                                Ambient_light_component::type()},
-                                                               Entity_filter_mode::Any);
+    _lightEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter(
+        {Directional_light_component::type(),
+         Point_light_component::type(),
+         Ambient_light_component::type()},
+        Entity_filter_mode::Any);
     _scriptData.yaw = XM_PI;
 
     try {
       initializePythonInterpreter();
       return;
-    }
-    catch (const py::error_already_set& err) {
+    } catch (const py::error_already_set& err) {
       logPythonError(err, "service initialization");
     }
   }
@@ -144,9 +159,9 @@ void Entity_scripting_manager::initialize()
   throw ::std::runtime_error("Failed to initialize Entity Scripting Manager.");
 }
 
-void Entity_scripting_manager::logPythonError(const py::error_already_set& err,
-                                              const std::string& whereStr) const
-{
+void Entity_scripting_manager::logPythonError(
+    const py::error_already_set& err,
+    const std::string& whereStr) {
   std::stringstream ss;
   ss << "Python error in " << whereStr << ": " << std::string(py::str(err.value()));
 
@@ -167,8 +182,7 @@ void Entity_scripting_manager::logPythonError(const py::error_already_set& err,
   LOG(WARNING) << ss.str();
 }
 
-void Entity_scripting_manager::tick()
-{
+void Entity_scripting_manager::tick() {
   const auto& sceneGraphManager = _scene.manager<IScene_graph_manager>();
   for (const auto entityId : _addedEntities) {
     auto entity = sceneGraphManager.getEntityPtrById(entityId);
@@ -200,8 +214,7 @@ void Entity_scripting_manager::tick()
         const auto scriptClassDefn = scriptModule.attr(scriptClassName.c_str());
 
         runtimeData->instance = scriptClassDefn();
-      }
-      else {
+      } else {
         const auto scriptClassDefn = py::globals().attr(componentScriptPath.c_str());
 
         runtimeData->instance = scriptClassDefn();
@@ -215,8 +228,7 @@ void Entity_scripting_manager::tick()
 
       runtimeData->hasTick = py::hasattr(runtimeData->instance, "tick");
       component->_scriptRuntimeData = move(runtimeData);
-    }
-    catch (const py::error_already_set& err) {
+    } catch (const py::error_already_set& err) {
       std::stringstream whereStr;
       whereStr << "Entity ID " << entityId;
       if (!entity->getName().empty()) {
@@ -241,8 +253,7 @@ void Entity_scripting_manager::tick()
       if (py::hasattr(component->_scriptRuntimeData->instance, "shutdown")) {
         try {
           auto _ = component->_scriptRuntimeData->instance.attr("shutdown")();
-        }
-        catch (const py::error_already_set& err) {
+        } catch (const py::error_already_set& err) {
           std::stringstream whereStr;
           whereStr << "Entity ID " << entityId;
           if (!entity->getName().empty()) {
@@ -266,8 +277,7 @@ void Entity_scripting_manager::tick()
 
     try {
       auto _ = component->_scriptRuntimeData->instance.attr("tick")();
-    }
-    catch (const py::error_already_set& err) {
+    } catch (const py::error_already_set& err) {
       std::stringstream whereStr;
       whereStr << "Entity ID " << entity.getId();
       if (!entity.getName().empty()) {
@@ -280,8 +290,7 @@ void Entity_scripting_manager::tick()
 
   try {
     flushStdIo();
-  }
-  catch (const py::error_already_set& err) {
+  } catch (const py::error_already_set& err) {
     logPythonError(err, "Flushing stdout and stderr");
   }
 
@@ -313,13 +322,14 @@ void Entity_scripting_manager::tick()
       _scriptData.pitch = std::max(XM_PI * -0.45f, std::min(XM_PI * 0.45f, _scriptData.pitch));
     }
     // if (mouseState->middle == Input_manager::Mouse_state::Button_state::HELD) {
-    _scriptData.distance =
-        std::max(1.0f, std::min(40.0f, _scriptData.distance +
-                                           static_cast<float>(mouseState->scrollWheelDelta) *
-                                               -mouseSpeed));
+    _scriptData.distance = std::max(
+        1.0f,
+        std::min(
+            40.0f,
+            _scriptData.distance + static_cast<float>(mouseState->scrollWheelDelta) * -mouseSpeed));
     //}
 
-    //if (mouseState->right == IInput_manager::Mouse_state::Button_state::HELD) {
+    // if (mouseState->right == IInput_manager::Mouse_state::Button_state::HELD) {
     //  renderDebugSpheres();
     //}
 
@@ -340,49 +350,100 @@ void Entity_scripting_manager::tick()
   }
 }
 
-void Entity_scripting_manager::flushStdIo()
-{
+void Entity_scripting_manager::flushStdIo() const {
   const auto _ = _pythonContext.engine_internal->reset_output_streams();
 }
 
-void Entity_scripting_manager::shutdown()
-{
-  for (const auto& entry : _loadedModules) {
-    Py_DECREF(entry.second);
-  }
-  _loadedModules.clear();
-
-  finalizePythonInterpreter();
+void Entity_scripting_manager::enableRemoteDebugging() const {
+  const auto _ = _pythonContext.engine_internal->enable_remote_debugging();
 }
 
-void Entity_scripting_manager::initializePythonInterpreter()
-{
+void Entity_scripting_manager::shutdown() { finalizePythonInterpreter(); }
+
+void Entity_scripting_manager::initializePythonInterpreter() {
 
   assert(g_scene == nullptr);
   g_scene = &_scene;
 
   py::initialize_interpreter();
+
   _pythonInitialized = true;
-  _pythonContext.sys = py::module::import("sys");
-  auto sysPathList = _pythonContext.sys.attr("path").cast<py::list>();
+
+  std::vector<std::wstring> sysPathVec;
 
   const auto& dataLibPath =
       _scene.manager<IAsset_manager>().makeAbsoluteAssetPath(L"OeScripting/lib");
-  sysPathList.append(utf8_encode(dataLibPath));
+  sysPathVec.push_back(dataLibPath);
 
+  const auto& pyEnvPath = _scene.manager<IAsset_manager>().makeAbsoluteAssetPath(L"pyenv") + L"/..";
+
+  // Add pyenv scripts
+  sysPathVec.push_back(pyEnvPath + L"/lib");
+  sysPathVec.push_back(pyEnvPath + L"/lib/site-packages");
+
+  // Add system installed python (for non-installed, dev machine builds only). Must come after pyenv
+  auto pyenvCfgPath = pyEnvPath + L"/pyvenv.cfg";
+  if (std::filesystem::exists(pyenvCfgPath)) {
+    std::string line;
+    std::ifstream infile(pyenvCfgPath, std::ios::in);
+    while (std::getline(infile, line)) {
+      std::istringstream iss(line);
+      std::string name, eq, value;
+      if (!(iss >> name >> eq >> value)) {
+        LOG(DEBUG) << "Failed to parse line in " << utf8_encode(pyenvCfgPath) << ": " << line;
+        continue;
+      }
+
+      if (name == "home") {
+        LOG(DEBUG) << "Detected python home from " << utf8_encode(pyenvCfgPath) << ": " << value;
+        sysPathVec.push_back(utf8_decode(value) + L"/Lib");
+        sysPathVec.push_back(utf8_decode(value) + L"/DLLs");
+      }
+      if (name == "include-system-site-packages" && value == "true") {
+        LOG(DEBUG) << "Detected include-system-site-packages from " << utf8_encode(pyenvCfgPath);
+        sysPathVec.push_back(utf8_decode(value) + L"/Lib/site-packages");
+      }
+    }
+  }
+
+  // Add OeScripting scripts
   const auto& dataScriptsPath =
       _scene.manager<IAsset_manager>().makeAbsoluteAssetPath(L"OeScripting/scripts");
-  sysPathList.append(utf8_encode(dataScriptsPath));
+  sysPathVec.push_back(dataScriptsPath);
+
+  // Add additional user script paths
+  std::copy(
+      _preInit_additionalPaths.begin(),
+      _preInit_additionalPaths.end(),
+      std::back_inserter(sysPathVec));
+
+  // Convert to a python list, and overwrite the existing value of sys.path
+  auto sysPathList = py::list();
+  std::stringstream sysPathListSs;
+  for (int i = 0, e = sysPathVec.size(); i < e; ++i) {
+    const auto path = std::filesystem::absolute(utf8_encode(sysPathVec[i])).u8string();
+    sysPathList.append(path);
+    if (i)
+      sysPathListSs << ";";
+    sysPathListSs << path;
+  }
+
+  LOG(INFO) << "Python path set to: " << sysPathListSs.str();
+
+  _pythonContext.sys = py::module::import("sys");
+  _pythonContext.sys.attr("path") = sysPathList;
 
   _pythonContext.engine_internal =
       std::make_unique<EngineInternalPythonModule>(py::module::import("engine_internal"));
 
-  // This must be called at least once before python attempts to write to stdout or stderr
+  // This must be called at least once before python attempts to write to stdout or stderr.
+  // Now that we have our internal library, set up stdout and stderr properly.
   flushStdIo();
+
+  enableRemoteDebugging();
 }
 
-void Entity_scripting_manager::finalizePythonInterpreter()
-{
+void Entity_scripting_manager::finalizePythonInterpreter() {
 
   g_scene = nullptr;
 
@@ -393,15 +454,13 @@ void Entity_scripting_manager::finalizePythonInterpreter()
   }
 }
 
-void Entity_scripting_manager::renderImGui()
-{
+void Entity_scripting_manager::renderImGui() {
   if (_showImGui) {
     ImGui::ShowDemoWindow();
   }
 }
 
-void Entity_scripting_manager::execute(const std::string& command)
-{
+void Entity_scripting_manager::execute(const std::string& command) {
   // TODO: Execute some python, or something :)
   LOG(INFO) << "exec: " << command;
 
@@ -410,15 +469,14 @@ void Entity_scripting_manager::execute(const std::string& command)
   }
 }
 
-bool Entity_scripting_manager::commandSuggestions(const std::string& command,
-                                                  std::vector<std::string>& suggestions)
-{
+bool Entity_scripting_manager::commandSuggestions(
+    const std::string& command,
+    std::vector<std::string>& suggestions) {
   // TODO: provide some suggestions!
   return false;
 }
 
-void Entity_scripting_manager::renderDebugSpheres() const
-{
+void Entity_scripting_manager::renderDebugSpheres() const {
   auto& renderManager = _scene.manager<IEntity_render_manager>();
   auto& devToolsManager = _scene.manager<IDev_tools_manager>();
   devToolsManager.clearDebugShapes();

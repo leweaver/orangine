@@ -6,6 +6,10 @@
 #pragma once
 
 // Python must be included before any STL files
+#ifdef Py_DEBUG
+// This is redefined defined in pyconfig.h
+#undef Py_DEBUG
+#endif
 #include <Python.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>

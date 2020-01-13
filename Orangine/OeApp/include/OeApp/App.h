@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include <memory>
+#include <string>
 
 namespace oe {
 class Scene;
@@ -30,13 +30,19 @@ class App {
   App& operator=(App&&) = default;
 
  protected:
+  // Called after the scene & managers are created & configured, but have not yet been initialized.
+  // You can implement this function in your application to call any pre-init functions on
+  // scene manager classes.
+  virtual void onSceneConfigured(Scene& scene) {}
+
+  // Called after the managers have been initialized.
   // You can implement this function in your application to load assets, etc.
-  virtual void onSceneInitialized(Scene& scene) {};
+  virtual void onSceneInitialized(Scene& scene) {}
 
   // Called just before the engine ticks all of the inbuilt manager classes
-  virtual void onSceneTick(Scene& scene) {};
+  virtual void onSceneTick(Scene& scene) {}
 
   // Called after the managers are ticked, and just before the engine renders the next scene
-  virtual void onScenePreRender(Scene& scene) {};
+  virtual void onScenePreRender(Scene& scene) {}
 };
 } // namespace oe

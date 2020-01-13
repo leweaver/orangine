@@ -7,6 +7,10 @@ class IEntity_scripting_manager : public Manager_base, public Manager_tickable {
  public:
   explicit IEntity_scripting_manager(Scene& scene) : Manager_base(scene) {}
 
+  // Only has an effect if called before the manager is initialized.
+  // Appends the given absolute path to sys.path
+  virtual void preInit_addAbsoluteScriptsPath(const std::wstring& path) = 0;
+
   virtual void renderImGui() = 0;
 
   // Python commands

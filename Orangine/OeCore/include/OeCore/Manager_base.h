@@ -42,6 +42,10 @@ class Manager_base {
  public:
   explicit Manager_base(Scene& scene) : _scene(scene) {}
   virtual ~Manager_base() = default;
+  Manager_base(const Manager_base&) = delete;
+  Manager_base& operator=(const Manager_base&) = delete;
+  Manager_base(Manager_base&&) = delete;
+  Manager_base& operator=(Manager_base&&) = delete;
 
   virtual void loadConfig(const IConfigReader&) {}
   virtual void initialize() = 0;

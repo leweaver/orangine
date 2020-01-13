@@ -11,9 +11,10 @@ namespace oe {
     public:
         explicit IUser_interface_manager(Scene& scene) : Manager_base(scene) {}
 
+     virtual void preInit_setUIScale(float scale) = 0;
+
         virtual void render() = 0;
         virtual bool keyboardCaptured() = 0;
         virtual bool mouseCaptured() = 0;
-        virtual void setUIScale(float scale) = 0;
     };
 }

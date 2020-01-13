@@ -35,3 +35,5 @@ thirdparty/imgui/
 thirdparty/tinygltf/
 thirdparty/python64/
 thirdparty/python32/
+/thirdparty/pyenv_37_d
+/thirdparty/pyenv_37

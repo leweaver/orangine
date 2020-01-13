@@ -16,7 +16,7 @@ struct BoundingSphere {
   SSE::Vector3 center;
   float radius;
 
-  BoundingSphere() noexcept : center(0, 0, 0), radius(1.f) {}
+  BoundingSphere() noexcept : center(0, 0, 0), radius(0.f) {}
 
   BoundingSphere(const BoundingSphere&) = default;
   BoundingSphere& operator=(const BoundingSphere&) = default;

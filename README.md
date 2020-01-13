@@ -16,6 +16,9 @@ When installing, ensure you select the following options (in addition to whateve
   - Windows 10 SDK (10.0.18362.0) - 
     - min version required to fix this bug: https://bugs.chromium.org/p/chromium/issues/detail?id=969698
   - Test Adapter for Google Test (If you want to use the visual studio gtest UI)
+- Python Development (if you want to use mixed mode python debugging in the editor, which you should want! See: https://docs.microsoft.com/en-us/visualstudio/python/debugging-mixed-mode-c-cpp-python-in-visual-studio?view=vs-2019)
+  - Python native development tools
+
 
 ## Visual studio find module
 (This is a microsoft module, see here: https://github.com/microsoft/vssetup.powershell)
@@ -30,7 +33,10 @@ Install-Module VSSetup -Scope CurrentUser
 ## Python 3.7
 READ ALL THE STEPS!
 
-Download 64bit [Python 3.7.3 installer](https://www.python.org/ftp/python/3.7.3/python-3.7.3-amd64.exe) from Python website. 
+(Note that Python 3.7.3 doesn't work, as there is a bug preventing creation of venv's with debug symbols installed.)
+
+Download 64bit [Python 3.7.6 installer](https://www.python.org/ftp/python/3.7.6/python-3.7.6-amd64.exe) from Python website. 
+Download 32bit [Python 3.7.6 installer](https://www.python.org/ftp/python/3.7.6/python-3.7.6.exe) from Python website. 
 
 > If you get the 32 bit installer, be prepared for compiler errors!
 

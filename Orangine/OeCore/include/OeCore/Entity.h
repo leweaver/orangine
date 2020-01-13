@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "OeCore/Component.h"
-#include "OeCore/Collision.h"
+#include <OeCore/Component.h>
+#include <OeCore/Collision.h>
 
 #include "vectormath/vectormath.hpp"
 
@@ -107,8 +107,8 @@ namespace oe {
         bool calculateWorldTransform() const { return _calculateWorldTransform; }
         void setCalculateWorldTransform(bool calculateWorldTransform) { _calculateWorldTransform = calculateWorldTransform; }
 
-        const BoundingSphere& boundSphere() const { return _boundSphere; }
-        void setBoundSphere(const BoundingSphere& boundSphere) { _boundSphere = boundSphere; }
+        const oe::BoundingSphere& boundSphere() const { return _boundSphere; }
+        void setBoundSphere(const oe::BoundingSphere& boundSphere) { _boundSphere = boundSphere; }
 
         Scene& scene() const { return _scene; }
 

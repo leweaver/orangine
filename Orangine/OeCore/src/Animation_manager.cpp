@@ -17,32 +17,47 @@ template <> IAnimation_manager* oe::create_manager(Scene& scene)
 }
 
 const std::array<
-    std::function<void(Entity&, const Animation_controller_component::Animation_channel& channel,
-                       uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)>,
+    std::function<void(
+        Entity&,
+        const Animation_controller_component::Animation_channel& channel,
+        uint32_t lowerValueIndex,
+        uint32_t upperValueIndex,
+        double factor)>,
     4>
-    g_lerp_animation_type_handlers = {&Animation_manager::handleTranslationAnimationLerp,
-                                      &Animation_manager::handleRotationAnimationLerp,
-                                      &Animation_manager::handleScaleAnimationLerp,
-                                      &Animation_manager::handleMorphAnimationLerp};
+    g_lerp_animation_type_handlers = {
+        &Animation_manager::handleTranslationAnimationLerp,
+        &Animation_manager::handleRotationAnimationLerp,
+        &Animation_manager::handleScaleAnimationLerp,
+        &Animation_manager::handleMorphAnimationLerp,
+};
 
 const std::array<
-    std::function<void(Entity&, const Animation_controller_component::Animation_channel& channel,
-                       uint32_t lowerValueIndex)>,
+    std::function<void(
+        Entity&,
+        const Animation_controller_component::Animation_channel& channel,
+        uint32_t lowerValueIndex)>,
     4>
-    g_step_animation_type_handlers = {&Animation_manager::handleTranslationAnimationStep,
-                                      &Animation_manager::handleRotationAnimationStep,
-                                      &Animation_manager::handleScaleAnimationStep,
-                                      &Animation_manager::handleMorphAnimationStep};
+    g_step_animation_type_handlers = {
+        &Animation_manager::handleTranslationAnimationStep,
+        &Animation_manager::handleRotationAnimationStep,
+        &Animation_manager::handleScaleAnimationStep,
+        &Animation_manager::handleMorphAnimationStep,
+};
 
 const std::array<
-    std::function<void(Entity&, const Animation_controller_component::Animation_channel& channel,
-                       uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)>,
+    std::function<void(
+        Entity&,
+        const Animation_controller_component::Animation_channel& channel,
+        uint32_t lowerValueIndex,
+        uint32_t upperValueIndex,
+        double factor)>,
     4>
     g_cubic_spline_animation_type_handlers = {
         &Animation_manager::handleTranslationAnimationCubicSpline,
         &Animation_manager::handleRotationAnimationCubicSpline,
         &Animation_manager::handleScaleAnimationCubicSpline,
-        &Animation_manager::handleMorphAnimationCubicSpline};
+        &Animation_manager::handleMorphAnimationCubicSpline,
+};
 
 void Animation_manager::initialize()
 {
@@ -98,19 +113,16 @@ void Animation_manager::tick()
         if (maxIndex == 0) {
           // Will reach this point if currentTime has not yet reached the beginning of animation.
           minIndex = 0;
-        }
-        else if (maxIndex == keyframeTimes.size()) {
+        } else if (maxIndex == keyframeTimes.size()) {
           // Reach this point if current time is greater than the end of the animation
           if (keyframeTimes.size() > 1) {
             --maxIndex;
             minIndex = maxIndex - 1;
-          }
-          else {
+          } else {
             maxIndex = minIndex = 0;
           }
           ++numComplete;
-        }
-        else {
+        } else {
           // Normal case; at a valid point in an animation with >= 2 keyframes
           assert(keyframeTimes.size() > 1);
           minIndex = maxIndex - 1;
@@ -174,8 +186,9 @@ template <> void convertSplineElement(const Float4& in, SSE::Quat& out)
 }
 
 template <class TTypeIn, class TTypeOut>
-const TTypeOut getKeyframeValue(const Animation_controller_component::Animation_channel& channel,
-                                uint32_t index)
+const TTypeOut getKeyframeValue(
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t index)
 {
   auto val = reinterpret_cast<const TTypeIn*>(channel.keyframeValues->getIndexed(index))[0];
   TTypeOut outVal;
@@ -183,70 +196,88 @@ const TTypeOut getKeyframeValue(const Animation_controller_component::Animation_
   return outVal;
 }
 
-const float getKeyframeValueFloat(const Animation_controller_component::Animation_channel& channel,
-                                  uint32_t index)
+const float getKeyframeValueFloat(
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t index)
 {
   return reinterpret_cast<const float*>(channel.keyframeValues->getIndexed(index))[0];
 }
 
 void Animation_manager::handleTranslationAnimationStep(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex)
 {
   entity.setPosition(getKeyframeValue<Float3, SSE::Vector3>(channel, lowerValueIndex));
 }
 
 void Animation_manager::handleScaleAnimationStep(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex)
 {
   entity.setScale(getKeyframeValue<Float3, SSE::Vector3>(channel, lowerValueIndex));
 }
 
 void Animation_manager::handleRotationAnimationStep(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex)
 {
   entity.setRotation(getKeyframeValue<Float4, SSE::Quat>(channel, lowerValueIndex));
 }
 
 void Animation_manager::handleMorphAnimationStep(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
     uint32_t lowerValueIndex)
 {
   handleMorphAnimationLerp(entity, channel, lowerValueIndex, lowerValueIndex, 0.0f);
 }
 
 void Animation_manager::handleTranslationAnimationLerp(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
-    uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t lowerValueIndex,
+    uint32_t upperValueIndex,
+    double factor)
 {
-  entity.setPosition(SSE::lerp(static_cast<float>(factor),
-                               getKeyframeValue<Float3, SSE::Vector3>(channel, lowerValueIndex),
-                               getKeyframeValue<Float3, SSE::Vector3>(channel, upperValueIndex)));
+  entity.setPosition(SSE::lerp(
+      static_cast<float>(factor),
+      getKeyframeValue<Float3, SSE::Vector3>(channel, lowerValueIndex),
+      getKeyframeValue<Float3, SSE::Vector3>(channel, upperValueIndex)));
 }
 
 void Animation_manager::handleScaleAnimationLerp(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
-    uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t lowerValueIndex,
+    uint32_t upperValueIndex,
+    double factor)
 {
-  entity.setScale(SSE::lerp(static_cast<float>(factor),
-                            getKeyframeValue<Float3, SSE::Vector3>(channel, lowerValueIndex),
-                            getKeyframeValue<Float3, SSE::Vector3>(channel, upperValueIndex)));
+  entity.setScale(SSE::lerp(
+      static_cast<float>(factor),
+      getKeyframeValue<Float3, SSE::Vector3>(channel, lowerValueIndex),
+      getKeyframeValue<Float3, SSE::Vector3>(channel, upperValueIndex)));
 }
 
 void Animation_manager::handleRotationAnimationLerp(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
-    uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t lowerValueIndex,
+    uint32_t upperValueIndex,
+    double factor)
 {
-  entity.setRotation(SSE::slerp(static_cast<float>(factor),
-                                getKeyframeValue<Float4, SSE::Quat>(channel, lowerValueIndex),
-                                getKeyframeValue<Float4, SSE::Quat>(channel, upperValueIndex)));
+  entity.setRotation(SSE::slerp(
+      static_cast<float>(factor),
+      getKeyframeValue<Float4, SSE::Quat>(channel, lowerValueIndex),
+      getKeyframeValue<Float4, SSE::Quat>(channel, upperValueIndex)));
 }
 
-std::array<std::function<void(std::array<double, 8>& meshWeights, size_t meshWeightsOffset,
-                              const Float4& weights)>,
-           5>
+std::array<
+    std::function<
+        void(std::array<double, 8>& meshWeights, size_t meshWeightsOffset, const Float4& weights)>,
+    5>
     g_applyWeights = {[](auto& meshWeights, auto meshWeightsOffset, const auto& weights) {},
                       [](auto& meshWeights, auto meshWeightsOffset, const auto& weights) {
                         meshWeights[meshWeightsOffset] = weights.x;
@@ -268,8 +299,11 @@ std::array<std::function<void(std::array<double, 8>& meshWeights, size_t meshWei
                       }};
 
 void Animation_manager::handleMorphAnimationLerp(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
-    uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t lowerValueIndex,
+    uint32_t upperValueIndex,
+    double factor)
 {
   const auto morphWeightsComponent = entity.getFirstComponentOfType<Morph_weights_component>();
   if (morphWeightsComponent) {
@@ -281,18 +315,17 @@ void Animation_manager::handleMorphAnimationLerp(
     auto upperWeights = SSE::Vector4();
     if (morphTargetCount <= 4) {
       for (uint8_t targetIdx = 0u; targetIdx < morphTargetCount; ++targetIdx) {
-        lowerWeights.setElem(targetIdx,
-                             getKeyframeValueFloat(channel, lowerValueIndex + targetIdx));
-        upperWeights.setElem(targetIdx,
-                             getKeyframeValueFloat(channel, upperValueIndex + targetIdx));
+        lowerWeights.setElem(
+            targetIdx, getKeyframeValueFloat(channel, lowerValueIndex + targetIdx));
+        upperWeights.setElem(
+            targetIdx, getKeyframeValueFloat(channel, upperValueIndex + targetIdx));
       }
 
       const auto weights = SSE::lerp(static_cast<float>(factor), lowerWeights, upperWeights);
       const auto numToApply = std::min(4u, morphTargetCount);
-      g_applyWeights.at(numToApply)(morphWeightsComponent->morphWeights(), 0,
-                                    static_cast<Float4>(weights));
-    }
-    else {
+      g_applyWeights.at(
+          numToApply)(morphWeightsComponent->morphWeights(), 0, static_cast<Float4>(weights));
+    } else {
       assert(morphTargetCount <= 8);
       lowerWeights = getKeyframeValue<Float4, SSE::Vector4>(channel, lowerValueIndex);
       upperWeights = getKeyframeValue<Float4, SSE::Vector4>(channel, upperValueIndex);
@@ -301,16 +334,16 @@ void Animation_manager::handleMorphAnimationLerp(
       g_applyWeights.at(4)(morphWeightsComponent->morphWeights(), 0, static_cast<Float4>(weights));
 
       for (uint8_t targetIdx = 4u; targetIdx < morphTargetCount; ++targetIdx) {
-        lowerWeights.setElem(targetIdx,
-                             getKeyframeValueFloat(channel, lowerValueIndex + targetIdx));
-        upperWeights.setElem(targetIdx,
-                             getKeyframeValueFloat(channel, upperValueIndex + targetIdx));
+        lowerWeights.setElem(
+            targetIdx, getKeyframeValueFloat(channel, lowerValueIndex + targetIdx));
+        upperWeights.setElem(
+            targetIdx, getKeyframeValueFloat(channel, upperValueIndex + targetIdx));
       }
 
       weights = SSE::lerp(static_cast<float>(factor), lowerWeights, upperWeights);
       const auto numToApply = std::min(4u, morphTargetCount - 4u);
-      g_applyWeights.at(numToApply)(morphWeightsComponent->morphWeights(), 4,
-                                    static_cast<Float4>(weights));
+      g_applyWeights.at(
+          numToApply)(morphWeightsComponent->morphWeights(), 4, static_cast<Float4>(weights));
     }
   }
 }
@@ -323,8 +356,10 @@ template <class TType> struct Cubic_spline_value {
 
 template <class TTypeIn, class TTypeOut>
 TTypeOut Animation_manager::calculateCubicSpline(
-    const Animation_controller_component::Animation_channel& channel, uint32_t lowerValueIndex,
-    uint32_t upperValueIndex, double factor)
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t lowerValueIndex,
+    uint32_t upperValueIndex,
+    double factor)
 {
   const auto& lower = reinterpret_cast<const Cubic_spline_value<TTypeIn>*>(
       channel.keyframeValues->getIndexed(lowerValueIndex * channel.valuesPerKeyFrame))[0];
@@ -352,24 +387,33 @@ TTypeOut Animation_manager::calculateCubicSpline(
 }
 
 void Animation_manager::handleTranslationAnimationCubicSpline(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
-    uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t lowerValueIndex,
+    uint32_t upperValueIndex,
+    double factor)
 {
-  entity.setPosition(calculateCubicSpline<Float3, SSE::Vector3>(channel, lowerValueIndex,
-                                                                upperValueIndex, factor));
+  entity.setPosition(calculateCubicSpline<Float3, SSE::Vector3>(
+      channel, lowerValueIndex, upperValueIndex, factor));
 }
 
 void Animation_manager::handleScaleAnimationCubicSpline(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
-    uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t lowerValueIndex,
+    uint32_t upperValueIndex,
+    double factor)
 {
-  entity.setScale(calculateCubicSpline<Float3, SSE::Vector3>(channel, lowerValueIndex,
-                                                             upperValueIndex, factor));
+  entity.setScale(calculateCubicSpline<Float3, SSE::Vector3>(
+      channel, lowerValueIndex, upperValueIndex, factor));
 }
 
 void Animation_manager::handleRotationAnimationCubicSpline(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
-    uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t lowerValueIndex,
+    uint32_t upperValueIndex,
+    double factor)
 {
   auto result =
       calculateCubicSpline<Float4, SSE::Quat>(channel, lowerValueIndex, upperValueIndex, factor);
@@ -377,8 +421,11 @@ void Animation_manager::handleRotationAnimationCubicSpline(
 }
 
 void Animation_manager::handleMorphAnimationCubicSpline(
-    Entity& entity, const Animation_controller_component::Animation_channel& channel,
-    uint32_t lowerValueIndex, uint32_t upperValueIndex, double factor)
+    Entity& entity,
+    const Animation_controller_component::Animation_channel& channel,
+    uint32_t lowerValueIndex,
+    uint32_t upperValueIndex,
+    double factor)
 {
   // The one frame in the value stream is packed as such:
   // [ in-tangent-0 ... in-tangent-N, morph-value-0 ... morph-value-N, out-tangent-0 ...

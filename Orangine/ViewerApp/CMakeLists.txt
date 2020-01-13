@@ -56,6 +56,7 @@ set(ViewerApp_DATA_DIRECTORIES "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data")
 list(APPEND ViewerApp_DATA_DIRECTORIES "OeCore=${OeCore_DATA_SOURCE_DIR}")
 list(APPEND ViewerApp_DATA_DIRECTORIES "OeApp=${OeApp_DATA_SOURCE_DIR}")
 list(APPEND ViewerApp_DATA_DIRECTORIES "OeScripting=${OeScripting_DATA_SOURCE_DIR}")
+list(APPEND ViewerApp_DATA_DIRECTORIES "pyenv=${ViewerApp_THIRDPARTY_PATH}/pyenv_37$<$<CONFIG:debug>:_d>$<$<CONFIG:release>:>")
 set(ViewerApp_SOURCE_CONFIG_FILE "${PROJECT_SOURCE_DIR}/src/config.default.json")
 
 # Write source data paths, for cases where the app is run from the build output folder

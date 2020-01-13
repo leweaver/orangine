@@ -7,8 +7,8 @@
 #include "Game.h"
 #include "LogFileSink.h"
 #include "VectorLogSink.h"
-#include <OeApp/App.h>
 
+#include <OeApp/App.h>
 #include <OeCore/EngineUtils.h>
 #include <OeCore/WindowsDefines.h>
 
@@ -35,12 +35,11 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
 // Do NOT do this in 64 bit builds, it is incompatible with json.hpp for some reason.
-//EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+// EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 //#define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
 
 // Entry point
-int oe::App::run(const oe::App_start_settings& settings)
-{
+int oe::App::run(const oe::App_start_settings& settings) {
   // Initialize logger
   std::string logFileName;
   auto logWorker = g3::LogWorker::createLogWorker();
@@ -87,99 +86,135 @@ int oe::App::run(const oe::App_start_settings& settings)
   // TODO: We should try and get the hInstance that was passed to WinMain somehow.
   // BUT... using the HINST_THISCOMPONENT macro defined above seems to break 64bit builds.
   HINSTANCE hInstance = 0;
-  g_game = std::make_unique<Game>();
 
   // Register class and create window
-  {
-    // Register class
-    WNDCLASSEX wcex;
-    wcex.cbSize = sizeof(WNDCLASSEX);
-    wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = WndProc;
-    wcex.cbClsExtra = 0;
-    wcex.cbWndExtra = 0;
-    wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(hInstance, L"IDI_ICON");
-    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex.lpszMenuName = nullptr;
-    wcex.lpszClassName = L"OeAppWindowClass";
-    wcex.hIconSm = LoadIcon(wcex.hInstance, L"IDI_ICON");
-    if (!RegisterClassEx(&wcex)) {
-      LOG(WARNING) << "Failed to register window class: " << getlasterror_to_str();
-      return 1;
-    }
+  // Register class
+  WNDCLASSEX wcex;
+  wcex.cbSize = sizeof(WNDCLASSEX);
+  wcex.style = CS_HREDRAW | CS_VREDRAW;
+  wcex.lpfnWndProc = WndProc;
+  wcex.cbClsExtra = 0;
+  wcex.cbWndExtra = 0;
+  wcex.hInstance = hInstance;
+  wcex.hIcon = LoadIcon(hInstance, L"IDI_ICON");
+  wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+  wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+  wcex.lpszMenuName = nullptr;
+  wcex.lpszClassName = L"OeAppWindowClass";
+  wcex.hIconSm = LoadIcon(wcex.hInstance, L"IDI_ICON");
+  if (!RegisterClassEx(&wcex)) {
+    LOG(WARNING) << "Failed to register window class: " << getlasterror_to_str();
+    return 1;
+  }
 
-    // Create window
-    int w, h;
-    g_game->GetDefaultSize(w, h);
+  // Create window
+  int w, h;
+  Game::GetDefaultSize(w, h);
 
-    RECT rc;
-    rc.top = 0;
-    rc.left = 0;
-    rc.right = static_cast<LONG>(w);
-    rc.bottom = static_cast<LONG>(h);
+  RECT rc;
+  rc.top = 0;
+  rc.left = 0;
+  rc.right = static_cast<LONG>(w);
+  rc.bottom = static_cast<LONG>(h);
 
-    AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+  AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 
-    auto dwExStyle = settings.fullScreen ? WS_EX_TOPMOST : 0;
-    auto dwStyle = settings.fullScreen ? WS_POPUP : WS_OVERLAPPEDWINDOW;
-    HWND hwnd = CreateWindowEx(dwExStyle, L"OeAppWindowClass", settings.title.c_str(), dwStyle,
-                               CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top,
-                               nullptr, nullptr, hInstance, nullptr);
+  auto dwExStyle = settings.fullScreen ? WS_EX_TOPMOST : 0;
+  auto dwStyle = settings.fullScreen ? WS_POPUP : WS_OVERLAPPEDWINDOW;
+  HWND hwnd = CreateWindowEx(
+      dwExStyle,
+      L"OeAppWindowClass",
+      settings.title.c_str(),
+      dwStyle,
+      CW_USEDEFAULT,
+      CW_USEDEFAULT,
+      rc.right - rc.left,
+      rc.bottom - rc.top,
+      nullptr,
+      nullptr,
+      hInstance,
+      nullptr);
 
-    if (!hwnd) {
-      LOG(WARNING) << "Failed to create window: " << getlasterror_to_str();
-      return 1;
-    }
+  if (!hwnd) {
+    LOG(WARNING) << "Failed to create window: " << getlasterror_to_str();
+    return 1;
+  }
 
-    ShowWindow(hwnd, settings.fullScreen ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
+  ShowWindow(hwnd, settings.fullScreen ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
 
+  int progReturnVal = 1;
+  do {
+    g_game = std::make_unique<Game>();
     SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()));
 
     GetClientRect(hwnd, &rc);
-    g_game->Initialize(hwnd, GetDpiForWindow(hwnd), rc.right - rc.left, rc.bottom - rc.top);
-
-    if (!g_game->hasFatalError()) {
-      g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(vectorLog.get());
+    try {
+      g_game->Configure(hwnd, GetDpiForWindow(hwnd), rc.right - rc.left, rc.bottom - rc.top);
+      if (g_game->hasFatalError()) {
+        progReturnVal = 1;
+        break;
+      }
+      onSceneConfigured(g_game->scene());
+    } catch (const std::exception& e) {
+      LOG(WARNING) << "Failed to configure scene: " << e.what();
+      progReturnVal = 1;
+      break;
     }
+
+    g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(vectorLog.get());
 
     try {
+      g_game->Initialize();
+      if (g_game->hasFatalError()) {
+        progReturnVal = 1;
+        break;
+      }
+
       onSceneInitialized(g_game->scene());
+    } catch (const std::exception& e) {
+      LOG(WARNING) << "Failed to initialize scene: " << e.what();
+      progReturnVal = 1;
+      break;
     }
-    catch (const std::exception& e) {
-      LOG(WARNING) << "Failed to load scene: " << e.what();
-      return 1;
-    }
-  }
 
-  // Main message loop
-  MSG msg = {};
-  while (WM_QUIT != msg.message && !g_game->hasFatalError()) {
-    if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-    }
-    else {
-      onSceneTick(g_game->scene());
-      g_game->Tick();
+    // Main message loop
+    MSG msg = {};
+    while (WM_QUIT != msg.message && !g_game->hasFatalError()) {
+      if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+        progReturnVal = (int)msg.wParam;
+      } else {
+        try {
+          onSceneTick(g_game->scene());
+          g_game->Tick();
 
-      onScenePreRender(g_game->scene());
-      g_game->Render();
+          onScenePreRender(g_game->scene());
+          g_game->Render();
+        } catch (const std::exception& ex) {
+          LOG(WARNING) << "Terminating on uncaught exception: " << ex.what();
+          progReturnVal = 1;
+          break;
+        } catch (...) {
+          LOG(WARNING) << "Terminating on uncaught error";
+          progReturnVal = 1;
+          break;
+        }
+      }
     }
-  }
+  } while (false);
 
   g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(nullptr);
   g_game.reset();
 
+  // This must be the last thing that happens.
   CoUninitialize();
 
-  return (int)msg.wParam;
+  return progReturnVal;
 }
 
 // Windows procedure
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
   PAINTSTRUCT ps;
   HDC hdc;
 
@@ -202,8 +237,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
   case WM_PAINT:
     if (s_in_sizemove && game) {
       game->Tick();
-    }
-    else {
+    } else {
       hdc = BeginPaint(hWnd, &ps);
       EndPaint(hWnd, &ps);
     }
@@ -223,14 +257,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
           game->OnSuspending();
         s_in_suspend = true;
       }
-    }
-    else if (s_minimized) {
+    } else if (s_minimized) {
       s_minimized = false;
       if (s_in_suspend && game)
         game->OnResuming();
       s_in_suspend = false;
-    }
-    else if (!s_in_sizemove && game) {
+    } else if (!s_in_sizemove && game) {
       game->OnWindowSizeChanged(LOWORD(lParam), HIWORD(lParam));
     }
     break;
@@ -259,8 +291,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     if (game) {
       if (wParam) {
         game->OnActivated();
-      }
-      else {
+      } else {
         game->OnDeactivated();
       }
     }
@@ -302,15 +333,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         ShowWindow(hWnd, SW_SHOWNORMAL);
 
-        SetWindowPos(hWnd, HWND_TOP, 0, 0, width, height,
-                     SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
-      }
-      else {
+        SetWindowPos(
+            hWnd, HWND_TOP, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
+      } else {
         SetWindowLongPtr(hWnd, GWL_STYLE, 0);
         SetWindowLongPtr(hWnd, GWL_EXSTYLE, WS_EX_TOPMOST);
 
-        SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0,
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+        SetWindowPos(
+            hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 
         ShowWindow(hWnd, SW_SHOWMAXIMIZED);
       }

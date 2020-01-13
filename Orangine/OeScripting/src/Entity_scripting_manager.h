@@ -17,6 +17,7 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
   void tick() override;
 
   // IEntity_scripting_manager implementation
+  void preInit_addAbsoluteScriptsPath(const std::wstring& path) override;
   void renderImGui() override;
   void execute(const std::string& command) override;
   bool commandSuggestions(const std::string& command,
@@ -35,9 +36,9 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
   std::shared_ptr<Entity_filter> _lightEntityFilter;
   bool _showImGui = false;
 
-  std::map<std::string, PyObject*> _loadedModules;
   std::wstring _pythonHome;
   std::wstring _pythonProgramName;
+  std::vector<std::wstring> _preInit_additionalPaths;
 
   // TODO: This would be part of a script context
   struct ScriptData {
@@ -52,17 +53,20 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
 
     pybind11::module engine_internal;
     pybind11::detail::str_attr_accessor reset_output_streams;
+    pybind11::detail::str_attr_accessor enable_remote_debugging;
   };
   struct PythonContext {
     pybind11::module sys;
+    //pybind11::dict globals;
     std::unique_ptr<EngineInternalPythonModule> engine_internal;
   };
   PythonContext _pythonContext;
 
   void initializePythonInterpreter();
   void finalizePythonInterpreter();
-  void logPythonError(const pybind11::error_already_set& err, const std::string& whereStr) const;
-  void flushStdIo();
+  static void logPythonError(const pybind11::error_already_set& err, const std::string& whereStr);
+  void flushStdIo() const;
+  void enableRemoteDebugging() const;
 
   void renderDebugSpheres() const;
 

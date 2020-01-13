@@ -29,13 +29,11 @@ const auto g_hashSeed_axisWidget = std::hash<std::string>{}("axisWidget");
 
 std::string Dev_tools_manager::_name = "Dev_tools_manager";
 
-template <> IDev_tools_manager* oe::create_manager(Scene& scene)
-{
+template <> IDev_tools_manager* oe::create_manager(Scene& scene) {
   return new Dev_tools_manager(scene);
 }
 
-void Dev_tools_manager::initialize()
-{
+void Dev_tools_manager::initialize() {
   _noLightProvider = [](const BoundingSphere&, std::vector<Entity*>&, uint32_t) {};
   _fpsCounter = std::make_unique<Fps_counter>();
   _animationControllers = _scene.manager<IScene_graph_manager>().getEntityFilter(
@@ -46,8 +44,7 @@ void Dev_tools_manager::initialize()
   _unlitMaterial = std::make_shared<Unlit_material>();
 }
 
-void Dev_tools_manager::shutdown()
-{
+void Dev_tools_manager::shutdown() {
   _unlitMaterial.reset();
   _debugShapes.resize(0);
   _animationControllers = nullptr;
@@ -59,8 +56,7 @@ const std::string& Dev_tools_manager::name() const { return _name; }
 
 void Dev_tools_manager::renderAxisWidgets() { addDebugAxisWidget(SSE::Matrix4::identity()); }
 
-void Dev_tools_manager::renderSkeletons()
-{
+void Dev_tools_manager::renderSkeletons() {
   const auto white = oe::Colors::White;
   const auto red = oe::Colors::Red;
 
@@ -108,14 +104,13 @@ void Dev_tools_manager::renderSkeletons()
         addDebugCone(transform * rotation4x4 * scale, 0.1f, 1.0f, red);
       }
 
-      addDebugSphere(bone->worldTransform() * SSE::Matrix4::scale(SSE::Vector3(height)), 0.1f,
-                     white, 3);
+      addDebugSphere(
+          bone->worldTransform() * SSE::Matrix4::scale(SSE::Vector3(height)), 0.1f, white, 3);
     }
   }
 }
 
-void Dev_tools_manager::tick()
-{
+void Dev_tools_manager::tick() {
   clearDebugShapes();
   if (_renderSkeletons)
     renderSkeletons();
@@ -127,8 +122,7 @@ void Dev_tools_manager::tick()
 
 void Dev_tools_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/) {}
 
-void Dev_tools_manager::destroyDeviceDependentResources()
-{
+void Dev_tools_manager::destroyDeviceDependentResources() {
   for (auto& debugShape : _debugShapes) {
     const auto& renderable = std::get<std::shared_ptr<Renderable>>(debugShape);
     renderable->rendererData.reset();
@@ -136,9 +130,11 @@ void Dev_tools_manager::destroyDeviceDependentResources()
   }
 }
 
-void Dev_tools_manager::addDebugCone(const SSE::Matrix4& worldTransform, float diameter,
-                                     float height, const Color& color)
-{
+void Dev_tools_manager::addDebugCone(
+    const SSE::Matrix4& worldTransform,
+    float diameter,
+    float height,
+    const Color& color) {
   auto hash = g_hashSeed_cone;
   hash_combine(hash, diameter);
   hash_combine(hash, height);
@@ -150,9 +146,11 @@ void Dev_tools_manager::addDebugCone(const SSE::Matrix4& worldTransform, float d
   _debugShapes.push_back({worldTransform, color, renderable});
 }
 
-void Dev_tools_manager::addDebugSphere(const SSE::Matrix4& worldTransform, float radius,
-                                       const Color& color, size_t tessellation)
-{
+void Dev_tools_manager::addDebugSphere(
+    const SSE::Matrix4& worldTransform,
+    float radius,
+    const Color& color,
+    size_t tessellation) {
   auto hash = g_hashSeed_sphere;
   hash_combine(hash, radius);
   hash_combine(hash, tessellation);
@@ -164,9 +162,9 @@ void Dev_tools_manager::addDebugSphere(const SSE::Matrix4& worldTransform, float
   _debugShapes.push_back({worldTransform, color, renderable});
 }
 
-void Dev_tools_manager::addDebugBoundingBox(const oe::BoundingOrientedBox& boundingOrientedBox,
-                                            const Color& color)
-{
+void Dev_tools_manager::addDebugBoundingBox(
+    const oe::BoundingOrientedBox& boundingOrientedBox,
+    const Color& color) {
   auto worldTransform =
       SSE::Transform3(boundingOrientedBox.orientation, boundingOrientedBox.center);
 
@@ -184,9 +182,9 @@ void Dev_tools_manager::addDebugBoundingBox(const oe::BoundingOrientedBox& bound
   _debugShapes.push_back({SSE::Matrix4(worldTransform), color, renderable});
 }
 
-void Dev_tools_manager::addDebugFrustum(const BoundingFrustumRH& boundingFrustum,
-                                        const Color& color)
-{
+void Dev_tools_manager::addDebugFrustum(
+    const BoundingFrustumRH& boundingFrustum,
+    const Color& color) {
   // TODO: Cache these meshes? Will require not building the transform into the mesh itself.
   auto renderable = std::make_shared<Renderable>();
   renderable->meshData = Primitive_mesh_data_factory::createFrustumLines(boundingFrustum);
@@ -195,8 +193,7 @@ void Dev_tools_manager::addDebugFrustum(const BoundingFrustumRH& boundingFrustum
   _debugShapes.push_back({SSE::Matrix4::identity(), color, renderable});
 }
 
-void Dev_tools_manager::addDebugAxisWidget(const SSE::Matrix4& worldTransform)
-{
+void Dev_tools_manager::addDebugAxisWidget(const SSE::Matrix4& worldTransform) {
   auto hash = g_hashSeed_axisWidget;
   auto renderable = getOrCreateRenderable(hash, []() {
     return Primitive_mesh_data_factory::createAxisWidgetLines();
@@ -209,8 +206,7 @@ void Dev_tools_manager::setGuiDebugText(const std::string& text) { _guiDebugText
 
 void Dev_tools_manager::clearDebugShapes() { _debugShapes.clear(); }
 
-void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& cameraData)
-{
+void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& cameraData) {
   auto& entityRenderManager = _scene.manager<IEntity_render_manager>();
   for (auto& debugShape : _debugShapes) {
     const auto& transform = std::get<SSE::Matrix4>(debugShape);
@@ -218,13 +214,18 @@ void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& camera
     auto& renderable = std::get<std::shared_ptr<Renderable>>(debugShape);
 
     _unlitMaterial->setBaseColor(color);
-    entityRenderManager.renderRenderable(*renderable, transform, 0.0f, cameraData, _noLightProvider,
-                                         Render_pass_blend_mode::Opaque, true);
+    entityRenderManager.renderRenderable(
+        *renderable,
+        transform,
+        0.0f,
+        cameraData,
+        _noLightProvider,
+        Render_pass_blend_mode::Opaque,
+        true);
   }
 }
 
-void Dev_tools_manager::renderImGui()
-{
+void Dev_tools_manager::renderImGui() {
   // Display contents in a scrolling region
   ImGui::SetNextWindowSize(ImVec2(554, 300), ImGuiCond_FirstUseEver);
   if (ImGui::Begin("Renderer Features")) {
@@ -284,8 +285,7 @@ void Dev_tools_manager::renderImGui()
                 decltype(animComponent->activeAnimations)::value_type entry = {animEntry.first, {}};
 
                 activeAnimationPos = animComponent->activeAnimations.insert(std::move(entry)).first;
-              }
-              else {
+              } else {
                 animComponent->activeAnimations.erase(animEntry.first);
                 activeAnimationPos = animComponent->activeAnimations.end();
               }
@@ -316,8 +316,7 @@ void Dev_tools_manager::renderImGui()
                       activeAnimationPos->second[i].currentTime = 0.0;
                     }
                   }
-                }
-                else {
+                } else {
                   auto currentTime = static_cast<float>(firstTime);
                   if (ImGui::SliderFloat("Time", &currentTime, 0.0f, maxTime, "%.2f")) {
                     for (size_t i = 0; i < activeAnimationPos->second.size(); ++i) {
@@ -353,20 +352,43 @@ void Dev_tools_manager::renderImGui()
   if (ImGui::Begin("Console")) {
     auto uiScale = ImGui::GetIO().FontGlobalScale;
     ImGui::TextColored(ImVec4(1, 1, 0, 1), "Logs");
+
+    constexpr auto numMessageLevels = 3;
+    ImGui::Columns(numMessageLevels, nullptr, false);
+    static bool selected[numMessageLevels] = {false, true, true};
+    ImGui::Selectable("DEBUG", &selected[0]);
+    ImGui::NextColumn();
+    ImGui::Selectable("INFO", &selected[1]);
+    ImGui::NextColumn();
+    ImGui::Selectable("WARNING", &selected[2]);
+    ImGui::NextColumn();
+    ImGui::Columns(1);
+
+    const ImVec4 logColors[] = {
+        {0.7, 0.7, 0.7, 1},
+        {1, 1, 1, 1},
+        {1, 0, 0, 1},
+    };
+
     if (ImGui::BeginChild("scrolling", ImVec2(0, -25.0f * uiScale), false,
                           ImGuiWindowFlags_HorizontalScrollbar)) {
       ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-      ImGuiListClipper clipper;
+
       const auto numLines = _vectorLog->messageCount();
-      clipper.Begin(numLines);
-      while (clipper.Step()) {
-        for (auto line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++) {
-          auto& logMessage = _vectorLog->getMessageAt(line_no);
-          const auto cStr = logMessage.message.c_str();
-          ImGui::TextUnformatted(cStr, cStr + logMessage.message.size());
+      for (int i = 0; i < numLines; ++i) {
+        const auto& message = _vectorLog->getMessageAt(i);
+        auto level = 0;
+        if (message.level >= g3::kInfoValue) {
+          level = 1;
+        }
+        if (message.level >= g3::kWarningValue) {
+          level = 2;
+        }
+        if (selected[level]) {
+          const auto cStr = message.message.c_str();
+          ImGui::TextColored(logColors[level], cStr);
         }
       }
-      clipper.End();
       if (_scrollLogToBottom)
         ImGui::SetScrollHereY(1.0f);
 
@@ -377,8 +399,8 @@ void Dev_tools_manager::renderImGui()
     if (ImGui::BeginChild("commands", ImVec2(0, 20.0f * uiScale), false)) {
       if (ImGui::InputText(">", &_consoleInput)) {
         if (_consoleInput.size()) {
-          if (_scene.manager<IEntity_scripting_manager>().commandSuggestions(_consoleInput,
-                                                                             _commandSuggestions)) {
+          if (_scene.manager<IEntity_scripting_manager>().commandSuggestions(
+                  _consoleInput, _commandSuggestions)) {
             // TODO: Show suggestions
           }
         }
@@ -404,10 +426,9 @@ void Dev_tools_manager::renderImGui()
   ImGui::End();
 }
 
-std::shared_ptr<Renderable>
-Dev_tools_manager::getOrCreateRenderable(size_t hash,
-                                         std::function<std::shared_ptr<Mesh_data>()> factory)
-{
+std::shared_ptr<Renderable> Dev_tools_manager::getOrCreateRenderable(
+    size_t hash,
+    std::function<std::shared_ptr<Mesh_data>()> factory) {
   const auto pos = _shapeMeshCache.find(hash);
   if (pos == _shapeMeshCache.end()) {
     const auto renderable = std::make_shared<Renderable>();

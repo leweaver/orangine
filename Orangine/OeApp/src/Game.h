@@ -23,7 +23,8 @@ class Game : public oe::App, public DX::IDeviceNotify {
   ~Game();
 
   // Initialization and management
-  void Initialize(HWND window, int dpi, int width, int height);
+  void Configure(HWND window, int dpi, int width, int height);
+  void Initialize();
   void InitRasterizer();
 
   // Signal that the game can no longer run and should exit.
@@ -47,7 +48,7 @@ class Game : public oe::App, public DX::IDeviceNotify {
   void OnWindowSizeChanged(int width, int height);
 
   // Properties
-  void GetDefaultSize(int& width, int& height) const;
+  static void GetDefaultSize(int& width, int& height);
   oe::Scene& scene() const { return *m_scene; }
 
  private:

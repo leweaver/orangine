@@ -38,6 +38,7 @@ class Scene {
   Scene(Scene&&) = default;
   Scene& operator=(Scene&&) = default;
 
+  virtual void configure();
   virtual void initialize();
   void tick(DX::StepTimer const& timer);
   virtual void shutdown();

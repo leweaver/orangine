@@ -41,6 +41,13 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
         )
+        
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    target_compile_definitions(${PROJECT_NAME} 
+        PUBLIC
+        -DPy_DEBUG
+        )
+endif()
 
 # Python
 add_custom_target(...

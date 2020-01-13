@@ -87,22 +87,11 @@ constexpr bool forEach_processMessage(TTuple& managers, UINT message, WPARAM wPa
   return handled;
 }
 
-void Scene::initialize()
-{
-  using namespace std;
-
-  // Mesh loaders
-  const auto meshLoader = addMeshLoader<Entity_graph_loader_gltf>();
-  assert(meshLoader);
-
-  std::fill(_tickTimes.begin(), _tickTimes.end(), 0.0);
-  _tickCount = 0;
-
+void Scene::configure() {
   std::unique_ptr<JsonConfigReader> configReader;
   try {
     configReader = std::make_unique<JsonConfigReader>(CONFIG_FILE_NAME);
-  }
-  catch (std::exception& ex) {
+  } catch (std::exception& ex) {
     LOG(WARNING) << "Failed to read config file: " << utf8_encode(CONFIG_FILE_NAME) << "("
                  << ex.what() << ")";
     throw std::runtime_error(std::string("Scene init failed reading config. ") + ex.what());
@@ -115,6 +104,33 @@ void Scene::initialize()
 
       try {
         manager->loadConfig(*configReader);
+      } catch (std::exception& ex) {
+        throw std::runtime_error("Failed to configure " + manager->name() + ": " + ex.what());
+      }
+    });
+  } catch (std::exception& ex) {
+    LOG(WARNING) << "Failed to configure managers: " << ex.what();
+    throw std::runtime_error(std::string("Scene configure failed. ") + ex.what());
+  }
+}
+
+void Scene::initialize()
+{
+  using namespace std;
+
+  // Mesh loaders
+  const auto meshLoader = addMeshLoader<Entity_graph_loader_gltf>();
+  assert(meshLoader);
+
+  std::fill(_tickTimes.begin(), _tickTimes.end(), 0.0);
+  _tickCount = 0;
+
+  try {
+    forEachOfType<Manager_base>(_managers, [this](auto, auto* manager) {
+      if (manager == nullptr)
+        return;
+
+      try {
         manager->initialize();
       }
       catch (std::exception& ex) {
@@ -198,6 +214,7 @@ void Scene::shutdown()
   _initializedManagers.clear();
 
   _managers = decltype(_managers)();
+  _entityGraphLoaders.clear();
 }
 
 void Scene::onComponentAdded(Entity& entity, Component& component) const

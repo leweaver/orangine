@@ -3,8 +3,6 @@
 #include "OeCore/Entity_filter.h"
 #include "OeCore/IEntity_scripting_manager.h"
 
-#include <Python.h>
-
 namespace oe::internal {
 class Entity_scripting_manager : public IEntity_scripting_manager {
  public:

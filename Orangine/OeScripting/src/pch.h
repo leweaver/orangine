@@ -5,10 +5,9 @@
 
 #pragma once
 
-// Python must be included before any STL files
-#include <Python.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/embed.h>
+#include "OeScriptingConfig.h"
+
+#include "Python_headers.h"
 
 #include "OeCore/WindowsDefines.h"
 

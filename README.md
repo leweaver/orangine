@@ -34,11 +34,27 @@ Download 64bit [Python 3.7.3 installer](https://www.python.org/ftp/python/3.7.3/
 
 > If you get the 32 bit installer, be prepared for compiler errors!
 
-In the installer, choose _advanced options_ and enable:
+### Using Python Debug Binaries
+
+This isn't required, unless you want to debug the actual Python source code. Even then, I'd suggest
+making a small unit test and debugging the outside of Orangine, using python_d.exe.
+
+Linking against debug python libraries in Orangine makes some things really hard...
+you must also build the pip dependencies with debug python. Most support this; but not all.
+
+If you want to forge ahead, it DOES WORK. All, with the exception of remote debugging python code.
+
+1. When installing Python, both 32 and 64 bit, choose _advanced options_ and enable:
 
 - Download debug binaries
 
-> Make sure it is installed to: `%LOCALAPPDATA%\Programs\Python\Python37\`
+> Make sure it is installed to: `%LOCALAPPDATA%\Programs\Python\Python37[_32]\`
+
+2. When generating the Orangine CMake project, set the following CMake Cache variable:
+
+```
+-DOeScripting_PYTHON_DEBUG=ON
+```
 
 ## Git
 If you are reading this you probably already have GIT installed. If not, [follow these instructions](https://confluence.atlassian.com/get-started-with-bitbucket/install-and-set-up-git-860009658.html) and clone the repository to somewhere convenient on your hard drive:

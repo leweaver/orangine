@@ -2,6 +2,10 @@ project(OeScripting VERSION 1.0
         DESCRIPTION "Orangine Scripting Library"
         LANGUAGES CXX)
 
+# Use python debug binaries (with PyDEBUG defined)?
+# Note - all pip modules must also be built with PyDEBUG.
+SET(OeScripting_PYTHON_DEBUG "OFF" CACHE BOOL "Use python debug binaries (built with PyDEBUG defined)")
+
 configure_file (
         "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
         "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
@@ -91,12 +95,13 @@ install(DIRECTORY data
         )
 
 # Install Python binaries
-install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll"
-        CONFIGURATIONS Debug
-        DESTINATION bin)
-install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll"
-        CONFIGURATIONS Release RelWithDebInfo
-        DESTINATION bin)
+if (${OeScripting_PYTHON_DEBUG})
+		install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll"
+				DESTINATION bin)
+else ()
+		install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll"
+				DESTINATION bin)
+endif()
 
 # Config.cmake files
 configure_file(OeScriptingConfig.cmake.in OeScriptingConfig.cmake @ONLY)

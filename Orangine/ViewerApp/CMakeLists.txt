@@ -39,15 +39,19 @@ add_precompiled_header(${PROJECT_NAME} pch.h
 # Dependencies
 
 # Use this for embedding in the built application, but also for some build scripts in CMake
-find_package(Python3 COMPONENTS Development Interpreter)
+find_package(Python3 COMPONENTS Interpreter)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Oe::App)
 
-# Manually copy the python DLL for builds, to keep the Py_SetPythonHome path < 260 characters.
-set(Python3_DLL_NAME "python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}$<$<CONFIG:debug>:_d>$<$<CONFIG:release>:>.dll")
+# Manually copy the python DLL for builds to make sure it uses the correct x86 or x64 variant
+if (${OeScripting_PYTHON_DEBUG})
+	set(Python3_DLL_NAME ${Python3_RUNTIME_LIBRARY_RELEASE})
+else()
+	set(Python3_DLL_NAME ${Python3_RUNTIME_LIBRARY_DEBUG})
+endif()
 add_custom_command(TARGET ${PROJECT_NAME}
                    POST_BUILD
-                   COMMAND "${CMAKE_COMMAND}" -E copy "${Python3_RUNTIME_LIBRARY_DIRS}/${Python3_DLL_NAME}" "${PROJECT_BINARY_DIR}"
+                   COMMAND "${CMAKE_COMMAND}" -E copy "${Python3_DLL_NAME}" "${PROJECT_BINARY_DIR}"
                    )
 
 # --------------------------------
@@ -56,7 +60,7 @@ set(ViewerApp_DATA_DIRECTORIES "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data")
 list(APPEND ViewerApp_DATA_DIRECTORIES "OeCore=${OeCore_DATA_SOURCE_DIR}")
 list(APPEND ViewerApp_DATA_DIRECTORIES "OeApp=${OeApp_DATA_SOURCE_DIR}")
 list(APPEND ViewerApp_DATA_DIRECTORIES "OeScripting=${OeScripting_DATA_SOURCE_DIR}")
-list(APPEND ViewerApp_DATA_DIRECTORIES "pyenv=${ViewerApp_THIRDPARTY_PATH}/pyenv_37$<$<CONFIG:debug>:_d>$<$<CONFIG:release>:>")
+message("ViewerApp_DATA_DIRECTORIES=${ViewerApp_DATA_DIRECTORIES}")
 set(ViewerApp_SOURCE_CONFIG_FILE "${PROJECT_SOURCE_DIR}/src/config.default.json")
 
 # Write source data paths, for cases where the app is run from the build output folder

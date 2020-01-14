@@ -95,7 +95,6 @@ add_precompiled_header(${PROJECT_NAME} pch.h SOURCE_CXX src/pch.cpp)
 target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
 
 # Public headers
-get_filename_component(OE_THIRDPARTY_PATH "${Orangine_SOURCE_DIR}/../thirdparty" ABSOLUTE)
 target_include_directories(${PROJECT_NAME}
         PUBLIC
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>

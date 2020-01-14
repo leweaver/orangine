@@ -5,6 +5,7 @@ project(OeScripting VERSION 1.0
 # Use python debug binaries (with PyDEBUG defined)?
 # Note - all pip modules must also be built with PyDEBUG.
 SET(OeScripting_PYTHON_DEBUG "OFF" CACHE BOOL "Use python debug binaries (built with PyDEBUG defined)")
+SET(OeScripting_PYTHON_DEBUG ${OeScripting_PYTHON_DEBUG} PARENT_SCOPE)
 
 configure_file (
         "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
@@ -41,21 +42,14 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
         )
-        
-if(CMAKE_BUILD_TYPE MATCHES Debug)
-    target_compile_definitions(${PROJECT_NAME} 
-        PUBLIC
-        -DPy_DEBUG
-        )
-endif()
 
 # Python
 add_custom_target(...
     COMMAND ${CMAKE_COMMAND} -E env "PATH=C:/Some/Path;$ENV{PATH}" <real_command> args...
 )
 
-find_package(Python3 COMPONENTS Development)
-target_link_libraries(${PROJECT_NAME} PUBLIC Python3::Python)
+#find_package(Python3 COMPONENTS Development)
+#target_link_libraries(${PROJECT_NAME} PUBLIC Python3::Python)
 
 # PyBind
 # Override the PYTHON_EXECUTABLE variable with the results of FindPython3, so that pybind 
@@ -76,15 +70,7 @@ install(TARGETS ${PROJECT_NAME}
         INCLUDES DESTINATION include
         PUBLIC_HEADER DESTINATION include/${PROJECT_NAME}
         )
-
-# Install Python binaries
-install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll"
-        CONFIGURATIONS Debug
-        DESTINATION bin)
-install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll"
-        CONFIGURATIONS Release RelWithDebInfo
-        DESTINATION bin)
-
+		
 include(OeUtils)
 install_target_pdb(OeScripting)
 
@@ -96,7 +82,9 @@ install(
 )
 
 # Data and Assets
-set(${PROJECT_NAME}_DATA_SOURCE_DIR "${PROJECT_SOURCE_DIR}/data" PARENT_SCOPE)
+set(OeScripting_PYENV_DIR "${OE_THIRDPARTY_PATH}/pyenv_37_${Orangine_ARCHITECTURE}$<$<BOOL:${OeScripting_PYTHON_DEBUG}>:_d>")
+set(OeScripting_PYENV_DIR ${OeScripting_PYENV_DIR} PARENT_SCOPE)
+set(${PROJECT_NAME}_DATA_SOURCE_DIR "${PROJECT_SOURCE_DIR}/data;pyenv=${OeScripting_PYENV_DIR}" PARENT_SCOPE)
 install(DIRECTORY data
         DESTINATION bin
         )

@@ -4,8 +4,8 @@ import engine
 from io import StringIO
 
 def enable_remote_debugging():
-  # import ptvsd
-  # ptvsd.enable_attach(address=('0.0.0.0', 3000), redirect_output=False)
+  import ptvsd
+  ptvsd.enable_attach(address=('0.0.0.0', 3000), redirect_output=False)
   pass
 
 def reset_output_streams():

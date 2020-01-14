@@ -7,7 +7,18 @@ rem Load Environment
 rem ******************************
 
 set "OE_ROOT=%cd%"
-set "OE_ORIG_PATH=%PATH%""
+set "OE_ORIG_PATH=%PATH%"
+set "PYTHON_32_EXE=C:\Users\hotma\AppData\Local\Programs\Python\Python37-32\python.exe"
+set "PYTHON_64_EXE=C:\Users\hotma\AppData\Local\Programs\Python\Python37\python.exe"
+
+if not exist %PYTHON_32_EXE% (
+    echo "Could not find !PYTHON_32_EXE!. Is it installed?"
+    goto:eof
+)
+if not exist %PYTHON_64_EXE% (
+    echo "Could not find !PYTHON_64_EXE!. Is it installed?"
+    goto:eof
+)
 
 if not defined VSINSTALLDIR (
     powershell -command "Get-VSSetupInstance" > NUL
@@ -45,29 +56,45 @@ call :oe_verify_errorlevel "update-thirdparty.py" || goto:eof
 rem ******************************
 rem Python environments
 rem ******************************
-if not exist "%OE_ROOT%\thirdparty\pyenv_37" (
-    python -m venv %OE_ROOT%\thirdparty\pyenv_37
+if not exist "%OE_ROOT%\thirdparty\pyenv_37_x64" (
+    rem If this fails with: 
+    rem   No such file or directory: 'C:\\Users\\hotma\\AppData\\Local\\Programs\\Python\\Python37\\lib\\venv\\scripts\\nt\\python_d.exe'
+    rem upgrade your version of python to at least 3.7.4. (3.7.3 has a bug)
+    %PYTHON_64_EXE% -m venv %OE_ROOT%\thirdparty\pyenv_37_x64
+    call :oe_verify_errorlevel "Create pyenv_37_x64" || goto:eof
+    
+    call :init_pyenv pyenv_37_x64 || goto:eof
 )
-%OE_ROOT%\thirdparty\pyenv_37\Scripts\activate.bat
-pip install numpy==1.18.0
-pip install vectormath==0.2.2
-pip install jsonschema==3.0.2
-%OE_ROOT%\thirdparty\pyenv_37\Scripts\deactivate.bat
-
-if not exist "%OE_ROOT%\thirdparty\pyenv_37_d" (
-    python -m venv %OE_ROOT%\thirdparty\pyenv_37_d
+if not exist "%OE_ROOT%\thirdparty\pyenv_37_x86" (
+    rem If this fails with: 
+    rem   No such file or directory: 'C:\\Users\\hotma\\AppData\\Local\\Programs\\Python\\Python37\\lib\\venv\\scripts\\nt\\python_d.exe'
+    rem upgrade your version of python to at least 3.7.4. (3.7.3 has a bug)
+    %PYTHON_32_EXE% -m venv %OE_ROOT%\thirdparty\pyenv_37_x86
+    call :oe_verify_errorlevel "Create pyenv_37_x86" || goto:eof
+    
+    call :init_pyenv pyenv_37_x86 || goto:eof
 )
-%OE_ROOT%\thirdparty\pyenv_37_d\Scripts\activate.bat
-rem Need to install numpy with build isolation, so that we can use the debug version of cython.
-python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug wheel
-python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug cython==0.29.14
-python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug --no-build-isolation numpy==1.18.0
 
-python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug ptvsd==4.3.2
-python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug vectormath==0.2.2
-python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug jsonschema==3.0.2
-python_d.exe -m pip install --no-binary :all: --global-option build --global-option --debug argparse==1.4.0
-%OE_ROOT%\thirdparty\pyenv_37_d\Scripts\deactivate.bat
+goto:eof
+
+rem enable this if you are a madman and want to run the engine against a debug build of python
+if 0 (
+    set "PYTHON_DEBUG_64_EXE=C:\Users\hotma\AppData\Local\Programs\Python\Python37\python_d.exe"
+    if not exist "%OE_ROOT%\thirdparty\pyenv_37_d" (
+        %PYTHON_DEBUG_64_EXE% -m venv %OE_ROOT%\thirdparty\pyenv_37_d
+    )
+    %OE_ROOT%\thirdparty\pyenv_37_d\Scripts\activate.bat
+    rem Need to install numpy with build isolation, so that we can use the debug version of cython.
+    %PYTHON_DEBUG_64_EXE% -m pip install --no-binary :all: --global-option build --global-option --debug wheel
+    %PYTHON_DEBUG_64_EXE% -m pip install --no-binary :all: --global-option build --global-option --debug cython==0.29.14
+    %PYTHON_DEBUG_64_EXE% -m pip install --no-binary :all: --global-option build --global-option --debug --no-build-isolation numpy==1.18.0
+
+    %PYTHON_DEBUG_64_EXE% -m pip install --no-binary :all: --global-option build --global-option --debug ptvsd==4.3.2
+    %PYTHON_DEBUG_64_EXE% -m pip install --no-binary :all: --global-option build --global-option --debug vectormath==0.2.2
+    %PYTHON_DEBUG_64_EXE% -m pip install --no-binary :all: --global-option build --global-option --debug jsonschema==3.0.2
+    %PYTHON_DEBUG_64_EXE% -m pip install --no-binary :all: --global-option build --global-option --debug argparse==1.4.0
+    %OE_ROOT%\thirdparty\pyenv_37_d\Scripts\deactivate.bat
+)
 
 rem ******************************
 rem Top of the build tree
@@ -92,6 +119,32 @@ goto:eof
 rem *****************************
 rem !!!       Build All       !!!
 rem *****************************
+
+:init_pyenv
+rem takes 1 arg; py env name
+setlocal
+set "OE_PYENV=%~1"
+set "OE_PYENV_LOGFILE=%OE_ROOT%\thirdparty\%OE_PYENV%\init_pyenv.log"
+
+call %OE_ROOT%\thirdparty\%OE_PYENV%\Scripts\activate.bat
+call :oe_verify_errorlevel "%OE_PYENV%\Scripts\activate.bat" || EXIT /B 1
+
+echo "Installing modules via PIP " > %OE_PYENV_LOGFILE%
+pip install numpy==1.18.0 >> %OE_PYENV_LOGFILE% 2>&1
+call :oe_verify_errorlevel "%OE_PYENV% pip install numpy" || EXIT /B 1
+pip install ptvsd==4.3.2 >> %OE_PYENV_LOGFILE% 2>&1
+call :oe_verify_errorlevel "%OE_PYENV% pip install ptvsd" || EXIT /B 1
+pip install vectormath==0.2.2 >> %OE_PYENV_LOGFILE% 2>&1
+call :oe_verify_errorlevel "%OE_PYENV% pip install vectormath" || EXIT /B 1
+pip install jsonschema==3.0.2 >> %OE_PYENV_LOGFILE% 2>&1
+call :oe_verify_errorlevel "%OE_PYENV% pip install jsonschema" || EXIT /B 1
+pip install argparse==1.4.0 >> %OE_PYENV_LOGFILE% 2>&1
+call :oe_verify_errorlevel "%OE_PYENV% pip install argparse" || EXIT /B 1
+
+call %OE_ROOT%\thirdparty\%OE_PYENV%\Scripts\deactivate.bat
+
+endlocal
+EXIT /B 0
 
 :build_all
 rem Takes 1 arg; architecture

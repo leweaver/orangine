@@ -7,6 +7,9 @@ project(Orangine VERSION 1.0
                  DESCRIPTION "Orangine - realtime glTF rendering engine"
                  LANGUAGES CXX)
 
+# Third party path
+get_filename_component(OE_THIRDPARTY_PATH "${Orangine_SOURCE_DIR}/../thirdparty" ABSOLUTE)
+
 # Update module path
 list(APPEND CMAKE_MODULE_PATH "${Orangine_SOURCE_DIR}/CMake;${Orangine_SOURCE_DIR}/cmake/modules")
 

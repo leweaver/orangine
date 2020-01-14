@@ -28,7 +28,7 @@ using namespace DirectX;
 using namespace oe;
 using namespace internal;
 
-#ifdef _DEBUG
+#ifdef OeScripting_PYTHON_DEBUG
 #ifndef Py_DEBUG
 // Well this was an evening wasted! When linking against a debug build of python, you must also set
 // this flag in the consuming application.

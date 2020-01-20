@@ -50,9 +50,9 @@ add_custom_command(TARGET ${PROJECT_NAME}
 # --------------------------------
 # Configuration file blending
 set(ViewerApp_DATA_DIRECTORIES "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data")
-list(APPEND ViewerApp_DATA_DIRECTORIES "OeCore=${OeCore_DATA_SOURCE_DIR}")
-list(APPEND ViewerApp_DATA_DIRECTORIES "OeApp=${OeApp_DATA_SOURCE_DIR}")
-list(APPEND ViewerApp_DATA_DIRECTORIES "OeScripting=${OeScripting_DATA_SOURCE_DIR}")
+list(APPEND ViewerApp_DATA_DIRECTORIES "${OeCore_DATA_SOURCE_DIRS}")
+list(APPEND ViewerApp_DATA_DIRECTORIES "${OeApp_DATA_SOURCE_DIRS}")
+list(APPEND ViewerApp_DATA_DIRECTORIES "${OeScripting_DATA_SOURCE_DIRS}")
 set(ViewerApp_SOURCE_CONFIG_FILE "${PROJECT_SOURCE_DIR}/src/config.default.json")
 
 # Write source data paths, for cases where the app is run from the build output folder

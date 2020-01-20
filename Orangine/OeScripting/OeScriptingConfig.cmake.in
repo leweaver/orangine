@@ -16,5 +16,7 @@ endif()
 # These are IMPORTED targets created by OeScriptingTargets.cmake
 set(OESCRIPTING_LIBRARIES OeScripting)
 
-set(OeScripting_DATA_SOURCE_DIR "@CMAKE_INSTALL_PREFIX@/bin/data")
+set(OeScripting_DATA_SOURCE_DIRS "@OeScripting_DATA_SOURCE_DIRS@")
+set(OeScripting_INSTALLED_DATA_SOURCE_DIRS "@PROJECT_NAME@=@CMAKE_INSTALL_PREFIX@/bin/data")
+
 set(OeScripting_PYTHON_RUNTIME_DLL "@OeScripting_PYTHON_RUNTIME_DLL@")

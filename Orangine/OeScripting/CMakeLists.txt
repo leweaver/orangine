@@ -7,20 +7,6 @@ project(OeScripting VERSION 1.0
 SET(OeScripting_PYTHON_DEBUG "OFF" CACHE BOOL "Use python debug binaries (built with PyDEBUG defined)")
 SET(OeScripting_PYTHON_DEBUG ${OeScripting_PYTHON_DEBUG} PARENT_SCOPE)
 
-# Get the name of the python runtime DLL
-find_package(Python3 COMPONENTS Interpreter) 
-get_filename_component(OeScripting_PYTHON_RUNTIME_DLL "${Python3_EXECUTABLE}" DIRECTORY)
-if (${OeScripting_PYTHON_DEBUG})
-        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll")
-else ()
-        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll")
-endif()
-
-configure_file (
-        "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
-        "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
-)
-
 # Library Definition
 add_library(${PROJECT_NAME} STATIC
         src/pch.h
@@ -60,6 +46,8 @@ add_custom_target(...
 # PyBind
 # Override the PYTHON_EXECUTABLE variable with the results of FindPython3, so that pybind 
 # uses the 32-bit interpreter in x86 builds.
+# Get the name of the python runtime DLL
+find_package(Python3 COMPONENTS Interpreter) 
 set(PYTHON_EXECUTABLE "${Python3_EXECUTABLE}")
 set(PYBIND11_CPP_STANDARD /std:c++17)
 find_package(pybind11 REQUIRED)
@@ -89,16 +77,28 @@ install(
 # Data and Assets
 set(OeScripting_PYENV_DIR "${OE_THIRDPARTY_PATH}/pyenv_37_${Orangine_ARCHITECTURE}$<$<BOOL:${OeScripting_PYTHON_DEBUG}>:_d>")
 set(OeScripting_PYENV_DIR ${OeScripting_PYENV_DIR} PARENT_SCOPE)
-set(${PROJECT_NAME}_DATA_SOURCE_DIR "${PROJECT_SOURCE_DIR}/data;pyenv=${OeScripting_PYENV_DIR}" PARENT_SCOPE)
+set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data;pyenv=${OeScripting_PYENV_DIR}")
+set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${${PROJECT_NAME}_DATA_SOURCE_DIRS}" PARENT_SCOPE)
 install(DIRECTORY data
         DESTINATION bin
         )
 
 # Install Python binaries
+get_filename_component(OeScripting_PYTHON_RUNTIME_DLL "${Python3_EXECUTABLE}" DIRECTORY)
+if (${OeScripting_PYTHON_DEBUG})
+        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll")
+else ()
+        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll")
+endif()
 install(FILES "${OeScripting_PYTHON_RUNTIME_DLL}" DESTINATION bin)
 set(OeScripting_PYTHON_RUNTIME_DLL ${OeScripting_PYTHON_RUNTIME_DLL} PARENT_SCOPE)
 
 # Config.cmake files
+configure_file (
+        "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
+        "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
+)
+
 configure_file(OeScriptingConfig.cmake.in OeScriptingConfig.cmake @ONLY)
 configure_file(OeScriptingConfigVersion.cmake.in OeScriptingConfigVersion.cmake @ONLY)
 install(

@@ -16,4 +16,5 @@ endif()
 # These are IMPORTED targets created by OeAppTargets.cmake
 set(OEAPP_LIBRARIES OeImgui MikktSpace)
 
-set(OeApp_DATA_SOURCE_DIR "@CMAKE_INSTALL_PREFIX@/bin/data")
+set(OeApp_DATA_SOURCE_DIRS "@OeApp_DATA_SOURCE_DIRS@")
+set(OeApp_INSTALLED_DATA_SOURCE_DIRS "@PROJECT_NAME@=@CMAKE_INSTALL_PREFIX@/bin/data")

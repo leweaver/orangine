@@ -17,13 +17,12 @@ Orangine/imgui.ini
 Orangine/.idea/workspace.xml
 Orangine/ViewerApp/data/lib/__pycache__/
 Orangine/ViewerApp/data/scripts/__pycache__/
+Orangine/OeScripting/data/OeScripting/lib/__pycache__/
 
 thirdparty/pybind11
 thirdparty/build_DirectXTK.txt
 thirdparty/build_The-Forge.txt
 thirdparty/The-Forge
-
-Orangine/OeScripting/data/OeScripting/lib/__pycache__/
 thirdparty/amd64/
 thirdparty/cmake-*
 thirdparty/pybind11
@@ -35,5 +34,4 @@ thirdparty/imgui/
 thirdparty/tinygltf/
 thirdparty/python64/
 thirdparty/python32/
-/thirdparty/pyenv_37_d
-/thirdparty/pyenv_37
+/thirdparty/pyenv*

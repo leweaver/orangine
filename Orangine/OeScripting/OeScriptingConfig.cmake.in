@@ -9,9 +9,12 @@ get_filename_component(OESCRIPTING_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 set(OESCRIPTING_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
 
 # Our library dependencies (contains definitions for IMPORTED targets)
-include("${OESCRIPTING_CMAKE_DIR}/OeScriptingTargets.cmake")
+if(NOT TARGET Oe::OeScripting AND NOT OeScripting_BINARY_DIR)
+  include("${OESCRIPTING_CMAKE_DIR}/OeScriptingTargets.cmake")
+endif()
 
 # These are IMPORTED targets created by OeScriptingTargets.cmake
 set(OESCRIPTING_LIBRARIES OeScripting)
 
 set(OeScripting_DATA_SOURCE_DIR "@CMAKE_INSTALL_PREFIX@/bin/data")
+set(OeScripting_PYTHON_RUNTIME_DLL "@OeScripting_PYTHON_RUNTIME_DLL@")

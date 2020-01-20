@@ -75,10 +75,8 @@ if not exist "%OE_ROOT%\thirdparty\pyenv_37_x86" (
     call :init_pyenv pyenv_37_x86 || goto:eof
 )
 
-goto:eof
-
 rem enable this if you are a madman and want to run the engine against a debug build of python
-if 0 (
+if "" == "false" (
     set "PYTHON_DEBUG_64_EXE=C:\Users\hotma\AppData\Local\Programs\Python\Python37\python_d.exe"
     if not exist "%OE_ROOT%\thirdparty\pyenv_37_d" (
         %PYTHON_DEBUG_64_EXE% -m venv %OE_ROOT%\thirdparty\pyenv_37_d

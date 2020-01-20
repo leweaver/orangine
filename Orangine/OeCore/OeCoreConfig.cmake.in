@@ -9,7 +9,9 @@ get_filename_component(OECORE_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 set(OECORE_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
 
 # Our library dependencies (contains definitions for IMPORTED targets)
-include("${OECORE_CMAKE_DIR}/OeCoreTargets.cmake")
+if(NOT TARGET Oe::OeCore AND NOT OeCore_BINARY_DIR)
+  include("${OECORE_CMAKE_DIR}/OeCoreTargets.cmake")
+endif()
 
 # These are IMPORTED targets created by OeCoreTargets.cmake
 set(OECORE_LIBRARIES OeImgui MikktSpace)

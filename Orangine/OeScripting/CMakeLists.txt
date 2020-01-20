@@ -7,6 +7,15 @@ project(OeScripting VERSION 1.0
 SET(OeScripting_PYTHON_DEBUG "OFF" CACHE BOOL "Use python debug binaries (built with PyDEBUG defined)")
 SET(OeScripting_PYTHON_DEBUG ${OeScripting_PYTHON_DEBUG} PARENT_SCOPE)
 
+# Get the name of the python runtime DLL
+find_package(Python3 COMPONENTS Interpreter) 
+get_filename_component(OeScripting_PYTHON_RUNTIME_DLL "${Python3_EXECUTABLE}" DIRECTORY)
+if (${OeScripting_PYTHON_DEBUG})
+        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll")
+else ()
+        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll")
+endif()
+
 configure_file (
         "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
         "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
@@ -48,13 +57,9 @@ add_custom_target(...
     COMMAND ${CMAKE_COMMAND} -E env "PATH=C:/Some/Path;$ENV{PATH}" <real_command> args...
 )
 
-#find_package(Python3 COMPONENTS Development)
-#target_link_libraries(${PROJECT_NAME} PUBLIC Python3::Python)
-
 # PyBind
 # Override the PYTHON_EXECUTABLE variable with the results of FindPython3, so that pybind 
 # uses the 32-bit interpreter in x86 builds.
-find_package(Python3 COMPONENTS Interpreter) 
 set(PYTHON_EXECUTABLE "${Python3_EXECUTABLE}")
 set(PYBIND11_CPP_STANDARD /std:c++17)
 find_package(pybind11 REQUIRED)
@@ -90,13 +95,8 @@ install(DIRECTORY data
         )
 
 # Install Python binaries
-if (${OeScripting_PYTHON_DEBUG})
-		install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll"
-				DESTINATION bin)
-else ()
-		install(FILES "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll"
-				DESTINATION bin)
-endif()
+install(FILES "${OeScripting_PYTHON_RUNTIME_DLL}" DESTINATION bin)
+set(OeScripting_PYTHON_RUNTIME_DLL ${OeScripting_PYTHON_RUNTIME_DLL} PARENT_SCOPE)
 
 # Config.cmake files
 configure_file(OeScriptingConfig.cmake.in OeScriptingConfig.cmake @ONLY)

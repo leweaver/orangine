@@ -30,15 +30,22 @@ In a regular powershell window, run the following command (and agree to the prom
 Install-Module VSSetup -Scope CurrentUser
 ```
 
+Then, enable powershell execution:
+
+```
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
 ## Python 3.7
 READ ALL THE STEPS!
 
-(Note that Python 3.7.3 doesn't work, as there is a bug preventing creation of venv's with debug symbols installed.)
+(Note that Python 3.7.3 doesn't work if you install debug binaries, as there is a bug preventing creation of venv's with debug symbols installed.)
 
 Download 64bit [Python 3.7.6 installer](https://www.python.org/ftp/python/3.7.6/python-3.7.6-amd64.exe) from Python website. 
-Download 32bit [Python 3.7.6 installer](https://www.python.org/ftp/python/3.7.6/python-3.7.6.exe) from Python website. 
 
-> If you get the 32 bit installer, be prepared for compiler errors!
+- You'll probably want to select the option to add python 64bit to the system PATH
+
+Download 32bit [Python 3.7.6 installer](https://www.python.org/ftp/python/3.7.6/python-3.7.6.exe) from Python website.
 
 ### Using Python Debug Binaries
 
@@ -68,6 +75,8 @@ If you are reading this you probably already have GIT installed. If not, [follow
 ```
 git clone git@bitbucket.org:orangine/orangine.git c:\repos\orangine
 ```
+
+**Note**: Make sure you have added your SSH public key to both github.com and bitbucket.com
 
 ## Build dependencies
 Our third party dependencies have a number of build and integration methods. To make things easier, a helper script in the root directory will configure, build and install these:

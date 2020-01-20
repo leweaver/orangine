@@ -9,7 +9,9 @@ get_filename_component(OEAPP_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 set(OEAPP_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
 
 # Our library dependencies (contains definitions for IMPORTED targets)
-include("${OEAPP_CMAKE_DIR}/OeAppTargets.cmake")
+if(NOT TARGET Oe::OeApp AND NOT OeApp_BINARY_DIR)
+  include("${OEAPP_CMAKE_DIR}/OeAppTargets.cmake")
+endif()
 
 # These are IMPORTED targets created by OeAppTargets.cmake
 set(OEAPP_LIBRARIES OeImgui MikktSpace)

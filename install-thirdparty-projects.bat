@@ -204,21 +204,6 @@ call :oe_verify_errorlevel "msbuild DirectXTK Debug" || EXIT /B 1
 msbuild %OE_DXTK_SLN%.sln /p:Configuration=Release /p:Platform="%CM_GENERATOR_ARCHITECTURE%" >> %OE_DIRECTXTK_LOGFILE%
 call :oe_verify_errorlevel "msbuild DirectXTK Release" || EXIT /B 1
 
-rem The-Forge
-
-rem if not "%VisualStudioVersion%" == "15.0" (
-rem    echo "The-Forge doesn't support VS 2019 yet (blah!). Please run this from the VS 2017 Developer Command Prompt."
-rem    EXIT /B 1
-rem )
-rem set "OE_THEFORGE_LOGFILE=%OE_ROOT%\thirdparty\build_The-Forge.txt"
-rem echo The-Forge build output: %OE_THEFORGE_LOGFILE%
-
-rem cd "%OE_ROOT%\thirdparty\The-Forge\Examples_3\Unit_Tests\PC Visual Studio 2017"
-rem msbuild Unit_Tests.sln /p:Configuration=DebugDx /p:Platform="%CM_ARCHITECTURE%" -target:OS;Renderer\RendererDX12 > %OE_THEFORGE_LOGFILE%
-rem call :oe_verify_errorlevel "msbuild The-Forge DebugDx" || EXIT /B 1
-rem msbuild Unit_Tests.sln /p:Configuration=ReleaseDx /p:Platform="%CM_ARCHITECTURE%" -target:OS;Renderer\RendererDX12 > %OE_THEFORGE_LOGFILE%
-rem call :oe_verify_errorlevel "msbuild The-Forge ReleaseDx" || EXIT /B 1
-
 
 rem Hacky Steps:
 rem For some reason, the g3logger cmake find_module needs these directories to exist. Even though they are empty.

@@ -121,7 +121,7 @@ void Game::OnResuming() {
 
 void Game::OnWindowMoved() {
   const auto r = m_deviceResources->GetOutputSize();
-  LOG(INFO) << "Window moved. new size: " << r.right << ", " << r.bottom;
+  LOG(DEBUG) << "Window moved. new size: " << r.right << ", " << r.bottom;
 
   m_deviceResources->WindowSizeChanged(r.right, r.bottom);
 }

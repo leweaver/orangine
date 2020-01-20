@@ -102,6 +102,7 @@ target_include_directories(${PROJECT_NAME}
         $<INSTALL_INTERFACE:include>
         "${OE_THIRDPARTY_PATH}/tinygltf"
         "${OE_THIRDPARTY_PATH}/vectormath"
+        "${OE_THIRDPARTY_PATH}/filewatch"
         "${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
         )
 
@@ -121,11 +122,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         dxgi.lib
         dxguid.lib
         )
-
-# The-Forge
-# find_package(theforge REQUIRED)
-# target_include_directories(${PROJECT_NAME} PUBLIC ${THEFORGE_INCLUDE_DIR})
-# target_link_libraries(${PROJECT_NAME} PUBLIC ${THEFORGE_STATIC_LIBRARIES})
 
 # DirectXTK
 find_package(directxtk REQUIRED)

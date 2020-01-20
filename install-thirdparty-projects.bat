@@ -8,8 +8,8 @@ rem ******************************
 
 set "OE_ROOT=%cd%"
 set "OE_ORIG_PATH=%PATH%"
-set "PYTHON_32_EXE=C:\Users\hotma\AppData\Local\Programs\Python\Python37-32\python.exe"
-set "PYTHON_64_EXE=C:\Users\hotma\AppData\Local\Programs\Python\Python37\python.exe"
+set "PYTHON_32_EXE=%LOCALAPPDATA%\Programs\Python\Python37-32\python.exe"
+set "PYTHON_64_EXE=%LOCALAPPDATA%\Programs\Python\Python37\python.exe"
 
 if not exist %PYTHON_32_EXE% (
     echo "Could not find !PYTHON_32_EXE!. Is it installed?"

@@ -55,10 +55,6 @@ Component& Entity::getComponent(size_t index) const
     return *_components[index];
 }
 
-void Entity::copyComponent(const Component& component) {
-
-}
-
 void Entity::lookAt(const Entity& other)
 {
     lookAt(other.position(), math::up);
@@ -93,6 +89,16 @@ void Entity::lookAt(const SSE::Vector3& position, const SSE::Vector3& worldUp)
     _localRotation = SSE::Quat(camToWorld);
 
     computeWorldTransform();
+}
+
+Component& Entity::addCloneOfComponent(const Component& srcComponent) {
+  auto component = srcComponent.clone(*this);
+  auto ptr = component.get();
+  _components.push_back(std::move(component));
+
+  this->onComponentAdded(*ptr);
+
+  return *ptr;
 }
 
 void Entity::setActive(bool bActive)

@@ -2,34 +2,36 @@
 #include "Component.h"
 
 namespace oe {
-    class Entity;
+class Entity;
 
-    class Skinned_mesh_component : public Component {
-        DECLARE_COMPONENT_TYPE;
+class Skinned_mesh_component : public Component {
+  DECLARE_COMPONENT_TYPE;
 
-    public:
-        explicit Skinned_mesh_component(Entity& entity) : Component(entity) {}
+ public:
+  explicit Skinned_mesh_component(Entity& entity) : Component(entity) {}
 
-        const std::shared_ptr<Entity>& skeletonTransformRoot() const { return _skeletonTransformRoot; }
-        void setSkeletonTransformRoot(std::shared_ptr<Entity> root) { _skeletonTransformRoot = root; }
+  const std::shared_ptr<Entity>& skeletonTransformRoot() const { return _skeletonTransformRoot; }
+  void setSkeletonTransformRoot(std::shared_ptr<Entity> root) { _skeletonTransformRoot = root; }
 
-        const std::vector<Entity*>& joints() const { return _jointsRaw; }
-        void setJoints(std::vector<std::shared_ptr<Entity>>&& vector);
+  const std::vector<Entity*>& joints() const { return _jointsRaw; }
+  void setJoints(std::vector<std::shared_ptr<Entity>>&& vector);
 
-        const std::vector<SSE::Matrix4>& inverseBindMatrices() const { return _inverseBindMatrices; }
-        void setInverseBindMatrices(std::vector<SSE::Matrix4>&& matrices);
+  const std::vector<SSE::Matrix4>& inverseBindMatrices() const { return _inverseBindMatrices; }
+  void setInverseBindMatrices(std::vector<SSE::Matrix4>&& matrices);
 
-    private:
-        // If null, this entity is used as the transform root.
-        std::shared_ptr<Entity> _skeletonTransformRoot;
+ private:
+  BEGIN_COMPONENT_PROPERTIES();
+  END_COMPONENT_PROPERTIES();
 
-        // Pointers to the joints that make up the skeleton. The order and size of this array
-        // should match the inverse bind matrices array.
-        std::vector<std::shared_ptr<Entity>> _joints;
-        // A fast lookup
-        std::vector<Entity*> _jointsRaw;
+  // If null, this entity is used as the transform root.
+  std::shared_ptr<Entity> _skeletonTransformRoot;
 
-        std::vector<SSE::Matrix4> _inverseBindMatrices;
-        
-    };
-}
+  // Pointers to the joints that make up the skeleton. The order and size of this array
+  // should match the inverse bind matrices array.
+  std::vector<std::shared_ptr<Entity>> _joints;
+  // A fast lookup
+  std::vector<Entity*> _jointsRaw;
+
+  std::vector<SSE::Matrix4> _inverseBindMatrices;
+};
+} // namespace oe

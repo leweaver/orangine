@@ -67,11 +67,6 @@ class Scene_graph_manager : public IScene_graph_manager {
   void addEntityToScene(std::shared_ptr<Entity> entityPtr) const;
 
   /**
-   * Prefab stuff
-   */
-  std::vector<std::unique_ptr<Component>> _prefabComponents;
-
-  /**
    * Applies transforms recursively down (from root -> leaves),
    * then updates components from bottom up (from leaves -> root)
    */

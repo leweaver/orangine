@@ -1,81 +1,95 @@
 ﻿#pragma once
 
-#include "Component.h"
 #include "Color.h"
+#include "Component.h"
 
 namespace oe {
-	class Shadow_map_texture;
+class Shadow_map_texture;
 
-	class Light_component : public Component
-	{
-		Color _color{};
-		float _intensity;
+class Light_component : public Component {
+ public:
+  explicit Light_component(Entity& entity) : Component(entity) {}
+  ~Light_component();
 
-	public:
-		
-		Light_component(Entity& entity)
-			: Component(entity)
-			, _color(Colors::White)
-			, _intensity(1.0)
-		{
-		}
+  virtual const Color& color() const = 0;
+  virtual void setColor(const Color& color) = 0;
 
-		~Light_component();
+  virtual float intensity() const = 0;
+  virtual void setIntensity(float intensity) = 0;
 
-		const Color& color() const { return _color; }
-		void setColor(const Color& color) { _color = color; }
+  // Runtime, non-serializable
+  std::unique_ptr<Shadow_map_texture>& shadowData() { return _shadowData; }
 
-		float intensity() const { return _intensity; }
-		void setIntensity(float intensity) { _intensity = intensity; }
+ private:
+  std::unique_ptr<Shadow_map_texture> _shadowData;
+};
 
-		// Runtime, non-serializable
-		std::unique_ptr<Shadow_map_texture>& shadowData() { return _shadowData; }
+class Directional_light_component : public Light_component {
+  DECLARE_COMPONENT_TYPE;
 
-	private:
-		std::unique_ptr<Shadow_map_texture> _shadowData;
+ public:
+  Directional_light_component(Entity& entity) : Light_component(entity) {}
 
-	};
+  const Color& color() const override { return _component_properties.color; }
+  void setColor(const Color& color) override { _component_properties.color = color; }
 
-	class Directional_light_component : public Light_component
-	{
-		DECLARE_COMPONENT_TYPE;
+  float intensity() const override { return _component_properties.intensity; }
+  void setIntensity(float intensity) override { _component_properties.intensity = intensity; }
 
-	public:
+  bool shadowsEnabled() const { return _component_properties.shadowsEnabled; }
+  void setShadowsEnabled(bool shadowsEnabled) {
+    _component_properties.shadowsEnabled = shadowsEnabled;
+  }
 
-		Directional_light_component(Entity& entity)
-			: Light_component(entity)
-		{}
+  float shadowMapBias() const { return _component_properties.shadowMapBias; }
+  void setShadowMapBias(float shadowMapBias) {
+    _component_properties.shadowMapBias = shadowMapBias;
+  }
 
-		bool shadowsEnabled() const { return _shadowsEnabled; }
-		void setShadowsEnabled(bool shadowsEnabled) { _shadowsEnabled = shadowsEnabled; }
+ private:
+  BEGIN_COMPONENT_PROPERTIES();
+  Color color = Colors::White;
+  float intensity = 1.0f;
+  bool shadowsEnabled = false;
+  float shadowMapBias = 0.1f;
+  END_COMPONENT_PROPERTIES();
+};
 
-		float shadowMapBias() const { return _shadowMapBias; }
-		void setShadowMapBias(float shadowMapBias) { _shadowMapBias = shadowMapBias; }
-	private:
+class Point_light_component : public Light_component {
+  DECLARE_COMPONENT_TYPE;
 
-		bool _shadowsEnabled = false;
-		float _shadowMapBias = 0.1f;
-	};
+ public:
+  Point_light_component(Entity& entity) : Light_component(entity) {}
 
-	class Point_light_component : public Light_component
-	{
-		DECLARE_COMPONENT_TYPE;
+  const Color& color() const override { return _component_properties.color; }
+  void setColor(const Color& color) override { _component_properties.color = color; }
 
-	public:
+  float intensity() const override { return _component_properties.intensity; }
+  void setIntensity(float intensity) override { _component_properties.intensity = intensity; }
 
-		Point_light_component(Entity& entity)
-			: Light_component(entity)
-		{}
-	};
+ private:
+  BEGIN_COMPONENT_PROPERTIES();
+  Color color = Colors::White;
+  float intensity = 1.0f;
+  END_COMPONENT_PROPERTIES();
+};
 
-	class Ambient_light_component : public Light_component
-	{
-		DECLARE_COMPONENT_TYPE;
+class Ambient_light_component : public Light_component {
+  DECLARE_COMPONENT_TYPE;
 
-	public:
+ public:
+  Ambient_light_component(Entity& entity) : Light_component(entity) {}
 
-		Ambient_light_component(Entity& entity)
-			: Light_component(entity)
-		{}
-	};
-}
+  const Color& color() const override { return _component_properties.color; }
+  void setColor(const Color& color) override { _component_properties.color = color; }
+
+  float intensity() const override { return _component_properties.intensity; }
+  void setIntensity(float intensity) override { _component_properties.intensity = intensity; }
+
+ private:
+  BEGIN_COMPONENT_PROPERTIES();
+  Color color = Colors::White;
+  float intensity = 1.0f;
+  END_COMPONENT_PROPERTIES();
+};
+} // namespace oe

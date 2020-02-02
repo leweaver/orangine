@@ -28,7 +28,9 @@ class Script_component : public Component {
   };
 
  private:
-  std::string _scriptName;
+  BEGIN_COMPONENT_PROPERTIES();
+  std::string scriptName;
+  END_COMPONENT_PROPERTIES();
 
   std::unique_ptr<internal::Script_runtime_data, Script_runtime_data_deleter> _scriptRuntimeData;
 };

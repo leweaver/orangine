@@ -1,58 +1,56 @@
 ﻿#pragma once
 
 #include "Component.h"
-#include "Renderer_data.h"
 #include "Material.h"
 #include "Material_context.h"
+#include "Renderer_data.h"
 
-namespace oe 
-{
-	class Renderable_component : public Component
-	{
-		DECLARE_COMPONENT_TYPE;
+namespace oe {
+class Renderable_component : public Component {
+  DECLARE_COMPONENT_TYPE;
 
-	public:
+ public:
+  Renderable_component(Entity& entity)
+      : Component(entity)
+      , _rendererData(nullptr)
+      , _materialContext(nullptr)
+      , _material(nullptr) {}
+  ~Renderable_component();
 
-		Renderable_component(Entity& entity)
-			: Component(entity)
-			, _visible(true)
-			, _wireframe(false)
-			, _castShadow(true)
-			, _rendererData(nullptr)
-            , _materialContext(nullptr)
-			, _material(nullptr)
-		{}
-		~Renderable_component();
-		
-		bool visible() const { return _visible; }
-		void setVisible(bool visible) { _visible = visible; }
-		
-		bool wireframe() const { return _wireframe; }
-		void setWireframe(bool wireframe) { _wireframe = wireframe; }
+  bool visible() const { return _component_properties.visible; }
+  void setVisible(bool visible) { _component_properties.visible = visible; }
 
-		bool castShadow() const { return _castShadow; }
-		void setCastShadow(bool castShadow) { _castShadow = castShadow; }
+  bool wireframe() const { return _component_properties.wireframe; }
+  void setWireframe(bool wireframe) { _component_properties.wireframe = wireframe; }
 
-		// Runtime, non-serializable
-		const std::shared_ptr<Material>	& material() const { return _material; }
-		void setMaterial(std::shared_ptr<Material> material) { _material = material; }
+  bool castShadow() const { return _component_properties.castShadow; }
+  void setCastShadow(bool castShadow) { _component_properties.castShadow = castShadow; }
 
-		const std::unique_ptr<Renderer_data>& rendererData() const { return _rendererData; }
-		void setRendererData(std::unique_ptr<Renderer_data>&& rendererData) { _rendererData = std::move(rendererData); }
+  // Runtime, non-serializable
+  const std::shared_ptr<Material>& material() const { return _material; }
+  void setMaterial(std::shared_ptr<Material> material) { _material = material; }
 
-        const std::unique_ptr<Material_context>& materialContext() const { return _materialContext; }
-        void setMaterialContext(std::unique_ptr<Material_context>&& materialContext) { _materialContext = std::move(materialContext); }
+  const std::unique_ptr<Renderer_data>& rendererData() const { return _rendererData; }
+  void setRendererData(std::unique_ptr<Renderer_data>&& rendererData) {
+    _rendererData = std::move(rendererData);
+  }
 
-	private:
+  const std::unique_ptr<Material_context>& materialContext() const { return _materialContext; }
+  void setMaterialContext(std::unique_ptr<Material_context>&& materialContext) {
+    _materialContext = std::move(materialContext);
+  }
 
-		bool _visible;
-		bool _wireframe;
-		bool _castShadow;
+ private:
+  BEGIN_COMPONENT_PROPERTIES();
+  bool visible = true;
+  bool wireframe = false;
+  bool castShadow = true;
+  END_COMPONENT_PROPERTIES();
 
-		// Runtime, non-serializable
-		std::unique_ptr<Renderer_data> _rendererData;
-        std::unique_ptr<Material_context> _materialContext;
-		std::shared_ptr<Material> _material;
-	};
+  // Runtime, non-serializable
+  std::unique_ptr<Renderer_data> _rendererData;
+  std::unique_ptr<Material_context> _materialContext;
+  std::shared_ptr<Material> _material;
+};
 
-}
+} // namespace oe

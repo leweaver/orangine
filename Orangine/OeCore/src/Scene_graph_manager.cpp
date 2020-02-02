@@ -90,8 +90,8 @@ std::shared_ptr<Entity> Scene_graph_manager::clone(const Entity& srcEntity, Enti
     // Now copy components, and their values.
     const auto componentCount = srcChild->getComponentCount();
     for (auto i = 0; i < componentCount; ++i) {
-      child.addPrefabComponent();
-    }    
+      child.addCloneOfComponent(srcChild->getComponent(i));
+    }
   }
   return ent;
 }

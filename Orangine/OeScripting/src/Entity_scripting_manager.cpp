@@ -426,13 +426,13 @@ void Entity_scripting_manager::initializePythonInterpreter() {
       std::make_unique<EngineInternalPythonModule>(py::module::import("engine_internal"));
 
   auto scenePtr = &_scene;
-  if (sizeof(scenePtr) == 8) {
-    _pythonContext.engine_internal_module->instance.attr("scenePtr_uint64") =
-        reinterpret_cast<uint64_t>(scenePtr);
-  } else if (sizeof(scenePtr) == 4) {
-    _pythonContext.engine_internal_module->instance.attr("scenePtr_uint32") =
-        reinterpret_cast<uint32_t>(scenePtr);
-  }
+#ifdef _AMD64_
+  _pythonContext.engine_internal_module->instance.attr("scenePtr_uint64") =
+      reinterpret_cast<uint64_t>(scenePtr);
+#elif _X86_
+  _pythonContext.engine_internal_module->instance.attr("scenePtr_uint32") =
+      reinterpret_cast<uint32_t>(scenePtr);
+#endif
 
   // This must be called at least once before python attempts to write to stdout or stderr.
   // Now that we have our internal library, set up stdout and stderr properly.

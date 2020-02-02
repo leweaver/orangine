@@ -28,6 +28,9 @@ class Scene_graph_manager : public IScene_graph_manager {
   // Manager_tickable implementation
   void tick() override;
 
+  // Creates a deep clone of the given entity. Useful for instantiating prefabs
+  std::shared_ptr<Entity> clone(const Entity& entity, Entity* newParent = nullptr);
+
   std::shared_ptr<Entity> instantiate(const std::string& name) override;
   std::shared_ptr<Entity> instantiate(const std::string& name, Entity& parentEntity) override;
 
@@ -62,6 +65,11 @@ class Scene_graph_manager : public IScene_graph_manager {
   std::shared_ptr<Entity> instantiate(const std::string& name, Entity* parentEntity);
   void initializeEntity(std::shared_ptr<Entity> entityPtr) const;
   void addEntityToScene(std::shared_ptr<Entity> entityPtr) const;
+
+  /**
+   * Prefab stuff
+   */
+  std::vector<std::unique_ptr<Component>> _prefabComponents;
 
   /**
    * Applies transforms recursively down (from root -> leaves),

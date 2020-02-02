@@ -82,6 +82,20 @@ void Scene_graph_manager::updateEntity(Entity* entity) {
   }
 }
 
+std::shared_ptr<Entity> Scene_graph_manager::clone(const Entity& srcEntity, Entity* newParent) {
+  auto ent = instantiate(srcEntity.getName(), newParent);
+  for (const auto& srcChild : srcEntity.children()) {
+    auto& child = *clone(*srcChild, ent.get());
+
+    // Now copy components, and their values.
+    const auto componentCount = srcChild->getComponentCount();
+    for (auto i = 0; i < componentCount; ++i) {
+      child.addPrefabComponent();
+    }    
+  }
+  return ent;
+}
+
 std::shared_ptr<Entity> Scene_graph_manager::instantiate(const std::string& name) {
   return instantiate(name, nullptr);
 }

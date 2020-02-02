@@ -38,7 +38,7 @@ using namespace internal;
 
 Entity_scripting_manager::EngineInternalPythonModule::EngineInternalPythonModule(
     py::module engineInternal)
-    : engine_internal(engineInternal)
+    : instance(engineInternal)
     , reset_output_streams(engineInternal.attr("reset_output_streams"))
     , enable_remote_debugging(engineInternal.attr("enable_remote_debugging")) {}
 
@@ -48,14 +48,6 @@ template <> IEntity_scripting_manager* oe::create_manager(Scene& scene) {
 
 Entity_scripting_manager::Entity_scripting_manager(Scene& scene)
     : IEntity_scripting_manager(scene) {}
-
-Scene* g_scene;
-Scene* get_scene() {
-  if (!g_scene) {
-    LOG(FATAL) << "Python script attempting to access an uninitialized scene";
-  }
-  return g_scene;
-}
 
 void engine_log_func(const std::string& message, LEVELS level) {
   if (!g3::logLevel(level)) {
@@ -84,6 +76,10 @@ void engine_log_func(const std::string& message, LEVELS level) {
   }
 }
 
+bool engine_log_debug_enabled_func() { return g3::logLevel(G3LOG_DEBUG); }
+
+void engine_log_debug_func(const std::string& message) { engine_log_func(message, G3LOG_DEBUG); }
+
 bool engine_log_info_enabled_func() { return g3::logLevel(INFO); }
 
 void engine_log_info_func(const std::string& message) { engine_log_func(message, INFO); }
@@ -95,11 +91,8 @@ void engine_log_warning_func(const std::string& message) { engine_log_func(messa
 PYBIND11_EMBEDDED_MODULE(engine, m) {
   m.doc() = "Orangine scripting API";
 
-  m.def(
-      "scene",
-      &get_scene,
-      py::return_value_policy::reference,
-      "A function which returns the Scene singleton");
+  m.def("log_debug_enabled", &engine_log_debug_enabled_func);
+  m.def("log_debug", &engine_log_debug_func);
 
   m.def("log_info_enabled", &engine_log_info_enabled_func);
   m.def("log_info", &engine_log_info_func);
@@ -351,20 +344,16 @@ void Entity_scripting_manager::tick() {
 }
 
 void Entity_scripting_manager::flushStdIo() const {
-  const auto _ = _pythonContext.engine_internal->reset_output_streams();
+  const auto _ = _pythonContext.engine_internal_module->reset_output_streams();
 }
 
 void Entity_scripting_manager::enableRemoteDebugging() const {
-  const auto _ = _pythonContext.engine_internal->enable_remote_debugging();
+  const auto _ = _pythonContext.engine_internal_module->enable_remote_debugging();
 }
 
 void Entity_scripting_manager::shutdown() { finalizePythonInterpreter(); }
 
 void Entity_scripting_manager::initializePythonInterpreter() {
-
-  assert(g_scene == nullptr);
-  g_scene = &_scene;
-
   py::initialize_interpreter();
 
   _pythonInitialized = true;
@@ -433,20 +422,29 @@ void Entity_scripting_manager::initializePythonInterpreter() {
   _pythonContext.sys = py::module::import("sys");
   _pythonContext.sys.attr("path") = sysPathList;
 
-  _pythonContext.engine_internal =
+  _pythonContext.engine_internal_module =
       std::make_unique<EngineInternalPythonModule>(py::module::import("engine_internal"));
+
+  auto scenePtr = &_scene;
+  if (sizeof(scenePtr) == 8) {
+    _pythonContext.engine_internal_module->instance.attr("scenePtr_uint64") =
+        reinterpret_cast<uint64_t>(scenePtr);
+  } else if (sizeof(scenePtr) == 4) {
+    _pythonContext.engine_internal_module->instance.attr("scenePtr_uint32") =
+        reinterpret_cast<uint32_t>(scenePtr);
+  }
 
   // This must be called at least once before python attempts to write to stdout or stderr.
   // Now that we have our internal library, set up stdout and stderr properly.
   flushStdIo();
 
   enableRemoteDebugging();
+
+  auto initLoggerFn = _pythonContext.engine_internal_module->instance.attr("init_logger");
+  auto _ = initLoggerFn();
 }
 
 void Entity_scripting_manager::finalizePythonInterpreter() {
-
-  g_scene = nullptr;
-
   if (_pythonInitialized) {
     _pythonContext = {};
     py::finalize_interpreter();

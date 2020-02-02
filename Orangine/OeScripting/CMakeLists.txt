@@ -14,7 +14,8 @@ add_library(${PROJECT_NAME} STATIC
         src/Entity_scripting_manager.h
         src/Entity_scripting_manager.cpp
         src/Script_component.cpp
-        src/Script_runtime_data.h)
+        src/Script_runtime_data.h
+        src/Binding_helpers.cpp)
 
 file(GLOB OeScripting_HEADERS "include/OeScripting/*")
 list(APPEND OeScripting_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")

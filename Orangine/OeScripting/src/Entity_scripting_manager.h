@@ -51,14 +51,14 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
   struct EngineInternalPythonModule {
     EngineInternalPythonModule(pybind11::module engineInternal);
 
-    pybind11::module engine_internal;
+    pybind11::module instance;
     pybind11::detail::str_attr_accessor reset_output_streams;
     pybind11::detail::str_attr_accessor enable_remote_debugging;
   };
   struct PythonContext {
     pybind11::module sys;
     //pybind11::dict globals;
-    std::unique_ptr<EngineInternalPythonModule> engine_internal;
+    std::unique_ptr<EngineInternalPythonModule> engine_internal_module;
   };
   PythonContext _pythonContext;
 

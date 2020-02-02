@@ -55,6 +55,10 @@ Component& Entity::getComponent(size_t index) const
     return *_components[index];
 }
 
+void Entity::copyComponent(const Component& component) {
+
+}
+
 void Entity::lookAt(const Entity& other)
 {
     lookAt(other.position(), math::up);

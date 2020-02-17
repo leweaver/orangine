@@ -26,8 +26,7 @@ namespace oe {
     class IEntity_render_manager :
         public Manager_base,
         public Manager_tickable,
-        public Manager_deviceDependent,
-        public Manager_windowDependent
+        public Manager_deviceDependent
     {
     public:
 

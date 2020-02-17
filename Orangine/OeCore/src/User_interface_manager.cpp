@@ -13,11 +13,17 @@ using namespace internal;
 
 std::string User_interface_manager::_name = "User_interface_manager";
 
-template <> IUser_interface_manager* oe::create_manager(Scene& scene) {
-  return new User_interface_manager(scene);
+template <>
+IUser_interface_manager* oe::create_manager(
+    Scene& scene,
+    std::shared_ptr<Device_repository>& device_repository) {
+  return new User_interface_manager(scene, device_repository);
 }
 
-User_interface_manager::User_interface_manager(Scene& scene) : IUser_interface_manager(scene) {}
+User_interface_manager::User_interface_manager(
+    Scene& scene,
+    std::shared_ptr<Device_repository> device_repository)
+    : IUser_interface_manager(scene), _deviceRepository(device_repository) {}
 
 void User_interface_manager::initialize() {
   IMGUI_CHECKVERSION();
@@ -29,13 +35,9 @@ void User_interface_manager::shutdown() { ImGui::DestroyContext(); }
 
 const std::string& User_interface_manager::name() const { return _name; }
 
-void User_interface_manager::createWindowSizeDependentResources(
-    DX::DeviceResources&,
-    HWND window,
-    int,
-    int) {
+void User_interface_manager::createWindowSizeDependentResources(HWND window, int, int) {
   _window = window;
-  const auto& deviceResources = _scene.manager<ID3D_resources_manager>().deviceResources();
+  const auto& deviceResources = _deviceRepository->deviceResources();
   ImGui_ImplWin32_Init(window);
   ImGui_ImplDX11_Init(deviceResources.GetD3DDevice(), deviceResources.GetD3DDeviceContext());
   ImGui::StyleColorsDark();

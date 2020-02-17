@@ -18,7 +18,6 @@ add_library(${PROJECT_NAME} STATIC
         src/Material_manager.h
         src/Entity_render_manager.h
         src/Dev_tools_manager.h
-        src/D3D_resources_manager.h
         src/Animation_manager.h
         src/Asset_manager.h
         src/Animation_controller_component.cpp
@@ -29,7 +28,6 @@ add_library(${PROJECT_NAME} STATIC
         src/Color.cpp
         src/Clear_gbuffer_material.cpp
         src/Component.cpp
-        src/D3D_resources_manager.cpp
         src/Deferred_light_material.cpp
         src/Dev_tools_manager.cpp
         src/DeviceResources.cpp
@@ -80,6 +78,9 @@ add_library(${PROJECT_NAME} STATIC
         src/JsonConfigReader.h
         src/D3D11/DirectX_utils.h
         src/D3D11/Collision.cpp
+        src/D3D11/D3D_entity_render_manager.cpp
+        src/D3D11/Device_repository.h
+        src/D3D11/Device_repository.cpp
         )
 file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")

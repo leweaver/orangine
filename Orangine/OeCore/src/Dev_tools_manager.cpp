@@ -120,7 +120,7 @@ void Dev_tools_manager::tick() {
   _fpsCounter->mark();
 }
 
-void Dev_tools_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/) {}
+void Dev_tools_manager::createDeviceDependentResources() {}
 
 void Dev_tools_manager::destroyDeviceDependentResources() {
   for (auto& debugShape : _debugShapes) {
@@ -365,17 +365,20 @@ void Dev_tools_manager::renderImGui() {
     ImGui::Columns(1);
 
     const ImVec4 logColors[] = {
-        {0.7, 0.7, 0.7, 1},
+        {0.7f, 0.7f, 0.7f, 1},
         {1, 1, 1, 1},
         {1, 0, 0, 1},
     };
 
-    if (ImGui::BeginChild("scrolling", ImVec2(0, -25.0f * uiScale), false,
-                          ImGuiWindowFlags_HorizontalScrollbar)) {
+    if (ImGui::BeginChild(
+            "scrolling",
+            ImVec2(0, -25.0f * uiScale),
+            false,
+            ImGuiWindowFlags_HorizontalScrollbar)) {
       ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 
       const auto numLines = _vectorLog->messageCount();
-      for (int i = 0; i < numLines; ++i) {
+      for (uint32_t i = 0; i < numLines; ++i) {
         const auto& message = _vectorLog->getMessageAt(i);
         auto level = 0;
         if (message.level >= g3::kInfoValue) {

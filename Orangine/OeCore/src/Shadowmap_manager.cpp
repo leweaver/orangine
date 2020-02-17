@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+
 #include "Shadowmap_manager.h"
 #include "OeCore/Shadow_map_texture_pool.h"
 #include "OeCore/Scene.h"
@@ -19,11 +20,11 @@ const std::string& Shadowmap_manager::name() const
     return _name;
 }
 
-void Shadowmap_manager::createDeviceDependentResources(DX::DeviceResources&)
+void Shadowmap_manager::createDeviceDependentResources()
 {
 	_texturePool = std::make_unique<Shadow_map_texture_pool>(256, 8);
-    auto& deviceResources = _scene.manager<ID3D_resources_manager>().deviceResources();
-	_texturePool->createDeviceDependentResources(deviceResources);
+    //auto& deviceResources = _scene.manager<ID3D_resources_manager>().deviceResources();
+	_texturePool->createDeviceDependentResources();
 }
 
 void Shadowmap_manager::destroyDeviceDependentResources()

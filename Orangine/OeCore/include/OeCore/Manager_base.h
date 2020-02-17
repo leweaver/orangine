@@ -19,15 +19,14 @@ class Manager_tickable {
 class Manager_windowDependent {
  public:
   virtual ~Manager_windowDependent() = default;
-  virtual void createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND window,
-                                                  int width, int height) = 0;
+  virtual void createWindowSizeDependentResources(HWND window, int width, int height) = 0;
   virtual void destroyWindowSizeDependentResources() = 0;
 };
 
 class Manager_deviceDependent {
  public:
   virtual ~Manager_deviceDependent() = default;
-  virtual void createDeviceDependentResources(DX::DeviceResources& deviceResources) = 0;
+  virtual void createDeviceDependentResources() = 0;
   virtual void destroyDeviceDependentResources() = 0;
 };
 

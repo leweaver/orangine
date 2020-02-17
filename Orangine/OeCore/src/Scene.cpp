@@ -10,6 +10,7 @@
 
 #include "OeCore/Entity_repository.h"
 #include "OeCore/Material_repository.h"
+#include "D3D11/Device_repository.h"
 
 #include "JsonConfigReader.h"
 #include "OeCore/FileUtils.h"
@@ -255,7 +256,7 @@ void Scene_device_resource_aware::createWindowSizeDependentResources(HWND window
 {
   LOG(INFO) << "Creating window size dependent resources";
   forEachOfType<Manager_windowDependent>(_managers, [=](int, Manager_windowDependent* manager) {
-    manager->createWindowSizeDependentResources(_deviceResources, window, width, height);
+    manager->createWindowSizeDependentResources(window, width, height);
   });
 }
 
@@ -271,7 +272,7 @@ void Scene_device_resource_aware::createDeviceDependentResources()
 {
   LOG(INFO) << "Creating device dependent resources";
   forEachOfType<Manager_deviceDependent>(_managers, [this](int, Manager_deviceDependent* manager) {
-    manager->createDeviceDependentResources(_deviceResources);
+    manager->createDeviceDependentResources();
   });
 }
 
@@ -300,20 +301,22 @@ Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& de
       make_shared<Entity_repository>(*this);
   auto materialRepository = get<shared_ptr<IMaterial_repository>>(_managers) =
       make_shared<Material_repository>();
+  auto deviceRepository = 
+      make_shared<internal::Device_repository>(deviceResources);
+  get<shared_ptr<IDevice_repository>>(_managers) = deviceRepository;
 
   // Services / Managers
   createManager<IScene_graph_manager>(entityRepository);
   createManager<IDev_tools_manager>();
-  createManager<ID3D_resources_manager>(_deviceResources);
-  createManager<IEntity_render_manager>(materialRepository);
-  createManager<IRender_step_manager>();
+  createManager<IEntity_render_manager>(materialRepository, deviceRepository);
+  createManager<IRender_step_manager>(deviceRepository);
   createManager<IShadowmap_manager>();
   createManager<IEntity_scripting_manager>();
   createManager<IAsset_manager>();
   createManager<IInput_manager>();
-  createManager<IUser_interface_manager>();
+  createManager<IUser_interface_manager>(deviceRepository);
   createManager<IAnimation_manager>();
-  createManager<IMaterial_manager>();
+  createManager<IMaterial_manager>(deviceRepository);
   createManager<IBehavior_manager>();
 }
 

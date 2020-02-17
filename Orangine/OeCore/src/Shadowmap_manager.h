@@ -19,7 +19,7 @@ namespace oe::internal {
         const std::string& name() const override;
 
 		// Manager_deviceDependent implementation
-		void createDeviceDependentResources(DX::DeviceResources& deviceResources) override;
+		void createDeviceDependentResources() override;
 		void destroyDeviceDependentResources() override;
 
 		// IShadowmap_manager implementation

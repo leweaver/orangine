@@ -60,7 +60,7 @@ void Input_manager::tick()
     }
 }
 
-void Input_manager::createWindowSizeDependentResources(DX::DeviceResources& /*deviceResources*/, HWND window, int /*width*/, int /*height*/)
+void Input_manager::createWindowSizeDependentResources(HWND window, int /*width*/, int /*height*/)
 {
 	_mouse = std::make_unique<DirectX::Mouse>();
 	_mouse->SetWindow(window);

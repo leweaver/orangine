@@ -20,9 +20,6 @@
 #include "OeCore/Shadow_map_texture.h"
 #include "OeCore/Skinned_mesh_component.h"
 
-#include "CommonStates.h"
-#include "D3D11/DirectX_utils.h"
-
 #include <cinttypes>
 #include <functional>
 #include <optional>
@@ -31,9 +28,7 @@
 using namespace oe;
 using namespace internal;
 
-using namespace DirectX;
 using namespace std::literals;
-
 using namespace std;
 
 std::string Entity_render_manager::_name = "Entity_render_manager";
@@ -44,23 +39,10 @@ Renderer_animation_data g_emptyRenderableAnimationData = []() {
   return rad;
 }();
 
-template <>
-IEntity_render_manager*
-oe::create_manager(Scene& scene, std::shared_ptr<IMaterial_repository>& materialRepository)
-{
-  return new Entity_render_manager(scene, materialRepository);
-}
-
-inline DX::DeviceResources& Entity_render_manager::deviceResources() const
-{
-  return _scene.manager<ID3D_resources_manager>().deviceResources();
-}
-
 Entity_render_manager::Entity_render_manager(
-    Scene& scene, std::shared_ptr<IMaterial_repository> materialRepository)
-    : IEntity_render_manager(scene), _materialRepository(std::move(materialRepository))
-{
-}
+    Scene& scene,
+    std::shared_ptr<IMaterial_repository> materialRepository)
+    : IEntity_render_manager(scene), _materialRepository(std::move(materialRepository)) {}
 
 void Entity_render_manager::initialize() {}
 
@@ -68,8 +50,7 @@ void Entity_render_manager::shutdown() {}
 
 const std::string& Entity_render_manager::name() const { return _name; }
 
-void Entity_render_manager::tick()
-{
+void Entity_render_manager::tick() {
   const auto& environmentMap = _scene.skyboxTexture();
   if (environmentMap.get() != _environmentIbl.skyboxTexture.get()) {
     const auto skyboxFileTexture = dynamic_cast<File_texture*>(environmentMap.get());
@@ -98,42 +79,22 @@ void Entity_render_manager::tick()
 
   if (_renderLightData_lit && _environmentIbl.iblDiffuseTexture &&
       !_renderLightData_lit->environmentMapDiffuse()) {
-    _environmentIbl.iblBrdfTexture->load(deviceResources().GetD3DDevice());
-    _environmentIbl.iblDiffuseTexture->load(deviceResources().GetD3DDevice());
-    _environmentIbl.iblSpecularTexture->load(deviceResources().GetD3DDevice());
 
-    _renderLightData_lit->setEnvironmentIblMap(_environmentIbl.iblBrdfTexture,
-                                               _environmentIbl.iblDiffuseTexture,
-                                               _environmentIbl.iblSpecularTexture);
+    loadTexture(*_environmentIbl.iblBrdfTexture);
+    loadTexture(*_environmentIbl.iblDiffuseTexture);
+    loadTexture(*_environmentIbl.iblSpecularTexture);
+
+    _renderLightData_lit->setEnvironmentIblMap(
+        _environmentIbl.iblBrdfTexture,
+        _environmentIbl.iblDiffuseTexture,
+        _environmentIbl.iblSpecularTexture);
   }
 }
 
-void Entity_render_manager::createDeviceDependentResources(DX::DeviceResources& /*deviceResources*/)
-{
-  auto device = deviceResources().GetD3DDevice();
-
-  // Material specific rendering properties
-  _renderLightData_unlit = std::make_unique<decltype(_renderLightData_unlit)::element_type>(device);
-  _renderLightData_lit = std::make_unique<decltype(_renderLightData_lit)::element_type>(device);
-}
-
-void Entity_render_manager::destroyDeviceDependentResources()
-{
-  _renderLightData_unlit.reset();
-  _renderLightData_lit.reset();
-}
-
-void Entity_render_manager::createWindowSizeDependentResources(
-    DX::DeviceResources& /*deviceResources*/, HWND /*window*/, int width, int height)
-{
-}
-
-void Entity_render_manager::destroyWindowSizeDependentResources() {}
-
 template <uint8_t TMax_lights>
-bool addLightToRenderLightData(const Entity& lightEntity,
-                               Render_light_data_impl<TMax_lights>& renderLightData)
-{
+bool addLightToRenderLightData(
+    const Entity& lightEntity,
+    Render_light_data_impl<TMax_lights>& renderLightData) {
   const auto directionalLight = lightEntity.getFirstComponentOfType<Directional_light_component>();
   if (directionalLight) {
     const auto lightDirection = lightEntity.worldTransform().getUpper3x3() * math::forward;
@@ -142,21 +103,23 @@ bool addLightToRenderLightData(const Entity& lightEntity,
 
     if (shadowData != nullptr) {
       auto shadowMapBias = directionalLight->shadowMapBias();
-      return renderLightData.addDirectionalLight(lightDirection, directionalLight->color(),
-                                                 directionalLight->intensity(), *shadowData,
-                                                 shadowMapBias);
-    }
-    else if (directionalLight->shadowData().get() != nullptr) {
+      return renderLightData.addDirectionalLight(
+          lightDirection,
+          directionalLight->color(),
+          directionalLight->intensity(),
+          *shadowData,
+          shadowMapBias);
+    } else if (directionalLight->shadowData().get() != nullptr) {
       throw std::logic_error("Directional lights only support texture array shadow maps.");
     }
-    return renderLightData.addDirectionalLight(lightDirection, directionalLight->color(),
-                                               directionalLight->intensity());
+    return renderLightData.addDirectionalLight(
+        lightDirection, directionalLight->color(), directionalLight->intensity());
   }
 
   const auto pointLight = lightEntity.getFirstComponentOfType<Point_light_component>();
   if (pointLight)
-    return renderLightData.addPointLight(lightEntity.worldPosition(), pointLight->color(),
-                                         pointLight->intensity());
+    return renderLightData.addPointLight(
+        lightEntity.worldPosition(), pointLight->color(), pointLight->intensity());
 
   const auto ambientLight = lightEntity.getFirstComponentOfType<Ambient_light_component>();
   if (ambientLight)
@@ -164,14 +127,12 @@ bool addLightToRenderLightData(const Entity& lightEntity,
   return false;
 }
 
-BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& cameraComponent)
-{
-  const auto viewport = deviceResources().GetScreenViewport();
-  const auto aspectRatio = viewport.Width / viewport.Height;
+BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& cameraComponent) {
+  const auto viewport = _scene.manager<IRender_step_manager>().screenViewport();
+  const auto aspectRatio = viewport.width / viewport.height;
 
-  const auto projMatrix =
-      SSE::Matrix4::perspective(cameraComponent.fov(), aspectRatio, cameraComponent.nearPlane(),
-                                cameraComponent.farPlane());
+  const auto projMatrix = SSE::Matrix4::perspective(
+      cameraComponent.fov(), aspectRatio, cameraComponent.nearPlane(), cameraComponent.farPlane());
 
   oe::BoundingFrustumRH frustum = oe::BoundingFrustumRH(projMatrix);
   const auto& entity = cameraComponent.entity();
@@ -184,8 +145,7 @@ BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& c
 void createMissingVertexAttributes(
     std::shared_ptr<Mesh_data> meshData,
     const std::vector<Vertex_attribute_element>& requiredAttributes,
-    const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes)
-{
+    const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) {
   // TODO: Fix the normal/binormal/tangent loading code.
   auto generateNormals = false;
   auto generateTangents = false;
@@ -210,8 +170,7 @@ void createMissingVertexAttributes(
     else if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Tangent, 0}) {
       numComponents = 4;
       generateTangents = true;
-    }
-    else if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Bi_Tangent, 0})
+    } else if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Bi_Tangent, 0})
       generateBiTangents = true;
     else {
       throw std::logic_error("Mesh does not have required attribute: "s.append(
@@ -226,7 +185,9 @@ void createMissingVertexAttributes(
         Vertex_attribute_element{requiredAttribute,
                                  numComponents == 3 ? Element_type::Vector3 : Element_type::Vector4,
                                  Element_component::Float},
-        static_cast<uint32_t>(vertexCount), static_cast<uint32_t>(elementStride), 0);
+        static_cast<uint32_t>(vertexCount),
+        static_cast<uint32_t>(elementStride),
+        0);
   }
 
   if (generateNormals) {
@@ -243,11 +204,11 @@ void createMissingVertexAttributes(
   }
 }
 
-void Entity_render_manager::renderEntity(Renderable_component& renderableComponent,
-                                         const Render_pass::Camera_data& cameraData,
-                                         const Light_provider::Callback_type& lightDataProvider,
-                                         const Render_pass_blend_mode blendMode)
-{
+void Entity_render_manager::renderEntity(
+    Renderable_component& renderableComponent,
+    const Render_pass::Camera_data& cameraData,
+    const Light_provider::Callback_type& lightDataProvider,
+    const Render_pass_blend_mode blendMode) {
   if (!renderableComponent.visible())
     return;
 
@@ -274,8 +235,8 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
 
       // Note we get the flags for the case where all features are enabled, to make sure we load all
       // the data streams.
-      const auto flags = material->configFlags(Renderer_features_enabled(), blendMode,
-                                               meshDataComponent->meshData()->vertexLayout);
+      const auto flags = material->configFlags(
+          Renderer_features_enabled(), blendMode, meshDataComponent->meshData()->vertexLayout);
       const auto vertexInputs = material->vertexInputs(flags);
       const auto vertexSettings = material->vertexShaderSettings(flags);
 
@@ -305,22 +266,24 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
         }
       }
 
-      _renderLightData_lit->updateBuffer(deviceResources().GetD3DDeviceContext());
-    }
-    else {
+      updateLightBuffers();
+    } else {
       renderLightData = _renderLightData_unlit.get();
     }
 
     // Morphed animation?
     const auto morphWeightsComponent = entity.getFirstComponentOfType<Morph_weights_component>();
     if (morphWeightsComponent != nullptr) {
-      std::transform(morphWeightsComponent->morphWeights().begin(),
-                     morphWeightsComponent->morphWeights().end(),
-                     _rendererAnimationData.morphWeights.begin(),
-                     [](double v) { return static_cast<float>(v); });
-      std::fill(_rendererAnimationData.morphWeights.begin() +
-                    morphWeightsComponent->morphWeights().size(),
-                _rendererAnimationData.morphWeights.end(), 0.0f);
+      std::transform(
+          morphWeightsComponent->morphWeights().begin(),
+          morphWeightsComponent->morphWeights().end(),
+          _rendererAnimationData.morphWeights.begin(),
+          [](double v) { return static_cast<float>(v); });
+      std::fill(
+          _rendererAnimationData.morphWeights.begin() +
+              morphWeightsComponent->morphWeights().size(),
+          _rendererAnimationData.morphWeights.end(),
+          0.0f);
     }
 
     // Skinned mesh?
@@ -359,29 +322,37 @@ void Entity_render_manager::renderEntity(Renderable_component& renderableCompone
         _rendererAnimationData.boneTransformConstants[i] = jointToRoot * inverseBoneTransform;
       }
       _rendererAnimationData.numBoneTransforms = static_cast<uint32_t>(joints.size());
-    }
-    else {
+    } else {
       _rendererAnimationData.numBoneTransforms = 0;
       worldTransform = &entity.worldTransform();
     }
 
-    drawRendererData(cameraData, *worldTransform, *rendererData, blendMode, *renderLightData,
-                     material, meshData->vertexLayout, *renderableComponent.materialContext(),
-                     _rendererAnimationData, renderableComponent.wireframe());
-  }
-  catch (std::runtime_error& e) {
+    drawRendererData(
+        cameraData,
+        *worldTransform,
+        *rendererData,
+        blendMode,
+        *renderLightData,
+        material,
+        meshData->vertexLayout,
+        *renderableComponent.materialContext(),
+        _rendererAnimationData,
+        renderableComponent.wireframe());
+  } catch (std::runtime_error& e) {
     renderableComponent.setVisible(false);
     LOG(WARNING) << "Failed to render mesh on entity " << entity.getName() << " (ID "
                  << entity.getId() << "): " << e.what();
   }
 }
 
-void Entity_render_manager::renderRenderable(Renderable& renderable,
-                                             const SSE::Matrix4& worldMatrix, float radius,
-                                             const Render_pass::Camera_data& cameraData,
-                                             const Light_provider::Callback_type& lightDataProvider,
-                                             Render_pass_blend_mode blendMode, bool wireFrame)
-{
+void Entity_render_manager::renderRenderable(
+    Renderable& renderable,
+    const SSE::Matrix4& worldMatrix,
+    float radius,
+    const Render_pass::Camera_data& cameraData,
+    const Light_provider::Callback_type& lightDataProvider,
+    Render_pass_blend_mode blendMode,
+    bool wireFrame) {
   auto material = renderable.material;
 
   if (renderable.rendererData == nullptr) {
@@ -394,8 +365,8 @@ void Entity_render_manager::renderRenderable(Renderable& renderable,
 
     // Note we get the flags for the case where all features are enabled, to make sure we load all
     // the data streams.
-    const auto flags = material->configFlags(Renderer_features_enabled(), blendMode,
-                                             renderable.meshData->vertexLayout);
+    const auto flags = material->configFlags(
+        Renderer_features_enabled(), blendMode, renderable.meshData->vertexLayout);
     const auto vertexInputs = material->vertexInputs(flags);
     const auto vertexSettings = material->vertexShaderSettings(flags);
 
@@ -429,9 +400,8 @@ void Entity_render_manager::renderRenderable(Renderable& renderable,
       }
     }
 
-    _renderLightData_lit->updateBuffer(deviceResources().GetD3DDeviceContext());
-  }
-  else {
+    updateLightBuffers();
+  } else {
     renderLightData = _renderLightData_unlit.get();
   }
 
@@ -439,103 +409,23 @@ void Entity_render_manager::renderRenderable(Renderable& renderable,
   if (rendererAnimationData == nullptr)
     rendererAnimationData = &g_emptyRenderableAnimationData;
 
-  drawRendererData(cameraData, worldMatrix, *renderable.rendererData, blendMode, *renderLightData,
-                   material, renderable.meshData->vertexLayout, *renderable.materialContext,
-                   *rendererAnimationData, wireFrame);
-}
-
-void Entity_render_manager::loadRendererDataToDeviceContext(const Renderer_data& rendererData,
-                                                            const Material_context& context)
-{
-  const auto deviceContext = deviceResources().GetD3DDeviceContext();
-
-  // Send the buffers to the input assembler in the order that the material context requires.
-  if (!rendererData.vertexBuffers.empty()) {
-    _bufferArraySet.bufferArray.clear();
-    _bufferArraySet.strideArray.clear();
-    _bufferArraySet.offsetArray.clear();
-
-    for (const auto vsInput : context.compiledMaterial->vsInputs) {
-      const auto accessorPos = rendererData.vertexBuffers.find(vsInput.semantic);
-      assert(accessorPos != rendererData.vertexBuffers.end());
-      const auto& accessor = accessorPos->second;
-      _bufferArraySet.bufferArray.push_back(accessor->buffer->d3dBuffer);
-      _bufferArraySet.strideArray.push_back(accessor->stride);
-      _bufferArraySet.offsetArray.push_back(accessor->offset);
-    }
-
-    deviceContext->IASetVertexBuffers(0, static_cast<UINT>(_bufferArraySet.bufferArray.size()),
-                                      _bufferArraySet.bufferArray.data(),
-                                      _bufferArraySet.strideArray.data(),
-                                      _bufferArraySet.offsetArray.data());
-
-    // Set the type of primitive that should be rendered from this vertex buffer.
-    deviceContext->IASetPrimitiveTopology(rendererData.topology);
-
-    if (rendererData.indexBufferAccessor != nullptr) {
-      // Set the index buffer to active in the input assembler so it can be rendered.
-      const auto indexAccessor = rendererData.indexBufferAccessor.get();
-      deviceContext->IASetIndexBuffer(indexAccessor->buffer->d3dBuffer, rendererData.indexFormat,
-                                      indexAccessor->offset);
-    }
-  }
-}
-
-void Entity_render_manager::drawRendererData(
-    const Render_pass::Camera_data& cameraData, const SSE::Matrix4& worldTransform,
-    Renderer_data& rendererData, Render_pass_blend_mode blendMode,
-    const Render_light_data& renderLightData, std::shared_ptr<Material> material,
-    const Mesh_vertex_layout& meshVertexLayout, Material_context& materialContext,
-    Renderer_animation_data& rendererAnimationData, bool wireFrame)
-{
-  if (rendererData.failedRendering || rendererData.vertexBuffers.empty())
-    return;
-
-  auto& commonStates = _scene.manager<ID3D_resources_manager>().commonStates();
-
-  auto& d3DDeviceResources = deviceResources();
-  const auto context = d3DDeviceResources.GetD3DDeviceContext();
-
-  // Set the rasteriser state
-  if (wireFrame)
-    context->RSSetState(commonStates.Wireframe());
-  else if (material->faceCullMode() == Material_face_cull_mode::Back_Face)
-    context->RSSetState(commonStates.CullClockwise());
-  else if (material->faceCullMode() == Material_face_cull_mode::Front_Face)
-    context->RSSetState(commonStates.CullCounterClockwise());
-  else if (material->faceCullMode() == Material_face_cull_mode::None)
-    context->RSSetState(commonStates.CullNone());
-
-  // Render the triangles
-  auto& materialManager = _scene.manager<IMaterial_manager>();
-  try {
-
-    // Make sure that material has is up to date, so that materialManager can simply call
-    // `ensureCompilerPropertiesHash` instead of non-const `calculateCompilerPropertiesHash`
-    material->calculateCompilerPropertiesHash();
-
-    // What accessor types does this rendererData have?
-    materialManager.bind(materialContext, material, meshVertexLayout, renderLightData, blendMode,
-                         cameraData.enablePixelShader);
-
-    loadRendererDataToDeviceContext(rendererData, materialContext);
-
-    materialManager.render(rendererData, worldTransform, rendererAnimationData, cameraData);
-
-    materialManager.unbind();
-  }
-  catch (std::exception& ex) {
-    rendererData.failedRendering = true;
-    LOG(FATAL) << "Failed to drawRendererData, marking failedRendering to true. (" << ex.what()
-               << ")";
-  }
+  drawRendererData(
+      cameraData,
+      worldMatrix,
+      *renderable.rendererData,
+      blendMode,
+      *renderLightData,
+      material,
+      renderable.meshData->vertexLayout,
+      *renderable.materialContext,
+      *rendererAnimationData,
+      wireFrame);
 }
 
 std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
     std::shared_ptr<Mesh_data> meshData,
     const std::vector<Vertex_attribute_element>& vertexAttributes,
-    const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const
-{
+    const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const {
   auto rendererData = std::make_unique<Renderer_data>();
 
   switch (meshData->m_meshIndexType) {
@@ -556,9 +446,12 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
     rendererData->indexCount = meshData->indexBufferAccessor->count;
 
     rendererData->indexBufferAccessor = std::make_unique<D3D_buffer_accessor>(
-        createBufferFromData("Mesh data index buffer", *meshData->indexBufferAccessor->buffer,
-                             D3D11_BIND_INDEX_BUFFER),
-        meshData->indexBufferAccessor->stride, meshData->indexBufferAccessor->offset);
+        createBufferFromData(
+            "Mesh data index buffer",
+            *meshData->indexBufferAccessor->buffer,
+            D3D11_BIND_INDEX_BUFFER),
+        meshData->indexBufferAccessor->stride,
+        meshData->indexBufferAccessor->offset);
 
     rendererData->indexFormat =
         mesh_utils::getDxgiFormat(Element_type::Scalar, meshData->indexBufferAccessor->component);
@@ -566,8 +459,7 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
     const auto name("Index Buffer (count: " + std::to_string(rendererData->indexCount) + ")");
     rendererData->indexBufferAccessor->buffer->d3dBuffer->SetPrivateData(
         WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
-  }
-  else {
+  } else {
     // TODO: Simply log a warning, or try to draw a non-indexed mesh
     rendererData->indexCount = 0;
     throw std::runtime_error("CreateRendererData: Missing index buffer");
@@ -581,8 +473,7 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
     auto vbAccessorPos = meshData->vertexBufferAccessors.find(vertexAttr);
     if (vbAccessorPos != meshData->vertexBufferAccessors.end()) {
       meshAccessor = vbAccessorPos->second.get();
-    }
-    else {
+    } else {
       // Since there is no guarantee that the order is the same in the requested attributes array,
       // and the mesh data, we need to do a search to find out the morph target index of this
       // attribute/semantic.
@@ -619,33 +510,36 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
 
       if (meshData->attributeMorphBufferAccessors.size() >=
           static_cast<size_t>(morphLayoutOffset)) {
-        throw std::runtime_error(string_format("CreateRendererData: Failed to read morph target "
-                                               "%" PRIi32 " for vertex attribute: %s",
-                                               morphTargetIdx,
-                                               Vertex_attribute_meta::vsInputName(vertexAttr)));
+        throw std::runtime_error(string_format(
+            "CreateRendererData: Failed to read morph target "
+            "%" PRIi32 " for vertex attribute: %s",
+            morphTargetIdx,
+            Vertex_attribute_meta::vsInputName(vertexAttr)));
       }
       if (meshData->attributeMorphBufferAccessors.at(morphTargetIdx).size() >=
           static_cast<size_t>(morphTargetIdx)) {
-        throw std::runtime_error(string_format("CreateRendererData: Failed to read morph target "
-                                               "%" PRIi32 " layout offset %" PRIi32
-                                               "for vertex attribute: %s",
-                                               morphTargetIdx, morphLayoutOffset,
-                                               Vertex_attribute_meta::vsInputName(vertexAttr)));
+        throw std::runtime_error(string_format(
+            "CreateRendererData: Failed to read morph target "
+            "%" PRIi32 " layout offset %" PRIi32 "for vertex attribute: %s",
+            morphTargetIdx,
+            morphLayoutOffset,
+            Vertex_attribute_meta::vsInputName(vertexAttr)));
       }
 
       meshAccessor =
           meshData->attributeMorphBufferAccessors[morphTargetIdx][morphLayoutOffset].get();
     }
 
-    auto d3DAccessor =
-        std::make_unique<D3D_buffer_accessor>(createBufferFromData("Mesh data vertex buffer",
-                                                                   *meshAccessor->buffer,
-                                                                   D3D11_BIND_VERTEX_BUFFER),
-                                              meshAccessor->stride, meshAccessor->offset);
+    auto d3DAccessor = std::make_unique<D3D_buffer_accessor>(
+        createBufferFromData(
+            "Mesh data vertex buffer", *meshAccessor->buffer, D3D11_BIND_VERTEX_BUFFER),
+        meshAccessor->stride,
+        meshAccessor->offset);
 
     if (rendererData->vertexBuffers.find(vertexAttr) != rendererData->vertexBuffers.end()) {
-      throw std::runtime_error("Mesh data contains vertex attribute "s +
-                               Vertex_attribute_meta::vsInputName(vertexAttr) + " more than once.");
+      throw std::runtime_error(
+          "Mesh data contains vertex attribute "s + Vertex_attribute_meta::vsInputName(vertexAttr) +
+          " more than once.");
     }
     rendererData->vertexBuffers[vertexAttr] = std::move(d3DAccessor);
   }
@@ -653,8 +547,7 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
   return rendererData;
 }
 
-Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material> material) const
-{
+Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material> material) const {
   auto renderable = Renderable();
   if (renderable.meshData == nullptr)
     renderable.meshData = Primitive_mesh_data_factory::createQuad(2.0f, 2.0f, {-1.f, -1.f, 0.f});
@@ -665,9 +558,10 @@ Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material
   if (renderable.rendererData == nullptr) {
     // Note we get the flags for the case where all features are enabled, to make sure we load all
     // the data streams.
-    const auto flags =
-        material->configFlags(Renderer_features_enabled(), Render_pass_blend_mode::Opaque,
-                              renderable.meshData->vertexLayout);
+    const auto flags = material->configFlags(
+        Renderer_features_enabled(),
+        Render_pass_blend_mode::Opaque,
+        renderable.meshData->vertexLayout);
     std::vector<Vertex_attribute> vertexAttributes;
     const auto vertexInputs = renderable.material->vertexInputs(flags);
     const auto vertexSettings = material->vertexShaderSettings(flags);
@@ -680,38 +574,9 @@ Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material
 
 void Entity_render_manager::clearRenderStats() { _renderStats = {}; }
 
-std::shared_ptr<D3D_buffer>
-Entity_render_manager::createBufferFromData(const std::string& bufferName,
-                                            const Mesh_buffer& buffer, UINT bindFlags) const
-{
+std::shared_ptr<D3D_buffer> Entity_render_manager::createBufferFromData(
+    const std::string& bufferName,
+    const Mesh_buffer& buffer,
+    UINT bindFlags) const {
   return createBufferFromData(bufferName, buffer.data, buffer.dataSize, bindFlags);
-}
-
-std::shared_ptr<D3D_buffer>
-Entity_render_manager::createBufferFromData(const std::string& bufferName, const uint8_t* data,
-                                            size_t dataSize, UINT bindFlags) const
-{
-  // Fill in a buffer description.
-  D3D11_BUFFER_DESC bufferDesc;
-  bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-  bufferDesc.ByteWidth = static_cast<UINT>(dataSize);
-  bufferDesc.BindFlags = bindFlags;
-  bufferDesc.CPUAccessFlags = 0;
-  bufferDesc.MiscFlags = 0;
-
-  // Fill in the sub-resource data.
-  D3D11_SUBRESOURCE_DATA initData;
-  initData.pSysMem = data;
-  initData.SysMemPitch = 0;
-  initData.SysMemSlicePitch = 0;
-
-  // Create the buffer
-  ID3D11Buffer* d3dBuffer;
-  ThrowIfFailed(deviceResources().GetD3DDevice()->CreateBuffer(&bufferDesc, &initData, &d3dBuffer));
-
-  DX::ThrowIfFailed(d3dBuffer->SetPrivateData(WKPDID_D3DDebugObjectName,
-                                              static_cast<UINT>(bufferName.size()),
-                                              bufferName.c_str()));
-
-  return std::make_shared<D3D_buffer>(d3dBuffer, dataSize);
 }

@@ -17,7 +17,7 @@ namespace oe::internal {
 	    void tick() override;
 
 	    // Manager_windowDependent implementation
-	    void createWindowSizeDependentResources(DX::DeviceResources& deviceResources, HWND window, int width, int height) override;
+	    void createWindowSizeDependentResources(HWND window, int width, int height) override;
 	    void destroyWindowSizeDependentResources() override;
 
 	    // Manager_windowsMessageProcessor implementation

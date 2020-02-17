@@ -6,7 +6,6 @@
 #include "IAnimation_manager.h"
 #include "IAsset_manager.h"
 #include "IBehavior_manager.h"
-#include "ID3D_resources_manager.h"
 #include "IDev_tools_manager.h"
 #include "IEntity_render_manager.h"
 #include "IEntity_scripting_manager.h"
@@ -28,6 +27,7 @@ class Texture;
 
 class IEntity_repository;
 class IMaterial_repository;
+class IDevice_repository;
 
 class Scene {
  public:
@@ -92,6 +92,7 @@ class Scene {
       // Repositories
       std::shared_ptr<IEntity_repository>,   //
       std::shared_ptr<IMaterial_repository>, //
+      std::shared_ptr<IDevice_repository>,   //
 
       // Managers. IUser_interface_manager should always be first, so it can handle windows messages
       // first.
@@ -99,7 +100,6 @@ class Scene {
       std::shared_ptr<IAsset_manager>,            //
       std::shared_ptr<IScene_graph_manager>,      //
       std::shared_ptr<IDev_tools_manager>,        //
-      std::shared_ptr<ID3D_resources_manager>,    //
       std::shared_ptr<IEntity_render_manager>,    //
       std::shared_ptr<IRender_step_manager>,      //
       std::shared_ptr<IShadowmap_manager>,        //

@@ -2,10 +2,12 @@
 
 #include "OeCore/IUser_interface_manager.h"
 
+#include "D3D11/Device_repository.h"
+
 namespace oe::internal {
 class User_interface_manager : public IUser_interface_manager {
  public:
-  explicit User_interface_manager(Scene& scene);
+  User_interface_manager(Scene& scene, std::shared_ptr<Device_repository> device_repository);
 
   // Manager_base implementation
   void initialize() override;
@@ -13,11 +15,7 @@ class User_interface_manager : public IUser_interface_manager {
   const std::string& name() const override;
 
   // Manager_windowDependent implementation
-  void createWindowSizeDependentResources(
-      DX::DeviceResources& deviceResources,
-      HWND window,
-      int width,
-      int height) override;
+  void createWindowSizeDependentResources(HWND window, int width, int height) override;
   void destroyWindowSizeDependentResources() override;
 
   // Manager_windowsMessageProcessor implementation
@@ -30,6 +28,7 @@ class User_interface_manager : public IUser_interface_manager {
   void preInit_setUIScale(float uiScale) override { _uiScale = uiScale; }
 
  private:
+  std::shared_ptr<Device_repository> _deviceRepository;
   static std::string _name;
 
   HWND _window = nullptr;

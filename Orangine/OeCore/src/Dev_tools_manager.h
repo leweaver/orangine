@@ -23,7 +23,7 @@ class Dev_tools_manager : public IDev_tools_manager {
   void tick() override;
 
   // Manager_deviceDependent implementation
-  void createDeviceDependentResources(DX::DeviceResources& deviceResources) override;
+  void createDeviceDependentResources() override;
   void destroyDeviceDependentResources() override;
 
   // IEntity_render_manager implementation

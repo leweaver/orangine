@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 
+#include "D3D11/Device_repository.h"
 #include "OeCore/EngineUtils.h"
 #include "OeCore/ID3D_resources_manager.h"
 #include "OeCore/Shadow_map_texture_pool.h"
@@ -13,8 +14,13 @@ class Shadow_map_texture_array_texture : public Texture {
   virtual void load(ID3D11Device* device) {}
 };
 
-Shadow_map_texture_pool::Shadow_map_texture_pool(uint32_t maxDimension, uint32_t textureArraySize)
-    : _dimension(maxDimension), _textureArraySize(textureArraySize) {
+Shadow_map_texture_pool::Shadow_map_texture_pool(
+    uint32_t maxDimension,
+    uint32_t textureArraySize,
+    std::shared_ptr<internal::Device_repository> deviceRepository)
+    : _deviceRepository(deviceRepository)
+    , _dimension(maxDimension)
+    , _textureArraySize(textureArraySize) {
   assert(is_power_of_two(maxDimension));
 }
 
@@ -27,9 +33,7 @@ Shadow_map_texture_pool::~Shadow_map_texture_pool() {
 }
 
 void Shadow_map_texture_pool::createDeviceDependentResources() {
-  ID3D_resources_manager* mgr = nullptr;
-  throw std::runtime_error("fixme");
-  auto device = mgr->deviceResources().GetD3DDevice();
+  auto device = _deviceRepository->deviceResources().GetD3DDevice();
 
   // Initialize the render target texture description.
   D3D11_TEXTURE2D_DESC textureDesc;

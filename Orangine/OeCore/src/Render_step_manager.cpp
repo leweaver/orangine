@@ -706,6 +706,7 @@ void Render_step_manager::renderPass(
   auto context = deviceResources().GetD3DDeviceContext();
   auto& commonStates = _deviceRepository->commonStates();
 
+
   // Set the blend mode
   constexpr auto opaqueSampleMask = 0xffffffff;
   constexpr std::array<float, 4> opaqueBlendFactor{0.0f, 0.0f, 0.0f, 0.0f};

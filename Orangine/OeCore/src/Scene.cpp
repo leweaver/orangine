@@ -8,9 +8,9 @@
 #include "OeCore/Entity_graph_loader_gltf.h"
 #include "OeCore/IInput_manager.h"
 
+#include "D3D11/Device_repository.h"
 #include "OeCore/Entity_repository.h"
 #include "OeCore/Material_repository.h"
-#include "D3D11/Device_repository.h"
 
 #include "JsonConfigReader.h"
 #include "OeCore/FileUtils.h"
@@ -25,11 +25,11 @@ using namespace oe;
 const auto CONFIG_FILE_NAME = L"config.json";
 
 template <typename TBase, typename TTuple, int TIdx = 0>
-constexpr void forEachOfType(TTuple& managers, const std::function<void(int, TBase*)>& fn)
-{
+constexpr void forEachOfType(TTuple& managers, const std::function<void(int, TBase*)>& fn) {
   // Initialize only types that derive from TBase
-  if constexpr (std::is_base_of_v<TBase,
-                                  std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
+  if constexpr (std::is_base_of_v<
+                    TBase,
+                    std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
     fn(TIdx, std::get<TIdx>(managers).get());
 
   // iterate the next manager
@@ -38,11 +38,11 @@ constexpr void forEachOfType(TTuple& managers, const std::function<void(int, TBa
 }
 
 template <typename TBase, typename TTuple, int TIdx = std::tuple_size_v<TTuple> - 1>
-constexpr void forEachOfTypeReverse(TTuple& managers, const std::function<void(int, TBase*)>& fn)
-{
+constexpr void forEachOfTypeReverse(TTuple& managers, const std::function<void(int, TBase*)>& fn) {
   // Initialize only types that derive from TBase
-  if constexpr (std::is_base_of_v<TBase,
-                                  std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
+  if constexpr (std::is_base_of_v<
+                    TBase,
+                    std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>)
     fn(TIdx, std::get<TIdx>(managers).get());
 
   // iterate the next manager (in reverse order than initialized)
@@ -51,12 +51,13 @@ constexpr void forEachOfTypeReverse(TTuple& managers, const std::function<void(i
 }
 
 template <typename TTuple, int TIdx = 0>
-constexpr void forEach_tick(TTuple& managers,
-                            std::array<double, std::tuple_size_v<TTuple>>& tickTimes)
-{
+constexpr void forEach_tick(
+    TTuple& managers,
+    std::array<double, std::tuple_size_v<TTuple>>& tickTimes) {
   // Tick only types that derive from Manager_tickable
-  if constexpr (std::is_base_of_v<Manager_tickable, std::remove_pointer_t<decltype(
-                                                        std::get<TIdx>(managers).get())>>) {
+  if constexpr (std::is_base_of_v<
+                    Manager_tickable,
+                    std::remove_pointer_t<decltype(std::get<TIdx>(managers).get())>>) {
     auto perfTimer = Perf_timer::start();
     std::get<TIdx>(managers)->tick();
     perfTimer.stop();
@@ -69,9 +70,12 @@ constexpr void forEach_tick(TTuple& managers,
 }
 
 template <typename TTuple, int TIdx = 0>
-constexpr bool forEach_processMessage(TTuple& managers, UINT message, WPARAM wParam, LPARAM lParam,
-                                      bool handled = false)
-{
+constexpr bool forEach_processMessage(
+    TTuple& managers,
+    UINT message,
+    WPARAM wParam,
+    LPARAM lParam,
+    bool handled = false) {
   // Tick only types that derive from Manager_windowsMessageProcessor
   if constexpr (std::is_base_of_v<
                     Manager_windowsMessageProcessor,
@@ -115,8 +119,7 @@ void Scene::configure() {
   }
 }
 
-void Scene::initialize()
-{
+void Scene::initialize() {
   using namespace std;
 
   // Mesh loaders
@@ -133,14 +136,12 @@ void Scene::initialize()
 
       try {
         manager->initialize();
-      }
-      catch (std::exception& ex) {
+      } catch (std::exception& ex) {
         throw std::runtime_error("Failed to initialize " + manager->name() + ": " + ex.what());
       }
       _initializedManagers.push_back(manager);
     });
-  }
-  catch (std::exception& ex) {
+  } catch (std::exception& ex) {
     LOG(WARNING) << "Failed to initialize managers: " << ex.what();
     throw std::runtime_error(std::string("Scene init failed. ") + ex.what());
   }
@@ -148,15 +149,12 @@ void Scene::initialize()
 
 void Scene::loadEntities(const std::wstring& filename) { return loadEntities(filename, nullptr); }
 
-void Scene::loadEntities(const std::wstring& filename, Entity& parentEntity)
-{
-  auto entity = std::get<std::shared_ptr<IEntity_repository>>(_managers)->getEntityPtrById(
-      parentEntity.getId());
+void Scene::loadEntities(const std::wstring& filename, Entity& parentEntity) {
+  auto entity = _entityRepository->getEntityPtrById(parentEntity.getId());
   return loadEntities(filename, entity.get());
 }
 
-void Scene::loadEntities(const std::wstring& filename, Entity* parentEntity)
-{
+void Scene::loadEntities(const std::wstring& filename, Entity* parentEntity) {
   // Get the file extension
   const auto dotPos = filename.find_last_of('.');
   if (dotPos == std::string::npos)
@@ -168,10 +166,7 @@ void Scene::loadEntities(const std::wstring& filename, Entity* parentEntity)
     throw std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension);
 
   std::vector<std::shared_ptr<Entity>> newRootEntities =
-      extPos->second->loadFile(filename,
-                               *std::get<std::shared_ptr<IEntity_repository>>(_managers).get(),
-                               *std::get<std::shared_ptr<IMaterial_repository>>(_managers).get(),
-                               true);
+      extPos->second->loadFile(filename, *_entityRepository, *_materialRepository, true);
 
   if (parentEntity) {
     for (const auto& entity : newRootEntities)
@@ -181,8 +176,7 @@ void Scene::loadEntities(const std::wstring& filename, Entity* parentEntity)
   manager<IScene_graph_manager>().handleEntitiesLoaded(newRootEntities);
 }
 
-void Scene::tick(DX::StepTimer const& timer)
-{
+void Scene::tick(DX::StepTimer const& timer) {
   _deltaTime = timer.GetElapsedSeconds();
   _elapsedTime += _deltaTime;
   ++_tickCount;
@@ -194,8 +188,7 @@ void Scene::tick(DX::StepTimer const& timer)
   }
 }
 
-void Scene::shutdown()
-{
+void Scene::shutdown() {
   std::stringstream ss;
   const auto& tickTimes = _tickTimes;
   const double tickCount = _tickCount;
@@ -210,107 +203,100 @@ void Scene::shutdown()
     LOG(INFO) << "Manager average tick times (ms): " << std::endl << ss.str();
   }
 
-  std::for_each(_initializedManagers.rbegin(), _initializedManagers.rend(),
-                [](const auto& manager) { manager->shutdown(); });
+  std::for_each(
+      _initializedManagers.rbegin(), _initializedManagers.rend(), [](const auto& manager) {
+        manager->shutdown();
+      });
   _initializedManagers.clear();
 
   _managers = decltype(_managers)();
   _entityGraphLoaders.clear();
 }
 
-void Scene::onComponentAdded(Entity& entity, Component& component) const
-{
+void Scene::onComponentAdded(Entity& entity, Component& component) const {
   manager<IScene_graph_manager>().handleEntityComponentAdd(entity, component);
 }
 
-void Scene::onComponentRemoved(Entity& entity, Component& component) const
-{
+void Scene::onComponentRemoved(Entity& entity, Component& component) const {
   manager<IScene_graph_manager>().handleEntityComponentAdd(entity, component);
 }
 
-void Scene::onEntityAdded(Entity& entity) const
-{
+void Scene::onEntityAdded(Entity& entity) const {
   manager<IScene_graph_manager>().handleEntityAdd(entity);
 }
 
-void Scene::onEntityRemoved(Entity& entity) const
-{
+void Scene::onEntityRemoved(Entity& entity) const {
   manager<IScene_graph_manager>().handleEntityRemove(entity);
 }
 
-void Scene::setMainCamera(const std::shared_ptr<Entity>& cameraEntity)
-{
+void Scene::setMainCamera(const std::shared_ptr<Entity>& cameraEntity) {
   if (cameraEntity) {
     const auto cameras = cameraEntity->getComponentsOfType<Camera_component>();
     if (cameras.empty())
       throw std::invalid_argument("Given entity must have exactly one CameraComponent");
 
     _mainCamera = cameraEntity;
-  }
-  else
+  } else
     _mainCamera = nullptr;
 }
 
-void Scene_device_resource_aware::createWindowSizeDependentResources(HWND window, int width,
-                                                                     int height)
-{
+void Scene_device_resource_aware::createWindowSizeDependentResources(
+    HWND window,
+    int width,
+    int height) {
   LOG(INFO) << "Creating window size dependent resources";
   forEachOfType<Manager_windowDependent>(_managers, [=](int, Manager_windowDependent* manager) {
     manager->createWindowSizeDependentResources(window, width, height);
   });
 }
 
-void Scene_device_resource_aware::destroyWindowSizeDependentResources()
-{
+void Scene_device_resource_aware::destroyWindowSizeDependentResources() {
   LOG(INFO) << "Destroying window size dependent resources";
   forEachOfType<Manager_windowDependent>(_managers, [](int, Manager_windowDependent* manager) {
     manager->destroyWindowSizeDependentResources();
   });
 }
 
-void Scene_device_resource_aware::createDeviceDependentResources()
-{
+void Scene_device_resource_aware::createDeviceDependentResources() {
   LOG(INFO) << "Creating device dependent resources";
-  forEachOfType<Manager_deviceDependent>(_managers, [this](int, Manager_deviceDependent* manager) {
-    manager->createDeviceDependentResources();
-  });
+  _deviceRepository->createDeviceDependentResources();
+  forEachOfType<Manager_deviceDependent>(
+      _managers, [this](int idx, Manager_deviceDependent* manager) {
+        LOG(DEBUG) << "Creating device dependent resources for manager " << idx;
+        manager->createDeviceDependentResources();
+      });
 }
 
-void Scene_device_resource_aware::destroyDeviceDependentResources()
-{
+void Scene_device_resource_aware::destroyDeviceDependentResources() {
   LOG(INFO) << "Destroying device dependent resources";
   forEachOfType<Manager_deviceDependent>(_managers, [](int, Manager_deviceDependent* manager) {
     manager->destroyDeviceDependentResources();
   });
   if (_skyBoxTexture)
     _skyBoxTexture->unload();
+  _deviceRepository->destroyDeviceDependentResources();
 }
 
-bool Scene_device_resource_aware::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const
-{
+bool Scene_device_resource_aware::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const {
   return forEach_processMessage(_managers, message, wParam, lParam);
 }
 
 Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& deviceResources)
-    : _deviceResources(deviceResources)
-{
+    : _deviceResources(deviceResources) {
   using namespace std;
 
   // Repositories
-  auto entityRepository = get<shared_ptr<IEntity_repository>>(_managers) =
-      make_shared<Entity_repository>(*this);
-  auto materialRepository = get<shared_ptr<IMaterial_repository>>(_managers) =
-      make_shared<Material_repository>();
-  auto deviceRepository = 
-      make_shared<internal::Device_repository>(deviceResources);
-  get<shared_ptr<IDevice_repository>>(_managers) = deviceRepository;
+  _entityRepository = make_shared<Entity_repository>(*this);
+  _materialRepository = make_shared<Material_repository>();
+  auto deviceRepository = make_shared<internal::Device_repository>(deviceResources);
+  _deviceRepository = deviceRepository;
 
   // Services / Managers
-  createManager<IScene_graph_manager>(entityRepository);
+  createManager<IScene_graph_manager>(_entityRepository);
   createManager<IDev_tools_manager>();
-  createManager<IEntity_render_manager>(materialRepository, deviceRepository);
+  createManager<IEntity_render_manager>(_materialRepository, deviceRepository);
   createManager<IRender_step_manager>(deviceRepository);
-  createManager<IShadowmap_manager>();
+  createManager<IShadowmap_manager>(deviceRepository);
   createManager<IEntity_scripting_manager>();
   createManager<IAsset_manager>();
   createManager<IInput_manager>();

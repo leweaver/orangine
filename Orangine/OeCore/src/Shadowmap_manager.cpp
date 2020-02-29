@@ -3,6 +3,7 @@
 #include "Shadowmap_manager.h"
 #include "OeCore/Shadow_map_texture_pool.h"
 #include "OeCore/Scene.h"
+#include "D3D11/Device_repository.h"
 
 using namespace oe;
 using namespace internal;
@@ -10,9 +11,9 @@ using namespace internal;
 std::string Shadowmap_manager::_name = "Shadowmap_manager";
 
 template<>
-IShadowmap_manager* oe::create_manager(Scene& scene)
+IShadowmap_manager* oe::create_manager(Scene& scene, std::shared_ptr<Device_repository>& deviceRepository)
 {
-    return new Shadowmap_manager(scene);
+  return new Shadowmap_manager(scene, deviceRepository);
 }
 
 const std::string& Shadowmap_manager::name() const
@@ -22,8 +23,7 @@ const std::string& Shadowmap_manager::name() const
 
 void Shadowmap_manager::createDeviceDependentResources()
 {
-	_texturePool = std::make_unique<Shadow_map_texture_pool>(256, 8);
-    //auto& deviceResources = _scene.manager<ID3D_resources_manager>().deviceResources();
+	_texturePool = std::make_unique<Shadow_map_texture_pool>(256, 8, _deviceRepository);
 	_texturePool->createDeviceDependentResources();
 }
 

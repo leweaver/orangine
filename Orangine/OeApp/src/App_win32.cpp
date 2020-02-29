@@ -7,6 +7,7 @@
 #include "Game.h"
 #include "LogFileSink.h"
 #include "VectorLogSink.h"
+#include "VisualStudioLogSink.h"
 
 #include <OeApp/App.h>
 #include <OeCore/EngineUtils.h>
@@ -57,10 +58,14 @@ int oe::App::run(const oe::App_start_settings& settings) {
   auto fileLogSink =
       std::make_unique<oe::LogFileSink>(logFileName, path_to_log_file, "game", false);
   fileLogSink->fileInit();
-  logWorker->addSink(move(fileLogSink), &oe::LogFileSink::fileWrite);
+  auto fileLogSinkHandle = logWorker->addSink(move(fileLogSink), &oe::LogFileSink::fileWrite);
+
   auto vectorLog = std::make_shared<oe::VectorLog>(100);
-  auto vectorLogSink = std::make_unique<oe::VectorLogSink>(vectorLog);
-  logWorker->addSink(move(vectorLogSink), &oe::VectorLogSink::append);
+  auto vectorLogSinkHandle = logWorker->addSink(
+      move(std::make_unique<oe::VectorLogSink>(vectorLog)), &oe::VectorLogSink::append);
+
+  auto visualStudioLogSinkHandle = logWorker->addSink(
+      move(std::make_unique<oe::VisualStudioLogSink>()), &oe::VisualStudioLogSink::append);
 
   g3::initializeLogging(logWorker.get());
 

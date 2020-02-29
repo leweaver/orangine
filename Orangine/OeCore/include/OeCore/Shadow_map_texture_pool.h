@@ -6,6 +6,9 @@
 #include <stack>
 
 namespace oe {
+namespace internal {
+class Device_repository;
+}
 /*
  * This is a simple shadow map texture pool, that allows creation of shadow map depth textures
  * that exist in a single Array Texture2D.
@@ -14,7 +17,10 @@ namespace oe {
  */
 class Shadow_map_texture_pool {
  public:
-  explicit Shadow_map_texture_pool(uint32_t maxDimension, uint32_t textureArraySize);
+  Shadow_map_texture_pool(
+      uint32_t maxDimension,
+      uint32_t textureArraySize,
+      std::shared_ptr<internal::Device_repository> deviceRepository);
   ~Shadow_map_texture_pool();
 
   void createDeviceDependentResources();
@@ -38,6 +44,7 @@ class Shadow_map_texture_pool {
   const uint32_t _dimension;
   const uint32_t _textureArraySize;
 
+  std::shared_ptr<internal::Device_repository> _deviceRepository;
   Microsoft::WRL::ComPtr<ID3D11Texture2D> _shadowMapArrayTexture2D;
   std::shared_ptr<Texture> _shadowMapDepthArrayTexture;
   std::shared_ptr<Texture> _shadowMapStencilArrayTexture;

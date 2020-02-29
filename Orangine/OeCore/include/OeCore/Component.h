@@ -33,20 +33,20 @@ class Component {
 };
 } // namespace oe
 
-#define DECLARE_COMPONENT_TYPE                                     \
- public:                                                           \
-  Component_type getType() const override;                         \
-  static Component_type type();                                    \
-  std::unique_ptr<Component> clone(Entity& entity) const override; \
-                                                                   \
- private:                                                          \
+#define DECLARE_COMPONENT_TYPE                                         \
+ public:                                                               \
+  Component_type getType() const override;                             \
+  static Component_type type();                                        \
+  std::unique_ptr<Component> clone(oe::Entity& entity) const override; \
+                                                                       \
+ private:                                                              \
   static Component::Component_type _typeId;
 
 #define DEFINE_COMPONENT_TYPE(classname)                                             \
   Component::Component_type classname::_typeId = Component::createComponentTypeId(); \
   classname::Component_type classname::getType() const { return _typeId; }           \
   classname::Component_type classname::type() { return _typeId; }                    \
-  std::unique_ptr<Component> classname::clone(Entity& entity) const {                \
+  std::unique_ptr<Component> classname::clone(oe::Entity& entity) const {            \
     auto instance = std::make_unique<classname>(entity);                             \
     instance->_component_properties = _component_properties;                         \
     return instance;                                                                 \

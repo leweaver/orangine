@@ -87,13 +87,13 @@ class Scene {
   void setSkyboxTexture(std::shared_ptr<Texture> skyBoxTexture) { _skyBoxTexture = skyBoxTexture; }
 
  protected:
+  // Repositories
+  std::shared_ptr<IEntity_repository> _entityRepository;
+  std::shared_ptr<IMaterial_repository> _materialRepository;
+  std::shared_ptr<IDevice_repository> _deviceRepository;
+
+  // Managers
   using Manager_tuple = std::tuple<
-
-      // Repositories
-      std::shared_ptr<IEntity_repository>,   //
-      std::shared_ptr<IMaterial_repository>, //
-      std::shared_ptr<IDevice_repository>,   //
-
       // Managers. IUser_interface_manager should always be first, so it can handle windows messages
       // first.
       std::shared_ptr<IUser_interface_manager>,   //
@@ -112,6 +112,7 @@ class Scene {
 
   Manager_tuple _managers;
   std::vector<Manager_base*> _initializedManagers;
+
   std::shared_ptr<Texture> _skyBoxTexture;
 
  private:

@@ -22,7 +22,7 @@ add_library(${PROJECT_NAME} STATIC
         src/LogFileSink.h
         src/LogFileSink.cpp
         src/VectorLogSink.h
-        src/VectorLogSink.cpp
+        src/VisualStudioLogSink.h
         src/filesinkhelper.ipp)
 
 file(GLOB OeApp_HEADERS "include/OeApp/*")

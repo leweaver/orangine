@@ -6,7 +6,7 @@ namespace oe {
 // If you need it inside a manager, it should have been passed in as a concrete class to the
 // constructor. It is stored on the scene only as an authority for reference counting
 class IDevice_repository {
-
+ public:
   virtual void createDeviceDependentResources() = 0;
   virtual void destroyDeviceDependentResources() = 0;
 };

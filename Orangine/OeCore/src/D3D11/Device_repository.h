@@ -13,7 +13,7 @@ class Device_repository : public IDevice_repository {
   void createDeviceDependentResources() override;
   void destroyDeviceDependentResources() override;
 
-  DirectX::CommonStates& commonStates() const { return *_commonStates.get(); }
+  DirectX::CommonStates& commonStates() const;
   DX::DeviceResources& deviceResources() const { return _deviceResources; }
 
  private:

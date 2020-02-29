@@ -18,3 +18,10 @@ void Device_repository::createDeviceDependentResources() {
 }
 
 void Device_repository::destroyDeviceDependentResources() { _commonStates.reset(); }
+
+DirectX::CommonStates& Device_repository::commonStates() const {
+  if (!_commonStates) {
+    throw std::runtime_error("device dependent resources not available (commonStates)");
+  }
+  return *_commonStates.get();
+}

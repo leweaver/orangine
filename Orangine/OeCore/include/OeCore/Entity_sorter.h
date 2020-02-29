@@ -94,7 +94,7 @@ void Entity_sorter<TEntity_data>::waitThen(
 {
   callback(_entities);
   /*if (!_handle.valid())
-    throw std::runtime_error("Must call beginSort prior to wait");
+    OE_THROW(std::runtime_error("Must call beginSort prior to wait"));
 
   std::future_status status;
   do {
@@ -106,7 +106,7 @@ void Entity_sorter<TEntity_data>::waitThen(
       LOG(WARNING) << "Alpha sort exceeded maximum wait time";
     }
     else {
-      throw std::runtime_error("Unexpected future_status in Alpha_sort::wait");
+      OE_THROW(std::runtime_error("Unexpected future_status in Alpha_sort::wait"));
     }
   } while (status != std::future_status::ready);
   */

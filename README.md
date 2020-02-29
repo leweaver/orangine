@@ -186,6 +186,13 @@ Tangents in art assets must be generated using the MikkiT algorithm (see [Simula
 # Coding Style Guide
 Using [Cpp Core Guidelines](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md) with some additions/clarifications:
 
+## Exceptions (C++)
+C++ Exceptions are (currently) enabled, but should only be used when something has seriously gone wrong (such as a missing asset file). It may be possible for the program to continue; however it will need to recover and work around the issue in some way.
+
+Never raise or catch exceptions to direct program flow in normal use cases (in other words, do not program C++ code as if it were Python, where it is actually Pythonic to use exceptions for this purpose.)
+
+You must throw all exceptions using the OE_THROW() macro. In debug builds the OE_THROW macro will cause a fatal program exit and print out the stack, which helps enforce the above rules.
+
 ## Forward Declarations
 Don't use for model classes in 'Manager' class header files (ie, for the things that the manager class managers)
 Do use when referencing manager classes in header files

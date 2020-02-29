@@ -107,8 +107,8 @@ std::set<std::string> PBR_material::configFlags(const Renderer_features_enabled&
         else if (mve.component == Element_component::Signed_Int)
           flags.insert(g_flag_skinned_joints_sint32);
         else
-          throw std::runtime_error("Material does not support joints component: " +
-                                   elementComponentToString(mve.component));
+          OE_THROW(std::runtime_error("Material does not support joints component: " +
+                                   elementComponentToString(mve.component)));
       }
     }
   }
@@ -207,7 +207,7 @@ PBR_material::vertexInputs(const std::set<std::string>& flags) const
     else if (flags.find(g_flag_skinned_joints_sint32) != flags.end())
       jointsComponent = Element_component::Signed_Int;
     else
-      throw std::runtime_error("Missing joints component flag");
+      OE_THROW(std::runtime_error("Missing joints component flag"));
 
     vertexAttributes.push_back(
         {{Vertex_attribute::Joints, 0}, Element_type::Vector4, jointsComponent});
@@ -223,7 +223,7 @@ PBR_material::vertexInputs(const std::set<std::string>& flags) const
   decodeMorphTargetConfig(flags, targetCount, positionPosition, normalPosition, tangentPosition);
 
   if (targetCount > 8)
-    throw std::domain_error("Does not support more than 8 morph targets");
+    OE_THROW(std::domain_error("Does not support more than 8 morph targets"));
 
   uint8_t morphPositionSemanticOffset = getMorphPositionAttributeIndexOffset();
   uint8_t morphNormalSemanticOffset = getMorphNormalAttributeIndexOffset();

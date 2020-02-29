@@ -76,7 +76,7 @@ size_t Vertex_attribute_meta::numComponents(Vertex_attribute attribute)
 		return 4;
 
 	default:
-		throw std::logic_error("Cannot determine element size for VertexAttribute: "s.append(vertexAttributeToString(attribute)));
+		OE_THROW(std::logic_error("Cannot determine element size for VertexAttribute: "s.append(vertexAttributeToString(attribute))));
 	}
 }
 

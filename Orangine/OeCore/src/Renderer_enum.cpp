@@ -11,7 +11,7 @@ TEnum stringToEnum(const std::string& value, const std::string(&strings)[TCount]
         if (strings[i] == value)
             return static_cast<TEnum>(i);
     }
-    throw std::runtime_error("Unknown enum value: " + value);
+    OE_THROW(std::runtime_error("Unknown enum value: " + value));
 }
 
 std::string g_alphaModeNames[] = {

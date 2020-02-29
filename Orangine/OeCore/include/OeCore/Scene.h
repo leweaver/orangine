@@ -17,6 +17,8 @@
 
 #include "IMaterial_manager.h"
 #include "Manager_base.h"
+#include "EngineUtils.h"
+
 #include <map>
 #include <memory>
 
@@ -71,10 +73,11 @@ class Scene {
     std::vector<std::string> extensions;
     ml->getSupportedFileExtensions(extensions);
     for (const auto& extension : extensions) {
-      if (_entityGraphLoaders.find(extension) != _entityGraphLoaders.end())
-        throw std::runtime_error(
+      if (_entityGraphLoaders.find(extension) != _entityGraphLoaders.end()) {
+        OE_THROW(std::runtime_error(
             "Failed to register entity graph loader, file extension is already registered: " +
-            extension);
+            extension));
+      }
       _entityGraphLoaders[extension] = ml;
     }
     return ml;

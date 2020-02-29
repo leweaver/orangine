@@ -23,36 +23,36 @@ Mikk_tspace_triangle_mesh_interface::Mikk_tspace_triangle_mesh_interface(
                      }
 {
   if (meshData->m_meshIndexType != Mesh_index_type::Triangles)
-    throw std::logic_error(
-        "MikkTSpaceTriangleMeshInterface only supports MeshData with MeshIndexType TRiANGLES.");
+    OE_THROW(std::logic_error(
+        "MikkTSpaceTriangleMeshInterface only supports MeshData with MeshIndexType TRiANGLES."));
 
   if (!meshData->indexBufferAccessor || (meshData->indexBufferAccessor->count % 3) != 0)
-    throw std::logic_error("MikkTSpaceTriangleMeshInterface requires MeshData with a valid index "
-                           "buffer (count must be multiple of 3).");
+    OE_THROW(std::logic_error("MikkTSpaceTriangleMeshInterface requires MeshData with a valid index "
+                           "buffer (count must be multiple of 3)."));
   if (!(meshData->indexBufferAccessor->component == Element_component::Unsigned_Short ||
         meshData->indexBufferAccessor->component == Element_component::Unsigned_Int ||
         meshData->indexBufferAccessor->component == Element_component::Signed_Short ||
         meshData->indexBufferAccessor->component == Element_component::Signed_Int)) {
-    throw std::logic_error(g_msg_index_buffer_format);
+    OE_THROW(std::logic_error(g_msg_index_buffer_format));
   }
 
   if (!_userData.positionAccessor)
-    throw std::logic_error("MikkTSpaceTriangleMeshInterface requires MeshData with a valid "
-                           "VA_POSITION vertex buffer.");
+    OE_THROW(std::logic_error("MikkTSpaceTriangleMeshInterface requires MeshData with a valid "
+                           "VA_POSITION vertex buffer."));
   if (!_userData.normalAccessor)
-    throw std::logic_error(
-        "MikkTSpaceTriangleMeshInterface requires MeshData with a valid VA_NORMAL vertex buffer.");
+    OE_THROW(std::logic_error(
+        "MikkTSpaceTriangleMeshInterface requires MeshData with a valid VA_NORMAL vertex buffer."));
   if (!_userData.texCoordAccessor) {
-    throw std::logic_error(
+    OE_THROW(std::logic_error(
         "MikkTSpaceTriangleMeshInterface requires MeshData with a valid "s.append(
             Vertex_attribute_meta::vsInputName(texCoordAttribute)) +
-        " vertex buffer.");
+        " vertex buffer."));
   }
   if (!_userData.tangentAccessor) {
-    throw std::logic_error(
+    OE_THROW(std::logic_error(
         "MikkTSpaceTriangleMeshInterface requires a valid "s.append(
             Vertex_attribute_meta::semanticName(Vertex_attribute::Tangent)) +
-        " vertex buffer either on the given MeshData, or as a constructor argument.");
+        " vertex buffer either on the given MeshData, or as a constructor argument."));
   }
 
   m_interface.m_getNumFaces = &Mikk_tspace_triangle_mesh_interface::getNumFaces;

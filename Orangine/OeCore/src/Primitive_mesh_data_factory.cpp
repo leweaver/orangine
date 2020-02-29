@@ -91,7 +91,7 @@ void addTangentBufferAccessor(std::shared_ptr<Mesh_data> meshData, const std::ve
     context.m_pUserData = generator.userData();
     context.m_pInterface = generator.getInterface();
     if (!genTangSpaceDefault(&context)) {
-        throw std::exception("Failed to generate tangents");
+        OE_THROW(std::exception("Failed to generate tangents"));
     }
 }
 
@@ -330,16 +330,16 @@ void Primitive_mesh_data_factory::generateNormals(
 	Mesh_vertex_buffer_accessor &normalBufferAccessor)
 {
 	if (indexBufferAccessor.count % 3 != 0)
-		throw std::logic_error("Expected index buffer to have a count that is a multiple of 3.");
+		OE_THROW(std::logic_error("Expected index buffer to have a count that is a multiple of 3."));
 
     if (positionBufferAccessor.attributeElement.semantic != Vertex_attribute_semantic{ Vertex_attribute::Position, 0 })
-        throw std::runtime_error("Given vertex buffer accessor must have type VA_POSITION");
+        OE_THROW(std::runtime_error("Given vertex buffer accessor must have type VA_POSITION"));
 
     if (normalBufferAccessor.attributeElement.semantic != Vertex_attribute_semantic{Vertex_attribute::Normal, 0})
-		throw std::runtime_error("Given normal buffer accessor must have type VA_NORMAL");
+		OE_THROW(std::runtime_error("Given normal buffer accessor must have type VA_NORMAL"));
 
 	if (normalBufferAccessor.count != positionBufferAccessor.count)
-		throw std::runtime_error("Given position and normal buffer accessors must have the same count");
+		OE_THROW(std::runtime_error("Given position and normal buffer accessors must have the same count"));
 	
 	const auto indexBufferStart = indexBufferAccessor.buffer->data + indexBufferAccessor.offset;
 	const auto positionBufferStart = positionBufferAccessor.buffer->data + positionBufferAccessor.offset;
@@ -362,8 +362,8 @@ void Primitive_mesh_data_factory::generateNormals(
 			++idx;
 
 			if (i0 > numVertices || i1 > numVertices || i2 > numVertices) {
-				throw std::logic_error("IndexBuffer index near " + std::to_string(idx - 3) +
-					" out of range of given vertexBuffer (numVertices=" + std::to_string(numVertices) + ")");
+				OE_THROW(std::logic_error("IndexBuffer index near " + std::to_string(idx - 3) +
+					" out of range of given vertexBuffer (numVertices=" + std::to_string(numVertices) + ")"));
 			}
 
 			const auto& p0 = LoadVector3(*reinterpret_cast<const XMFLOAT3*>(positionBufferStart + i0 * positionBufferAccessor.stride));
@@ -409,6 +409,6 @@ void Primitive_mesh_data_factory::generateTangents(std::shared_ptr<Mesh_data> me
 	context.m_pUserData = generator.userData();
 	context.m_pInterface = generator.getInterface();
 	if (!genTangSpaceDefault(&context)) {
-		throw std::exception("Failed to generate tangents");
+		OE_THROW(std::exception("Failed to generate tangents"));
 	}
 }

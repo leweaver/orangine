@@ -55,11 +55,11 @@ void Entity_render_manager::tick() {
   if (environmentMap.get() != _environmentIbl.skyboxTexture.get()) {
     const auto skyboxFileTexture = dynamic_cast<File_texture*>(environmentMap.get());
     if (!skyboxFileTexture)
-      throw std::runtime_error("Skybox texture isn't a file texture!");
+      OE_THROW(std::runtime_error("Skybox texture isn't a file texture!"));
 
     const auto& skyboxFileTextureFilename = skyboxFileTexture->filename();
     if (skyboxFileTextureFilename.find_last_of(L".dds") != skyboxFileTextureFilename.length() - 1) {
-      throw std::runtime_error("Skybox texture must be a .dds file");
+      OE_THROW(std::runtime_error("Skybox texture must be a .dds file"));
     }
 
     const auto filenamePrefix =
@@ -110,7 +110,7 @@ bool addLightToRenderLightData(
           *shadowData,
           shadowMapBias);
     } else if (directionalLight->shadowData().get() != nullptr) {
-      throw std::logic_error("Directional lights only support texture array shadow maps.");
+      OE_THROW(std::logic_error("Directional lights only support texture array shadow maps."));
     }
     return renderLightData.addDirectionalLight(
         lightDirection, directionalLight->color(), directionalLight->intensity());
@@ -173,8 +173,8 @@ void createMissingVertexAttributes(
     } else if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Bi_Tangent, 0})
       generateBiTangents = true;
     else {
-      throw std::logic_error("Mesh does not have required attribute: "s.append(
-          Vertex_attribute_meta::vsInputName(requiredAttribute)));
+      OE_THROW(std::logic_error("Mesh does not have required attribute: "s.append(
+          Vertex_attribute_meta::vsInputName(requiredAttribute))));
     }
 
     // Create the missing accessor
@@ -217,7 +217,7 @@ void Entity_render_manager::renderEntity(
   try {
     const auto material = renderableComponent.material();
     if (!material) {
-      throw std::runtime_error("Missing material on entity");
+      OE_THROW(std::runtime_error("Missing material on entity"));
     }
 
     const auto meshDataComponent = entity.getFirstComponentOfType<Mesh_data_component>();
@@ -257,12 +257,12 @@ void Entity_render_manager::renderEntity(
       _renderLightData_lit->clear();
       lightDataProvider(entity.boundSphere(), _renderLights, _renderLightData_lit->maxLights());
       if (_renderLights.size() > _renderLightData_lit->maxLights()) {
-        throw std::logic_error("Light_provider::Callback_type added too many lights to entity");
+        OE_THROW(std::logic_error("Light_provider::Callback_type added too many lights to entity"));
       }
 
       for (auto& lightEntity : _renderLights) {
         if (!addLightToRenderLightData(*lightEntity, *_renderLightData_lit)) {
-          throw std::logic_error("Failed to add light to light data");
+          OE_THROW(std::logic_error("Failed to add light to light data"));
         }
       }
 
@@ -298,13 +298,13 @@ void Entity_render_manager::renderEntity(
       const auto& joints = skinnedMeshComponent->joints();
       const auto& inverseBindMatrices = skinnedMeshComponent->inverseBindMatrices();
       if (joints.size() != inverseBindMatrices.size())
-        throw std::runtime_error("Size of joints and inverse bone transform arrays must match.");
+        OE_THROW(std::runtime_error("Size of joints and inverse bone transform arrays must match."));
 
       if (inverseBindMatrices.size() > _rendererAnimationData.boneTransformConstants.size()) {
-        throw std::runtime_error(
+        OE_THROW(std::runtime_error(
             "Maximum number of bone transforms exceeded: " +
             std::to_string(inverseBindMatrices.size()) + " > " +
-            std::to_string(_rendererAnimationData.boneTransformConstants.size()));
+            std::to_string(_rendererAnimationData.boneTransformConstants.size())));
       }
 
       if (skinnedMeshComponent->skeletonTransformRoot())
@@ -391,12 +391,12 @@ void Entity_render_manager::renderRenderable(
     lightTarget.radius = radius;
     lightDataProvider(lightTarget, _renderLights, _renderLightData_lit->maxLights());
     if (_renderLights.size() > _renderLightData_lit->maxLights()) {
-      throw std::logic_error("Light_provider::Callback_type added too many lights to entity");
+      OE_THROW(std::logic_error("Light_provider::Callback_type added too many lights to entity"));
     }
 
     for (auto& lightEntity : _renderLights) {
       if (!addLightToRenderLightData(*lightEntity, *_renderLightData_lit)) {
-        throw std::logic_error("Failed to add light to light data");
+        OE_THROW(std::logic_error("Failed to add light to light data"));
       }
     }
 
@@ -436,7 +436,7 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
     rendererData->topology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
     break;
   default:
-    throw std::exception("Unsupported mesh topology");
+    OE_THROW(std::exception("Unsupported mesh topology"));
   }
 
   createMissingVertexAttributes(meshData, vertexAttributes, vertexMorphAttributes);
@@ -462,7 +462,7 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
   } else {
     // TODO: Simply log a warning, or try to draw a non-indexed mesh
     rendererData->indexCount = 0;
-    throw std::runtime_error("CreateRendererData: Missing index buffer");
+    OE_THROW(std::runtime_error("CreateRendererData: Missing index buffer"));
   }
 
   // Create D3D vertex buffers
@@ -491,7 +491,7 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
         }
       }
       if (vertexMorphAttributesIdx == -1) {
-        throw std::runtime_error("Could not find morph attribute in vertexMorphAttributes");
+        OE_THROW(std::runtime_error("Could not find morph attribute in vertexMorphAttributes"));
       }
 
       const size_t morphTargetLayoutSize = meshData->vertexLayout.morphTargetLayout().size();
@@ -505,25 +505,25 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
         }
       }
       if (morphLayoutOffset == -1) {
-        throw std::runtime_error("Could not find morph attribute in mesh morph target layout");
+        OE_THROW(std::runtime_error("Could not find morph attribute in mesh morph target layout"));
       }
 
       if (meshData->attributeMorphBufferAccessors.size() >=
           static_cast<size_t>(morphLayoutOffset)) {
-        throw std::runtime_error(string_format(
+        OE_THROW(std::runtime_error(string_format(
             "CreateRendererData: Failed to read morph target "
             "%" PRIi32 " for vertex attribute: %s",
             morphTargetIdx,
-            Vertex_attribute_meta::vsInputName(vertexAttr)));
+            Vertex_attribute_meta::vsInputName(vertexAttr))));
       }
       if (meshData->attributeMorphBufferAccessors.at(morphTargetIdx).size() >=
           static_cast<size_t>(morphTargetIdx)) {
-        throw std::runtime_error(string_format(
+        OE_THROW(std::runtime_error(string_format(
             "CreateRendererData: Failed to read morph target "
             "%" PRIi32 " layout offset %" PRIi32 "for vertex attribute: %s",
             morphTargetIdx,
             morphLayoutOffset,
-            Vertex_attribute_meta::vsInputName(vertexAttr)));
+            Vertex_attribute_meta::vsInputName(vertexAttr))));
       }
 
       meshAccessor =
@@ -537,9 +537,9 @@ std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
         meshAccessor->offset);
 
     if (rendererData->vertexBuffers.find(vertexAttr) != rendererData->vertexBuffers.end()) {
-      throw std::runtime_error(
+      OE_THROW(std::runtime_error(
           "Mesh data contains vertex attribute "s + Vertex_attribute_meta::vsInputName(vertexAttr) +
-          " more than once.");
+          " more than once."));
     }
     rendererData->vertexBuffers[vertexAttr] = std::move(d3DAccessor);
   }

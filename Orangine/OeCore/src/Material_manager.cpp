@@ -110,7 +110,7 @@ std::string createShaderError(
 // todo: use this when creating a new material type...
 /*
     if (idx > static_cast<size_t>(g_max_material_index)) {
-        throw std::domain_error("Maximum number of unique materials exceeded");
+        OE_THROW(std::domain_error("Maximum number of unique materials exceeded"));
     }
  */
 void Material_manager::ensureMaterialConstants(
@@ -188,7 +188,7 @@ void Material_manager::createVertexShader(
       &vertexShaderByteCode,
       errorMsgs.ReleaseAndGetAddressOf());
   if (!SUCCEEDED(hr)) {
-    throw std::runtime_error(createShaderError(hr, errorMsgs.Get(), settings));
+    OE_THROW(std::runtime_error(createShaderError(hr, errorMsgs.Get(), settings)));
   }
 
   const auto device = deviceResources().GetD3DDevice();
@@ -199,7 +199,7 @@ void Material_manager::createVertexShader(
       vertexShaderByteCode->GetBufferSize(),
       &compiledMaterial.inputLayout);
   if (!SUCCEEDED(hr)) {
-    throw std::runtime_error("Failed to create vertex input layout: "s + std::to_string(hr));
+    OE_THROW(std::runtime_error("Failed to create vertex input layout: "s + std::to_string(hr)));
   }
 
   hr = device->CreateVertexShader(
@@ -208,7 +208,7 @@ void Material_manager::createVertexShader(
       nullptr,
       &compiledMaterial.vertexShader);
   if (!SUCCEEDED(hr)) {
-    throw std::runtime_error("Failed to vertex pixel shader: "s + std::to_string(hr));
+    OE_THROW(std::runtime_error("Failed to vertex pixel shader: "s + std::to_string(hr)));
   }
 }
 
@@ -248,7 +248,7 @@ void Material_manager::createPixelShader(
       &pixelShaderByteCode,
       errorMsgs.ReleaseAndGetAddressOf());
   if (!SUCCEEDED(hr)) {
-    throw std::runtime_error(createShaderError(hr, errorMsgs.Get(), settings));
+    OE_THROW(std::runtime_error(createShaderError(hr, errorMsgs.Get(), settings)));
   }
 
   auto device = deviceResources().GetD3DDevice();
@@ -258,7 +258,7 @@ void Material_manager::createPixelShader(
       nullptr,
       &compiledMaterial.pixelShader);
   if (!SUCCEEDED(hr)) {
-    throw std::runtime_error("Failed to create pixel shader: "s + std::to_string(hr));
+    OE_THROW(std::runtime_error("Failed to create pixel shader: "s + std::to_string(hr)));
   }
 
   auto debugName = "Material:" + utf8_encode(settings.filename);
@@ -275,9 +275,9 @@ const std::string& Material_manager::name() const { return _name; }
 
 void Material_manager::tick() {
   if (_boundMaterial) {
-    throw std::logic_error(
+    OE_THROW(std::logic_error(
         "Material is still bound after rendering complete! Did you forget to call "
-        "IMaterial_manager::unbind() ?");
+        "IMaterial_manager::unbind() ?"));
   }
 }
 
@@ -369,8 +369,8 @@ void Material_manager::bind(
         materialContext.resetShaderResourceViews();
         materialContext.resetSamplerStates();
       } catch (std::exception& ex) {
-        throw std::runtime_error(
-            "Failed to create resources in Material_manager::bind. "s + ex.what());
+        OE_THROW(std::runtime_error(
+            "Failed to create resources in Material_manager::bind. "s + ex.what()));
       }
     }
 
@@ -428,12 +428,12 @@ void Material_manager::bind(
     // Set shader texture resource in the pixel shader.
     _boundSrvCount = static_cast<uint32_t>(materialContext.shaderResourceViews.size());
     if (_boundSrvCount > g_max_shader_resource_count)
-      throw std::runtime_error("Too many shaderResourceViews bound");
+      OE_THROW(std::runtime_error("Too many shaderResourceViews bound"));
     context->PSSetShaderResources(0, _boundSrvCount, materialContext.shaderResourceViews.data());
 
     _boundSsCount = static_cast<uint32_t>(materialContext.samplerStates.size());
     if (_boundSsCount > g_max_sampler_state_count)
-      throw std::runtime_error("Too many samplerStates bound");
+      OE_THROW(std::runtime_error("Too many samplerStates bound"));
     context->PSSetSamplers(0, _boundSsCount, materialContext.samplerStates.data());
   }
 

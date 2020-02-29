@@ -22,7 +22,7 @@ const std::string& Asset_manager::name() const { return _name; }
 
 void Asset_manager::preInit_setDataPath(const std::wstring& dataPath) {
   if (_initialized) {
-    throw std::logic_error("Cannot change data path after Asset_manager is initialized.");
+    OE_THROW(std::logic_error("Cannot change data path after Asset_manager is initialized."));
   }
   _dataPath = dataPath;
 }
@@ -45,10 +45,10 @@ std::wstring Asset_manager::makeAbsoluteAssetPath(const std::wstring& path) cons
   if (_fallbackDataPathAllowed && !_dataPathOverrides.empty()) {
     return _dataPath + L"/" + path;
   }
-  throw std::invalid_argument(
+  OE_THROW(std::invalid_argument(
       "Given data path does not match any data path overrides, and fallback data path is "
       "forbidden: " +
-      utf8_encode(path));
+      utf8_encode(path)));
 }
 
 void Asset_manager::loadConfig(const IConfigReader& configReader) {

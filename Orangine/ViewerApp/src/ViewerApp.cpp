@@ -39,7 +39,7 @@ std::shared_ptr<Entity> LoadGLTFToEntity(Scene& scene, std::string gltfName,
 
     LOG(DEBUG) << "Looking for gltf at: " << utf8_encode(gltfPath);
     if (!std::filesystem::exists(gltfPath)) {
-      throw std::runtime_error("Could not find gltf file with name: " + gltfName);
+      OE_THROW(std::runtime_error("Could not find gltf file with name: " + gltfName));
     }
   }
 

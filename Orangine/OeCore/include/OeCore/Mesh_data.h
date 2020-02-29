@@ -2,6 +2,7 @@
 
 #include "Renderer_enum.h"
 #include "Mesh_vertex_layout.h"
+#include "EngineUtils.h"
 
 #include <cstdint>
 #include <memory>
@@ -50,11 +51,12 @@ namespace oe
         {
             const auto startPos = offset + index * stride;
             const auto endPos = startPos + stride;
-            if (startPos > dataSize || endPos > dataSize)
-                throw std::runtime_error("Illegal buffer access! index=" + std::to_string(index) +
-                    ", stride=" + std::to_string(stride) +
-                    ", offset=" + std::to_string(offset) +
-                    ", dataSize=" + std::to_string(dataSize));
+            if (startPos > dataSize || endPos > dataSize) {
+              OE_THROW(std::runtime_error(
+                  "Illegal buffer access! index=" + std::to_string(index) +
+                  ", stride=" + std::to_string(stride) + ", offset=" + std::to_string(offset) +
+                  ", dataSize=" + std::to_string(dataSize)));
+            }
             return data + startPos;
         }
 

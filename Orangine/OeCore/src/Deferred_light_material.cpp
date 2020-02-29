@@ -113,23 +113,23 @@ Material::Shader_resources Deferred_light_material::shaderResources(const std::s
 
     if (flags.find(g_flag_iblEnabled) != flags.end()) {
         if (!(renderLightData.environmentMapBrdf() && renderLightData.environmentMapDiffuse() && renderLightData.environmentMapSpecular())) {
-            throw std::runtime_error("Deferred_light_material requires a valid environment map be provided in the Render_light_data");
-        }
+            OE_THROW(std::runtime_error("Deferred_light_material requires a valid environment map be provided in the Render_light_data"));
+      }
 
-        sr.textures.push_back(renderLightData.environmentMapBrdf());
-        sr.textures.push_back(renderLightData.environmentMapDiffuse());
-        sr.textures.push_back(renderLightData.environmentMapSpecular());
+      sr.textures.push_back(renderLightData.environmentMapBrdf());
+      sr.textures.push_back(renderLightData.environmentMapDiffuse());
+      sr.textures.push_back(renderLightData.environmentMapSpecular());
 
-        // Create IBL sampler desc
-        samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        sr.samplerDescriptors.push_back(samplerDesc);
+      // Create IBL sampler desc
+      samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+      samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+      samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+      sr.samplerDescriptors.push_back(samplerDesc);
     }
 
     if (flags.find(g_flag_shadowsEnabled) != flags.end()) {
-        if (!(_shadowMapStencilTexture && _shadowMapDepthTexture)) {
-            throw std::logic_error("Cannot bind a shadow map stencil texture without a shadow map depth texture.");
+      if (!(_shadowMapStencilTexture && _shadowMapDepthTexture)) {
+            OE_THROW(std::logic_error("Cannot bind a shadow map stencil texture without a shadow map depth texture."));
         }
 
         sr.textures.push_back(_shadowMapDepthTexture);

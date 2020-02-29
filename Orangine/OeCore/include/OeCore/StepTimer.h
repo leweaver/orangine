@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "EngineUtils.h"
+
 #include <exception>
 #include <stdint.h>
 
@@ -26,72 +28,73 @@ namespace DX
         {
             if (!QueryPerformanceFrequency(&m_qpcFrequency))
             {
-                throw std::exception( "QueryPerformanceFrequency" );
-            }
+                OE_THROW(std::exception( "QueryPerformanceFrequency" ));
+          }
 
-            if (!QueryPerformanceCounter(&m_qpcLastTime))
-            {
-                throw std::exception( "QueryPerformanceCounter" );
-            }
+          if (!QueryPerformanceCounter(&m_qpcLastTime)) {
+                OE_THROW(std::exception( "QueryPerformanceCounter" ));
+          }
 
-            // Initialize max delta to 1/10 of a second.
-            m_qpcMaxDelta = m_qpcFrequency.QuadPart / 10;
+          // Initialize max delta to 1/10 of a second.
+          m_qpcMaxDelta = m_qpcFrequency.QuadPart / 10;
         }
 
         // Get elapsed time since the previous Update call.
-        uint64_t GetElapsedTicks() const					{ return m_elapsedTicks; }
-        double GetElapsedSeconds() const					{ return TicksToSeconds(m_elapsedTicks); }
+        uint64_t GetElapsedTicks() const { return m_elapsedTicks; }
+        double GetElapsedSeconds() const { return TicksToSeconds(m_elapsedTicks); }
 
         // Get total time since the start of the program.
-        uint64_t GetTotalTicks() const						{ return m_totalTicks; }
-        double GetTotalSeconds() const						{ return TicksToSeconds(m_totalTicks); }
+        uint64_t GetTotalTicks() const { return m_totalTicks; }
+        double GetTotalSeconds() const { return TicksToSeconds(m_totalTicks); }
 
         // Get total number of updates since start of the program.
-        uint32_t GetFrameCount() const						{ return m_frameCount; }
+        uint32_t GetFrameCount() const { return m_frameCount; }
 
         // Get the current framerate.
-        uint32_t GetFramesPerSecond() const					{ return m_framesPerSecond; }
+        uint32_t GetFramesPerSecond() const { return m_framesPerSecond; }
 
         // Set whether to use fixed or variable timestep mode.
-        void SetFixedTimeStep(bool isFixedTimestep)			{ m_isFixedTimeStep = isFixedTimestep; }
+        void SetFixedTimeStep(bool isFixedTimestep) { m_isFixedTimeStep = isFixedTimestep; }
 
         // Set how often to call Update when in fixed timestep mode.
-        void SetTargetElapsedTicks(uint64_t targetElapsed)	{ m_targetElapsedTicks = targetElapsed; }
-        void SetTargetElapsedSeconds(double targetElapsed)	{ m_targetElapsedTicks = SecondsToTicks(targetElapsed); }
+        void SetTargetElapsedTicks(uint64_t targetElapsed) { m_targetElapsedTicks = targetElapsed; }
+        void SetTargetElapsedSeconds(double targetElapsed) {
+          m_targetElapsedTicks = SecondsToTicks(targetElapsed);
+        }
 
         // Integer format represents time using 10,000,000 ticks per second.
         static const uint64_t TicksPerSecond = 10000000;
 
-        static double TicksToSeconds(uint64_t ticks)		{ return static_cast<double>(ticks) / TicksPerSecond; }
-        static uint64_t SecondsToTicks(double seconds)		{ return static_cast<uint64_t>(seconds * TicksPerSecond); }
-
-        // After an intentional timing discontinuity (for instance a blocking IO operation)
-        // call this to avoid having the fixed timestep logic attempt a set of catch-up 
-        // Update calls.
-
-        void ResetElapsedTime()
-        {
-            if (!QueryPerformanceCounter(&m_qpcLastTime))
-            {
-                throw std::exception("QueryPerformanceCounter");
-            }
-
-            m_leftOverTicks = 0;
-            m_framesPerSecond = 0;
-            m_framesThisSecond = 0;
-            m_qpcSecondCounter = 0;
+        static double TicksToSeconds(uint64_t ticks) {
+          return static_cast<double>(ticks) / TicksPerSecond;
+        }
+        static uint64_t SecondsToTicks(double seconds) {
+          return static_cast<uint64_t>(seconds * TicksPerSecond);
         }
 
-        // Update timer state, calling the specified Update function the appropriate number of times.
-        template<typename TUpdate>
-        void Tick(const TUpdate& update)
-        {
-            // Query the current time.
-            LARGE_INTEGER currentTime;
+        // After an intentional timing discontinuity (for instance a blocking IO operation)
+        // call this to avoid having the fixed timestep logic attempt a set of catch-up
+        // Update calls.
 
-            if (!QueryPerformanceCounter(&currentTime))
-            {
-                throw std::exception( "QueryPerformanceCounter" );
+        void ResetElapsedTime() {
+          if (!QueryPerformanceCounter(&m_qpcLastTime)) {
+                OE_THROW(std::exception("QueryPerformanceCounter"));
+          }
+
+          m_leftOverTicks = 0;
+          m_framesPerSecond = 0;
+          m_framesThisSecond = 0;
+          m_qpcSecondCounter = 0;
+        }
+
+        // Update timer state, calling the specified Update function the appropriate number of
+        // times.
+        template <typename TUpdate> void Tick(const TUpdate& update) {
+          // Query the current time.
+          LARGE_INTEGER currentTime;
+
+          if (!QueryPerformanceCounter(&currentTime)) {
+                OE_THROW(std::exception( "QueryPerformanceCounter" ));
             }
 
             uint64_t timeDelta = currentTime.QuadPart - m_qpcLastTime.QuadPart;

@@ -18,6 +18,6 @@ inline std::string get_file_contents(const wchar_t* filename) {
     in.close();
     return (contents);
   }
-  throw std::runtime_error("Failed to read file: " + oe::errno_to_str());
+  OE_THROW(std::runtime_error("Failed to read file: " + oe::errno_to_str()));
 }
 } // namespace oe

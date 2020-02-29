@@ -90,6 +90,6 @@ size_t Material::calculateCompilerPropertiesHash()
 size_t Material::ensureCompilerPropertiesHash() const
 {
     if (_requiresRecompile)
-        throw std::domain_error("Material requires recompile");
+        OE_THROW(std::domain_error("Material requires recompile"));
     return _propertiesHash;
 }

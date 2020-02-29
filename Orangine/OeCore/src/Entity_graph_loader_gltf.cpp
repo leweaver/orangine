@@ -280,7 +280,7 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(
   // Determine the stride - if none is provided, default to sourceElementSize.
   auto sourceStride = accessor.ByteStride(bufferView);
   if (sourceStride == -1)
-    throw std::domain_error("Invalid glTF parameters for byte stride");
+    OE_THROW(std::domain_error("Invalid glTF parameters for byte stride"));
   if (sourceStride == 0)
     sourceStride = sourceElementSize;
 
@@ -485,9 +485,10 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
     if (skinIdx <= -1)
       continue;
 
-    if (skinIdx >= numSkins)
-      throw std::domain_error(
-          "Node[" + to_string(idx) + "] points to invalid skin index: " + to_string(skinIdx));
+    if (skinIdx >= numSkins) {
+      OE_THROW(std::domain_error(
+          "Node[" + to_string(idx) + "] points to invalid skin index: " + to_string(skinIdx)));
+    }
 
     try {
       const auto& skin = model.skins[skinIdx];
@@ -508,7 +509,7 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
           int num_joints = static_cast<int>(model.nodes.size());
           for (const int jointNodeIdx : skin.joints) {
             if (jointNodeIdx < 0 || jointNodeIdx >= num_joints)
-              throw std::domain_error("invalid joint index: " + to_string(jointNodeIdx));
+              OE_THROW(std::domain_error("invalid joint index: " + to_string(jointNodeIdx)));
 
             auto jointEntity = loaderData.nodeIdxToEntity.at(jointNodeIdx);
             joints.push_back(jointEntity);
@@ -520,14 +521,14 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
         // Node that the skeleton is rooted from
         if (skin.skeleton > -1) {
           if (skin.skeleton >= numNodes)
-            throw std::domain_error("invalid skeleton index: " + to_string(skin.skeleton));
+            OE_THROW(std::domain_error("invalid skeleton index: " + to_string(skin.skeleton)));
 
           skinnedMeshComponent.setSkeletonTransformRoot(
               loaderData.nodeIdxToEntity.at(skin.skeleton));
         }
       }
     } catch (std::exception& ex) {
-      throw std::domain_error("Skin[" + to_string(skinIdx) + "]: "s + ex.what());
+      OE_THROW(std::domain_error("Skin[" + to_string(skinIdx) + "]: "s + ex.what()));
     }
   }
 
@@ -538,7 +539,7 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
       try {
         create_animation(animIdx, loaderData);
       } catch (std::exception& ex) {
-        throw std::domain_error("Animation[" + to_string(animIdx) + "]: "s + ex.what());
+        OE_THROW(std::domain_error("Animation[" + to_string(animIdx) + "]: "s + ex.what()));
       }
     }
   }
@@ -831,7 +832,7 @@ shared_ptr<Entity> create_entity(
         }
 
         if (attr.second >= numAccessors) {
-          throw std::domain_error("Invalid attribute accessor index: " + attr.first);
+          OE_THROW(std::domain_error("Invalid attribute accessor index: " + attr.first));
         }
         const auto& accessor = loaderData.model.accessors[attr.second];
 
@@ -840,10 +841,10 @@ shared_ptr<Entity> create_entity(
             g_gltfComponent_elementComponent.find(accessor.componentType);
 
         if (accessorTypePos == g_gltfType_elementType.end())
-          throw std::domain_error("Unsupported gltf accessor type: " + accessor.type);
+          OE_THROW(std::domain_error("Unsupported gltf accessor type: " + accessor.type));
         if (accessorComponentTypePos == g_gltfComponent_elementComponent.end())
-          throw std::domain_error(
-              "Unsupported gltf accessor component type: " + accessor.componentType);
+          OE_THROW(std::domain_error(
+              "Unsupported gltf accessor component type: " + accessor.componentType));
 
         meshLayoutAttributes.push_back(Vertex_attribute_element{vaPos->second,
                                                                 accessorTypePos->second,
@@ -855,14 +856,14 @@ shared_ptr<Entity> create_entity(
         for (const auto& morphTargetEntry : prim.targets[0]) {
           const auto attrPos = g_gltfMorphAttributeMapping.find(morphTargetEntry.first);
           if (attrPos == g_gltfMorphAttributeMapping.end()) {
-            throw std::domain_error("Unknown morph attribute: " + morphTargetEntry.first);
+            OE_THROW(std::domain_error("Unknown morph attribute: " + morphTargetEntry.first));
           }
           morphTargetLayout.push_back(attrPos->second);
         }
       }
 
       if (prim.targets.size() > UINT8_MAX) {
-        throw std::domain_error("Too many morph targets");
+        OE_THROW(std::domain_error("Too many morph targets"));
       }
       auto meshData = std::make_shared<Mesh_data>(Mesh_vertex_layout(
           meshLayoutAttributes, morphTargetLayout, static_cast<uint8_t>(prim.targets.size())));
@@ -901,7 +902,7 @@ shared_ptr<Entity> create_entity(
         for (const auto& attr : prim.attributes) {
           const auto vaPos = g_gltfAttributeToVertexAttributeMap.find(attr.first);
           if (vaPos == g_gltfAttributeToVertexAttributeMap.end()) {
-            throw std::domain_error("Unexpected attribute: " + attr.first);
+            OE_THROW(std::domain_error("Unexpected attribute: " + attr.first));
           }
 
           const auto& vertexAttribute = vaPos->second;
@@ -917,16 +918,16 @@ shared_ptr<Entity> create_entity(
 
             meshData->vertexBufferAccessors[vertexAttribute] = move(vertexBufferAccessor);
           } catch (const exception& e) {
-            throw domain_error(
+            OE_THROW(std::domain_error(
                 "Error in attribute " + Vertex_attribute_meta::vsInputName(vertexAttribute) + ": " +
-                e.what());
+                e.what()));
           }
         }
 
         // Animation data
         if (loadJointsWeights(0, prim, loaderData, *meshData)) {
           if (loadJointsWeights(1, prim, loaderData, *meshData)) {
-            throw std::exception("loader does not support more than one weights stream");
+            OE_THROW(std::exception("loader does not support more than one weights stream"));
           }
         }
 
@@ -956,13 +957,13 @@ shared_ptr<Entity> create_entity(
             morphWeights.resize(prim.targets.size(), 0.0);
 
           if (morphWeights.size() != prim.targets.size())
-            throw std::domain_error("Size of weights must equal size of targets, or be unset.");
+            OE_THROW(std::domain_error("Size of weights must equal size of targets, or be unset."));
 
           // Check the morph targets length
           const auto targetSize = prim.targets[0].size();
           for (const auto& target : prim.targets) {
             if (targetSize != target.size())
-              throw std::domain_error("Size of each target must be the same.");
+              OE_THROW(std::domain_error("Size of each target must be the same."));
 
             std::vector<std::unique_ptr<Mesh_vertex_buffer_accessor>> morphBufferAccessors;
             for (const auto& targetAttributeAccessor : target) {
@@ -1049,15 +1050,15 @@ void create_animation(int animIdx, Loader_data loaderData) {
     }
 
     if (channel.target_node >= numNodes)
-      throw std::domain_error(
+      OE_THROW(std::domain_error(
           "Invalid animation channel at index " + to_string(channelIdx) +
-          " - references unknown node " + to_string(channel.target_node));
+          " - references unknown node " + to_string(channel.target_node)));
 
     const auto& targetEntity = loaderData.nodeIdxToEntity[channel.target_node];
     if (!targetEntity)
-      throw std::domain_error(
+      OE_THROW(std::domain_error(
           "Invalid animation channel at index " + to_string(channelIdx) + " - references node " +
-          to_string(channel.target_node) + " that doesn't belong to the scene.");
+          to_string(channel.target_node) + " that doesn't belong to the scene."));
 
     assert(animationController);
 
@@ -1067,14 +1068,14 @@ void create_animation(int animIdx, Loader_data loaderData) {
     const auto interpolationTypePos =
         g_animationSamplerInterpolationToTypeMap.find(sampler.interpolation);
     if (interpolationTypePos == g_animationSamplerInterpolationToTypeMap.end())
-      throw std::domain_error(
-          "Unknown animation sampler interpolation type: " + sampler.interpolation);
+      OE_THROW(std::domain_error(
+          "Unknown animation sampler interpolation type: " + sampler.interpolation));
     const auto interpolationType = interpolationTypePos->second;
 
     // Animation property
     const auto animationTypePos = g_animationChannelTargetPathToTypeMap.find(channel.target_path);
     if (animationTypePos == g_animationChannelTargetPathToTypeMap.end())
-      throw std::domain_error("Unknown animation channel target_path: " + channel.target_path);
+      OE_THROW(std::domain_error("Unknown animation channel target_path: " + channel.target_path));
     const auto animationType = animationTypePos->second;
 
     // Keyframe Times
@@ -1086,8 +1087,8 @@ void create_animation(int animIdx, Loader_data loaderData) {
         populateSamplerInputKeyframeTimes(sampler.input, *keyframeTimes);
         samplerInputToKeyframeTimes[sampler.input] = keyframeTimes;
       } catch (std::exception& ex) {
-        throw std::domain_error(
-            "Failed to load sampler " + to_string(channel.sampler) + ". " + ex.what());
+        OE_THROW(std::domain_error(
+            "Failed to load sampler " + to_string(channel.sampler) + ". " + ex.what()));
       };
     } else {
       keyframeTimes = samplerInputToKeyframeTimesPos->second;
@@ -1101,7 +1102,7 @@ void create_animation(int animIdx, Loader_data loaderData) {
       keyframeValues = useOrCreateBufferForAccessor<Mesh_buffer_accessor>(
           sampler.output, loaderData, *allowedAccessorTypes, 0, g_createSimpleMeshAccessor);
     } catch (std::exception& ex) {
-      throw std::domain_error("Failed to create animation keyframe values accessor: "s + ex.what());
+      OE_THROW(std::domain_error("Failed to create animation keyframe values accessor: "s + ex.what()));
     }
 
     uint8_t valuesPerKeyFrame = 1;

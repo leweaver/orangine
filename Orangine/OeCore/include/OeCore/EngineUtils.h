@@ -6,12 +6,26 @@
 #include <string_view>
 #include <vectormath/vectormath.hpp>
 
+#include <g3log/g3log.hpp>
+
+namespace oe {
+std::exception&& log_exception_for_throw(
+    std::exception&& e,
+    const char* filename,
+    const int line,
+    const char* function);
+}
+
+// For some reason, adding line breaks with \ here fails to compile.
+// clang-format off
+#define OE_THROW(ex) throw oe::log_exception_for_throw(ex, __FILE__, __LINE__, static_cast<const char*>(__PRETTY_FUNCTION__))
+// clang-format on
+
 namespace oe {
 template <typename T, size_t TN> constexpr size_t array_size(const T (&)[TN]) { return TN; }
 
 // From boost
-template <class T> void hash_combine(std::size_t& seed, const T& v)
-{
+template <class T> void hash_combine(std::size_t& seed, const T& v) {
   std::hash<T> hasher;
   seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
@@ -20,8 +34,10 @@ constexpr float degrees_to_radians(float degrees) { return degrees * (oe::math::
 constexpr float radians_to_degrees(float radians) { return radians * (180.0f / oe::math::pi); }
 
 // Create a rotation matrix from input unit vector A to B.
-bool create_rotation_between_unit_vectors(SSE::Matrix3& result, const SSE::Vector3& directionFrom,
-                                      const SSE::Vector3& directionTo);
+bool create_rotation_between_unit_vectors(
+    SSE::Matrix3& result,
+    const SSE::Vector3& directionFrom,
+    const SSE::Vector3& directionTo);
 
 // Convert a wide Unicode string to an UTF8 string
 std::string utf8_encode(const std::wstring& wstring);
@@ -39,13 +55,12 @@ std::vector<std::string> str_split(const std::string& str, const std::string& de
 
 std::string str_replace_all(std::string str, const std::string& from, const std::string& to);
 
-template <typename... TArgs>
-std::string string_format(const std::string& format, TArgs... args)
-{
+template <typename... TArgs> std::string string_format(const std::string& format, TArgs... args) {
   // From: https://stackoverflow.com/a/26221725
-  const size_t size = std::snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
+  const size_t size =
+      std::snprintf(nullptr, 0, format.c_str(), args...) + 1; // Extra space for '\0'
   if (size <= 0) {
-    throw std::invalid_argument("Invalid format string: " + format);
+    OE_THROW(std::invalid_argument("Invalid format string: " + format));
   }
   const std::unique_ptr<char[]> buf(new char[size]);
   std::snprintf(buf.get(), size, format.c_str(), args...);
@@ -77,28 +92,28 @@ class com_exception : public std::exception {
 };
 
 // Helper utility converts D3D API failures into exceptions.
-inline void ThrowIfFailed(HRESULT hr)
-{
+inline void ThrowIfFailed(HRESULT hr) {
   if (FAILED(hr)) {
     throw com_exception(hr);
   }
 }
 
 // Helper utility converts D3D API failures into exceptions.
-inline void ThrowIfFailed(HRESULT hr, const std::string_view what)
-{
+inline void ThrowIfFailed(HRESULT hr, const std::string_view what) {
   if (FAILED(hr)) {
     throw com_exception(hr, what);
   }
 }
 
-inline void decompose_matrix(const SSE::Matrix4& mat, SSE::Vector3& pos, SSE::Quat& rotation,
-                            SSE::Vector3& scale)
-{
+inline void decompose_matrix(
+    const SSE::Matrix4& mat,
+    SSE::Vector3& pos,
+    SSE::Quat& rotation,
+    SSE::Vector3& scale) {
   pos = mat.getTranslation();
   auto rotMat = mat.getUpper3x3();
-  scale = SSE::Vector3(SSE::length(rotMat.getCol0()), SSE::length(rotMat.getCol1()),
-                       SSE::length(rotMat.getCol2()));
+  scale = SSE::Vector3(
+      SSE::length(rotMat.getCol0()), SSE::length(rotMat.getCol1()), SSE::length(rotMat.getCol2()));
   rotMat.setCol0(rotMat.getCol0() / scale.getX());
   rotMat.setCol1(rotMat.getCol1() / scale.getY());
   rotMat.setCol2(rotMat.getCol2() / scale.getZ());
@@ -107,8 +122,7 @@ inline void decompose_matrix(const SSE::Matrix4& mat, SSE::Vector3& pos, SSE::Qu
 } // namespace oe
 
 namespace DX {
-inline void ThrowIfFailed(HRESULT hr)
-{
+inline void ThrowIfFailed(HRESULT hr) {
   if (FAILED(hr)) {
     throw oe::com_exception(hr);
   }

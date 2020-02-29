@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 
-#include "OeCore/DeviceResources.h"
+#include <OeCore/DeviceResources.h>
+#include <OeCore/EngineUtils.h>
 
 #include "Device_repository.h"
 
@@ -21,7 +22,7 @@ void Device_repository::destroyDeviceDependentResources() { _commonStates.reset(
 
 DirectX::CommonStates& Device_repository::commonStates() const {
   if (!_commonStates) {
-    throw std::runtime_error("device dependent resources not available (commonStates)");
+    OE_THROW(std::runtime_error("device dependent resources not available (commonStates)"));
   }
   return *_commonStates.get();
 }

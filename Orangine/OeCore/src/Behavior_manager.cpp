@@ -58,8 +58,8 @@ void Behavior_manager::addForComponentTypes(
     std::unordered_set<Component::Component_type> componentTypes,
     Entity_filter_mode mode) {
   if (_nameToEntityBehaviorMap.find(behavior->name()) != _nameToEntityBehaviorMap.end()) {
-    throw std::invalid_argument(
-        "Behavior with name '" + behavior->name() + "' already added to Behavior_manager");
+    OE_THROW(std::invalid_argument(
+        "Behavior with name '" + behavior->name() + "' already added to Behavior_manager"));
   }
   _nameToEntityBehaviorMap[behavior->name()] = behavior.get();
 
@@ -73,15 +73,18 @@ void Behavior_manager::addForScene(std::unique_ptr<Scene_behavior> behavior) {
       _newSceneBehaviors.end(),
       [behavior = behavior.get()](const auto& sb) { return sb->name() == behavior->name(); });
 
-  if (existingUninitialized != _newSceneBehaviors.end() || _nameToSceneBehaviorMap.find(behavior->name()) != _nameToSceneBehaviorMap.end()) {
-    throw std::invalid_argument(
-        "Behavior with name '" + behavior->name() + "' already added to Behavior_manager");
+  if (existingUninitialized != _newSceneBehaviors.end() ||
+      _nameToSceneBehaviorMap.find(behavior->name()) != _nameToSceneBehaviorMap.end()) {
+    OE_THROW(std::invalid_argument(
+        "Behavior with name '" + behavior->name() + "' already added to Behavior_manager"));
   }
 
   // Add to the list of behaviors that will be initialized next tick.
   _newSceneBehaviors.push_back(std::move(behavior));
 }
 
-void Behavior_manager::renderImGui() { for (const auto& sb : _initializedSceneBehaviors) {
+void Behavior_manager::renderImGui() {
+  for (const auto& sb : _initializedSceneBehaviors) {
     sb->renderImGui();
-  } }
+  }
+}

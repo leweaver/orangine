@@ -15,7 +15,7 @@ void Texture::unload()
 
 void Buffer_texture::load(ID3D11Device* device)
 {
-	throw std::runtime_error("Not implemented");
+	OE_THROW(std::runtime_error("Not implemented"));
 }
 
 void File_texture::load(ID3D11Device* device)
@@ -67,5 +67,5 @@ void oe::to_json(nlohmann::json& j, const std::shared_ptr<Texture> texture) {
 }
 
 void oe::from_json(const nlohmann::json& /*j*/, std::shared_ptr<Texture>& /*texture*/) {
-    throw std::runtime_error("Unsupported - texture deserialization");
+    OE_THROW(std::runtime_error("Unsupported - texture deserialization"));
 }

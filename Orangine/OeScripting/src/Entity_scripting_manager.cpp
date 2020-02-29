@@ -103,13 +103,13 @@ PYBIND11_EMBEDDED_MODULE(engine, m) {
 
 void Entity_scripting_manager::preInit_addAbsoluteScriptsPath(const std::wstring& path) {
   if (_pythonInitialized) {
-    throw std::logic_error(
-        "preInit_addAbsoluteScriptsPath can only be called prior to manager initialization.");
+    OE_THROW(std::logic_error(
+        "preInit_addAbsoluteScriptsPath can only be called prior to manager initialization."));
   }
   if (!std::filesystem::exists(path)) {
-    throw std::runtime_error(
+    OE_THROW(std::runtime_error(
         "Attempting to add python script path that does not exist, or is inaccessible: " +
-        utf8_encode(path));
+        utf8_encode(path)));
   }
   _preInit_additionalPaths.push_back(path);
 }

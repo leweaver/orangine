@@ -99,7 +99,7 @@ void Scene::configure() {
   } catch (std::exception& ex) {
     LOG(WARNING) << "Failed to read config file: " << utf8_encode(CONFIG_FILE_NAME) << "("
                  << ex.what() << ")";
-    throw std::runtime_error(std::string("Scene init failed reading config. ") + ex.what());
+    OE_THROW(std::runtime_error(std::string("Scene init failed reading config. ") + ex.what()));
   }
 
   try {
@@ -110,12 +110,12 @@ void Scene::configure() {
       try {
         manager->loadConfig(*configReader);
       } catch (std::exception& ex) {
-        throw std::runtime_error("Failed to configure " + manager->name() + ": " + ex.what());
+        OE_THROW(std::runtime_error("Failed to configure " + manager->name() + ": " + ex.what()));
       }
     });
   } catch (std::exception& ex) {
     LOG(WARNING) << "Failed to configure managers: " << ex.what();
-    throw std::runtime_error(std::string("Scene configure failed. ") + ex.what());
+    OE_THROW(std::runtime_error(std::string("Scene configure failed. ") + ex.what()));
   }
 }
 
@@ -137,13 +137,13 @@ void Scene::initialize() {
       try {
         manager->initialize();
       } catch (std::exception& ex) {
-        throw std::runtime_error("Failed to initialize " + manager->name() + ": " + ex.what());
+        OE_THROW(std::runtime_error("Failed to initialize " + manager->name() + ": " + ex.what()));
       }
       _initializedManagers.push_back(manager);
     });
   } catch (std::exception& ex) {
     LOG(WARNING) << "Failed to initialize managers: " << ex.what();
-    throw std::runtime_error(std::string("Scene init failed. ") + ex.what());
+    OE_THROW(std::runtime_error(std::string("Scene init failed. ") + ex.what()));
   }
 }
 
@@ -158,12 +158,12 @@ void Scene::loadEntities(const std::wstring& filename, Entity* parentEntity) {
   // Get the file extension
   const auto dotPos = filename.find_last_of('.');
   if (dotPos == std::string::npos)
-    throw std::runtime_error("Cannot load mesh; given file doesn't have an extension.");
+    OE_THROW(std::runtime_error("Cannot load mesh; given file doesn't have an extension."));
 
   const std::string extension = utf8_encode(filename.substr(dotPos + 1));
   const auto extPos = _entityGraphLoaders.find(extension);
   if (extPos == _entityGraphLoaders.end())
-    throw std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension);
+    OE_THROW(std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension));
 
   std::vector<std::shared_ptr<Entity>> newRootEntities =
       extPos->second->loadFile(filename, *_entityRepository, *_materialRepository, true);
@@ -233,7 +233,7 @@ void Scene::setMainCamera(const std::shared_ptr<Entity>& cameraEntity) {
   if (cameraEntity) {
     const auto cameras = cameraEntity->getComponentsOfType<Camera_component>();
     if (cameras.empty())
-      throw std::invalid_argument("Given entity must have exactly one CameraComponent");
+      OE_THROW(std::invalid_argument("Given entity must have exactly one CameraComponent"));
 
     _mainCamera = cameraEntity;
   } else

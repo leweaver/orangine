@@ -118,12 +118,12 @@ namespace oe::mesh_utils {
     {
         const auto typePos = g_elementTypeComponent_dxgiFormat.find(type);
         if (typePos == g_elementTypeComponent_dxgiFormat.end())
-            throw std::runtime_error("Cannot convert " + elementTypeToString(type) + " to DXGI");
+            OE_THROW(std::runtime_error("Cannot convert " + elementTypeToString(type) + " to DXGI"));
         const auto& typeMap = typePos->second;
 
         const auto componentPos = typeMap.find(component);
         if (componentPos == typeMap.end())
-            throw std::runtime_error("Cannot convert " + elementTypeToString(type) + "/" + elementComponentToString(component) + " to DXGI");
+            OE_THROW(std::runtime_error("Cannot convert " + elementTypeToString(type) + "/" + elementComponentToString(component) + " to DXGI"));
 
         return componentPos->second;
     }

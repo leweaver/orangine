@@ -154,7 +154,7 @@ void Animation_manager::tick()
           break;
         }
         default:
-          throw std::logic_error("Unsupported animation interpolation type");
+          OE_THROW(std::logic_error("Unsupported animation interpolation type"));
         }
 
         state.currentTime += deltaTime * state.speed;

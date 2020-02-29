@@ -397,7 +397,7 @@ void Render_step_manager::render(std::shared_ptr<Entity> cameraEntity) {
   if (cameraEntity) {
     const auto cameraComponent = cameraEntity->getFirstComponentOfType<Camera_component>();
     if (!cameraComponent) {
-      throw std::logic_error("Camera entity must have a Camera_component");
+      OE_THROW(std::logic_error("Camera entity must have a Camera_component"));
     }
 
     if (_fatalError)
@@ -476,9 +476,9 @@ void Render_step_manager::renderLights(
         [&deferredLights](
             const BoundingSphere& target, std::vector<Entity*>& lights, uint32_t maxLights) {
           if (lights.size() + deferredLights.size() > static_cast<size_t>(maxLights)) {
-            throw std::logic_error(
+            OE_THROW(std::logic_error(
                 "destination lights array is not large enough to contain "
-                "Deferred_light_material's lights");
+                "Deferred_light_material's lights"));
           }
 
           lights.insert(lights.end(), deferredLights.begin(), deferredLights.end());

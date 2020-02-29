@@ -105,8 +105,8 @@ void Shadow_map_texture_pool::createDeviceDependentResources() {
 
 void Shadow_map_texture_pool::destroyDeviceDependentResources() {
   if (_shadowMaps.size() != _textureArraySize)
-    throw std::logic_error(
-        "Must return all borrowed textures prior to a call to destroyDeviceDependentResources");
+    OE_THROW(std::logic_error(
+        "Must return all borrowed textures prior to a call to destroyDeviceDependentResources"));
 
   _shadowMaps.resize(0);
   _shadowMapDepthArrayTexture->unload();
@@ -118,7 +118,7 @@ void Shadow_map_texture_pool::destroyDeviceDependentResources() {
 
 std::unique_ptr<Shadow_map_texture_array_slice> Shadow_map_texture_pool::borrowTexture() {
   if (_shadowMaps.empty())
-    throw std::runtime_error("shadow map pool is exhausted");
+    OE_THROW(std::runtime_error("shadow map pool is exhausted"));
 
   auto shadowMap = move(_shadowMaps.back());
   _shadowMaps.pop_back();
@@ -134,8 +134,8 @@ void Shadow_map_texture_pool::returnTexture(std::unique_ptr<Shadow_map_texture> 
   ThrowIfFailed(resource.As<ID3D11Texture2D>(&texture2d));
 
   if (texture2d.Get() != _shadowMapArrayTexture2D.Get())
-    throw std::logic_error(
-        "Attempt to return a shadowMapTexture that doesn't belong to this pool!");
+    OE_THROW(std::logic_error(
+        "Attempt to return a shadowMapTexture that doesn't belong to this pool!"));
 
   const auto arraySliceTexture = dynamic_cast<Shadow_map_texture_array_slice*>(shadowMap.get());
   assert(arraySliceTexture != nullptr);

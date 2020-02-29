@@ -4,6 +4,7 @@
 //
 
 #include "pch.h"
+
 #include "OeCore/DeviceResources.h"
 #include "OeCore/EngineUtils.h"
 
@@ -126,7 +127,7 @@ void DeviceResources::CreateDeviceResources()
 
     if (!featLevelCount)
     {
-        throw std::out_of_range("minFeatureLevel too high");
+        OE_THROW(std::out_of_range("minFeatureLevel too high"));
     }
 
     ComPtr<IDXGIAdapter1> adapter;
@@ -137,49 +138,44 @@ void DeviceResources::CreateDeviceResources()
     ComPtr<ID3D11DeviceContext> context;
 
     HRESULT hr = E_FAIL;
-    if (adapter)
-    {
-        hr = D3D11CreateDevice(
-            adapter.Get(),
-            D3D_DRIVER_TYPE_UNKNOWN,
-            0,
-            creationFlags,
-            s_featureLevels,
-            featLevelCount,
-            D3D11_SDK_VERSION,
-            device.GetAddressOf(),  // Returns the Direct3D device created.
-            &m_d3dFeatureLevel,     // Returns feature level of device created.
-            context.GetAddressOf()  // Returns the device immediate context.
-            );
+    if (adapter) {
+      hr = D3D11CreateDevice(
+          adapter.Get(),
+          D3D_DRIVER_TYPE_UNKNOWN,
+          0,
+          creationFlags,
+          s_featureLevels,
+          featLevelCount,
+          D3D11_SDK_VERSION,
+          device.GetAddressOf(), // Returns the Direct3D device created.
+          &m_d3dFeatureLevel,    // Returns feature level of device created.
+          context.GetAddressOf() // Returns the device immediate context.
+      );
     }
 #if defined(NDEBUG)
-    else
-    {
-        throw std::exception("No Direct3D hardware device found");
+    else {
+        OE_THROW(std::exception("No Direct3D hardware device found"));
     }
 #else
-    if (FAILED(hr))
-    {
-        // If the initialization fails, fall back to the WARP device.
-        // For more information on WARP, see: 
-        // http://go.microsoft.com/fwlink/?LinkId=286690
-        hr = D3D11CreateDevice(
-            nullptr,
-            D3D_DRIVER_TYPE_WARP, // Create a WARP device instead of a hardware device.
-            0,
-            creationFlags,
-            s_featureLevels,
-            featLevelCount,
-            D3D11_SDK_VERSION,
-            device.GetAddressOf(),
-            &m_d3dFeatureLevel,
-            context.GetAddressOf()
-            );
+    if (FAILED(hr)) {
+      // If the initialization fails, fall back to the WARP device.
+      // For more information on WARP, see:
+      // http://go.microsoft.com/fwlink/?LinkId=286690
+      hr = D3D11CreateDevice(
+          nullptr,
+          D3D_DRIVER_TYPE_WARP, // Create a WARP device instead of a hardware device.
+          0,
+          creationFlags,
+          s_featureLevels,
+          featLevelCount,
+          D3D11_SDK_VERSION,
+          device.GetAddressOf(),
+          &m_d3dFeatureLevel,
+          context.GetAddressOf());
 
-        if (SUCCEEDED(hr))
-        {
-            OutputDebugStringA("Direct3D Adapter - WARP\n");
-        }
+      if (SUCCEEDED(hr)) {
+        OutputDebugStringA("Direct3D Adapter - WARP\n");
+      }
     }
 #endif
 
@@ -187,24 +183,21 @@ void DeviceResources::CreateDeviceResources()
 
 #ifndef NDEBUG
     ComPtr<ID3D11Debug> d3dDebug;
-    if (SUCCEEDED(device.As(&d3dDebug)))
-    {
-        ComPtr<ID3D11InfoQueue> d3dInfoQueue;
-        if (SUCCEEDED(d3dDebug.As(&d3dInfoQueue)))
-        {
+    if (SUCCEEDED(device.As(&d3dDebug))) {
+      ComPtr<ID3D11InfoQueue> d3dInfoQueue;
+      if (SUCCEEDED(d3dDebug.As(&d3dInfoQueue))) {
 #ifdef _DEBUG
-            d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
-            d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
+        d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+        d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
 #endif
-            D3D11_MESSAGE_ID hide [] =
-            {
-                D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
-            };
-            D3D11_INFO_QUEUE_FILTER filter = {};
-            filter.DenyList.NumIDs = _countof(hide);
-            filter.DenyList.pIDList = hide;
-            d3dInfoQueue->AddStorageFilterEntries(&filter);
-        }
+        D3D11_MESSAGE_ID hide[] = {
+            D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+        };
+        D3D11_INFO_QUEUE_FILTER filter = {};
+        filter.DenyList.NumIDs = _countof(hide);
+        filter.DenyList.pIDList = hide;
+        d3dInfoQueue->AddStorageFilterEntries(&filter);
+      }
     }
 #endif
 
@@ -214,11 +207,9 @@ void DeviceResources::CreateDeviceResources()
 }
 
 // These resources need to be recreated every time the window size is changed.
-void DeviceResources::CreateWindowSizeDependentResources() 
-{
-    if (!m_window)
-    {
-        throw std::exception("Call SetWindow with a valid Win32 window handle");
+void DeviceResources::CreateWindowSizeDependentResources() {
+  if (!m_window) {
+        OE_THROW(std::exception("Call SetWindow with a valid Win32 window handle"));
     }
 
     // Clear the previous window size specific context.

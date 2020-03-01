@@ -409,7 +409,7 @@ void Entity_scripting_manager::initializePythonInterpreter() {
   // Convert to a python list, and overwrite the existing value of sys.path
   auto sysPathList = py::list();
   std::stringstream sysPathListSs;
-  for (int i = 0, e = sysPathVec.size(); i < e; ++i) {
+  for (int i = 0, e = static_cast<int>(sysPathVec.size()); i < e; ++i) {
     const auto path = std::filesystem::absolute(utf8_encode(sysPathVec[i])).u8string();
     sysPathList.append(path);
     if (i)

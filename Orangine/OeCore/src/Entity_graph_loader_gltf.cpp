@@ -11,6 +11,7 @@
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Morph_weights_component.h"
 #include "OeCore/PBR_material.h"
+#include "OeCore/Unlit_material.h"
 #include "OeCore/Renderable_component.h"
 #include "OeCore/Skinned_mesh_component.h"
 #include "OeCore/Texture.h"
@@ -239,42 +240,42 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(
         size_t stride,
         size_t offset)> accessorFactory) {
   if (accessorIndex >= loaderData.model.accessors.size())
-    throw domain_error("accessor[" + to_string(accessorIndex) + "] out of range.");
+    OE_THROW(domain_error("accessor[" + to_string(accessorIndex) + "] out of range."));
 
   const auto& accessor = loaderData.model.accessors[accessorIndex];
 
   // is this accessor using one of the types that are allowed?
   const auto allowedAccessorTypePos = allowedAccessorTypes.find(accessor.type);
   if (allowedAccessorTypePos == allowedAccessorTypes.end())
-    throw domain_error("Unexpected accessor type: " + to_string(accessor.type));
+    OE_THROW(domain_error("Unexpected accessor type: " + to_string(accessor.type)));
 
   if (!allowedAccessorTypePos->second.empty() &&
       allowedAccessorTypePos->second.find(accessor.componentType) ==
           allowedAccessorTypePos->second.end()) {
-    throw domain_error("Unexpected accessor component type: " + to_string(accessor.componentType));
+    OE_THROW(domain_error("Unexpected accessor component type: " + to_string(accessor.componentType)));
   }
 
   const auto componentSizeInBytes = GetComponentSizeInBytes(accessor.componentType);
   const auto typeSizeInBytes = GetTypeSizeInBytes(accessor.type);
   const auto sourceElementSize = componentSizeInBytes * typeSizeInBytes;
   if (sourceElementSize <= 0) {
-    throw domain_error(
+    OE_THROW(domain_error(
         "missing or unsupported accessor field: "s +
-        (typeSizeInBytes == -1 ? "type" : "componentType"));
+        (typeSizeInBytes == -1 ? "type" : "componentType")));
   }
 
   // Get the buffer view
   if (accessor.bufferView >= static_cast<int>(loaderData.model.bufferViews.size()))
-    throw domain_error("bufferView[" + to_string(accessor.bufferView) + "] out of range.");
+    OE_THROW(domain_error("bufferView[" + to_string(accessor.bufferView) + "] out of range."));
   const auto& bufferView = loaderData.model.bufferViews.at(accessor.bufferView);
 
   if (expectedBufferViewTarget != 0 && bufferView.target != 0 &&
       bufferView.target != expectedBufferViewTarget) {
-    throw domain_error(
+    OE_THROW(domain_error(
         string("Index bufferView must have type ") +
         (expectedBufferViewTarget == TINYGLTF_TARGET_ARRAY_BUFFER ? "TARGET_ARRAY_BUFFER("
                                                                   : "ARRAY_BUFFER(") +
-        to_string(expectedBufferViewTarget) + ")");
+        to_string(expectedBufferViewTarget) + ")"));
   }
 
   // Determine the stride - if none is provided, default to sourceElementSize.
@@ -286,21 +287,21 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(
 
   // does the data range defined by the accessor fit into the bufferView?
   if (accessor.byteOffset + accessor.count * sourceStride > bufferView.byteLength)
-    throw domain_error(
+    OE_THROW(domain_error(
         "Accessor " + to_string(accessorIndex) + " exceeds maximum size of bufferView " +
-        to_string(accessor.bufferView));
+        to_string(accessor.bufferView)));
 
   // does the data range defined by the accessor and buffer view fit into the buffer?
   const auto bufferOffset = bufferView.byteOffset + accessor.byteOffset;
 
   if (bufferView.buffer >= static_cast<int>(loaderData.model.buffers.size()))
-    throw domain_error("buffer[" + to_string(bufferView.buffer) + "] out of range.");
+    OE_THROW(domain_error("buffer[" + to_string(bufferView.buffer) + "] out of range."));
   const auto& buffer = loaderData.model.buffers.at(bufferView.buffer);
 
   if (bufferOffset + accessor.count * sourceStride > buffer.data.size())
-    throw domain_error(
+    OE_THROW(domain_error(
         "BufferView " + to_string(accessor.bufferView) + " exceeds maximum size of buffer " +
-        to_string(bufferView.buffer));
+        to_string(bufferView.buffer)));
 
   // Does the mesh buffer exist in the cache?
   const auto pos = loaderData.accessorIdxToMeshBuffers.find(accessorIndex);
@@ -451,18 +452,18 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
       static_cast<unsigned>(gltfAscii.length()),
       utf8_encode(baseDir));
   if (!err.empty()) {
-    throw domain_error(err);
+    OE_THROW(domain_error(err));
   }
   if (!warn.empty()) {
     LOG(WARNING) << filenameUtf8 << ": " << warn;
   }
 
   if (!ret) {
-    throw domain_error("Failed to parse glTF: unknown error.");
+    OE_THROW(domain_error("Failed to parse glTF: unknown error."));
   }
 
   if (model.defaultScene >= static_cast<int>(model.scenes.size()) || model.defaultScene < 0)
-    throw domain_error("Failed to parse glTF: defaultScene points to an invalid scene index");
+    OE_THROW(domain_error("Failed to parse glTF: defaultScene points to an invalid scene index"));
 
   const auto& scene = model.scenes[model.defaultScene];
   if (baseDir.empty())
@@ -559,7 +560,7 @@ shared_ptr<oe::Texture> try_create_texture(
     const auto& param = paramPos->second;
     const auto indexPos = param.json_double_value.find("index");
     if (indexPos == param.json_double_value.end())
-      throw domain_error("missing property 'index' from " + textureName);
+      OE_THROW(domain_error("missing property 'index' from " + textureName));
 
     gltfTextureIndex = static_cast<int>(indexPos->second);
   } else {
@@ -570,7 +571,7 @@ shared_ptr<oe::Texture> try_create_texture(
     const auto& param = paramPos->second;
     const auto indexPos = param.json_double_value.find("index");
     if (indexPos == param.json_double_value.end())
-      throw domain_error("missing property 'index' from " + textureName);
+      OE_THROW(domain_error("missing property 'index' from " + textureName));
 
     gltfTextureIndex = static_cast<int>(indexPos->second);
   }
@@ -578,8 +579,8 @@ shared_ptr<oe::Texture> try_create_texture(
   assert(loaderData.model.textures.size() < INT_MAX);
   if (gltfTextureIndex < 0 ||
       gltfTextureIndex >= static_cast<int>(loaderData.model.textures.size()))
-    throw domain_error(
-        "invalid texture index '" + to_string(gltfTextureIndex) + "' for " + textureName);
+    OE_THROW(domain_error(
+        "invalid texture index '" + to_string(gltfTextureIndex) + "' for " + textureName));
 
   const auto& gltfTexture = loaderData.model.textures.at(gltfTextureIndex);
   if (gltfTexture.sampler >= 0) {
@@ -596,19 +597,28 @@ shared_ptr<oe::Texture> try_create_texture(
     return make_shared<File_texture>(wstring(filename));
   }
   if (!gltfImage.mimeType.empty()) {
-    throw runtime_error("not implemented");
+    OE_THROW(runtime_error("not implemented"));
   }
-  throw domain_error(
-      "image " + to_string(gltfTexture.source) + "must have either a uri or mimeType");
+  OE_THROW(domain_error(
+      "image " + to_string(gltfTexture.source) + "must have either a uri or mimeType"));
 }
 
 shared_ptr<oe::Material> create_material(
     const Primitive& prim,
     IMaterial_repository& materialRepository,
     Loader_data& loaderData) {
-  const auto& gltfMaterial = loaderData.model.materials.at(prim.material);
   auto material = std::make_shared<PBR_material>();
+  if (prim.material < 0) {
+    return material;
+  }
 
+  if (prim.material >= loaderData.model.materials.size()) {
+    OE_THROW(domain_error(
+        "refers to material index " + to_string(prim.material) +
+        " which doesn't exist."));
+  }
+
+  const auto& gltfMaterial = loaderData.model.materials[prim.material];
   const auto withParam = [gltfMaterial](
                              const string& name,
                              std::function<void(const string&, const Parameter&)> found,
@@ -636,8 +646,8 @@ shared_ptr<oe::Material> create_material(
             name,
             [&setter](auto name, auto param) {
               if (!param.has_number_value)
-                throw domain_error(
-                    "Failed to parse glTF: expected material " + name + " to be scalar");
+                OE_THROW(domain_error(
+                    "Failed to parse glTF: expected material " + name + " to be scalar"));
               setter(static_cast<float>(param.number_value));
             },
             [&setter, defaultValue](auto) { setter(defaultValue); });
@@ -662,9 +672,9 @@ shared_ptr<oe::Material> create_material(
                     static_cast<float>(param.number_array[2]),
                     static_cast<float>(param.number_array[3])));
               } else
-                throw domain_error(
+                OE_THROW(domain_error(
                     "Failed to parse glTF: expected material " + name +
-                    " to be a 3 or 4 element array");
+                    " to be a 3 or 4 element array"));
             },
             [&setter, defaultValue](auto) { setter(defaultValue); });
       };
@@ -702,10 +712,10 @@ shared_ptr<oe::Material> create_material(
         else if (param.string_value == g_pbrPropertyValue_alphaMode_opaque)
           material->setAlphaMode(Material_alpha_mode::Opaque);
         else {
-          throw domain_error(
+          OE_THROW(domain_error(
               "Failed to parse glTF: expected material " + name +
               " to be one of:" + g_pbrPropertyValue_alphaMode_mask + ", " +
-              g_pbrPropertyValue_alphaMode_blend + ", " + g_pbrPropertyValue_alphaMode_opaque);
+              g_pbrPropertyValue_alphaMode_blend + ", " + g_pbrPropertyValue_alphaMode_opaque));
         }
       },
       [&material](const string&) { material->setAlphaMode(Material_alpha_mode::Opaque); });
@@ -768,7 +778,7 @@ bool loadJointsWeights(
             pos->second, loaderData, allowedTypes, 0, vertexAccessorFactory(vertexAttribute));
         meshData.vertexBufferAccessors[vertexAttribute] = move(accessor);
       } catch (const exception& e) {
-        throw domain_error("Error in attribute " + attrName + ": " + e.what());
+        OE_THROW(domain_error("Error in attribute " + attrName + ": " + e.what()));
       }
     };
 
@@ -895,7 +905,7 @@ shared_ptr<Entity> create_entity(
               });
           meshData->indexBufferAccessor = move(indexBufferAccessor);
         } catch (const exception& e) {
-          throw domain_error(string("Error in index buffer: ") + e.what());
+          OE_THROW(std::domain_error(string("Error in index buffer: ") + e.what()));
         }
 
         auto generateNormals = false, generateTangents = false, generateBiTangents = false;
@@ -991,8 +1001,8 @@ shared_ptr<Entity> create_entity(
               morphWeightsComponent.morphWeights().begin());
         }
       } catch (const exception& e) {
-        throw domain_error(
-            string("Primitive[") + to_string(primIdx) + "] is malformed. (" + e.what() + ")");
+        OE_THROW(std::domain_error(
+            string("Primitive[") + to_string(primIdx) + "] is malformed. (" + e.what() + ")"));
       }
     }
   }
@@ -1102,7 +1112,8 @@ void create_animation(int animIdx, Loader_data loaderData) {
       keyframeValues = useOrCreateBufferForAccessor<Mesh_buffer_accessor>(
           sampler.output, loaderData, *allowedAccessorTypes, 0, g_createSimpleMeshAccessor);
     } catch (std::exception& ex) {
-      OE_THROW(std::domain_error("Failed to create animation keyframe values accessor: "s + ex.what()));
+      OE_THROW(
+          std::domain_error("Failed to create animation keyframe values accessor: "s + ex.what()));
     }
 
     uint8_t valuesPerKeyFrame = 1;

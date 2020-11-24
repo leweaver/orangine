@@ -13,6 +13,8 @@ Visual Studio 2017 15.7.5 is the minimum required.
 When installing, ensure you select the following options (in addition to whatever defaults are selected):
 
 - Desktop Development with Visual C++
+  - C++ CMake tools for Windows (see https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-160)
+- Game Development with C++
   - Windows 10 SDK (10.0.18362.0) - 
     - min version required to fix this bug: https://bugs.chromium.org/p/chromium/issues/detail?id=969698
   - Test Adapter for Google Test (If you want to use the visual studio gtest UI)

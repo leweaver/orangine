@@ -25,7 +25,7 @@
     },
     "pybind11": {
         "url": "git@github.com:pybind/pybind11.git",
-        "ref": "v2.4.3"
+        "ref": "v2.6.1"
     },
     "vectormath/vectormath": {
         "url": "git@github.com:glampert/vectormath.git",

@@ -376,19 +376,26 @@ void Entity_scripting_manager::initializePythonInterpreter() {
     std::string line;
     std::ifstream infile(pyenvCfgPath, std::ios::in);
     while (std::getline(infile, line)) {
-      std::istringstream iss(line);
-      std::string name, eq, value;
-      if (!(iss >> name >> eq >> value)) {
+      auto equalPos = line.find_first_of('=');
+      if (std::string::npos == equalPos) {
         LOG(DEBUG) << "Failed to parse line in " << utf8_encode(pyenvCfgPath) << ": " << line;
         continue;
       }
 
-      if (name == "home") {
+      std::string test1 = str_trim("   hello");
+      std::string test2 = str_trim("   hello   ");
+      std::string test3 = str_trim("hello   ");
+      std::string test4 = str_trim("");
+
+      std::string propName = str_trim(line.substr(0, equalPos - 1));
+      std::string value = str_trim(line.substr(equalPos + 1));
+
+      if (propName == "home") {
         LOG(DEBUG) << "Detected python home from " << utf8_encode(pyenvCfgPath) << ": " << value;
         sysPathVec.push_back(utf8_decode(value) + L"/Lib");
         sysPathVec.push_back(utf8_decode(value) + L"/DLLs");
       }
-      if (name == "include-system-site-packages" && value == "true") {
+      if (propName == "include-system-site-packages" && value == "true") {
         LOG(DEBUG) << "Detected include-system-site-packages from " << utf8_encode(pyenvCfgPath);
         sysPathVec.push_back(utf8_decode(value) + L"/Lib/site-packages");
       }

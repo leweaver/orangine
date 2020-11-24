@@ -114,7 +114,7 @@ call :build_all x86 || goto:eof
 endlocal
 
 setlocal
-rem call :build_all x64 || goto:eof
+call :build_all x64 || goto:eof
 endlocal
 
 rem ******************************

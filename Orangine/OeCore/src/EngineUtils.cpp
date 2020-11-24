@@ -128,6 +128,26 @@ std::string oe::str_replace_all(std::string str, const std::string& from, const 
   return str;
 }
 
+std::string oe::str_trim(const std::string& str) {
+  size_t first = 0u;
+  for (size_t i = 0u; i < str.size(); i++) {
+    if (str[i] != ' ') {
+      first = i;
+      break;
+    }
+  }
+
+  size_t numEndSpaces = 0;
+  for (auto i = static_cast<int>(str.size()) - 1; i >= 0; i--) {
+    if (str[i] != ' ') {
+      break;
+    }
+    ++numEndSpaces;
+  }
+
+  return str.substr(first, str.size() - first - numEndSpaces);
+}
+
 std::vector<std::string> oe::str_split(const std::string& str, const std::string& delims) {
   std::vector<std::string> output;
   auto first = std::cbegin(str);

@@ -55,6 +55,8 @@ std::vector<std::string> str_split(const std::string& str, const std::string& de
 
 std::string str_replace_all(std::string str, const std::string& from, const std::string& to);
 
+std::string str_trim(const std::string& str);
+
 template <typename... TArgs> std::string string_format(const std::string& format, TArgs... args) {
   // From: https://stackoverflow.com/a/26221725
   const size_t size =

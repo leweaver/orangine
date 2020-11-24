@@ -39,20 +39,15 @@ target_include_directories(${PROJECT_NAME}
         $<INSTALL_INTERFACE:include>
         )
 
-# Python
-add_custom_target(...
-    COMMAND ${CMAKE_COMMAND} -E env "PATH=C:/Some/Path;$ENV{PATH}" <real_command> args...
-)
-
 # PyBind
 # Override the PYTHON_EXECUTABLE variable with the results of FindPython3, so that pybind 
 # uses the 32-bit interpreter in x86 builds.
 # Get the name of the python runtime DLL
-find_package(Python3 COMPONENTS Interpreter) 
-set(PYTHON_EXECUTABLE "${Python3_EXECUTABLE}")
-set(PYBIND11_CPP_STANDARD /std:c++17)
-find_package(pybind11 REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC pybind11::embed)
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
+# set(PYTHON_EXECUTABLE "${Python_EXECUTABLE}")
+# set(PYBIND11_CPP_STANDARD /std:c++17)
+find_package(pybind11 CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PUBLIC pybind11::embed pybind11::python_link_helper)
 
 # --------------------------------
 # Install
@@ -85,11 +80,11 @@ install(DIRECTORY data
         )
 
 # Install Python binaries
-get_filename_component(OeScripting_PYTHON_RUNTIME_DLL "${Python3_EXECUTABLE}" DIRECTORY)
+get_filename_component(OeScripting_PYTHON_RUNTIME_DLL "${Python_EXECUTABLE}" DIRECTORY)
 if (${OeScripting_PYTHON_DEBUG})
-        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll")
+        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python_VERSION_MAJOR}${Python_VERSION_MINOR}_d.dll")
 else ()
-        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll")
+        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python_VERSION_MAJOR}${Python_VERSION_MINOR}.dll")
 endif()
 install(FILES "${OeScripting_PYTHON_RUNTIME_DLL}" DESTINATION bin)
 set(OeScripting_PYTHON_RUNTIME_DLL ${OeScripting_PYTHON_RUNTIME_DLL} PARENT_SCOPE)

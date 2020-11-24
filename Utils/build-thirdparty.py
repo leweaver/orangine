@@ -1,7 +1,5 @@
 from subprocess import run, PIPE, Popen, TimeoutExpired
-import os
-import platform
-import argparse
+import os, sys, argparse
 
 
 class Builder:
@@ -59,7 +57,7 @@ class Builder:
                     
                 if p_stdout and self.verbose:
                     print(p_stdout)
-                if p_stderr:
+                if p_stderr and self.verbose:
                     print(p_stderr)
 
                 if proc.poll() is not None:
@@ -68,30 +66,34 @@ class Builder:
             rc = proc.poll()
             if 0 is not rc:
                 # if we surpressed output before, it might be useful now, so print it.
-                if p_stdout and not self.verbose:                    
+                if p_stdout and not self.verbose:
                     print(p_stdout)
+                if p_stderr and not self.verbose:
+                    print(p_stderr)
 
-                print("[[31mFailed[0m] " + note)
+                print("  [[31mFailed[0m] " + note)
                 raise Exception("Failed to execute command , returned " + str(rc))
 
-            print("[[32mOK[0m] " + note)
-            print()
+            print("  [[32mOK[0m] " + note)
 
     def build_all(self):
-        """
+        # pybind11
         self.cmake_ninja_install(self.oe_root + "/thirdparty/pybind11", "pybind11", "Debug")
         self.cmake_ninja_install(self.oe_root + "/thirdparty/pybind11", "pybind11", "Release")
 
+        # g3log
         self.cmake_ninja_install(self.oe_root + "/thirdparty/g3log", "g3log", "Debug")
         self.cmake_ninja_install(self.oe_root + "/thirdparty/g3log", "g3log", "Release")
         
+        # MikktSpace and tinygltf are build using our own custom CMakeLists file.
         self.cmake_ninja_install(self.oe_root + "/thirdparty", "thirdparty", "Debug")
         self.cmake_ninja_install(self.oe_root + "/thirdparty", "thirdparty", "Release")
 
+        # gtest and gmock
         self.cmake_msvc_shared(self.oe_root + "/thirdparty/googletest/googletest", "gtest")
-
         self.cmake_msvc_shared(self.oe_root + "/thirdparty/googletest/googlemock", "gmock")
-        """
+        
+        # DirectXTK
         self.msbuild_directxtk_sln(self.oe_root + "/thirdparty/DirectXTK")
 
         # Hacky Steps:
@@ -105,7 +107,7 @@ class Builder:
             bin_path = self.oe_root + '/bin/' + self.env_target_arch + d
             if not os.path.isdir(bin_path):
                 print ("Creating bin output directory " + bin_path)
-                os.mkdir(bin_path)
+                os.makedirs(bin_path)
 
     def _chdir_cache(self, target_name, cache_type, build_config=None):
         os.chdir(self.oe_root)

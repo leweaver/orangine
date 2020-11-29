@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "OeCore/Renderer_enum.h"
+#include "OeCore/Renderer_types.h"
 #include "OeCore/EngineUtils.h"
 
 using namespace oe;
@@ -116,7 +116,46 @@ std::string g_debugDisplayModeNames[] = {
 	"World_Positions",
 	"Lighting",
 };
-static_assert(static_cast<size_t>(Debug_display_mode::Num_Debug_Display_Mode) == array_size(g_debugDisplayModeNames));
+static_assert(
+    static_cast<size_t>(Debug_display_mode::Num_Debug_Display_Mode) ==
+    array_size(g_debugDisplayModeNames));
+
+std::string g_samplerFilterTypeNames[] = {
+    "Point",
+    "Linear",
+    "Point_mipmap_point",
+    "Point_mipmap_linear",
+    "Linear_mipmap_point",
+    "Linear_mipmap_linear",
+};
+static_assert(
+    static_cast<size_t>(Sampler_filter_type::Num_sampler_filter_type) ==
+    array_size(g_samplerFilterTypeNames));
+
+std::string g_samplerTextureAddressModeNames[] = {
+    "Wrap",
+    "Mirror",
+    "Clamp",
+    "Border",
+    "Mirror_once",
+};
+static_assert(
+    static_cast<size_t>(Sampler_texture_address_mode::Num_sampler_texture_address_mode) ==
+    array_size(g_samplerTextureAddressModeNames));
+
+std::string g_samplerComparisonFuncNames[] = {
+    "Never",
+    "Less",
+    "Equal",
+    "Less_equal",
+    "Greater",
+    "Not_equal",
+    "Greater_equal",
+    "Always",
+};
+static_assert(
+    static_cast<size_t>(Sampler_comparison_func::Num_sampler_comparison_func) ==
+    array_size(g_samplerComparisonFuncNames));
 
 const std::string& oe::materialAlphaModeToString(Material_alpha_mode enumValue)
 {
@@ -246,4 +285,31 @@ const std::string& oe::debugDisplayModeToString(Debug_display_mode enumValue)
 Debug_display_mode oe::stringToDebugDisplayMode(const std::string& str)
 {
     return stringToEnum<Debug_display_mode>(str, g_debugDisplayModeNames);
+}
+
+const std::string& samplerFilterTypeToString(Sampler_filter_type enumValue) {
+
+  return g_samplerFilterTypeNames[static_cast<size_t>(enumValue)];
+}
+
+Sampler_filter_type stringToSamplerFilterType(const std::string& str) {
+  return stringToEnum<Sampler_filter_type>(str, g_samplerFilterTypeNames);
+}
+
+const std::string& samplerTextureAddressModeToString(Sampler_texture_address_mode enumValue) {
+
+  return g_samplerTextureAddressModeNames[static_cast<size_t>(enumValue)];
+}
+
+Sampler_texture_address_mode stringToSamplerTextureAddressMode(const std::string& str) {
+  return stringToEnum<Sampler_texture_address_mode>(str, g_samplerTextureAddressModeNames);
+}
+
+const std::string& samplerComparisonFuncToString(Sampler_comparison_func enumValue) {
+
+  return g_samplerComparisonFuncNames[static_cast<size_t>(enumValue)];
+}
+
+Sampler_comparison_func stringToSamplerComparisonFunc(const std::string& str) {
+  return stringToEnum<Sampler_comparison_func>(str, g_samplerComparisonFuncNames);
 }

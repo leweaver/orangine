@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "OeCore/WindowsDefines.h"
+
 namespace DX {
 class DeviceResources;
 }

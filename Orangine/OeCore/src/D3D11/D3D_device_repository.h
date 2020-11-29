@@ -6,9 +6,9 @@
 #include <OeCore/IDevice_repository.h>
 
 namespace oe::internal {
-class Device_repository : public IDevice_repository {
+class D3D_device_repository : public IDevice_repository {
  public:
-  Device_repository(DX::DeviceResources& deviceResources);
+  D3D_device_repository(DX::DeviceResources& deviceResources);
 
   void createDeviceDependentResources() override;
   void destroyDeviceDependentResources() override;

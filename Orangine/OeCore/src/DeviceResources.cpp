@@ -8,6 +8,9 @@
 #include "OeCore/DeviceResources.h"
 #include "OeCore/EngineUtils.h"
 
+#include <d3d11.h>
+#include <wrl/client.h>
+
 using namespace DirectX;
 using namespace DX;
 

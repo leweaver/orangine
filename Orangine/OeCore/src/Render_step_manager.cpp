@@ -17,9 +17,8 @@
 #include <OeCore/Render_pass_skybox.h>
 #include <OeCore/Renderable.h>
 #include <OeCore/Scene.h>
-#include <OeCore/Shadow_map_texture_pool.h>
 
-#include "D3D11/Device_repository.h"
+#include "D3D11/D3D_device_repository.h"
 
 #include <CommonStates.h>
 
@@ -32,7 +31,7 @@ std::string Render_step_manager::_name = "Render_step_manager";
 template <>
 IRender_step_manager* oe::create_manager(
     Scene& scene,
-    std::shared_ptr<Device_repository>& device_repository) {
+    std::shared_ptr<D3D_device_repository>& device_repository) {
   return new Render_step_manager(scene, device_repository);
 }
 
@@ -40,7 +39,7 @@ constexpr size_t g_max_render_target_views = 3;
 
 Render_step_manager::Render_step_manager(
     Scene& scene,
-    std::shared_ptr<Device_repository> deviceRepository)
+    std::shared_ptr<D3D_device_repository> deviceRepository)
     : IRender_step_manager(scene)
     , _renderStep_shadowMap({})
     , _renderStep_entityDeferred({})
@@ -266,22 +265,20 @@ void Render_step_manager::createWindowSizeDependentResources(
     HWND /*window*/,
     int width,
     int height) {
-  auto& d3DDeviceResources = deviceResources();
-  const auto d3dDevice = d3DDeviceResources.GetD3DDevice();
+  auto& textureManager = _scene.manager<ITexture_manager>();
 
   // Step Deferred, Pass 0
   {
-    std::vector<std::shared_ptr<Render_target_view_texture>> renderTargets0;
+    std::vector<std::shared_ptr<Texture>> renderTargets0;
     renderTargets0.resize(g_max_render_target_views);
     for (auto& renderTargetViewTexture : renderTargets0) {
-      auto target = std::shared_ptr<Render_target_texture>(
-          Render_target_texture::createDefaultRgb(width, height));
-      target->load(d3dDevice);
-      renderTargetViewTexture = std::move(target);
+      const auto renderTargetTexture = textureManager.createRenderTargetTexture(width, height);
+      textureManager.load(*renderTargetTexture);
+      renderTargetViewTexture = renderTargetTexture;
     }
 
     // Create a depth texture resource
-    const auto depthTexture = std::make_shared<Depth_texture>(d3DDeviceResources);
+    const auto depthTexture = textureManager.createDepthTexture();
 
     // Assign textures to the deferred light material
     auto deferredLightMaterial = _renderStep_entityDeferred.data->deferredLightMaterial;
@@ -297,30 +294,30 @@ void Render_step_manager::createWindowSizeDependentResources(
     // Give the render targets to the render pass
     std::get<0>(_renderStep_entityDeferred.renderPasses)
         ->setRenderTargets(
-            std::vector<std::shared_ptr<Render_target_view_texture>>(renderTargets0));
+            std::vector<std::shared_ptr<Texture>>(renderTargets0));
     std::get<1>(_renderStep_entityDeferred.renderPasses)
         ->setRenderTargets(
-            std::vector<std::shared_ptr<Render_target_view_texture>>(renderTargets0));
+            std::vector<std::shared_ptr<Texture>>(renderTargets0));
   }
+
+  const auto renderTargetViewTexture = textureManager.createRenderTargetViewTexture();
 
   // Step Deferred, Pass 2
   {
-    std::vector<std::shared_ptr<Render_target_view_texture>> renderTargets;
+    std::vector<std::shared_ptr<Texture>> renderTargets;
     renderTargets.resize(g_max_render_target_views, nullptr);
 
-    renderTargets[0] =
-        std::make_shared<Render_target_view_texture>(d3DDeviceResources.GetRenderTargetView());
+    renderTargets[0] = renderTargetViewTexture;
     std::get<2>(_renderStep_entityDeferred.renderPasses)
-        ->setRenderTargets(std::move(renderTargets));
+                           ->setRenderTargets(std::move(renderTargets));
   }
 
   // Step Standard, Pass 0
   {
-    std::vector<std::shared_ptr<Render_target_view_texture>> renderTargets;
+    std::vector<std::shared_ptr<Texture>> renderTargets;
     renderTargets.resize(g_max_render_target_views, nullptr);
 
-    renderTargets[0] =
-        std::make_shared<Render_target_view_texture>(d3DDeviceResources.GetRenderTargetView());
+    renderTargets[0] = renderTargetViewTexture;
     std::get<0>(_renderStep_entityStandard.renderPasses)
         ->setRenderTargets(std::move(renderTargets));
   }
@@ -332,10 +329,10 @@ void Render_step_manager::destroyDeviceDependentResources() {
   if (_lightEntities) {
     for (const auto& lightEntity : *_lightEntities) {
       // Directional light only, right now
-      const auto component = lightEntity->getFirstComponentOfType<Directional_light_component>();
+      auto* const component = lightEntity->getFirstComponentOfType<Directional_light_component>();
       if (component && component->shadowsEnabled()) {
         if (component->shadowData())
-          shadowMapManager.returnTexture(std::move(component->shadowData()));
+          shadowMapManager.returnTexture(std::move(component->shadowData()->shadowMap));
         else
           assert(!component->shadowData());
       }
@@ -345,9 +342,9 @@ void Render_step_manager::destroyDeviceDependentResources() {
   // Unload renderable contexts
   if (_renderableEntities) {
     for (const auto& renderableEntity : *_renderableEntities) {
-      const auto component = renderableEntity->getFirstComponentOfType<Renderable_component>();
+      auto* const component = renderableEntity->getFirstComponentOfType<Renderable_component>();
       if (component && component->materialContext()) {
-        component->setMaterialContext(std::make_unique<Material_context>());
+        component->setMaterialContext(_scene.manager<IMaterial_manager>().createMaterialContext());
       }
     }
   }

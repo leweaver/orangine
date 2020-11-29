@@ -2,12 +2,12 @@
 
 #include "OeCore/IUser_interface_manager.h"
 
-#include "D3D11/Device_repository.h"
+#include "D3D11/D3D_device_repository.h"
 
 namespace oe::internal {
 class User_interface_manager : public IUser_interface_manager {
  public:
-  User_interface_manager(Scene& scene, std::shared_ptr<Device_repository> device_repository);
+  User_interface_manager(Scene& scene, std::shared_ptr<D3D_device_repository> device_repository);
 
   // Manager_base implementation
   void initialize() override;
@@ -28,7 +28,7 @@ class User_interface_manager : public IUser_interface_manager {
   void preInit_setUIScale(float uiScale) override { _uiScale = uiScale; }
 
  private:
-  std::shared_ptr<Device_repository> _deviceRepository;
+  std::shared_ptr<D3D_device_repository> _deviceRepository;
   static std::string _name;
 
   HWND _window = nullptr;

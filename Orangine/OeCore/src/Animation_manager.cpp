@@ -6,6 +6,8 @@
 #include "OeCore/Morph_weights_component.h"
 #include "OeCore/Scene.h"
 
+#include <algorithm>
+
 using namespace oe;
 using namespace DirectX;
 

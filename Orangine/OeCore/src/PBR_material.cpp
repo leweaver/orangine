@@ -7,14 +7,7 @@
 #include "OeCore/Render_pass_config.h"
 
 using namespace oe;
-using namespace DirectX;
 using namespace std::literals;
-
-const std::array<ID3D11ShaderResourceView*, 5> g_nullShaderResourceViews = {nullptr, nullptr,
-                                                                            nullptr, nullptr,
-                                                                            nullptr};
-const std::array<ID3D11SamplerState*, 5> g_nullSamplerStates = {nullptr, nullptr, nullptr, nullptr,
-                                                                nullptr};
 
 const std::string g_material_type = "PBR_material";
 const std::string g_json_baseColor = "baseColor";
@@ -255,16 +248,13 @@ PBR_material::shaderResources(const std::set<std::string>& flags,
 {
   auto sr = Base_type::shaderResources(flags, renderLightData);
 
-  const auto samplerDesc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
   for (size_t i = 0; i < _textures.size(); ++i) {
     const auto& texture = _textures[i];
     if (!texture)
       continue;
 
     sr.textures.push_back(texture);
-
-    // TODO: Use values from glTF
-    sr.samplerDescriptors.push_back(samplerDesc);
+    sr.samplerDescriptors.push_back(texture->getSamplerDescriptor());
   }
 
   return sr;
@@ -395,7 +385,7 @@ void PBR_material::applyVertexLayoutShaderCompileSettings(Shader_compile_setting
   }
 }
 
-void PBR_material::updateVSConstantBufferValues(
+void PBR_material::updateVsConstantBufferValues(
     PBR_material_vs_constant_buffer& constants, const SSE::Matrix4& worldMatrix,
     const SSE::Matrix4& viewMatrix, const SSE::Matrix4& projMatrix,
     const Renderer_animation_data& rendererAnimationData) const
@@ -414,7 +404,7 @@ void PBR_material::updateVSConstantBufferValues(
                                rendererAnimationData.morphWeights[7]};
 }
 
-void PBR_material::updatePSConstantBufferValues(PBR_material_ps_constant_buffer& constants,
+void PBR_material::updatePsConstantBufferValues(PBR_material_ps_constant_buffer& constants,
                                                 const SSE::Matrix4& worldMatrix,
                                                 const SSE::Matrix4& /* viewMatrix */,
                                                 const SSE::Matrix4& /* projMatrix */) const

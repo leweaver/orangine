@@ -1,16 +1,17 @@
 #pragma once
 
 #include "OeCore/Collision.h"
-#include "OeCore/DeviceResources.h"
+#include "OeCore/Environment_volume.h"
 #include "OeCore/IEntity_render_manager.h"
 #include "OeCore/Light_provider.h"
 #include "OeCore/Material_repository.h"
 #include "OeCore/Mesh_data_component.h"
 #include "OeCore/Render_light_data.h"
 #include "OeCore/Render_pass.h"
-#include "OeCore/Render_pass_config.h"
 #include "OeCore/Renderable.h"
-#include "OeCore/Renderer_data.h"
+
+// TODO: Remove this include
+#include "D3D11/D3D_renderer_data.h"
 
 #include <memory>
 
@@ -74,7 +75,6 @@ class Entity_render_manager : public IEntity_render_manager {
       const Renderer_data& rendererData,
       const Material_context& context) = 0;
 
-  virtual void loadTexture(Texture& texture) = 0;
   virtual void updateLightBuffers() = 0;
 
   std::shared_ptr<D3D_buffer> createBufferFromData(
@@ -116,12 +116,7 @@ class Entity_render_manager : public IEntity_render_manager {
   Renderer_animation_data _rendererAnimationData = {};
   std::vector<Entity*> _renderLights = {};
 
-  struct EnvironmentIBL {
-    std::shared_ptr<Texture> skyboxTexture;
-    std::shared_ptr<Texture> iblBrdfTexture;
-    std::shared_ptr<Texture> iblDiffuseTexture;
-    std::shared_ptr<Texture> iblSpecularTexture;
-  } _environmentIbl = {};
+  Environment_volume::EnvironmentIBL _environmentIbl = {};
 
   // The template arguments here must match the size of the lights array in the shader constant
   // buffer files.

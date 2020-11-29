@@ -6,7 +6,6 @@
 #include "Render_pass.h"
 #include "Render_pass_config.h"
 #include "Collision.h"
-#include "Renderable.h"
 
 #include <memory>
 #include "Light_provider.h"
@@ -22,6 +21,7 @@ namespace oe {
     class Entity_alpha_sorter;
     class Entity_cull_sorter;
     class Shadow_map_texture_pool;
+    class Renderable;
 
     class IEntity_render_manager :
         public Manager_base,

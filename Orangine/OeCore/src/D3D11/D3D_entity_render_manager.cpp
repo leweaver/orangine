@@ -6,7 +6,7 @@
 #include "OeCore/Scene.h"
 
 #include "CommonStates.h"
-#include "Device_repository.h"
+#include "D3D_device_repository.h"
 #include "DirectX_utils.h"
 
 using namespace DirectX;
@@ -17,7 +17,7 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
   D3D_entity_render_manager(
       Scene& scene,
       std::shared_ptr<IMaterial_repository> materialRepository,
-      std::shared_ptr<Device_repository> deviceRepository)
+      std::shared_ptr<D3D_device_repository> deviceRepository)
       : Entity_render_manager(scene, materialRepository), _deviceRepository(deviceRepository) {}
 
   inline DX::DeviceResources& deviceResources() const {
@@ -105,7 +105,7 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
           materialContext,
           material,
           meshVertexLayout,
-          renderLightData,
+          &renderLightData,
           blendMode,
           cameraData.enablePixelShader);
 
@@ -119,10 +119,6 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
       LOG(FATAL) << "Failed to drawRendererData, marking failedRendering to true. (" << ex.what()
                  << ")";
     }
-  }
-
-  void loadTexture(Texture& texture) override {
-    texture.load(_deviceRepository->deviceResources().GetD3DDevice());
   }
 
   void createDeviceDependentResources() override {
@@ -180,7 +176,7 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
   };
 
   Buffer_array_set _bufferArraySet = {};
-  std::shared_ptr<Device_repository> _deviceRepository;
+  std::shared_ptr<D3D_device_repository> _deviceRepository;
 };
 } // namespace oe::internal
 
@@ -188,6 +184,6 @@ template <>
 oe::IEntity_render_manager* oe::create_manager(
     Scene& scene,
     std::shared_ptr<IMaterial_repository>& materialRepository,
-    std::shared_ptr<oe::internal::Device_repository>& deviceRepository) {
+    std::shared_ptr<oe::internal::D3D_device_repository>& deviceRepository) {
   return new oe::internal::D3D_entity_render_manager(scene, materialRepository, deviceRepository);
 }

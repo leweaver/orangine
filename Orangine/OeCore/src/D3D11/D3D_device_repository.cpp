@@ -3,7 +3,7 @@
 #include <OeCore/DeviceResources.h>
 #include <OeCore/EngineUtils.h>
 
-#include "Device_repository.h"
+#include "D3D_device_repository.h"
 
 #include <CommonStates.h>
 
@@ -11,16 +11,16 @@ using namespace DirectX;
 using namespace oe;
 using namespace internal;
 
-Device_repository::Device_repository(DX::DeviceResources& deviceResources)
+D3D_device_repository::D3D_device_repository(DX::DeviceResources& deviceResources)
     : _deviceResources(deviceResources), _commonStates(nullptr), _window(nullptr) {}
 
-void Device_repository::createDeviceDependentResources() {
+void D3D_device_repository::createDeviceDependentResources() {
   _commonStates = std::make_unique<CommonStates>(_deviceResources.GetD3DDevice());
 }
 
-void Device_repository::destroyDeviceDependentResources() { _commonStates.reset(); }
+void D3D_device_repository::destroyDeviceDependentResources() { _commonStates.reset(); }
 
-DirectX::CommonStates& Device_repository::commonStates() const {
+DirectX::CommonStates& D3D_device_repository::commonStates() const {
   if (!_commonStates) {
     OE_THROW(std::runtime_error("device dependent resources not available (commonStates)"));
   }

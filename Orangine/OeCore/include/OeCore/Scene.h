@@ -14,10 +14,13 @@
 #include "IScene_graph_manager.h"
 #include "IShadowmap_manager.h"
 #include "IUser_interface_manager.h"
-
 #include "IMaterial_manager.h"
+#include "ITexture_manager.h"
+
 #include "Manager_base.h"
 #include "EngineUtils.h"
+#include "Environment_volume.h"
+
 
 #include <map>
 #include <memory>
@@ -86,8 +89,10 @@ class Scene {
   std::shared_ptr<Entity> mainCamera() const { return _mainCamera; }
   void setMainCamera(const std::shared_ptr<Entity>& cameraEntity);
 
-  std::shared_ptr<Texture> skyboxTexture() const { return _skyBoxTexture; }
-  void setSkyboxTexture(std::shared_ptr<Texture> skyBoxTexture) { _skyBoxTexture = skyBoxTexture; }
+  const Environment_volume& environmentVolume() const { return _environmentVolume; }
+  void setEnvironmentVolume(const Environment_volume& environmentVolume) {
+    _environmentVolume = environmentVolume;
+  }
 
  protected:
   // Repositories
@@ -99,24 +104,25 @@ class Scene {
   using Manager_tuple = std::tuple<
       // Managers. IUser_interface_manager should always be first, so it can handle windows messages
       // first.
-      std::shared_ptr<IUser_interface_manager>,   //
-      std::shared_ptr<IAsset_manager>,            //
-      std::shared_ptr<IScene_graph_manager>,      //
-      std::shared_ptr<IDev_tools_manager>,        //
-      std::shared_ptr<IEntity_render_manager>,    //
-      std::shared_ptr<IRender_step_manager>,      //
-      std::shared_ptr<IShadowmap_manager>,        //
-      std::shared_ptr<IEntity_scripting_manager>, //
-      std::shared_ptr<IInput_manager>,            //
-      std::shared_ptr<IBehavior_manager>,  //
-      std::shared_ptr<IAnimation_manager>,        //
-      std::shared_ptr<IMaterial_manager>>         //
+      std::shared_ptr<IUser_interface_manager>,
+      std::shared_ptr<IAsset_manager>,
+      std::shared_ptr<IScene_graph_manager>,
+      std::shared_ptr<IDev_tools_manager>,
+      std::shared_ptr<IEntity_render_manager>,
+      std::shared_ptr<IRender_step_manager>,
+      std::shared_ptr<IShadowmap_manager>,
+      std::shared_ptr<IEntity_scripting_manager>,
+      std::shared_ptr<IInput_manager>,
+      std::shared_ptr<IBehavior_manager>,
+      std::shared_ptr<IAnimation_manager>,
+      std::shared_ptr<IMaterial_manager>,
+      std::shared_ptr<ITexture_manager>>
       ;
 
   Manager_tuple _managers;
   std::vector<Manager_base*> _initializedManagers;
 
-  std::shared_ptr<Texture> _skyBoxTexture;
+  Environment_volume _environmentVolume;
 
  private:
   void loadEntities(const std::wstring& filename, Entity* parentEntity);

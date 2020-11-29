@@ -8,7 +8,7 @@
 #include "OeCore/Entity_graph_loader_gltf.h"
 #include "OeCore/IInput_manager.h"
 
-#include "D3D11/Device_repository.h"
+#include "D3D11/D3D_device_repository.h"
 #include "OeCore/Entity_repository.h"
 #include "OeCore/Material_repository.h"
 
@@ -166,7 +166,7 @@ void Scene::loadEntities(const std::wstring& filename, Entity* parentEntity) {
     OE_THROW(std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension));
 
   std::vector<std::shared_ptr<Entity>> newRootEntities =
-      extPos->second->loadFile(filename, *_entityRepository, *_materialRepository, true);
+      extPos->second->loadFile(filename, *_entityRepository, *_materialRepository, manager<ITexture_manager>(), true);
 
   if (parentEntity) {
     for (const auto& entity : newRootEntities)
@@ -272,8 +272,9 @@ void Scene_device_resource_aware::destroyDeviceDependentResources() {
   forEachOfType<Manager_deviceDependent>(_managers, [](int, Manager_deviceDependent* manager) {
     manager->destroyDeviceDependentResources();
   });
-  if (_skyBoxTexture)
-    _skyBoxTexture->unload();
+  if (environmentVolume().environmentIbl.skyboxTexture) {
+    manager<ITexture_manager>().unload(*environmentVolume().environmentIbl.skyboxTexture.get());
+  }
   _deviceRepository->destroyDeviceDependentResources();
 }
 
@@ -288,7 +289,7 @@ Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& de
   // Repositories
   _entityRepository = make_shared<Entity_repository>(*this);
   _materialRepository = make_shared<Material_repository>();
-  auto deviceRepository = make_shared<internal::Device_repository>(deviceResources);
+  auto deviceRepository = make_shared<internal::D3D_device_repository>(deviceResources);
   _deviceRepository = deviceRepository;
 
   // Services / Managers

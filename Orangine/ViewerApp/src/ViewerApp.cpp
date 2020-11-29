@@ -2,7 +2,7 @@
 
 #include "ViewerAppConfig.h"
 
-#include <OeCore/WindowsDefines.h>
+#include <OeApp/App.h>
 #include <OeCore/Camera_component.h>
 #include <OeCore/Collision.h>
 #include <OeCore/Color.h>
@@ -11,11 +11,11 @@
 #include <OeCore/Light_component.h>
 #include <OeCore/Math_constants.h>
 #include <OeCore/PBR_material.h>
-#include <OeCore/Renderable_component.h>
+//#include <OeCore/Renderable_component.h>
 #include <OeCore/Scene.h>
 #include <OeCore/Test_component.h>
+#include <OeCore/WindowsDefines.h>
 #include <OeScripting/Script_component.h>
-#include <OeApp/App.h>
 
 #include <g3log/g3log.hpp>
 
@@ -23,9 +23,8 @@
 
 using namespace oe;
 
-std::shared_ptr<Entity> LoadGLTFToEntity(Scene& scene, std::string gltfName,
-                                         std::shared_ptr<Entity> root)
-{
+std::shared_ptr<Entity>
+LoadGLTFToEntity(Scene& scene, std::string gltfName, std::shared_ptr<Entity> root) {
   const auto gltfPathSubfolder = "/" + gltfName + "/glTF/" + gltfName + ".gltf";
   auto gltfPath = scene.manager<IAsset_manager>().makeAbsoluteAssetPath(
       utf8_decode("ViewerApp/data/meshes" + gltfPathSubfolder));
@@ -48,9 +47,11 @@ std::shared_ptr<Entity> LoadGLTFToEntity(Scene& scene, std::string gltfName,
   return root;
 }
 
-void AddCubeToEntity(std::shared_ptr<Entity> entity, SSE::Vector3 animationSpeed,
-                     SSE::Vector3 localScale, SSE::Vector3 localPosition)
-{
+void AddCubeToEntity(
+    std::shared_ptr<Entity> entity,
+    SSE::Vector3 animationSpeed,
+    SSE::Vector3 localScale,
+    SSE::Vector3 localPosition) {
   entity->addComponent<Test_component>().setSpeed(animationSpeed);
 
   entity->setScale(localScale);
@@ -59,8 +60,7 @@ void AddCubeToEntity(std::shared_ptr<Entity> entity, SSE::Vector3 animationSpeed
   auto child = LoadGLTFToEntity(entity->scene(), "Cube", entity);
 }
 
-void CreateSceneCubeSatellite(Scene& scene)
-{
+void CreateSceneCubeSatellite(Scene& scene) {
   auto& entityManager = scene.manager<IScene_graph_manager>();
   const auto root1 = entityManager.instantiate("Root 1");
   // root1->AddComponent<TestComponent>().SetSpeed(XMVectorSet(0.0f, 0.1250f, 0.06f, 0.0f));
@@ -74,8 +74,7 @@ void CreateSceneCubeSatellite(Scene& scene)
   AddCubeToEntity(child3, {0.0f, 0.0f, 0.5f}, {1, 1, 2}, {-4, 0, 0});
 }
 
-std::shared_ptr<Entity> LoadGLTF(Scene& scene, std::string gltfName, bool animate)
-{
+std::shared_ptr<Entity> LoadGLTF(Scene& scene, std::string gltfName, bool animate) {
   auto& entityManager = scene.manager<IScene_graph_manager>();
   auto root = entityManager.instantiate("Root");
 
@@ -85,8 +84,7 @@ std::shared_ptr<Entity> LoadGLTF(Scene& scene, std::string gltfName, bool animat
   return LoadGLTFToEntity(scene, gltfName, root);
 }
 
-void CreateCamera(Scene& scene, bool animate)
-{
+void CreateCamera(Scene& scene, bool animate) {
   IScene_graph_manager& entityManager = scene.manager<IScene_graph_manager>();
 
   auto cameraDollyAnchor = entityManager.instantiate("CameraDollyAnchor");
@@ -108,44 +106,45 @@ void CreateCamera(Scene& scene, bool animate)
   scene.setMainCamera(camera);
 }
 
-void CreateLights(Scene& scene)
-{
+void CreateLights(Scene& scene) {
   IScene_graph_manager& entityManager = scene.manager<IScene_graph_manager>();
   int lightCount = 0;
-  auto createDirLight = [&entityManager, &lightCount](const SSE::Vector3& normal,
-                                                      const Color& color, float intensity) {
-    auto lightEntity =
-        entityManager.instantiate("Directional Light " + std::to_string(++lightCount));
-    auto& component = lightEntity->addComponent<Directional_light_component>();
-    component.setColor(color);
-    component.setIntensity(intensity);
+  auto createDirLight =
+      [&entityManager,
+       &lightCount](const SSE::Vector3& normal, const Color& color, float intensity) {
+        auto lightEntity =
+            entityManager.instantiate("Directional Light " + std::to_string(++lightCount));
+        auto& component = lightEntity->addComponent<Directional_light_component>();
+        component.setColor(color);
+        component.setIntensity(intensity);
 
-    // if normal is NOT forward vector
-    if (SSE::lengthSqr(normal - math::forward) != 0.0f) {
-      SSE::Vector3 axis;
-      // if normal is backward vector
-      if (SSE::lengthSqr(normal - math::backward) == 0.0f)
-        axis = math::up;
-      else {
-        axis = SSE::cross(math::forward, normal);
-        axis = SSE::normalize(axis);
-      }
+        // if normal is NOT forward vector
+        if (SSE::lengthSqr(normal - math::forward) != 0.0f) {
+          SSE::Vector3 axis;
+          // if normal is backward vector
+          if (SSE::lengthSqr(normal - math::backward) == 0.0f)
+            axis = math::up;
+          else {
+            axis = SSE::cross(math::forward, normal);
+            axis = SSE::normalize(axis);
+          }
 
-      assert(SSE::lengthSqr(normal) != 0);
-      float angle = acos(SSE::dot(math::forward, normal) / SSE::length(normal));
-      lightEntity->setRotation(SSE::Quat::rotation(angle, axis));
-    }
-    return lightEntity;
-  };
-  auto createPointLight = [&entityManager, &lightCount](const SSE::Vector3& position,
-                                                        const Color& color, float intensity) {
-    auto lightEntity = entityManager.instantiate("Point Light " + std::to_string(++lightCount));
-    auto& component = lightEntity->addComponent<Point_light_component>();
-    component.setColor(color);
-    component.setIntensity(intensity);
-    lightEntity->setPosition(position);
-    return lightEntity;
-  };
+          assert(SSE::lengthSqr(normal) != 0);
+          float angle = acos(SSE::dot(math::forward, normal) / SSE::length(normal));
+          lightEntity->setRotation(SSE::Quat::rotation(angle, axis));
+        }
+        return lightEntity;
+      };
+  auto createPointLight =
+      [&entityManager,
+       &lightCount](const SSE::Vector3& position, const Color& color, float intensity) {
+        auto lightEntity = entityManager.instantiate("Point Light " + std::to_string(++lightCount));
+        auto& component = lightEntity->addComponent<Point_light_component>();
+        component.setColor(color);
+        component.setIntensity(intensity);
+        lightEntity->setPosition(position);
+        return lightEntity;
+      };
   auto createAmbientLight = [&entityManager, &lightCount](const Color& color, float intensity) {
     auto lightEntity = entityManager.instantiate("Ambient Light " + std::to_string(++lightCount));
     auto& component = lightEntity->addComponent<Ambient_light_component>();
@@ -167,8 +166,7 @@ void CreateLights(Scene& scene)
     shadowLight2->getFirstComponentOfType<Directional_light_component>()->setShadowsEnabled(true);
 
     createDirLight({-0.666f, -0.333f, 0.666f}, {1, 0, 1, 1}, 4.0)->setParent(*lightRoot);
-  }
-  else {
+  } else {
     createPointLight({10, 0, 10}, {1, 1, 1, 1}, 2 * 13)->setParent(*lightRoot);
     createPointLight({10, 5, -10}, {1, 0, 1, 1}, 2 * 20)->setParent(*lightRoot);
   }
@@ -176,8 +174,7 @@ void CreateLights(Scene& scene)
   // createAmbientLight({ 1, 1, 1 }, 0.2f)->setParent(*lightRoot);
 }
 
-void CreateSceneLeverArm(Scene& scene)
-{
+void CreateSceneLeverArm(Scene& scene) {
   IScene_graph_manager& entityManager = scene.manager<IScene_graph_manager>();
   const auto root1 = entityManager.instantiate("Root 1");
   root1->setPosition({5, 0, 5});
@@ -191,8 +188,7 @@ void CreateSceneLeverArm(Scene& scene)
   AddCubeToEntity(child3, {0.5f, 0, 0}, {2.0f, 0.50f, 1.0f}, {0, 2, 0});
 }
 
-void CreateScripts(Scene& scene)
-{
+void CreateScripts(Scene& scene) {
 
   IScene_graph_manager& entityManager = scene.manager<IScene_graph_manager>();
   const auto& root1 = entityManager.instantiate("Script Container");
@@ -201,53 +197,54 @@ void CreateScripts(Scene& scene)
   scriptComponent.setScriptName("testmodule.TestComponent");
 }
 
-void CreateShadowTestScene(Scene& scene)
-{
+void CreateShadowTestScene(Scene& scene) {
   IScene_graph_manager& entityManager = scene.manager<IScene_graph_manager>();
   const auto& root1 = entityManager.instantiate("Primitives");
   int teapotCount = 0;
 
-  auto createTeapot = [&entityManager, &root1, &teapotCount](const SSE::Vector3& center,
-                                                             const Color& color, float metallic,
-                                                             float roughness) {
-    const auto& child1 =
-        entityManager.instantiate("Teapot " + std::to_string(++teapotCount), *root1);
-    child1->setPosition(center);
+  /*
+  auto createTeapot =
+      [&entityManager, &root1, &teapotCount](
+          const SSE::Vector3& center, const Color& color, float metallic, float roughness) {
+        const auto& child1 =
+            entityManager.instantiate("Teapot " + std::to_string(++teapotCount), *root1);
+        child1->setPosition(center);
 
-    std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
-    material->setBaseColor(color);
-    material->setMetallicFactor(metallic);
-    material->setRoughnessFactor(roughness);
+        std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
+        material->setBaseColor(color);
+        material->setMetallicFactor(metallic);
+        material->setRoughnessFactor(roughness);
 
-    auto& renderable = child1->addComponent<Renderable_component>();
-    renderable.setMaterial(std::unique_ptr<Material>(material.release()));
-    renderable.setWireframe(false);
-    renderable.setCastShadow(true);
+        auto& renderable = child1->addComponent<Renderable_component>();
+        renderable.setMaterial(std::unique_ptr<Material>(material.release()));
+        renderable.setWireframe(false);
+        renderable.setCastShadow(true);
 
-    const auto meshData = Primitive_mesh_data_factory::createTeapot();
-    child1->addComponent<Mesh_data_component>().setMeshData(meshData);
-    child1->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
-    child1->addComponent<Test_component>().setSpeed({0.0f, 0.1f, 0.0f});
-  };
-  auto createSphere = [&entityManager, &root1](const SSE::Vector3& center, const Color& color,
-                                               float metallic, float roughness) {
-    const auto& child1 = entityManager.instantiate("Primitive Child 1", *root1);
-    child1->setPosition(center);
+        const auto meshData = Primitive_mesh_data_factory::createTeapot();
+        child1->addComponent<Mesh_data_component>().setMeshData(meshData);
+        child1->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
+        child1->addComponent<Test_component>().setSpeed({0.0f, 0.1f, 0.0f});
+      };
+  auto createSphere =
+      [&entityManager,
+       &root1](const SSE::Vector3& center, const Color& color, float metallic, float roughness) {
+        const auto& child1 = entityManager.instantiate("Primitive Child 1", *root1);
+        child1->setPosition(center);
 
-    std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
-    material->setBaseColor(color);
-    material->setMetallicFactor(metallic);
-    material->setRoughnessFactor(roughness);
+        std::unique_ptr<PBR_material> material = std::make_unique<PBR_material>();
+        material->setBaseColor(color);
+        material->setMetallicFactor(metallic);
+        material->setRoughnessFactor(roughness);
 
-    auto& renderable = child1->addComponent<Renderable_component>();
-    renderable.setMaterial(std::unique_ptr<Material>(material.release()));
-    renderable.setWireframe(false);
-    renderable.setCastShadow(false);
+        auto& renderable = child1->addComponent<Renderable_component>();
+        renderable.setMaterial(std::unique_ptr<Material>(material.release()));
+        renderable.setWireframe(false);
+        renderable.setCastShadow(false);
 
-    const auto meshData = Primitive_mesh_data_factory::createSphere();
-    child1->addComponent<Mesh_data_component>().setMeshData(meshData);
-    child1->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
-  };
+        const auto meshData = Primitive_mesh_data_factory::createSphere();
+        child1->addComponent<Mesh_data_component>().setMeshData(meshData);
+        child1->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
+      };
 
   int created = 0;
   // for (float metallic = 0.0f; metallic <= 1.0f; metallic += 0.2f) {
@@ -279,12 +276,13 @@ void CreateShadowTestScene(Scene& scene)
   createTeapot({2, 0, -2}, oe::Colors::Red, 1.0, 0.25f);
   createTeapot({-2, 0, 2}, oe::Colors::White, 1.0, 0.75f);
   createTeapot({2, 0, 2}, oe::Colors::Black, 1.0, 0.0f);
+
+  */
 }
 
 class ViewerApp : public oe::App {
  protected:
-  void onSceneInitialized(Scene& scene)
-  {
+  void onSceneInitialized(Scene& scene) {
     // CreateSceneCubeSatellite();
     // CreateSceneLeverArm();
     // LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
@@ -313,17 +311,29 @@ class ViewerApp : public oe::App {
     CreateScripts(scene);
 
     // Load the skybox
-    auto skyBoxTexture =
-        std::make_shared<File_texture>(scene.manager<IAsset_manager>().makeAbsoluteAssetPath(
-            L"OeApp/textures/park-cubemap.dds"));
-    scene.setSkyboxTexture(skyBoxTexture);
+    auto& assetManager = scene.manager<IAsset_manager>();
+    auto& textureManager = scene.manager<ITexture_manager>();
+
+    Environment_volume ev;
+    ev.environmentIbl.skyboxTexture = textureManager.createTextureFromFile(
+        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemap.dds"));
+    ev.environmentIbl.iblBrdfTexture = textureManager.createTextureFromFile(
+        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemapBrdf.dds"));
+    ev.environmentIbl.iblDiffuseTexture = textureManager.createTextureFromFile(
+        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemapDiffuseHDR.dds"));
+    ev.environmentIbl.iblSpecularTexture = textureManager.createTextureFromFile(
+        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemapSpecularHDR.dds"));
+
+    scene.setEnvironmentVolume(ev);
   }
 };
 
 // Entry point
-int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
-                    _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
-{
+int WINAPI wWinMain(
+    _In_ HINSTANCE hInstance,
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPWSTR lpCmdLine,
+    _In_ int nCmdShow) {
   UNREFERENCED_PARAMETER(hInstance);
   UNREFERENCED_PARAMETER(hPrevInstance);
   UNREFERENCED_PARAMETER(lpCmdLine);

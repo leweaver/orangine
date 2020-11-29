@@ -3,7 +3,9 @@
 #include "Component.h"
 #include "Material.h"
 #include "Material_context.h"
-#include "Renderer_data.h"
+
+// TODO: Remove this somehow
+#include "D3D11/D3D_renderer_data.h"
 
 namespace oe {
 class Renderable_component : public Component {

@@ -1,8 +1,11 @@
 ﻿#pragma once
 
-#include "Render_target_texture.h"
+#include "Texture.h"
 
 #include <vectormath/vectormath.hpp>
+
+#include <d3d11.h>
+#include <wrl/client.h>
 
 namespace oe {
 class Render_target_view_texture;
@@ -29,7 +32,7 @@ class Render_pass {
   void setBlendState(ID3D11BlendState* blendState);
   ID3D11BlendState* blendState() const { return _blendState.Get(); }
 
-  void setRenderTargets(std::vector<std::shared_ptr<Render_target_view_texture>>&& renderTargets);
+  void setRenderTargets(std::vector<std::shared_ptr<Texture>>&& renderTargets);
   void clearRenderTargets();
   virtual void render(const Camera_data& cameraData) = 0;
 
@@ -45,7 +48,7 @@ class Render_pass {
   virtual void destroyDeviceDependentResources() {}
 
  protected:
-  std::vector<std::shared_ptr<Render_target_view_texture>> _renderTargets = {};
+  std::vector<std::shared_ptr<Texture>> _renderTargets = {};
   std::vector<ID3D11RenderTargetView*> _renderTargetViews = {};
   Microsoft::WRL::ComPtr<ID3D11BlendState> _blendState;
   Microsoft::WRL::ComPtr<ID3D11DepthStencilState> _depthStencilState;

@@ -3,6 +3,7 @@
 #include "OeCore/Render_pass_skybox.h"
 #include "OeCore/Scene.h"
 #include "OeCore/Skybox_material.h"
+#include "OeCore/Renderable.h"
 
 using namespace oe;
 
@@ -27,7 +28,7 @@ void Render_pass_skybox::render(const Camera_data& cameraData)
 	// Discard the position
 	skyboxCamera.viewMatrix = SSE::Matrix4(cameraData.viewMatrix.getUpper3x3(), SSE::Vector3(0));
 
-	_material->setCubeMapTexture(_scene.skyboxTexture());
+	_material->setCubeMapTexture(_scene.environmentVolume().environmentIbl.skyboxTexture);
 	_scene.manager<IEntity_render_manager>().renderRenderable(
 		*_renderable,
 		SSE::Matrix4::identity(),

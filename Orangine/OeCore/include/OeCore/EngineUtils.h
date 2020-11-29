@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <OeCore/Math_constants.h>
+#include <OeCore/WindowsDefines.h>
 
 #include <string>
 #include <string_view>

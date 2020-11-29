@@ -9,17 +9,16 @@
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Renderable_component.h"
 #include "OeCore/Scene.h"
-#include "OeCore/Shadow_map_texture.h"
 
-#include "D3D11/DirectX_utils.h"
-#include "D3D11/Device_repository.h"
+#include "D3D11/D3D_device_repository.h"
+#include "D3D11/D3D_texture_manager.h"
 
 using namespace DirectX;
 using namespace oe;
 
 Render_pass_shadow::Render_pass_shadow(
     Scene& scene,
-    std::shared_ptr<internal::Device_repository> device_repository,
+    std::shared_ptr<internal::D3D_device_repository> device_repository,
     size_t maxRenderTargetViews)
     : _scene(scene), _deviceRepository(device_repository) {
   _renderTargetViews.resize(maxRenderTargetViews, nullptr);
@@ -43,15 +42,13 @@ void Render_pass_shadow::render(const Camera_data&) {
     const auto component = lightEntity->getFirstComponentOfType<Directional_light_component>();
     if (component && component->shadowsEnabled()) {
 
-      Shadow_map_texture* shadowData = component->shadowData().get();
+      Shadow_map_data* shadowData = component->shadowData().get();
 
       // If this is the first time rendering, initialize a new shadowmap.
       if (!shadowData) {
-        auto shadowMap = _scene.manager<IShadowmap_manager>().borrowTexture();
-        shadowMap->load(d3DDeviceResources.GetD3DDevice());
-
-        shadowData = shadowMap.get();
-        component->shadowData() = std::move(shadowMap);
+        component->shadowData() = std::make_unique<Shadow_map_data>();
+        shadowData = component->shadowData().get();
+        shadowData->shadowMap = _scene.manager<IShadowmap_manager>().borrowTexture();
       }
 
       // Iterate over the shadow *receivers* and build an orthographic frustum from that.
@@ -71,7 +68,7 @@ void Render_pass_shadow::render(const Camera_data&) {
             ;
             return true;
           });
-      shadowData->setCasterVolume(shadowVolumeBoundingBox);
+      shadowData->boundingOrientedBox = shadowVolumeBoundingBox;
 
       // Now create a shadow camera view matrix. Its position will be the bounds center, offset by
       // {0, 0, extents.z} in light view space.
@@ -104,12 +101,16 @@ void Render_pass_shadow::render(const Camera_data&) {
         // Disable rendering of pixel shader when drawing objects into the shadow camera.
         shadowCameraData.enablePixelShader = false;
       }
-      shadowData->setWorldViewProjMatrix(
-          shadowCameraData.projectionMatrix * shadowCameraData.viewMatrix);
+      shadowData->worldViewProjMatrix = shadowCameraData.projectionMatrix * shadowCameraData.viewMatrix;
 
       // Now do the actual rendering to the shadow map
       auto context = d3DDeviceResources.GetD3DDeviceContext();
-      const auto depthStencilView = shadowData->depthStencilView();
+
+      auto& shadowMapTexture = D3D_texture_manager::verifyAsD3dShadowMapTexture(*shadowData->shadowMap);
+
+      const auto depthStencilView = shadowMapTexture.depthStencilView();
+
+      // note that there are NO render target views - we are only rendering to the depth buffer.
       context->OMSetRenderTargets(
           static_cast<UINT>(_renderTargetViews.size()),
           _renderTargetViews.data(),
@@ -118,9 +119,20 @@ void Render_pass_shadow::render(const Camera_data&) {
       context->ClearDepthStencilView(
           depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-      context->RSSetViewports(1, &shadowData->viewport());
+      auto dxViewport = CD3D11_VIEWPORT(
+          shadowData->viewport.topLeftX,
+          shadowData->viewport.topLeftX,
+          shadowData->viewport.width,
+          shadowData->viewport.height,
+          shadowData->viewport.minDepth,
+          shadowData->viewport.maxDepth);
+      context->RSSetViewports(1, &dxViewport);
 
       auto& entityRenderManager = _scene.manager<IEntity_render_manager>();
+
+      // TODO: Why isn't this needed? 
+      // entityRenderManager.setRenderTarget(shadowData->shadowMap);
+
       for (auto& entity : *_renderableEntities) {
         const auto renderable = entity->getFirstComponentOfType<Renderable_component>();
         assert(renderable != nullptr);

@@ -1,11 +1,13 @@
 ﻿#pragma once
 
-#include "Simple_types.h"
+#include "OeCore/Renderer_types.h"
 
 #include <DirectXCollision.h>
 #include <vectormath/vectormath.hpp>
 
 namespace oe {
+
+struct Float3;
 
 struct Ray {
   SSE::Point3 origin;

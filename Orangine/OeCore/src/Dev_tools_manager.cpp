@@ -18,6 +18,8 @@
 
 #include "D3D11/DirectX_utils.h"
 
+#include <algorithm>
+
 using namespace DirectX;
 using namespace oe;
 using namespace internal;

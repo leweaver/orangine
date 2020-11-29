@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Renderer_enum.h"
+#include "Renderer_types.h"
 
 namespace oe
 {

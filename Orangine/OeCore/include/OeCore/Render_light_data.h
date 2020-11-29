@@ -2,7 +2,6 @@
 
 #include "Color.h"
 #include "Shadow_map_texture.h"
-#include "Simple_types.h"
 
 namespace oe {
 class Render_light_data {
@@ -59,17 +58,17 @@ template <uint8_t TMax_lights> class Render_light_data_impl : public Render_ligh
                                      Light_constants::shadow_map_disabled_index});
   }
   bool addDirectionalLight(const SSE::Vector3& lightDirection, const Color& color, float intensity,
-                           const Shadow_map_texture_array_slice& shadowMapTexture,
+                           const Shadow_map_data& shadowMapData,
                            float shadowMapBias)
   {
     typename Light_constants::Light_entry lightEntry = {
         Light_type::Directional,
         static_cast<Float3>(lightDirection),
         encodeColor(color, intensity),
-        static_cast<int32_t>(shadowMapTexture.arraySlice()),
-        shadowMapTexture.worldViewProjMatrix(),
+        static_cast<int32_t>(shadowMapData.shadowMap->arraySlice()),
+        shadowMapData.worldViewProjMatrix,
         shadowMapBias,
-        static_cast<int32_t>(shadowMapTexture.textureWidth())};
+        static_cast<int32_t>(shadowMapData.shadowMap->dimension().x)};
 
     if (_lightConstants.addLight(std::move(lightEntry))) {
       return true;

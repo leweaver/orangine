@@ -51,7 +51,7 @@ std::set<std::string> Unlit_material::configFlags(const Renderer_features_enable
   return flags;
 }
 
-void Unlit_material::updateVSConstantBufferValues(
+void Unlit_material::updateVsConstantBufferValues(
     Unlit_material_vs_constant_buffer& constants, const SSE::Matrix4& /* worldMatrix */,
     const SSE::Matrix4& /* viewMatrix */, const SSE::Matrix4& /* projMatrix */,
     const Renderer_animation_data& /* rendererAnimationData */) const

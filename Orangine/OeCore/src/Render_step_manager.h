@@ -6,14 +6,14 @@
 #include <OeCore/Render_pass_config.h>
 #include <OeCore/Renderable.h>
 
-#include "D3D11/Device_repository.h"
+#include "D3D11/D3D_device_repository.h"
 
 #include <memory>
 
 namespace oe::internal {
 class Render_step_manager : public IRender_step_manager {
  public:
-  Render_step_manager(Scene& scene, std::shared_ptr<Device_repository> device_repository);
+  Render_step_manager(Scene& scene, std::shared_ptr<D3D_device_repository> device_repository);
 
   // Manager_base implementations
   void initialize() override;
@@ -135,7 +135,7 @@ class Render_step_manager : public IRender_step_manager {
   // Broad rendering
   std::unique_ptr<Entity_alpha_sorter> _alphaSorter;
   std::unique_ptr<Entity_cull_sorter> _cullSorter;
-  std::shared_ptr<internal::Device_repository> _deviceRepository;
+  std::shared_ptr<D3D_device_repository> _deviceRepository;
 
   // Entities
   std::shared_ptr<Entity_filter> _renderableEntities;

@@ -7,7 +7,7 @@
 #include <array>
 #include "Material_base.h"
 #include "Color.h"
-#include "Simple_types.h"
+#include "Renderer_types.h"
 
 namespace oe {
 	struct PBR_material_vs_constant_buffer : Vertex_constant_buffer_base
@@ -226,13 +226,13 @@ namespace oe {
 
         void applyVertexLayoutShaderCompileSettings(Shader_compile_settings&) const;
 
-		void updateVSConstantBufferValues(PBR_material_vs_constant_buffer& constants,
+		void updateVsConstantBufferValues(PBR_material_vs_constant_buffer& constants,
 			const SSE::Matrix4& worldMatrix,
 			const SSE::Matrix4& viewMatrix,
 			const SSE::Matrix4& projMatrix,
             const Renderer_animation_data& rendererAnimationData) const override;
 
-		void updatePSConstantBufferValues(PBR_material_ps_constant_buffer& constants,
+		void updatePsConstantBufferValues(PBR_material_ps_constant_buffer& constants,
 			const SSE::Matrix4& worldMatrix,
 			const SSE::Matrix4& viewMatrix,
 			const SSE::Matrix4& projMatrix) const override;

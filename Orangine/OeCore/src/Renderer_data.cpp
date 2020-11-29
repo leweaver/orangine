@@ -1,5 +1,8 @@
 #include "pch.h"
+
 #include "OeCore/Renderer_data.h"
+
+#include "D3D11/D3D_renderer_data.h"
 #include "OeCore/EngineUtils.h"
 
 using namespace oe;

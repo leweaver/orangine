@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Collision.h"
-#include "Renderer_enum.h"
+#include "Renderer_types.h"
 #include "EngineUtils.h"
 
 #include <dxgiformat.h>

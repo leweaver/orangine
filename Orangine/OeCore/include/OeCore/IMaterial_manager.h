@@ -1,13 +1,13 @@
 ﻿#pragma once
 
 #include "Manager_base.h"
-#include "Renderer_enum.h"
+#include "Renderer_types.h"
 #include "Render_pass.h"
 #include "Renderer_data.h"
 
 namespace oe {
-    class Material_context;
-    struct Renderer_data;
+struct Renderer_data;
+class Material_context;
     class Render_light_data;
     class Scene;
     class Material;
@@ -24,6 +24,8 @@ namespace oe {
 
         // Gets the path that contains hlsl files. Does not end in a trailing slash.
         virtual const std::wstring& shaderPath() const = 0;
+
+        virtual std::unique_ptr<Material_context> createMaterialContext() = 0;
                
         // Sets the Material that is used for all subsequent calls to render.
         // Compiles (if needed), binds pixel and vertex shaders, and textures.
@@ -31,7 +33,7 @@ namespace oe {
             Material_context& materialContext,
             std::shared_ptr<const Material> material,
             const Mesh_vertex_layout& meshVertexLayout,
-            const Render_light_data& renderLightData,
+            const Render_light_data* renderLightData,
             Render_pass_blend_mode blendMode,
             bool enablePixelShader) = 0;
         

@@ -3,6 +3,7 @@
 #include "Entity_scripting_manager.h"
 #include "Script_runtime_data.h"
 
+#include "OeCore/Renderer_types.h"
 #include "OeCore/Camera_component.h"
 #include "OeCore/Entity.h"
 #include "OeCore/Entity_filter.h"
@@ -10,10 +11,10 @@
 #include "OeCore/IScene_graph_manager.h"
 #include "OeCore/Light_component.h"
 #include "OeCore/Math_constants.h"
-#include "OeCore/Renderable_component.h"
+//#include "OeCore/Renderable_component.h"
 #include "OeCore/Scene.h"
-#include "OeCore/Shadow_map_texture.h"
 #include "OeCore/Test_component.h"
+#include "OeCore/Shadow_map_texture.h"
 #include "OeScripting/Script_component.h"
 
 #include <OeThirdParty/imgui.h>
@@ -129,8 +130,11 @@ void Entity_scripting_manager::initialize() {
     };
     _scriptableEntityFilter->add_listener(_scriptableEntityFilterListener);
 
+    // TODO: can't inlclude renderable_component right now
+    /*
     _renderableEntityFilter =
         _scene.manager<IScene_graph_manager>().getEntityFilter({Renderable_component::type()});
+        */
     _lightEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter(
         {Directional_light_component::type(),
          Point_light_component::type(),
@@ -486,10 +490,13 @@ void Entity_scripting_manager::renderDebugSpheres() const {
   auto& devToolsManager = _scene.manager<IDev_tools_manager>();
   devToolsManager.clearDebugShapes();
 
-  for (const auto& entity : *_renderableEntityFilter) {
-    const auto& boundSphere = entity->boundSphere();
-    const auto transform = entity->worldTransform() * SSE::Matrix4::translation(boundSphere.center);
-    devToolsManager.addDebugSphere(transform, boundSphere.radius, Colors::Gray);
+  if (_renderableEntityFilter != nullptr) {
+    for (const auto& entity : *_renderableEntityFilter) {
+      const auto& boundSphere = entity->boundSphere();
+      const auto transform =
+          entity->worldTransform() * SSE::Matrix4::translation(boundSphere.center);
+      devToolsManager.addDebugSphere(transform, boundSphere.radius, Colors::Gray);
+    }
   }
 
   const auto mainCameraEntity = _scene.mainCamera();
@@ -507,7 +514,7 @@ void Entity_scripting_manager::renderDebugSpheres() const {
     if (directionalLight && directionalLight->shadowsEnabled()) {
       const auto& shadowData = directionalLight->shadowData();
       if (shadowData) {
-        devToolsManager.addDebugBoundingBox(shadowData->casterVolume(), directionalLight->color());
+        devToolsManager.addDebugBoundingBox(shadowData->boundingOrientedBox, directionalLight->color());
       }
     }
   }

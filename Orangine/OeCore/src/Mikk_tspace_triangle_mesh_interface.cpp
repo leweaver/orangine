@@ -2,7 +2,6 @@
 
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Mikk_tspace_triangle_mesh_interface.h"
-#include "OeCore/Simple_types.h"
 
 using namespace oe;
 using namespace std::literals;

@@ -2,7 +2,7 @@
 
 #include "Manager_base.h"
 #include "Render_pass.h"
-#include "Viewport.h"
+#include "Renderer_types.h"
 
 #include <memory>
 #include <array>

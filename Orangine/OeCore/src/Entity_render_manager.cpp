@@ -51,27 +51,11 @@ void Entity_render_manager::shutdown() {}
 const std::string& Entity_render_manager::name() const { return _name; }
 
 void Entity_render_manager::tick() {
-  const auto& environmentMap = _scene.skyboxTexture();
-  if (environmentMap.get() != _environmentIbl.skyboxTexture.get()) {
-    const auto skyboxFileTexture = dynamic_cast<File_texture*>(environmentMap.get());
-    if (!skyboxFileTexture)
-      OE_THROW(std::runtime_error("Skybox texture isn't a file texture!"));
+  const auto& environmentVolume = _scene.environmentVolume();
+  if (environmentVolume.environmentIbl.skyboxTexture.get() != _environmentIbl.skyboxTexture.get()) {
+    _environmentIbl = environmentVolume.environmentIbl;
 
-    const auto& skyboxFileTextureFilename = skyboxFileTexture->filename();
-    if (skyboxFileTextureFilename.find_last_of(L".dds") != skyboxFileTextureFilename.length() - 1) {
-      OE_THROW(std::runtime_error("Skybox texture must be a .dds file"));
-    }
-
-    const auto filenamePrefix =
-        skyboxFileTextureFilename.substr(0, skyboxFileTextureFilename.length() - 4);
-
-    _environmentIbl.skyboxTexture = environmentMap;
-    _environmentIbl.iblBrdfTexture = std::make_shared<File_texture>(filenamePrefix + L"Brdf.dds");
-    _environmentIbl.iblDiffuseTexture =
-        std::make_shared<File_texture>(filenamePrefix + L"DiffuseHDR.dds");
-    _environmentIbl.iblSpecularTexture =
-        std::make_shared<File_texture>(filenamePrefix + L"SpecularHDR.dds");
-
+    // Force reload of textures
     if (_renderLightData_lit) {
       _renderLightData_lit->setEnvironmentIblMap(nullptr, nullptr, nullptr);
     }
@@ -80,9 +64,10 @@ void Entity_render_manager::tick() {
   if (_renderLightData_lit && _environmentIbl.iblDiffuseTexture &&
       !_renderLightData_lit->environmentMapDiffuse()) {
 
-    loadTexture(*_environmentIbl.iblBrdfTexture);
-    loadTexture(*_environmentIbl.iblDiffuseTexture);
-    loadTexture(*_environmentIbl.iblSpecularTexture);
+    auto& textureManager = _scene.manager<ITexture_manager>();
+    textureManager.load(*_environmentIbl.iblBrdfTexture);
+    textureManager.load(*_environmentIbl.iblDiffuseTexture);
+    textureManager.load(*_environmentIbl.iblSpecularTexture);
 
     _renderLightData_lit->setEnvironmentIblMap(
         _environmentIbl.iblBrdfTexture,
@@ -98,10 +83,13 @@ bool addLightToRenderLightData(
   const auto directionalLight = lightEntity.getFirstComponentOfType<Directional_light_component>();
   if (directionalLight) {
     const auto lightDirection = lightEntity.worldTransform().getUpper3x3() * math::forward;
-    const auto shadowData =
-        dynamic_cast<Shadow_map_texture_array_slice*>(directionalLight->shadowData().get());
+    const auto shadowData = directionalLight->shadowData().get();
 
     if (shadowData != nullptr) {
+      if (shadowData->shadowMap == nullptr || !shadowData->shadowMap->isArraySlice()) {
+        OE_THROW(std::logic_error("Directional lights only support texture array shadow maps."));
+      }
+
       auto shadowMapBias = directionalLight->shadowMapBias();
       return renderLightData.addDirectionalLight(
           lightDirection,
@@ -109,9 +97,8 @@ bool addLightToRenderLightData(
           directionalLight->intensity(),
           *shadowData,
           shadowMapBias);
-    } else if (directionalLight->shadowData().get() != nullptr) {
-      OE_THROW(std::logic_error("Directional lights only support texture array shadow maps."));
     }
+
     return renderLightData.addDirectionalLight(
         lightDirection, directionalLight->color(), directionalLight->intensity());
   }
@@ -182,9 +169,10 @@ void createMissingVertexAttributes(
     const auto elementStride = sizeof(float) * numComponents;
     meshData->vertexBufferAccessors[requiredAttribute] = make_unique<Mesh_vertex_buffer_accessor>(
         make_shared<Mesh_buffer>(elementStride * vertexCount),
-        Vertex_attribute_element{requiredAttribute,
-                                 numComponents == 3 ? Element_type::Vector3 : Element_type::Vector4,
-                                 Element_component::Float},
+        Vertex_attribute_element{
+            requiredAttribute,
+            numComponents == 3 ? Element_type::Vector3 : Element_type::Vector4,
+            Element_component::Float},
         static_cast<uint32_t>(vertexCount),
         static_cast<uint32_t>(elementStride),
         0);
@@ -244,7 +232,9 @@ void Entity_render_manager::renderEntity(
           createRendererData(meshData, vertexInputs, vertexSettings.morphAttributes);
       rendererData = rendererDataPtr.get();
       renderableComponent.setRendererData(std::move(rendererDataPtr));
-      renderableComponent.setMaterialContext(std::make_unique<Material_context>());
+
+      renderableComponent.setMaterialContext(
+          _scene.manager<IMaterial_manager>().createMaterialContext());
     }
 
     const auto lightMode = material->lightMode();
@@ -298,7 +288,8 @@ void Entity_render_manager::renderEntity(
       const auto& joints = skinnedMeshComponent->joints();
       const auto& inverseBindMatrices = skinnedMeshComponent->inverseBindMatrices();
       if (joints.size() != inverseBindMatrices.size())
-        OE_THROW(std::runtime_error("Size of joints and inverse bone transform arrays must match."));
+        OE_THROW(
+            std::runtime_error("Size of joints and inverse bone transform arrays must match."));
 
       if (inverseBindMatrices.size() > _rendererAnimationData.boneTransformConstants.size()) {
         OE_THROW(std::runtime_error(
@@ -375,7 +366,7 @@ void Entity_render_manager::renderRenderable(
     renderable.rendererData = move(rendererData);
   }
   if (renderable.materialContext == nullptr) {
-    renderable.materialContext = std::make_unique<Material_context>();
+    renderable.materialContext = _scene.manager<IMaterial_manager>().createMaterialContext();
   }
 
   const auto lightMode = material->lightMode();

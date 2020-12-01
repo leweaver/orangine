@@ -81,7 +81,7 @@ add_library(${PROJECT_NAME} STATIC
         src/D3D11/D3D_entity_render_manager.cpp
         "src/D3D11/D3D_device_repository.h"
         "src/D3D11/D3D_device_repository.cpp"
-         "src/D3D11/D3D_renderer_data.h" "include/OeCore/ITexture_manager.h" "src/D3D11/D3D_texture_manager.cpp" "src/D3D11/D3D_texture_manager.h" "src/D3D11/D3D_material_manager.h" "src/D3D11/D3D_material_manager.cpp" "include/OeCore/Environment_volume.h")
+         "src/D3D11/D3D_renderer_data.h" "include/OeCore/ITexture_manager.h" "src/D3D11/D3D_texture_manager.cpp" "src/D3D11/D3D_texture_manager.h" "src/D3D11/D3D_material_manager.h" "src/D3D11/D3D_material_manager.cpp" "include/OeCore/Environment_volume.h" "src/D3D11/D3D_renderer_data.cpp")
 file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 

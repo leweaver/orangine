@@ -3,19 +3,14 @@
 #include "Component.h"
 #include "Material.h"
 #include "Material_context.h"
-
-// TODO: Remove this somehow
-#include "D3D11/D3D_renderer_data.h"
+#include "Renderer_data.h"
 
 namespace oe {
 class Renderable_component : public Component {
   DECLARE_COMPONENT_TYPE;
 
  public:
-  Renderable_component(Entity& entity)
-      : Component(entity)
-      , _rendererData(nullptr)
-      , _material(nullptr) {}
+  Renderable_component(Entity& entity) : Component(entity), _material(nullptr) {}
   ~Renderable_component();
 
   bool visible() const { return _component_properties.visible; }
@@ -31,8 +26,8 @@ class Renderable_component : public Component {
   const std::shared_ptr<Material>& material() const { return _material; }
   void setMaterial(std::shared_ptr<Material> material) { _material = material; }
 
-  const std::unique_ptr<Renderer_data>& rendererData() const { return _rendererData; }
-  void setRendererData(std::unique_ptr<Renderer_data>&& rendererData) {
+  const std::weak_ptr<Renderer_data>& rendererData() const { return _rendererData; }
+  void setRendererData(std::weak_ptr<Renderer_data>&& rendererData) {
     _rendererData = std::move(rendererData);
   }
 
@@ -49,7 +44,7 @@ class Renderable_component : public Component {
   END_COMPONENT_PROPERTIES();
 
   // Runtime, non-serializable
-  std::unique_ptr<Renderer_data> _rendererData;
+  std::weak_ptr<Renderer_data> _rendererData;
   std::weak_ptr<Material_context> _materialContext;
   std::shared_ptr<Material> _material;
 };

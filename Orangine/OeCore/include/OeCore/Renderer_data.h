@@ -7,6 +7,9 @@
 
 namespace oe {
 
+// This is declared in internal renderer classes, and contains internal data only.
+struct Renderer_data;
+
 struct Renderer_animation_data {
   static constexpr size_t morphWeightsSize = 8;
   std::array<float, morphWeightsSize> morphWeights;

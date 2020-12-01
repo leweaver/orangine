@@ -5,7 +5,6 @@
 #include "OeCore/Material_context.h"
 
 #include "D3D_device_repository.h"
-#include "D3D_renderer_data.h"
 
 #include <vector>
 
@@ -15,6 +14,7 @@ namespace oe {
 
 class Scene;
 class Material;
+struct D3D_buffer;
 
 class D3D_material_context : public Material_context {
  public:

@@ -4,9 +4,6 @@
 
 #include "Material_context.h"
 
-// TODO: Remove this
-#include "D3D11/D3D_renderer_data.h"
-
 namespace oe {
 class Mesh_data;
 class Material;
@@ -23,8 +20,8 @@ struct Renderable {
   std::shared_ptr<Material> material;
   std::shared_ptr<Renderer_animation_data> rendererAnimationData;
 
-  // The following two properties must be manually reset on a device reset.
-  std::unique_ptr<Renderer_data> rendererData;
+  // The following two properties will be deleted by managers on a device reset.
+  std::weak_ptr<Renderer_data> rendererData;
   std::weak_ptr<Material_context> materialContext;
 };
 } // namespace oe

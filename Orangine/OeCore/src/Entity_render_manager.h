@@ -11,7 +11,7 @@
 #include "OeCore/Renderable.h"
 
 // TODO: Remove this include
-#include "D3D11/D3D_renderer_data.h"
+//#include "D3D11/Renderer_data.h"
 
 #include <memory>
 
@@ -58,6 +58,11 @@ class Entity_render_manager : public IEntity_render_manager {
   void clearRenderStats() override;
 
  protected:
+  static void createMissingVertexAttributes(
+      std::shared_ptr<Mesh_data> meshData,
+      const std::vector<Vertex_attribute_element>& requiredAttributes,
+      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes);
+
   virtual void drawRendererData(
       const Render_pass::Camera_data& cameraData,
       const SSE::Matrix4& worldTransform,
@@ -77,16 +82,6 @@ class Entity_render_manager : public IEntity_render_manager {
 
   virtual void updateLightBuffers() = 0;
 
-  std::shared_ptr<D3D_buffer> createBufferFromData(
-      const std::string& bufferName,
-      const Mesh_buffer& buffer,
-      UINT bindFlags) const;
-  virtual std::shared_ptr<D3D_buffer> createBufferFromData(
-      const std::string& bufferName,
-      const uint8_t* data,
-      size_t dataSize,
-      UINT bindFlags) const = 0;
-
   /**
    * \brief Creates a new Renderer_data instance from the given mesh data, in a format
    *        that satisfies the given vertex attributes (normally generated from a material)
@@ -97,10 +92,10 @@ class Entity_render_manager : public IEntity_render_manager {
    *        Normally you should get this from Shader_compile_settings::morphAttributes
    * \return new Renderer_data instance.
    */
-  std::unique_ptr<Renderer_data> createRendererData(
+  virtual std::shared_ptr<Renderer_data> createRendererData(
       std::shared_ptr<Mesh_data> meshData,
       const std::vector<Vertex_attribute_element>& vertexAttributes,
-      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const;
+      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const = 0;
 
   // Entities
   std::shared_ptr<IMaterial_repository> _materialRepository;

@@ -129,7 +129,7 @@ BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& c
   return frustum;
 }
 
-void createMissingVertexAttributes(
+void Entity_render_manager::createMissingVertexAttributes(
     std::shared_ptr<Mesh_data> meshData,
     const std::vector<Vertex_attribute_element>& requiredAttributes,
     const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) {
@@ -216,7 +216,7 @@ void Entity_render_manager::renderEntity(
 
     const auto& meshData = meshDataComponent->meshData();
 
-    auto rendererData = renderableComponent.rendererData().get();
+    auto rendererData = renderableComponent.rendererData().lock();
     if (rendererData == nullptr) {
       LOG(INFO) << "Creating renderer data for entity " << entity.getName() << " (ID "
                 << entity.getId() << ")";
@@ -228,10 +228,8 @@ void Entity_render_manager::renderEntity(
       const auto vertexInputs = material->vertexInputs(flags);
       const auto vertexSettings = material->vertexShaderSettings(flags);
 
-      auto rendererDataPtr =
-          createRendererData(meshData, vertexInputs, vertexSettings.morphAttributes);
-      rendererData = rendererDataPtr.get();
-      renderableComponent.setRendererData(std::move(rendererDataPtr));
+      rendererData = createRendererData(meshData, vertexInputs, vertexSettings.morphAttributes);
+      renderableComponent.setRendererData(std::weak_ptr(rendererData));
     }
 
     auto materialContext = renderableComponent.materialContext().lock();
@@ -356,7 +354,8 @@ void Entity_render_manager::renderRenderable(
     bool wireFrame) {
   auto material = renderable.material;
 
-  if (renderable.rendererData == nullptr) {
+  auto rendererData = renderable.rendererData.lock();
+  if (rendererData == nullptr) {
     if (renderable.meshData == nullptr) {
       // There is no mesh data (it may still be loading!), we can't render.
       return;
@@ -371,9 +370,9 @@ void Entity_render_manager::renderRenderable(
     const auto vertexInputs = material->vertexInputs(flags);
     const auto vertexSettings = material->vertexShaderSettings(flags);
 
-    auto rendererData =
+    rendererData =
         createRendererData(renderable.meshData, vertexInputs, vertexSettings.morphAttributes);
-    renderable.rendererData = move(rendererData);
+    renderable.rendererData = std::weak_ptr(rendererData);
   }
 
   auto materialContext = renderable.materialContext.lock();
@@ -421,7 +420,7 @@ void Entity_render_manager::renderRenderable(
   drawRendererData(
       cameraData,
       worldMatrix,
-      *renderable.rendererData,
+      *rendererData,
       blendMode,
       *renderLightData,
       material,
@@ -429,131 +428,6 @@ void Entity_render_manager::renderRenderable(
       *materialContext,
       *rendererAnimationData,
       wireFrame);
-}
-
-std::unique_ptr<Renderer_data> Entity_render_manager::createRendererData(
-    std::shared_ptr<Mesh_data> meshData,
-    const std::vector<Vertex_attribute_element>& vertexAttributes,
-    const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const {
-  auto rendererData = std::make_unique<Renderer_data>();
-
-  switch (meshData->m_meshIndexType) {
-  case Mesh_index_type::Triangles:
-    rendererData->topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-    break;
-  case Mesh_index_type::Lines:
-    rendererData->topology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
-    break;
-  default:
-    OE_THROW(std::exception("Unsupported mesh topology"));
-  }
-
-  createMissingVertexAttributes(meshData, vertexAttributes, vertexMorphAttributes);
-
-  // Create D3D Index Buffer
-  if (meshData->indexBufferAccessor) {
-    rendererData->indexCount = meshData->indexBufferAccessor->count;
-
-    rendererData->indexBufferAccessor = std::make_unique<D3D_buffer_accessor>(
-        createBufferFromData(
-            "Mesh data index buffer",
-            *meshData->indexBufferAccessor->buffer,
-            D3D11_BIND_INDEX_BUFFER),
-        meshData->indexBufferAccessor->stride,
-        meshData->indexBufferAccessor->offset);
-
-    rendererData->indexFormat =
-        mesh_utils::getDxgiFormat(Element_type::Scalar, meshData->indexBufferAccessor->component);
-
-    const auto name("Index Buffer (count: " + std::to_string(rendererData->indexCount) + ")");
-    rendererData->indexBufferAccessor->buffer->d3dBuffer->SetPrivateData(
-        WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str());
-  } else {
-    // TODO: Simply log a warning, or try to draw a non-indexed mesh
-    rendererData->indexCount = 0;
-    OE_THROW(std::runtime_error("CreateRendererData: Missing index buffer"));
-  }
-
-  // Create D3D vertex buffers
-  rendererData->vertexCount = meshData->getVertexCount();
-  for (auto vertexAttrElement : vertexAttributes) {
-    const auto& vertexAttr = vertexAttrElement.semantic;
-    Mesh_vertex_buffer_accessor* meshAccessor;
-    auto vbAccessorPos = meshData->vertexBufferAccessors.find(vertexAttr);
-    if (vbAccessorPos != meshData->vertexBufferAccessors.end()) {
-      meshAccessor = vbAccessorPos->second.get();
-    } else {
-      // Since there is no guarantee that the order is the same in the requested attributes array,
-      // and the mesh data, we need to do a search to find out the morph target index of this
-      // attribute/semantic.
-      auto vertexMorphAttributesIdx = -1;
-      auto morphTargetIdx = -1;
-      for (size_t idx = 0; idx < vertexMorphAttributes.size(); ++idx) {
-        const auto& vertexMorphAttribute = vertexMorphAttributes.at(idx);
-        if (vertexMorphAttribute.attribute == vertexAttr.attribute) {
-          ++morphTargetIdx;
-
-          if (vertexMorphAttribute.semanticIndex == vertexAttr.semanticIndex) {
-            vertexMorphAttributesIdx = static_cast<int>(idx);
-            break;
-          }
-        }
-      }
-      if (vertexMorphAttributesIdx == -1) {
-        OE_THROW(std::runtime_error("Could not find morph attribute in vertexMorphAttributes"));
-      }
-
-      const size_t morphTargetLayoutSize = meshData->vertexLayout.morphTargetLayout().size();
-      // What position in the mesh morph layout is this type? This will correspond with its position
-      // in the buffer accessors array
-      auto morphLayoutOffset = -1;
-      for (size_t idx = 0; idx < morphTargetLayoutSize; ++idx) {
-        if (meshData->vertexLayout.morphTargetLayout()[idx].attribute == vertexAttr.attribute) {
-          morphLayoutOffset = static_cast<int>(idx);
-          break;
-        }
-      }
-      if (morphLayoutOffset == -1) {
-        OE_THROW(std::runtime_error("Could not find morph attribute in mesh morph target layout"));
-      }
-
-      if (meshData->attributeMorphBufferAccessors.size() >=
-          static_cast<size_t>(morphLayoutOffset)) {
-        OE_THROW(std::runtime_error(string_format(
-            "CreateRendererData: Failed to read morph target "
-            "%" PRIi32 " for vertex attribute: %s",
-            morphTargetIdx,
-            Vertex_attribute_meta::vsInputName(vertexAttr))));
-      }
-      if (meshData->attributeMorphBufferAccessors.at(morphTargetIdx).size() >=
-          static_cast<size_t>(morphTargetIdx)) {
-        OE_THROW(std::runtime_error(string_format(
-            "CreateRendererData: Failed to read morph target "
-            "%" PRIi32 " layout offset %" PRIi32 "for vertex attribute: %s",
-            morphTargetIdx,
-            morphLayoutOffset,
-            Vertex_attribute_meta::vsInputName(vertexAttr))));
-      }
-
-      meshAccessor =
-          meshData->attributeMorphBufferAccessors[morphTargetIdx][morphLayoutOffset].get();
-    }
-
-    auto d3DAccessor = std::make_unique<D3D_buffer_accessor>(
-        createBufferFromData(
-            "Mesh data vertex buffer", *meshAccessor->buffer, D3D11_BIND_VERTEX_BUFFER),
-        meshAccessor->stride,
-        meshAccessor->offset);
-
-    if (rendererData->vertexBuffers.find(vertexAttr) != rendererData->vertexBuffers.end()) {
-      OE_THROW(std::runtime_error(
-          "Mesh data contains vertex attribute "s + Vertex_attribute_meta::vsInputName(vertexAttr) +
-          " more than once."));
-    }
-    rendererData->vertexBuffers[vertexAttr] = std::move(d3DAccessor);
-  }
-
-  return rendererData;
 }
 
 Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material> material) const {
@@ -564,7 +438,8 @@ Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material
   if (renderable.material == nullptr)
     renderable.material = material;
 
-  if (renderable.rendererData == nullptr) {
+  auto rendererData = renderable.rendererData.lock(); 
+  if (rendererData == nullptr) {
     // Note we get the flags for the case where all features are enabled, to make sure we load all
     // the data streams.
     const auto flags = material->configFlags(
@@ -574,18 +449,12 @@ Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material
     std::vector<Vertex_attribute> vertexAttributes;
     const auto vertexInputs = renderable.material->vertexInputs(flags);
     const auto vertexSettings = material->vertexShaderSettings(flags);
-    renderable.rendererData =
+    rendererData =
         createRendererData(renderable.meshData, vertexInputs, vertexSettings.morphAttributes);
+    renderable.rendererData = std::weak_ptr(rendererData);
   }
 
   return renderable;
 }
 
 void Entity_render_manager::clearRenderStats() { _renderStats = {}; }
-
-std::shared_ptr<D3D_buffer> Entity_render_manager::createBufferFromData(
-    const std::string& bufferName,
-    const Mesh_buffer& buffer,
-    UINT bindFlags) const {
-  return createBufferFromData(bufferName, buffer.data, buffer.dataSize, bindFlags);
-}

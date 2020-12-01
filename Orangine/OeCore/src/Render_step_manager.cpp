@@ -135,7 +135,7 @@ void Render_step_manager::createRenderSteps() {
         auto& d3DDeviceResources = deviceResources();
         d3DDeviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step0");
         auto& quad = _renderStep_entityDeferred.data->pass0ScreenSpaceQuad;
-        if (quad.rendererData && quad.material) {
+        if (!quad.rendererData.expired() && quad.material) {
           try {
             entityRenderManager.renderRenderable(
                 quad,

@@ -1,14 +1,15 @@
 #include "pch.h"
 
-#include "D3D_material_manager.h"
-#include "D3D_texture_manager.h"
 
 #include "OeCore/EngineUtils.h"
 #include "OeCore/ITexture_manager.h"
-#include "OeCore/Material_base.h"
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Render_light_data.h"
 #include "OeCore/Scene.h"
+
+#include "D3D_material_manager.h"
+#include "D3D_texture_manager.h"
+#include "D3D_renderer_data.h"
 
 #include <comdef.h> // for _com_error
 #include <d3d11.h>

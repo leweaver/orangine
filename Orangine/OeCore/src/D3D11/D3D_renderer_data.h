@@ -1,6 +1,7 @@
 #pragma once
 
 #include "OeCore/Renderer_types.h"
+#include "OeCore/Renderer_data.h"
 
 #include <d3d11.h>
 
@@ -41,4 +42,6 @@ struct Renderer_data {
 
   bool failedRendering;
 };
+
+using D3D_renderer_data = Renderer_data;
 }

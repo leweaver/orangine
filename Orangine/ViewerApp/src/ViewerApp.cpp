@@ -11,7 +11,7 @@
 #include <OeCore/Light_component.h>
 #include <OeCore/Math_constants.h>
 #include <OeCore/PBR_material.h>
-//#include <OeCore/Renderable_component.h>
+#include <OeCore/Renderable_component.h>
 #include <OeCore/Scene.h>
 #include <OeCore/Test_component.h>
 #include <OeCore/WindowsDefines.h>
@@ -202,7 +202,6 @@ void CreateShadowTestScene(Scene& scene) {
   const auto& root1 = entityManager.instantiate("Primitives");
   int teapotCount = 0;
 
-  /*
   auto createTeapot =
       [&entityManager, &root1, &teapotCount](
           const SSE::Vector3& center, const Color& color, float metallic, float roughness) {
@@ -276,8 +275,6 @@ void CreateShadowTestScene(Scene& scene) {
   createTeapot({2, 0, -2}, oe::Colors::Red, 1.0, 0.25f);
   createTeapot({-2, 0, 2}, oe::Colors::White, 1.0, 0.75f);
   createTeapot({2, 0, 2}, oe::Colors::Black, 1.0, 0.0f);
-
-  */
 }
 
 class ViewerApp : public oe::App {

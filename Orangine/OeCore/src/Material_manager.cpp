@@ -54,23 +54,23 @@ void Material_manager::bind(
   assert(!_boundMaterial);
 
   const auto materialHash = material->ensureCompilerPropertiesHash();
-  auto compiledMaterial = materialContext.compiledMaterial;
+  auto& compiledMaterial = materialContext.compilerInputs;
   auto rebuildConfig = false;
-  if (!compiledMaterial) {
+  if (!materialContext.compilerInputsValid) {
     rebuildConfig = true;
   } else {
-    if (compiledMaterial->blendMode != blendMode) {
+    if (compiledMaterial.blendMode != blendMode) {
       LOG(WARNING) << "Rendering material with a different blendMode than last time. This will be "
                       "a big performance hit.";
       rebuildConfig = true;
-    } else if (compiledMaterial->meshHash != meshVertexLayout.propertiesHash()) {
+    } else if (compiledMaterial.meshHash != meshVertexLayout.propertiesHash()) {
       LOG(WARNING) << "Rendering material with a different morphTargetCount than last time. This "
                       "will be a big performance hit.";
       rebuildConfig = true;
-    } else if (compiledMaterial->materialHash != materialHash) {
+    } else if (compiledMaterial.materialHash != materialHash) {
       LOG(DEBUG) << "Material hash changed.";
       rebuildConfig = true;
-    } else if (compiledMaterial->rendererFeaturesHash != _rendererFeaturesHash) {
+    } else if (compiledMaterial.rendererFeaturesHash != _rendererFeaturesHash) {
       LOG(DEBUG) << "Renderer features hash changed.";
       rebuildConfig = true;
     }
@@ -86,37 +86,30 @@ void Material_manager::bind(
     LOG(DEBUG) << "Material flags: " << nlohmann::json(flags).dump(2);
 
     auto requiresRecompile = true;
-    if (compiledMaterial) {
-      // Skip recompile if the flags are actually the same.
-      if (flags.size() == compiledMaterial->flags.size() &&
-          std::equal(flags.begin(), flags.end(), compiledMaterial->flags.begin())) {
-        requiresRecompile = false;
-      }
-    } else {
-      compiledMaterial =
-          std::shared_ptr<Material_context::Compiled_material>(createCompiledMaterialData());
+    // Skip recompile if the flags are actually the same.
+    if (flags.size() == compiledMaterial.flags.size() &&
+        std::equal(flags.begin(), flags.end(), compiledMaterial.flags.begin())) {
+      requiresRecompile = false;
     }
-    compiledMaterial->rendererFeaturesHash = _rendererFeaturesHash;
+    compiledMaterial.rendererFeaturesHash = _rendererFeaturesHash;
 
     if (requiresRecompile) {
       LOG(INFO) << "Recompiling shaders for material";
 
       // TODO: Look in a cache for a compiled material that matches the hash
-      materialContext.compiledMaterial = compiledMaterial;
+      materialContext.compilerInputs = compiledMaterial;
 
-      compiledMaterial->materialHash = materialHash;
-      compiledMaterial->meshHash = meshVertexLayout.propertiesHash();
+      compiledMaterial.materialHash = materialHash;
+      compiledMaterial.meshHash = meshVertexLayout.propertiesHash();
 
       try {
-        compiledMaterial->blendMode = blendMode;
-        compiledMaterial->flags = std::move(flags);
+        compiledMaterial.blendMode = blendMode;
+        compiledMaterial.flags = std::move(flags);
 
-        compiledMaterial->vsInputs = material->vertexInputs(compiledMaterial->flags);
+        compiledMaterial.vsInputs = material->vertexInputs(compiledMaterial.flags);
 
-        createVertexShader(
-            _rendererFeatures.enableShaderOptimization, compiledMaterial.get(), *material);
-        createPixelShader(
-            _rendererFeatures.enableShaderOptimization, compiledMaterial.get(), *material);
+        createVertexShader(_rendererFeatures.enableShaderOptimization, *material, materialContext);
+        createPixelShader(_rendererFeatures.enableShaderOptimization, *material, materialContext);
 
         createMaterialConstants(*material);
 
@@ -130,7 +123,7 @@ void Material_manager::bind(
     }
 
     const auto shaderResources =
-        material->shaderResources(compiledMaterial->flags, *renderLightData);
+        material->shaderResources(compiledMaterial.flags, *renderLightData);
 
     loadShaderResourcesToContext(shaderResources, materialContext);
   }

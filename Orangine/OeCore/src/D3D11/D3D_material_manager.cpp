@@ -64,6 +64,11 @@ std::string createShaderError(
   return ss.str();
 }
 
+void D3D_material_context::reset() {
+  resetShaderResourceViews();
+  resetSamplerStates();
+}
+
 D3D_material_manager::D3D_material_manager(
     Scene& scene,
     std::shared_ptr<internal::D3D_device_repository> deviceRepository)
@@ -149,7 +154,9 @@ void D3D_material_manager::createDeviceDependentResources() {
   _boneTransformConstantBuffer = std::make_unique<D3D_buffer>(d3dBuffer, dataSize);
 }
 
-void D3D_material_manager::destroyDeviceDependentResources() {}
+void D3D_material_manager::destroyDeviceDependentResources() {
+  _createdMaterialContexts.clear();
+}
 
 std::shared_ptr<D3D_buffer> D3D_material_manager::createVsConstantBuffer(
     const Material& material,
@@ -166,7 +173,7 @@ std::shared_ptr<D3D_buffer> D3D_material_manager::createVsConstantBuffer(
   bufferDesc.CPUAccessFlags = 0;
   bufferDesc.MiscFlags = 0;
 
-  if (bufferDesc.ByteWidth < _bufferTemp.size()) {
+  if (bufferDesc.ByteWidth > _bufferTemp.size()) {
     _bufferTemp.resize(bufferDesc.ByteWidth);
   }
   D3D11_SUBRESOURCE_DATA initData;
@@ -199,7 +206,7 @@ std::shared_ptr<D3D_buffer> D3D_material_manager::createPsConstantBuffer(
   bufferDesc.CPUAccessFlags = 0;
   bufferDesc.MiscFlags = 0;
 
-  if (bufferDesc.ByteWidth < _bufferTemp.size()) {
+  if (bufferDesc.ByteWidth > _bufferTemp.size()) {
     _bufferTemp.resize(bufferDesc.ByteWidth);
   }
 
@@ -226,7 +233,8 @@ void D3D_material_manager::updateVsConstantBuffer(
     const Renderer_animation_data& rendererAnimationData,
     ID3D11DeviceContext* context,
     D3D_buffer& buffer) {
-  assert(material.vertexShaderConstantsSize() <= _bufferTemp.size());
+  const auto vscbSize = material.vertexShaderConstantsSize();
+  assert(vscbSize <= _bufferTemp.size());
 
   material.updateVsConstantBuffer(
       worldMatrix,
@@ -246,8 +254,9 @@ void D3D_material_manager::updatePsConstantBuffer(
     const SSE::Matrix4& projMatrix,
     ID3D11DeviceContext* context,
     D3D_buffer& buffer) {
+  const auto pscbSize = material.pixelShaderConstantsSize();
+  assert(pscbSize <= _bufferTemp.size());
 
-  assert(material.pixelShaderConstantsSize() <= _bufferTemp.size());
   material.updatePsConstantBuffer(
       worldMatrix, viewMatrix, projMatrix, _bufferTemp.data(), material.pixelShaderConstantsSize());
 
@@ -284,38 +293,20 @@ const D3D_material_context& D3D_material_manager::verifyAsD3dMaterialContext(
   return *cast;
 }
 
-const D3D_compiled_material& D3D_material_manager::verifyAsD3dCompiledMaterial(
-    const Material_context::Compiled_material* compiledMaterial) {
-  const auto* const cast = reinterpret_cast<const D3D_compiled_material*>(compiledMaterial);
-  assert(cast->sentinel == g_d3d_compiled_material_sentinel);
-  return *cast;
-}
-
-D3D_compiled_material& D3D_material_manager::verifyAsD3dCompiledMaterial(
-    Material_context::Compiled_material* compiledMaterial) {
-  auto* const cast = reinterpret_cast<D3D_compiled_material*>(compiledMaterial);
-  assert(cast->sentinel == g_d3d_compiled_material_sentinel);
-  return *cast;
-}
-
-std::unique_ptr<Material_context> D3D_material_manager::createMaterialContext() {
-  return std::make_unique<D3D_material_context>();
-}
-
-Material_context::Compiled_material* D3D_material_manager::createCompiledMaterialData() const {
-  auto* cm = new D3D_compiled_material();
-  cm->sentinel = g_d3d_compiled_material_sentinel;
-  return &cm->header;
+std::weak_ptr<Material_context> D3D_material_manager::createMaterialContext() {
+  const auto context = std::make_shared<D3D_material_context>();
+  _createdMaterialContexts.push_back(context);
+  return std::weak_ptr<Material_context>(context);
 }
 
 void D3D_material_manager::createVertexShader(
     bool enableOptimizations,
-    Material_context::Compiled_material* compiledMaterial,
-    const Material& material) const {
+    const Material& material,
+    Material_context& materialContext) const {
   HRESULT hr;
   Microsoft::WRL::ComPtr<ID3DBlob> errorMsgs;
   ID3DBlob* vertexShaderByteCode;
-  auto settings = material.vertexShaderSettings(compiledMaterial->flags);
+  auto settings = material.vertexShaderSettings(materialContext.compilerInputs.flags);
   debugLogSettings("vertex shader", settings);
 
   std::vector<D3D_SHADER_MACRO> defines;
@@ -328,8 +319,9 @@ void D3D_material_manager::createVertexShader(
 
   LOG(G3LOG_DEBUG) << "Adding vertex attributes";
 
-  for (auto inputSlot = 0u; inputSlot < compiledMaterial->vsInputs.size(); ++inputSlot) {
-    const auto attrSemantic = compiledMaterial->vsInputs[inputSlot];
+  for (auto inputSlot = 0u; inputSlot < materialContext.compilerInputs.vsInputs.size();
+       ++inputSlot) {
+    const auto attrSemantic = materialContext.compilerInputs.vsInputs[inputSlot];
     const auto semanticName = Vertex_attribute_meta::semanticName(attrSemantic.semantic.attribute);
     assert(!semanticName.empty());
     LOG(G3LOG_DEBUG) << "  " << semanticName << " to slot " << inputSlot;
@@ -365,15 +357,15 @@ void D3D_material_manager::createVertexShader(
     OE_THROW(std::runtime_error(createShaderError(hr, errorMsgs.Get(), settings)));
   }
 
-  auto& d3dCompiledMaterial = verifyAsD3dCompiledMaterial(compiledMaterial);
+  auto& d3dMaterialContext = verifyAsD3dMaterialContext(materialContext);
 
-  const auto device = deviceResources().GetD3DDevice();
+  auto* const device = deviceResources().GetD3DDevice();
   hr = device->CreateInputLayout(
       inputElementDesc.data(),
       static_cast<UINT>(inputElementDesc.size()),
       vertexShaderByteCode->GetBufferPointer(),
       vertexShaderByteCode->GetBufferSize(),
-      &d3dCompiledMaterial.inputLayout);
+      &d3dMaterialContext.inputLayout);
   if (!SUCCEEDED(hr)) {
     OE_THROW(std::runtime_error("Failed to create vertex input layout: " + std::to_string(hr)));
   }
@@ -382,7 +374,7 @@ void D3D_material_manager::createVertexShader(
       vertexShaderByteCode->GetBufferPointer(),
       vertexShaderByteCode->GetBufferSize(),
       nullptr,
-      &d3dCompiledMaterial.vertexShader);
+      &d3dMaterialContext.vertexShader);
   if (!SUCCEEDED(hr)) {
     OE_THROW(std::runtime_error("Failed to vertex pixel shader: " + std::to_string(hr)));
   }
@@ -390,8 +382,8 @@ void D3D_material_manager::createVertexShader(
 
 void D3D_material_manager::createPixelShader(
     bool enableOptimizations,
-    Material_context::Compiled_material* compiledMaterial,
-    const Material& material) const {
+    const Material& material,
+    Material_context& materialContext) const {
   HRESULT hr;
   Microsoft::WRL::ComPtr<ID3DBlob> errorMsgs;
   ID3DBlob* pixelShaderByteCode;
@@ -402,7 +394,9 @@ void D3D_material_manager::createPixelShader(
     flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_PREFER_FLOW_CONTROL;
 #endif
 
-  auto settings = material.pixelShaderSettings(compiledMaterial->flags);
+  auto& d3dMaterialContext = verifyAsD3dMaterialContext(materialContext);
+
+  auto settings = material.pixelShaderSettings(d3dMaterialContext.compilerInputs.flags);
   debugLogSettings("pixel shader", settings);
 
   std::vector<D3D_SHADER_MACRO> defines;
@@ -427,20 +421,18 @@ void D3D_material_manager::createPixelShader(
     OE_THROW(std::runtime_error(createShaderError(hr, errorMsgs.Get(), settings)));
   }
 
-  auto& d3dCompiledMaterial = verifyAsD3dCompiledMaterial(compiledMaterial);
-
-  auto device = deviceResources().GetD3DDevice();
+  auto* const device = deviceResources().GetD3DDevice();
   hr = device->CreatePixelShader(
       pixelShaderByteCode->GetBufferPointer(),
       pixelShaderByteCode->GetBufferSize(),
       nullptr,
-      &d3dCompiledMaterial.pixelShader);
+      &d3dMaterialContext.pixelShader);
   if (!SUCCEEDED(hr)) {
     OE_THROW(std::runtime_error("Failed to create pixel shader: " + std::to_string(hr)));
   }
 
-  auto debugName = "Material:" + utf8_encode(settings.filename);
-  d3dCompiledMaterial.pixelShader->SetPrivateData(
+  const auto debugName = "Material:" + utf8_encode(settings.filename);
+  d3dMaterialContext.pixelShader->SetPrivateData(
       WKPDID_D3DDebugObjectName, static_cast<UINT>(debugName.size()), debugName.c_str());
 }
 
@@ -545,16 +537,14 @@ void D3D_material_manager::bindMaterialContextToDevice(
     const Material_context& materialContext,
     bool enablePixelShader) {
   const auto& d3dMaterialContext = verifyAsD3dMaterialContext(materialContext);
-  auto& d3dCompiledMaterial =
-      verifyAsD3dCompiledMaterial(d3dMaterialContext.compiledMaterial.get());
 
   auto* const deviceContext = deviceResources().GetD3DDeviceContext();
 
-  deviceContext->IASetInputLayout(d3dCompiledMaterial.inputLayout.Get());
-  deviceContext->VSSetShader(d3dCompiledMaterial.vertexShader.Get(), nullptr, 0);
+  deviceContext->IASetInputLayout(d3dMaterialContext.inputLayout.Get());
+  deviceContext->VSSetShader(d3dMaterialContext.vertexShader.Get(), nullptr, 0);
 
   if (enablePixelShader) {
-    deviceContext->PSSetShader(d3dCompiledMaterial.pixelShader.Get(), nullptr, 0);
+    deviceContext->PSSetShader(d3dMaterialContext.pixelShader.Get(), nullptr, 0);
 
     // Set shader texture resource in the pixel shader.
     _boundSrvCount = static_cast<uint32_t>(d3dMaterialContext.shaderResourceViews.size());

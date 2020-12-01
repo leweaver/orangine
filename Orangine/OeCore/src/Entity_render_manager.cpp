@@ -232,9 +232,19 @@ void Entity_render_manager::renderEntity(
           createRendererData(meshData, vertexInputs, vertexSettings.morphAttributes);
       rendererData = rendererDataPtr.get();
       renderableComponent.setRendererData(std::move(rendererDataPtr));
+    }
 
+    auto materialContext = renderableComponent.materialContext().lock();
+    // This may be null if the device was reset since the last render.
+    if (materialContext == nullptr) {
       renderableComponent.setMaterialContext(
           _scene.manager<IMaterial_manager>().createMaterialContext());
+
+      materialContext = renderableComponent.materialContext().lock();
+
+      if (materialContext == nullptr) {
+        OE_THROW(std::runtime_error("Failed to create a material context"));
+      }
     }
 
     const auto lightMode = material->lightMode();
@@ -262,7 +272,7 @@ void Entity_render_manager::renderEntity(
     }
 
     // Morphed animation?
-    const auto morphWeightsComponent = entity.getFirstComponentOfType<Morph_weights_component>();
+    auto* const morphWeightsComponent = entity.getFirstComponentOfType<Morph_weights_component>();
     if (morphWeightsComponent != nullptr) {
       std::transform(
           morphWeightsComponent->morphWeights().begin(),
@@ -277,7 +287,7 @@ void Entity_render_manager::renderEntity(
     }
 
     // Skinned mesh?
-    const auto skinnedMeshComponent = entity.getFirstComponentOfType<Skinned_mesh_component>();
+    auto* const skinnedMeshComponent = entity.getFirstComponentOfType<Skinned_mesh_component>();
     // Matrix const* worldTransform;
     const SSE::Matrix4* worldTransform;
     const auto skinningEnabled =
@@ -305,8 +315,8 @@ void Entity_render_manager::renderEntity(
 
       auto invWorld = SSE::inverse(*worldTransform);
       for (size_t i = 0; i < joints.size(); ++i) {
-        const auto joint = joints[i];
-        const auto jointWorldTransform = joint->worldTransform();
+        auto* const joint = joints[i];
+        const auto& jointWorldTransform = joint->worldTransform();
         auto jointToRoot = invWorld * jointWorldTransform;
         const auto inverseBoneTransform = inverseBindMatrices[i];
 
@@ -326,7 +336,7 @@ void Entity_render_manager::renderEntity(
         *renderLightData,
         material,
         meshData->vertexLayout,
-        *renderableComponent.materialContext(),
+        *materialContext,
         _rendererAnimationData,
         renderableComponent.wireframe());
   } catch (std::runtime_error& e) {
@@ -365,8 +375,16 @@ void Entity_render_manager::renderRenderable(
         createRendererData(renderable.meshData, vertexInputs, vertexSettings.morphAttributes);
     renderable.rendererData = move(rendererData);
   }
-  if (renderable.materialContext == nullptr) {
+
+  auto materialContext = renderable.materialContext.lock();
+  // This may be null if the device was reset since the last render.
+  if (materialContext == nullptr) {
     renderable.materialContext = _scene.manager<IMaterial_manager>().createMaterialContext();
+    materialContext = renderable.materialContext.lock();
+
+    if (materialContext == nullptr) {
+      OE_THROW(std::runtime_error("Failed to create a material context"));
+    }
   }
 
   const auto lightMode = material->lightMode();
@@ -396,7 +414,7 @@ void Entity_render_manager::renderRenderable(
     renderLightData = _renderLightData_unlit.get();
   }
 
-  auto rendererAnimationData = renderable.rendererAnimationData.get();
+  auto* rendererAnimationData = renderable.rendererAnimationData.get();
   if (rendererAnimationData == nullptr)
     rendererAnimationData = &g_emptyRenderableAnimationData;
 
@@ -408,7 +426,7 @@ void Entity_render_manager::renderRenderable(
       *renderLightData,
       material,
       renderable.meshData->vertexLayout,
-      *renderable.materialContext,
+      *materialContext,
       *rendererAnimationData,
       wireFrame);
 }

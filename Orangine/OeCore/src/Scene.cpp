@@ -272,9 +272,6 @@ void Scene_device_resource_aware::destroyDeviceDependentResources() {
   forEachOfType<Manager_deviceDependent>(_managers, [](int, Manager_deviceDependent* manager) {
     manager->destroyDeviceDependentResources();
   });
-  if (environmentVolume().environmentIbl.skyboxTexture) {
-    manager<ITexture_manager>().unload(*environmentVolume().environmentIbl.skyboxTexture.get());
-  }
   _deviceRepository->destroyDeviceDependentResources();
 }
 
@@ -305,6 +302,7 @@ Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& de
   createManager<IAnimation_manager>();
   createManager<IMaterial_manager>(deviceRepository);
   createManager<IBehavior_manager>();
+  createManager<ITexture_manager>(deviceRepository);
 }
 
 void Scene_device_resource_aware::initialize() { Scene::initialize(); }

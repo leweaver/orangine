@@ -339,16 +339,6 @@ void Render_step_manager::destroyDeviceDependentResources() {
     }
   }
 
-  // Unload renderable contexts
-  if (_renderableEntities) {
-    for (const auto& renderableEntity : *_renderableEntities) {
-      auto* const component = renderableEntity->getFirstComponentOfType<Renderable_component>();
-      if (component && component->materialContext()) {
-        component->setMaterialContext(_scene.manager<IMaterial_manager>().createMaterialContext());
-      }
-    }
-  }
-
   destroyRenderStepResources(_renderStep_shadowMap);
   destroyRenderStepResources(_renderStep_entityDeferred);
   destroyRenderStepResources(_renderStep_entityStandard);

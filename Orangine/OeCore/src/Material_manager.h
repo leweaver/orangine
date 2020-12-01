@@ -1,10 +1,9 @@
 ﻿#pragma once
 
 #include "OeCore/IMaterial_manager.h"
-#include "OeCore/Material_context.h"
+#include "OeCore/Material.h"
 #include "OeCore/Renderer_data.h"
 #include "OeCore/Renderer_types.h"
-#include "OeCore/Material.h"
 
 namespace oe {
 class Texture;
@@ -47,31 +46,31 @@ class Material_manager : public IMaterial_manager {
   const Renderer_features_enabled& rendererFeatureEnabled() const override;
 
  protected:
-
   void setShaderPath(const std::wstring& path);
 
   const Material* getBoundMaterial() const { return _boundMaterial.get(); }
 
-  virtual Material_context::Compiled_material* createCompiledMaterialData() const = 0;
   virtual void createVertexShader(
       bool enableOptimizations,
-      Material_context::Compiled_material* compiledMaterial,
-      const Material& material) const = 0;
+      const Material& material,
+      Material_context& materialContext) const = 0;
   virtual void createPixelShader(
       bool enableOptimizations,
-      Material_context::Compiled_material* compiledMaterial,
-      const Material& material) const = 0;
+      const Material& material,
+      Material_context& materialContext) const = 0;
 
   virtual void createMaterialConstants(const Material& material) = 0;
-    
+
   virtual void loadShaderResourcesToContext(
       const Material::Shader_resources& shader_resources,
       Material_context& material_context) = 0;
 
   virtual void bindLightDataToDevice(const Render_light_data* renderLightData) = 0;
-  virtual void bindMaterialContextToDevice(const Material_context& materialContext, bool enablePixelShader) = 0;
+  virtual void bindMaterialContextToDevice(
+      const Material_context& materialContext,
+      bool enablePixelShader) = 0;
 
-private:
+ private:
   static std::string _name;
 
   std::wstring _shaderPath = L"data/shaders";

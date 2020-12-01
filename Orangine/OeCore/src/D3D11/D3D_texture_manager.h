@@ -5,6 +5,7 @@
 #include "D3D_device_repository.h"
 
 #include <d3d11.h>
+#include <set>
 #include <wrl/client.h>
 
 namespace oe {
@@ -84,6 +85,10 @@ class D3D_texture_manager : public ITexture_manager {
   void shutdown() override {}
   const std::string& name() const override { return _name; }
 
+  // Manager_deviceDependent implementation
+  void createDeviceDependentResources() override;
+  void destroyDeviceDependentResources() override;
+
   // ITexture_manager implementation
   std::shared_ptr<Texture> createTextureFromBuffer(
       uint32_t stride,
@@ -119,6 +124,7 @@ class D3D_texture_manager : public ITexture_manager {
  private:
   static std::string _name;
 
+  std::vector<std::shared_ptr<D3D_texture>> _createdTextures;
   std::shared_ptr<internal::D3D_device_repository> _deviceRepository;
 };
 } // namespace oe

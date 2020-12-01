@@ -95,7 +95,7 @@ Material::Shader_resources Deferred_light_material::shaderResources(
   samplerDesc.wrapU = Sampler_texture_address_mode::Clamp;
   samplerDesc.wrapV = Sampler_texture_address_mode::Clamp;
   samplerDesc.wrapW = Sampler_texture_address_mode::Clamp;
-  samplerDesc.comparisonFunc = Sampler_comparison_func::Always;
+  //samplerDesc.comparisonFunc = Sampler_comparison_func::Always;
 
   sr.textures.push_back(_color0Texture);
   sr.samplerDescriptors.push_back(samplerDesc);

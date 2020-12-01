@@ -14,22 +14,23 @@ namespace oe {
  */
 class Material_context {
  public:
-  struct Compiled_material {
+  struct Material_compiler_inputs {
     // State that the compiled state relied on
-    size_t materialHash;
-    size_t meshHash;
-    size_t rendererFeaturesHash;
-    Render_pass_blend_mode blendMode;
+    size_t materialHash = 0;
+    size_t meshHash = 0;
+    size_t rendererFeaturesHash = 0;
+    Render_pass_blend_mode blendMode = Render_pass_blend_mode::Opaque;
     std::vector<Vertex_attribute_element> vsInputs;
     std::set<std::string> flags;
   };
 
   Material_context() = default;
 
-  virtual ~Material_context() {}
+  virtual ~Material_context() = default;
 
   virtual void reset() = 0;
 
-  std::shared_ptr<Compiled_material> compiledMaterial;
+  bool compilerInputsValid = false;
+  Material_compiler_inputs compilerInputs;
 };
 } // namespace oe

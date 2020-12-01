@@ -25,6 +25,6 @@ struct Renderable {
 
   // The following two properties must be manually reset on a device reset.
   std::unique_ptr<Renderer_data> rendererData;
-  std::unique_ptr<Material_context> materialContext;
+  std::weak_ptr<Material_context> materialContext;
 };
 } // namespace oe

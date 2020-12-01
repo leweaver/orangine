@@ -107,9 +107,7 @@ class D3D_depth_texture : public D3D_texture {
         "DepthTexture shaderResourceView");
     setShaderResourceView(srv);
   }
-  void unload() override {
-    D3D_texture::unload();
-  }
+  void unload() override { D3D_texture::unload(); }
 
  private:
   const DX::DeviceResources& _deviceResources;
@@ -200,7 +198,10 @@ class D3D_shadow_map_texture_array_texture : public D3D_texture {
   D3D_shadow_map_texture_array_texture(
       Uint2 dimension,
       Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv)
-      : D3D_texture(dimension, static_cast<uint32_t>(Texture_flags::Is_array_texture), std::move(srv)) {}
+      : D3D_texture(
+            dimension,
+            static_cast<uint32_t>(Texture_flags::Is_array_texture),
+            std::move(srv)) {}
 
   void load(ID3D11Device*) override {}
   void unload() override {}
@@ -405,9 +406,9 @@ class D3D_shadow_map_texture_pool : public Shadow_map_texture_pool {
 
     // Create the shadow maps
     _shadowMapDepthArrayTexture = std::make_shared<D3D_shadow_map_texture_array_texture>(
-        Uint2 {_dimension, _dimension}, depthShaderResourceView);
+        Uint2{_dimension, _dimension}, depthShaderResourceView);
     _shadowMapStencilArrayTexture = std::make_shared<D3D_shadow_map_texture_array_texture>(
-        Uint2 {_dimension, _dimension}, stencilShaderResourceView);
+        Uint2{_dimension, _dimension}, stencilShaderResourceView);
 
     auto arrayTextureRetriever = [this, depthShaderResourceView]() {
       return D3D_shadow_map_texture_array_slice::Array_texture{
@@ -495,34 +496,56 @@ class D3D_shadow_map_texture_pool : public Shadow_map_texture_pool {
 
 ///////////
 // D3D_texture_manager
+void D3D_texture_manager::createDeviceDependentResources() {}
+void D3D_texture_manager::destroyDeviceDependentResources() {
+  for (auto tex : _createdTextures) {
+    if (tex->isValid()) {
+      tex->unload();
+    }
+  }
+}
+
 std::shared_ptr<Texture> D3D_texture_manager::createTextureFromBuffer(
     uint32_t stride,
     uint32_t buffer_size,
     std::unique_ptr<uint8_t>& buffer) {
-  return std::make_shared<D3D_buffer_texture>(stride, buffer_size, buffer);
+  auto texture = std::make_shared<D3D_buffer_texture>(stride, buffer_size, buffer);
+  _createdTextures.push_back(texture);
+  return texture;
 }
 
 std::shared_ptr<Texture> D3D_texture_manager::createTextureFromFile(const std::wstring& fileName) {
-  return std::make_shared<D3D_file_texture>(fileName);
+  auto texture = std::make_shared<D3D_file_texture>(fileName);
+  _createdTextures.push_back(texture);
+  return texture;
 }
 
 std::shared_ptr<Texture> D3D_texture_manager::createTextureFromFile(
     const std::wstring& fileName,
     const Sampler_descriptor& samplerDescriptor) {
-  return std::make_shared<D3D_file_texture>(fileName, samplerDescriptor);
+  auto texture = std::make_shared<D3D_file_texture>(fileName, samplerDescriptor);
+  _createdTextures.push_back(texture);
+  return texture;
 }
 
 std::shared_ptr<Texture> D3D_texture_manager::createDepthTexture() {
-  return std::make_shared<D3D_depth_texture>(_deviceRepository->deviceResources());
+  auto texture = std::make_shared<D3D_depth_texture>(_deviceRepository->deviceResources());
+  _createdTextures.push_back(texture);
+  return texture;
 }
 
 std::shared_ptr<Texture> D3D_texture_manager::createRenderTargetTexture(int width, int height) {
-  return std::shared_ptr<Texture>(D3D_render_target_texture::createDefaultRgb(width, height));
+  auto texture =
+      std::shared_ptr<D3D_texture>(D3D_render_target_texture::createDefaultRgb(width, height));
+  _createdTextures.push_back(texture);
+  return texture;
 }
 
 std::shared_ptr<Texture> D3D_texture_manager::createRenderTargetViewTexture() {
-  return std::make_shared<D3D_render_target_view_texture>(
+  auto texture = std::make_shared<D3D_render_target_view_texture>(
       _deviceRepository->deviceResources().GetRenderTargetView());
+  _createdTextures.push_back(texture);
+  return texture;
 }
 
 std::unique_ptr<Shadow_map_texture_pool> D3D_texture_manager::createShadowMapTexturePool(

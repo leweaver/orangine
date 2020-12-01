@@ -2,6 +2,8 @@
 
 #include "../Material_manager.h"
 
+#include "OeCore/Material_context.h"
+
 #include "D3D_device_repository.h"
 #include "D3D_renderer_data.h"
 
@@ -14,18 +16,6 @@ namespace oe {
 class Scene;
 class Material;
 
-struct D3D_compiled_material {
-  Material_context::Compiled_material header;
-
-  // for typcasting safety
-  size_t sentinel;
-
-  // D3D Shaders
-  Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
-  Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
-  Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
-};
-
 class D3D_material_context : public Material_context {
  public:
   ~D3D_material_context() {
@@ -33,10 +23,7 @@ class D3D_material_context : public Material_context {
     resetSamplerStates();
   }
 
-  void reset() override {
-    resetShaderResourceViews();
-    resetSamplerStates();
-  }
+  void reset() override;
 
   void resetShaderResourceViews() {
     for (auto srv : shaderResourceViews) {
@@ -57,6 +44,11 @@ class D3D_material_context : public Material_context {
   // When adding and removing from here, remember to AddRef and Release.
   std::vector<ID3D11ShaderResourceView*> shaderResourceViews;
   std::vector<ID3D11SamplerState*> samplerStates;
+
+  // D3D Shaders
+  Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
+  Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
+  Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
 };
 
 class D3D_material_manager : public Material_manager {
@@ -76,18 +68,16 @@ class D3D_material_manager : public Material_manager {
   void destroyDeviceDependentResources() override;
 
   // IMaterial_manager implementation
-  std::unique_ptr<Material_context> createMaterialContext() override;
+  std::weak_ptr<Material_context> createMaterialContext() override;
 
-  // Material_manager implementation
-  Material_context::Compiled_material* createCompiledMaterialData() const override;
   void createVertexShader(
       bool enableOptimizations,
-      Material_context::Compiled_material* compiledMaterial,
-      const Material& material) const override;
+      const Material& material,
+      Material_context& materialContext) const override;
   void createPixelShader(
       bool enableOptimizations,
-      Material_context::Compiled_material* compiledMaterial,
-      const Material& material) const override;
+      const Material& material,
+      Material_context& materialContext) const override;
   void createMaterialConstants(const Material& material) override;
   void loadShaderResourcesToContext(
       const Material::Shader_resources& shaderResources,
@@ -102,6 +92,10 @@ class D3D_material_manager : public Material_manager {
       const Renderer_animation_data& rendererAnimationData,
       const Render_pass::Camera_data& camera) override;
   void unbind() override;
+
+  static const D3D_material_context& verifyAsD3dMaterialContext(
+      const Material_context& materialContext);
+  static D3D_material_context& verifyAsD3dMaterialContext(Material_context& materialContext);
 
  private:
   DX::DeviceResources& deviceResources() const;
@@ -136,14 +130,6 @@ class D3D_material_manager : public Material_manager {
   };
 
   void ensureMaterialConstants(const Material& material, Material_constants*& materialConstants);
-  static const D3D_material_context& verifyAsD3dMaterialContext(
-      const Material_context& materialContext);
-  static D3D_material_context& verifyAsD3dMaterialContext(Material_context& materialContext);
-
-  static const D3D_compiled_material& verifyAsD3dCompiledMaterial(
-      const Material_context::Compiled_material* compiledMaterial);
-  static D3D_compiled_material& verifyAsD3dCompiledMaterial(
-      Material_context::Compiled_material* compiledMaterial);
 
   D3D11_FILTER convertFilter(const Sampler_descriptor& descriptor, float maxAnisotropy);
 
@@ -171,5 +157,6 @@ class D3D_material_manager : public Material_manager {
 
   std::shared_ptr<internal::D3D_device_repository> _deviceRepository;
   std::vector<uint8_t> _bufferTemp;
+  std::vector<std::shared_ptr<D3D_material_context>> _createdMaterialContexts;
 };
 } // namespace oe

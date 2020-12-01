@@ -35,7 +35,7 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
       _bufferArraySet.strideArray.clear();
       _bufferArraySet.offsetArray.clear();
 
-      for (const auto vsInput : context.compiledMaterial->vsInputs) {
+      for (const auto vsInput : context.compilerInputs.vsInputs) {
         const auto accessorPos = rendererData.vertexBuffers.find(vsInput.semantic);
         assert(accessorPos != rendererData.vertexBuffers.end());
         const auto& accessor = accessorPos->second;
@@ -80,7 +80,7 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
     auto& commonStates = _deviceRepository->commonStates();
 
     auto& d3DDeviceResources = deviceResources();
-    const auto context = d3DDeviceResources.GetD3DDeviceContext();
+    auto* const context = d3DDeviceResources.GetD3DDeviceContext();
 
     // Set the rasteriser state
     if (wireFrame)

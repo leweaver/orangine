@@ -15,7 +15,6 @@ class Renderable_component : public Component {
   Renderable_component(Entity& entity)
       : Component(entity)
       , _rendererData(nullptr)
-      , _materialContext(nullptr)
       , _material(nullptr) {}
   ~Renderable_component();
 
@@ -37,8 +36,8 @@ class Renderable_component : public Component {
     _rendererData = std::move(rendererData);
   }
 
-  const std::unique_ptr<Material_context>& materialContext() const { return _materialContext; }
-  void setMaterialContext(std::unique_ptr<Material_context>&& materialContext) {
+  const std::weak_ptr<Material_context>& materialContext() const { return _materialContext; }
+  void setMaterialContext(std::weak_ptr<Material_context>&& materialContext) {
     _materialContext = std::move(materialContext);
   }
 
@@ -51,7 +50,7 @@ class Renderable_component : public Component {
 
   // Runtime, non-serializable
   std::unique_ptr<Renderer_data> _rendererData;
-  std::unique_ptr<Material_context> _materialContext;
+  std::weak_ptr<Material_context> _materialContext;
   std::shared_ptr<Material> _material;
 };
 

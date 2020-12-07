@@ -64,7 +64,7 @@ std::set<std::string> Deferred_light_material::configFlags(
     const Mesh_vertex_layout& meshBindContext) const {
   auto flags = Base_type::configFlags(rendererFeatures, blendMode, meshBindContext);
 
-  if (rendererFeatures.debugDisplayMode == Debug_display_mode::World_Positions) {
+  if (rendererFeatures.debugDisplayMode == Debug_display_mode::World_positions) {
     flags.insert(g_flag_debugWorldPosition);
   }
   if (rendererFeatures.debugDisplayMode == Debug_display_mode::Normals) {

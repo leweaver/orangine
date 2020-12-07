@@ -90,9 +90,9 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
     // Set the rasteriser state
     if (wireFrame)
       context->RSSetState(commonStates.Wireframe());
-    else if (material->faceCullMode() == Material_face_cull_mode::Back_Face)
+    else if (material->faceCullMode() == Material_face_cull_mode::Back_face)
       context->RSSetState(commonStates.CullClockwise());
-    else if (material->faceCullMode() == Material_face_cull_mode::Front_Face)
+    else if (material->faceCullMode() == Material_face_cull_mode::Front_face)
       context->RSSetState(commonStates.CullCounterClockwise());
     else if (material->faceCullMode() == Material_face_cull_mode::None)
       context->RSSetState(commonStates.CullNone());
@@ -185,7 +185,7 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
   std::shared_ptr<Renderer_data> Entity_render_manager::createRendererData(
       std::shared_ptr<Mesh_data> meshData,
       const std::vector<Vertex_attribute_element>& vertexAttributes,
-      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const {
+      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const override {
     auto rendererData = std::make_shared<Renderer_data>();
 
     switch (meshData->m_meshIndexType) {

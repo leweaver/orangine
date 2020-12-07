@@ -157,7 +157,7 @@ void Entity_render_manager::createMissingVertexAttributes(
     else if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Tangent, 0}) {
       numComponents = 4;
       generateTangents = true;
-    } else if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Bi_Tangent, 0})
+    } else if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Bi_tangent, 0})
       generateBiTangents = true;
     else {
       OE_THROW(std::logic_error("Mesh does not have required attribute: "s.append(

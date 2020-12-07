@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Collision.h"
+#include "Renderer_enums.h"
 
 #include <vectormath/vectormath.hpp>
 #include <string>
@@ -11,80 +12,6 @@ namespace oe {
 struct Default_values {};
 
 inline const uint32_t g_max_bone_transforms = 96;
-
-enum class Material_alpha_mode {
-  Opaque = 0,
-  Mask,
-  Blend,
-
-  Num_Alpha_Mode
-};
-const std::string& materialAlphaModeToString(Material_alpha_mode enumValue);
-Material_alpha_mode stringToMaterialAlphaMode(const std::string& str);
-
-enum class Material_face_cull_mode {
-  Back_Face = 0,
-  Front_Face,
-  None,
-
-  Num_Face_Cull_Mode
-};
-const std::string& materialFaceCullModeToString(Material_face_cull_mode enumValue);
-Material_face_cull_mode stringToMaterialFaceCullMode(const std::string& str);
-
-enum class Material_light_mode {
-  Unlit = 0,
-  Lit,
-
-  Num_Light_Mode
-};
-const std::string& materialLightModeToString(Material_light_mode enumValue);
-Material_light_mode stringToMaterialLightMode(const std::string& str);
-
-enum class Render_pass_blend_mode {
-  Opaque = 0,
-  Blended_Alpha,
-  Additive,
-
-  Num_Blend_Mode
-};
-const std::string& renderPassBlendModeToString(Render_pass_blend_mode enumValue);
-Render_pass_blend_mode stringToRenderPassBlendMode(const std::string& str);
-
-enum class Render_pass_depth_mode {
-  ReadWrite = 0,
-  ReadOnly,
-  WriteOnly,
-  Disabled,
-
-  Num_Depth_Mode
-};
-const std::string& renderPassDepthModeToString(Render_pass_depth_mode enumValue);
-Render_pass_depth_mode stringToRenderPassDepthMode(const std::string& str);
-
-enum class Render_pass_stencil_mode {
-  Enabled = 0,
-  Disabled,
-
-  Num_Stencil_Mode
-};
-const std::string& renderPassStencilModeToString(Render_pass_stencil_mode enumValue);
-Render_pass_stencil_mode stringToRenderPassStencilMode(const std::string& str);
-
-enum class Vertex_attribute : std::int8_t {
-  Position = 0,
-  Color,
-  Normal,
-  Tangent,
-  Bi_Tangent,
-  Tex_Coord,
-  Joints,
-  Weights,
-
-  Num_Vertex_Attribute,
-};
-const std::string& vertexAttributeToString(Vertex_attribute enumValue);
-Vertex_attribute stringToVertexAttribute(const std::string& str);
 
 struct Vertex_attribute_semantic {
   Vertex_attribute attribute;
@@ -100,115 +27,6 @@ struct Vertex_attribute_semantic {
   }
   bool operator!=(const Vertex_attribute_semantic& other) const { return !(*this == other); }
 };
-
-enum class Mesh_index_type : std::int8_t {
-  Triangles,
-  Lines,
-
-  Num_Mesh_Index_Type
-};
-const std::string& meshIndexTypeToString(Mesh_index_type enumValue);
-Mesh_index_type stringToMeshIndexType(const std::string& str);
-
-enum class Animation_type {
-  Translation = 0,
-  Rotation,
-  Scale,
-  Morph,
-
-  Num_Animation_Type
-};
-const std::string& animationTypeToString(Animation_type enumValue);
-Animation_type stringToAnimationType(const std::string& str);
-
-enum class Animation_interpolation {
-  Linear = 0,
-  Step,
-  Cubic_Spline,
-
-  Num_Animation_Interpolation
-};
-const std::string& animationInterpolationToString(Animation_interpolation enumValue);
-Animation_interpolation stringToAnimationInterpolation(const std::string& str);
-
-enum class Element_type {
-  Scalar = 0,
-  Vector2,
-  Vector3,
-  Vector4,
-  Matrix2,
-  Matrix3,
-  Matrix4,
-
-  Num_Element_Type
-};
-const std::string& elementTypeToString(Element_type enumValue);
-Element_type stringToElementType(const std::string& str);
-
-enum class Element_component {
-  Signed_Byte = 0,
-  Unsigned_Byte,
-  Signed_Short,
-  Unsigned_Short,
-  Signed_Int,
-  Unsigned_Int,
-  Float,
-
-  Num_Element_Component
-};
-const std::string& elementComponentToString(Element_component enumValue);
-Element_component stringToElementComponent(const std::string& str);
-
-enum class Debug_display_mode {
-  None = 0,
-  Normals,
-  World_Positions,
-  Lighting,
-
-  Num_Debug_Display_Mode
-};
-const std::string& debugDisplayModeToString(Debug_display_mode enumValue);
-Debug_display_mode stringToDebugDisplayMode(const std::string& str);
-
-enum class Sampler_filter_type {
-  Point = 0,
-  Linear,
-  Point_mipmap_point,
-  Point_mipmap_linear,
-  Linear_mipmap_point,
-  Linear_mipmap_linear,
-
-  Num_sampler_filter_type,
-};
-const std::string& samplerFilterTypeToString(Sampler_filter_type enumValue);
-Sampler_filter_type stringToSamplerFilterType(const std::string& str);
-
-enum class Sampler_texture_address_mode {
-  Wrap = 0,
-  Mirror,
-  Clamp,
-  Border,
-  Mirror_once,
-
-  Num_sampler_texture_address_mode,
-};
-const std::string& samplerTextureAddressModeToString(Sampler_texture_address_mode enumValue);
-Sampler_texture_address_mode stringToSamplerTextureAddressMode(const std::string& str);
-
-enum class Sampler_comparison_func {
-  Never,
-  Less,
-  Equal,
-  Less_equal,
-  Greater,
-  Not_equal,
-  Greater_equal,
-  Always,
-
-  Num_sampler_comparison_func,
-};
-const std::string& samplerComparisonFuncToString(Sampler_comparison_func enumValue);
-Sampler_comparison_func stringToSamplerComparisonFunc(const std::string& str);
 
 struct Vertex_attribute_element {
   Vertex_attribute_semantic semantic;

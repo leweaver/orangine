@@ -16,7 +16,7 @@ class Material_base : public Material {
   explicit Material_base(
       uint8_t materialTypeIndex,
       Material_alpha_mode alphaMode = Material_alpha_mode::Opaque,
-      Material_face_cull_mode faceCullMode = Material_face_cull_mode::Back_Face)
+      Material_face_cull_mode faceCullMode = Material_face_cull_mode::Back_face)
       : Material(materialTypeIndex, alphaMode, faceCullMode) {
     static_assert(
         std::is_same_v<TVertex_shader_constants, Vertex_constant_buffer_empty> ||

@@ -235,7 +235,7 @@ void Dev_tools_manager::renderImGui() {
 
     const char* items[] = {debugDisplayModeToString(Debug_display_mode::None).c_str(),
                            debugDisplayModeToString(Debug_display_mode::Normals).c_str(),
-                           debugDisplayModeToString(Debug_display_mode::World_Positions).c_str(),
+                           debugDisplayModeToString(Debug_display_mode::World_positions).c_str(),
                            debugDisplayModeToString(Debug_display_mode::Lighting).c_str()};
     auto item_current = static_cast<int>(featuresEnabled.debugDisplayMode);
     if (ImGui::Checkbox("Skinning", &featuresEnabled.skinnedAnimation) ||

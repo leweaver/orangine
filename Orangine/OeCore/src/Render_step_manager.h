@@ -104,7 +104,7 @@ class Render_step_manager : public IRender_step_manager {
       Render_step_empty_data,
       Render_pass_config<
           Render_pass_blend_mode::Opaque,
-          Render_pass_depth_mode::ReadWrite,
+          Render_pass_depth_mode::Read_write,
           Render_pass_stencil_mode::Enabled,
           0xFF,
           0xFF>>
@@ -113,23 +113,23 @@ class Render_step_manager : public IRender_step_manager {
   Render_step<
       Render_step_deferred_data,
       Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Disabled>,
-      Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::ReadWrite>,
+      Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_write>,
       Render_pass_config<Render_pass_blend_mode::Additive, Render_pass_depth_mode::Disabled>>
       _renderStep_entityDeferred;
 
   Render_step<
       Render_step_empty_data,
-      Render_pass_config<Render_pass_blend_mode::Blended_Alpha, Render_pass_depth_mode::ReadWrite>>
+      Render_pass_config<Render_pass_blend_mode::Blended_alpha, Render_pass_depth_mode::Read_write>>
       _renderStep_entityStandard;
 
   Render_step<
       Render_step_empty_data,
-      Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::WriteOnly>>
+      Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Write_only>>
       _renderStep_debugElements;
 
   Render_step<
       Render_step_empty_data,
-      Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::ReadWrite>>
+      Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_write>>
       _renderStep_skybox;
 
   // Broad rendering

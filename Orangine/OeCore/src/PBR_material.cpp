@@ -91,13 +91,13 @@ std::set<std::string> PBR_material::configFlags(const Renderer_features_enabled&
 
     for (const auto mve : meshVertexLayout.vertexLayout()) {
       if (mve.semantic == Vertex_attribute_semantic{Vertex_attribute::Joints, 0}) {
-        if (mve.component == Element_component::Unsigned_Short)
+        if (mve.component == Element_component::Unsigned_short)
           flags.insert(g_flag_skinned_joints_uint16);
-        else if (mve.component == Element_component::Unsigned_Int)
+        else if (mve.component == Element_component::Unsigned_int)
           flags.insert(g_flag_skinned_joints_uint32);
-        else if (mve.component == Element_component::Signed_Short)
+        else if (mve.component == Element_component::Signed_short)
           flags.insert(g_flag_skinned_joints_sint16);
-        else if (mve.component == Element_component::Signed_Int)
+        else if (mve.component == Element_component::Signed_int)
           flags.insert(g_flag_skinned_joints_sint32);
         else
           OE_THROW(std::runtime_error("Material does not support joints component: " +
@@ -186,19 +186,19 @@ PBR_material::vertexInputs(const std::set<std::string>& flags) const
 
   if (requiresTexCoord0()) {
     vertexAttributes.push_back(
-        {{Vertex_attribute::Tex_Coord, 0}, Element_type::Vector2, Element_component::Float});
+        {{Vertex_attribute::Tex_coord, 0}, Element_type::Vector2, Element_component::Float});
   }
 
   if (flags.find(g_flag_skinned) != flags.end()) {
     Element_component jointsComponent;
     if (flags.find(g_flag_skinned_joints_uint16) != flags.end())
-      jointsComponent = Element_component::Unsigned_Short;
+      jointsComponent = Element_component::Unsigned_short;
     else if (flags.find(g_flag_skinned_joints_uint32) != flags.end())
-      jointsComponent = Element_component::Unsigned_Int;
+      jointsComponent = Element_component::Unsigned_int;
     else if (flags.find(g_flag_skinned_joints_sint16) != flags.end())
-      jointsComponent = Element_component::Signed_Short;
+      jointsComponent = Element_component::Signed_short;
     else if (flags.find(g_flag_skinned_joints_sint32) != flags.end())
-      jointsComponent = Element_component::Signed_Int;
+      jointsComponent = Element_component::Signed_int;
     else
       OE_THROW(std::runtime_error("Missing joints component flag"));
 

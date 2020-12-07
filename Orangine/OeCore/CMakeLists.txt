@@ -57,14 +57,11 @@ add_library(${PROJECT_NAME} STATIC
         src/Render_pass_shadow.cpp
         src/Render_pass_skybox.cpp
         src/Render_step_manager.cpp
-        
         src/Renderable_component.cpp
         src/Renderer_data.cpp
-        "src/Renderer_types.cpp"
+        src/Renderer_enums.cpp
         src/Scene.cpp
         src/Scene_graph_manager.cpp
-        
-        
         src/Shadowmap_manager.cpp
         src/Skinned_mesh_component.cpp
         src/Skybox_material.cpp
@@ -79,9 +76,15 @@ add_library(${PROJECT_NAME} STATIC
         src/D3D11/DirectX_utils.h
         src/D3D11/Collision.cpp
         src/D3D11/D3D_entity_render_manager.cpp
-        "src/D3D11/D3D_device_repository.h"
-        "src/D3D11/D3D_device_repository.cpp"
-         "src/D3D11/D3D_renderer_data.h" "include/OeCore/ITexture_manager.h" "src/D3D11/D3D_texture_manager.cpp" "src/D3D11/D3D_texture_manager.h" "src/D3D11/D3D_material_manager.h" "src/D3D11/D3D_material_manager.cpp" "include/OeCore/Environment_volume.h" "src/D3D11/D3D_renderer_data.cpp")
+        src/D3D11/D3D_device_repository.h
+        src/D3D11/D3D_device_repository.cpp
+        src/D3D11/D3D_renderer_data.h
+        src/D3D11/D3D_texture_manager.cpp
+        src/D3D11/D3D_texture_manager.h
+        src/D3D11/D3D_material_manager.h
+        src/D3D11/D3D_material_manager.cpp
+        src/D3D11/D3D_renderer_data.cpp
+        )
 file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 

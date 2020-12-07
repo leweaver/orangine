@@ -31,7 +31,7 @@ std::string g_va_semantic_names[] = {
 
 static_assert(
     array_size(g_va_semantic_names) ==
-    static_cast<uint32_t>(Vertex_attribute::Num_Vertex_Attribute));
+    static_cast<uint32_t>(Vertex_attribute::Num_vertex_attribute));
 
 uint32_t Mesh_data::getVertexCount() const {
   if (vertexBufferAccessors.empty())
@@ -50,12 +50,12 @@ std::string Vertex_attribute_meta::vsInputName(Vertex_attribute_semantic attribu
       return g_normal_str;
     case Vertex_attribute::Tangent:
       return g_tangent_str;
-    case Vertex_attribute::Bi_Tangent:
+    case Vertex_attribute::Bi_tangent:
       return g_bi_tangent_str;
-    case Vertex_attribute::Tex_Coord:
+    case Vertex_attribute::Tex_coord:
       return g_texcoord_str;
 
-    case Vertex_attribute::Num_Vertex_Attribute:
+    case Vertex_attribute::Num_vertex_attribute:
     default:
       return g_invalid_str;
     }
@@ -69,13 +69,13 @@ std::string Vertex_attribute_meta::vsInputName(Vertex_attribute_semantic attribu
 
 size_t Vertex_attribute_meta::numComponents(Vertex_attribute attribute) {
   switch (attribute) {
-  case Vertex_attribute::Tex_Coord:
+  case Vertex_attribute::Tex_coord:
     return 2;
 
   case Vertex_attribute::Position:
   case Vertex_attribute::Color:
   case Vertex_attribute::Normal:
-  case Vertex_attribute::Bi_Tangent:
+  case Vertex_attribute::Bi_tangent:
     return 3;
 
   case Vertex_attribute::Tangent:

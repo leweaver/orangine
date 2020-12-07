@@ -570,7 +570,7 @@ void Render_step_manager::createRenderStepResources(Render_step<TData, TRender_p
   // Blend state
   if constexpr (Render_pass_config_type::blendMode() == Render_pass_blend_mode::Opaque)
     pass.setBlendState(commonStates.Opaque());
-  else if constexpr (Render_pass_config_type::blendMode() == Render_pass_blend_mode::Blended_Alpha)
+  else if constexpr (Render_pass_config_type::blendMode() == Render_pass_blend_mode::Blended_alpha)
     pass.setBlendState(commonStates.AlphaBlend());
   else if constexpr (Render_pass_config_type::blendMode() == Render_pass_blend_mode::Additive)
     pass.setBlendState(commonStates.Additive());
@@ -579,11 +579,11 @@ void Render_step_manager::createRenderStepResources(Render_step<TData, TRender_p
   D3D11_DEPTH_STENCIL_DESC desc = {};
 
   constexpr auto depthReadEnabled =
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::ReadOnly ||
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::ReadWrite;
+      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Read_only ||
+      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Read_write;
   constexpr auto depthWriteEnabled =
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::WriteOnly ||
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::ReadWrite;
+      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Write_only ||
+      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Read_write;
 
   desc.DepthEnable = depthReadEnabled || depthWriteEnabled ? TRUE : FALSE;
   desc.DepthWriteMask =
@@ -739,7 +739,7 @@ void Render_step_manager::renderEntity(
   assert(material != nullptr);
 
   // Check that this render pass supports this materials alpha mode
-  if constexpr (TBlend_mode == Render_pass_blend_mode::Blended_Alpha) {
+  if constexpr (TBlend_mode == Render_pass_blend_mode::Blended_alpha) {
     if (material->getAlphaMode() != Material_alpha_mode::Blend)
       return;
   } else {

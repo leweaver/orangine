@@ -21,7 +21,7 @@ void Animation_controller_component::addAnimation(
       OE_THROW(std::runtime_error("Animation channel must have at least 1 keyframe"));
     }
 
-    if (channel->interpolationType == Animation_interpolation::Cubic_Spline) {
+    if (channel->interpolationType == Animation_interpolation::Cubic_spline) {
       if (channel->keyframeTimes->size() < 2) {
         OE_THROW(
             std::runtime_error("Cubic spline animation channels must have at least 2 keyframes"));

@@ -11,7 +11,7 @@ const std::string g_json_cubeMapTexture = "cube_map_texture";
 
 // Uses blended alpha, to ensure standard rendering pipeline (not deferred)
 Skybox_material::Skybox_material()
-    : Base_type(static_cast<uint8_t>(Material_type_index::Skybox), Material_alpha_mode::Opaque, Material_face_cull_mode::Front_Face)
+    : Base_type(static_cast<uint8_t>(Material_type_index::Skybox), Material_alpha_mode::Opaque, Material_face_cull_mode::Front_face)
 {	
 }
 

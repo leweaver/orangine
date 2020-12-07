@@ -42,7 +42,7 @@ const map<string, Vertex_attribute_semantic> g_gltfAttributeToVertexAttributeMap
     {s_primAttrName_normal, {Vertex_attribute::Normal, 0}},
     {s_primAttrName_tangent, {Vertex_attribute::Tangent, 0}},
     {s_primAttrName_color + "0", {Vertex_attribute::Color, 0}},
-    {s_primAttrName_texCoord + "0", {Vertex_attribute::Tex_Coord, 0}},
+    {s_primAttrName_texCoord + "0", {Vertex_attribute::Tex_coord, 0}},
     {s_primAttrName_joints + "0", {Vertex_attribute::Joints, 0}},
     {s_primAttrName_weights + "0", {Vertex_attribute::Weights, 0}},
 };
@@ -57,7 +57,7 @@ const map<string, Vertex_attribute_semantic> g_gltfMorphAttributeMapping = {
 const map<string, Animation_interpolation> g_animationSamplerInterpolationToTypeMap = {
     {"LINEAR", Animation_interpolation::Linear},
     {"STEP", Animation_interpolation::Step},
-    {"CUBICSPLINE", Animation_interpolation::Cubic_Spline},
+    {"CUBICSPLINE", Animation_interpolation::Cubic_spline},
 };
 
 const map<string, Animation_type> g_animationChannelTargetPathToTypeMap = {
@@ -96,7 +96,7 @@ const std::array<const std::map<int, std::set<int>>*, 4> g_animTypeToAllowedAcce
     &g_anim_morph_allowedAccessorTypes};
 static_assert(
     g_animTypeToAllowedAccessorTypes.size() ==
-    static_cast<unsigned>(Animation_type::Num_Animation_Type));
+    static_cast<unsigned>(Animation_type::Num_animation_type));
 const std::map<int, std::set<int>> g_index_allowedAccessorTypes = {
     {TINYGLTF_TYPE_SCALAR,
      {
@@ -131,11 +131,11 @@ const std::map<int, Element_type> g_gltfType_elementType = {
 };
 const std::map<int, Element_component> g_gltfComponent_elementComponent = {
     //{ TINYGLTF_COMPONENT_TYPE_BYTE, },
-    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, Element_component::Unsigned_Byte},
+    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, Element_component::Unsigned_byte},
     //{ TINYGLTF_COMPONENT_TYPE_SHORT, },
-    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT, Element_component::Unsigned_Short},
+    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT, Element_component::Unsigned_short},
     //{ TINYGLTF_COMPONENT_TYPE_INT, },
-    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT, Element_component::Unsigned_Int},
+    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT, Element_component::Unsigned_int},
     {TINYGLTF_COMPONENT_TYPE_FLOAT, Element_component::Float},
     //{ TINYGLTF_COMPONENT_TYPE_DOUBLE, },
 };
@@ -320,8 +320,8 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(
     // Convert index buffers from 8-bit to 32 bit.
     if (elementType == Element_type::Scalar &&
         expectedBufferViewTarget == TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER &&
-        (elementComponent == Element_component::Unsigned_Byte ||
-         elementComponent == Element_component::Signed_Byte)) {
+        (elementComponent == Element_component::Unsigned_byte ||
+         elementComponent == Element_component::Signed_byte)) {
       // Transform the data to a known format
       const auto convertedIndexAccessor = mesh_utils::create_index_buffer(
           buffer.data,
@@ -1182,7 +1182,7 @@ void create_animation(int animIdx, Loader_data loaderData) {
     }
 
     uint8_t valuesPerKeyFrame = 1;
-    if (interpolationType == Animation_interpolation::Cubic_Spline)
+    if (interpolationType == Animation_interpolation::Cubic_spline)
       valuesPerKeyFrame *= 3;
 
     // For morph animations, need to add a single channel per primitive as the

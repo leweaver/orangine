@@ -1,30 +1,31 @@
 ﻿#pragma once
-#include "Render_pass.h"
-#include "Asset_manager.h"
-#include "Mesh_data.h"
+
+#include <OeCore/Mesh_data.h>
+#include <OeCore/Render_pass.h>
+#include <OeCore/Skybox_material.h>
+
 #include <memory>
-#include "Skybox_material.h"
 
 namespace oe {
-	struct Renderable;
-	class Scene;
+struct Renderable;
+class Scene;
 
-	class Render_pass_skybox : public Render_pass {
-	public:
-		explicit Render_pass_skybox(Scene& scene);
+class Render_pass_skybox : public Render_pass {
+ public:
+  explicit Render_pass_skybox(Scene& scene);
 
-		void render(const Camera_data& cameraData) override;
-		
-		void createDeviceDependentResources() override;
-		void destroyDeviceDependentResources() override;
+  void render(const Camera_data& cameraData) override;
 
-	private:
-		Scene& _scene;
+  void createDeviceDependentResources() override;
+  void destroyDeviceDependentResources() override;
 
-		std::shared_ptr<Texture> _cubemap = nullptr;
-		std::shared_ptr<Mesh_data> _meshData = nullptr;
-		std::shared_ptr<Skybox_material> _material = nullptr;
+ private:
+  Scene& _scene;
 
-		std::unique_ptr<Renderable> _renderable = nullptr;
-	};
-}
+  std::shared_ptr<Texture> _cubemap = nullptr;
+  std::shared_ptr<Mesh_data> _meshData = nullptr;
+  std::shared_ptr<Skybox_material> _material = nullptr;
+
+  std::unique_ptr<Renderable> _renderable = nullptr;
+};
+} // namespace oe

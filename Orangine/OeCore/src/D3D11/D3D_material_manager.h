@@ -55,7 +55,7 @@ class D3D_material_manager : public Material_manager {
  public:
   D3D_material_manager(
       Scene& scene,
-      std::shared_ptr<internal::D3D_device_repository> deviceRepository);
+      std::shared_ptr<D3D_device_repository> deviceRepository);
   ~D3D_material_manager() = default;
 
   D3D_material_manager(const D3D_material_manager& other) = delete;
@@ -90,7 +90,7 @@ class D3D_material_manager : public Material_manager {
       const Renderer_data& rendererData,
       const SSE::Matrix4& worldMatrix,
       const Renderer_animation_data& rendererAnimationData,
-      const Render_pass::Camera_data& camera) override;
+      const Camera_data& camera) override;
   void unbind() override;
 
   static const D3D_material_context& verifyAsD3dMaterialContext(
@@ -155,7 +155,7 @@ class D3D_material_manager : public Material_manager {
   std::array<D3D11_FILTER_TYPE, (int)Sampler_filter_type::Num_sampler_filter_type>
       _textureMagFilterMagLUT;
 
-  std::shared_ptr<internal::D3D_device_repository> _deviceRepository;
+  std::shared_ptr<D3D_device_repository> _deviceRepository;
   std::vector<uint8_t> _bufferTemp;
   std::vector<std::shared_ptr<D3D_material_context>> _createdMaterialContexts;
 };

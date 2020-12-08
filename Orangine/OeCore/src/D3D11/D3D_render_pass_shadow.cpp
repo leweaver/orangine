@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 
-#include "OeCore/Render_pass_shadow.h"
+#include "D3D_render_pass_shadow.h"
+
 #include "OeCore/Entity.h"
 #include "OeCore/Entity_filter.h"
 #include "OeCore/IShadowmap_manager.h"
@@ -10,15 +11,15 @@
 #include "OeCore/Renderable_component.h"
 #include "OeCore/Scene.h"
 
-#include "D3D11/D3D_device_repository.h"
-#include "D3D11/D3D_texture_manager.h"
+#include "D3D_device_repository.h"
+#include "D3D_texture_manager.h"
 
 using namespace DirectX;
 using namespace oe;
 
 Render_pass_shadow::Render_pass_shadow(
     Scene& scene,
-    std::shared_ptr<internal::D3D_device_repository> device_repository,
+    std::shared_ptr<D3D_device_repository> device_repository,
     size_t maxRenderTargetViews)
     : _scene(scene), _deviceRepository(device_repository) {
   _renderTargetViews.resize(maxRenderTargetViews, nullptr);

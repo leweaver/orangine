@@ -5,7 +5,7 @@
 #include <OeCore/DeviceResources.h>
 #include <OeCore/IDevice_repository.h>
 
-namespace oe::internal {
+namespace oe {
 class D3D_device_repository : public IDevice_repository {
  public:
   D3D_device_repository(DX::DeviceResources& deviceResources);

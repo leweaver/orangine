@@ -4,8 +4,7 @@
 
 #include "D3D_device_repository.h"
 
-#include <d3d11.h>
-#include <set>
+#include "D3D_directx11.h"
 #include <wrl/client.h>
 
 namespace oe {
@@ -77,7 +76,7 @@ class D3D_texture_manager : public ITexture_manager {
  public:
   explicit D3D_texture_manager(
       Scene& scene,
-      std::shared_ptr<internal::D3D_device_repository> deviceRepository)
+      std::shared_ptr<D3D_device_repository> deviceRepository)
       : ITexture_manager(scene), _deviceRepository(deviceRepository) {}
 
   // Manager_base implementation
@@ -125,6 +124,6 @@ class D3D_texture_manager : public ITexture_manager {
   static std::string _name;
 
   std::vector<std::shared_ptr<D3D_texture>> _createdTextures;
-  std::shared_ptr<internal::D3D_device_repository> _deviceRepository;
+  std::shared_ptr<D3D_device_repository> _deviceRepository;
 };
 } // namespace oe

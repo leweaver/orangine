@@ -1,27 +1,14 @@
 ﻿#pragma once
 
 #include "Texture.h"
-
-#include <vectormath/vectormath.hpp>
+#include "Renderer_types.h"
 
 #include <d3d11.h>
 #include <wrl/client.h>
 
 namespace oe {
-class Render_target_view_texture;
-
 class Render_pass {
  public:
-  struct Camera_data {
-    SSE::Matrix4 viewMatrix;
-    SSE::Matrix4 projectionMatrix;
-    float fov;
-    float aspectRatio;
-    bool enablePixelShader = true;
-
-    static const Camera_data IDENTITY;
-  };
-
   Render_pass() = default;
   virtual ~Render_pass() = default;
   Render_pass(const Render_pass&) = default;

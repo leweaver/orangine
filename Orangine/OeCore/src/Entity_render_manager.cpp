@@ -115,7 +115,7 @@ bool addLightToRenderLightData(
 }
 
 BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& cameraComponent) {
-  const auto viewport = _scene.manager<IRender_step_manager>().screenViewport();
+  const auto viewport = _scene.manager<IRender_step_manager>().getScreenViewport();
   const auto aspectRatio = viewport.width / viewport.height;
 
   const auto projMatrix = SSE::Matrix4::perspective(
@@ -194,7 +194,7 @@ void Entity_render_manager::createMissingVertexAttributes(
 
 void Entity_render_manager::renderEntity(
     Renderable_component& renderableComponent,
-    const Render_pass::Camera_data& cameraData,
+    const Camera_data& cameraData,
     const Light_provider::Callback_type& lightDataProvider,
     const Render_pass_blend_mode blendMode) {
   if (!renderableComponent.visible())
@@ -348,7 +348,7 @@ void Entity_render_manager::renderRenderable(
     Renderable& renderable,
     const SSE::Matrix4& worldMatrix,
     float radius,
-    const Render_pass::Camera_data& cameraData,
+    const Camera_data& cameraData,
     const Light_provider::Callback_type& lightDataProvider,
     Render_pass_blend_mode blendMode,
     bool wireFrame) {

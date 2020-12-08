@@ -208,7 +208,7 @@ void Dev_tools_manager::setGuiDebugText(const std::string& text) { _guiDebugText
 
 void Dev_tools_manager::clearDebugShapes() { _debugShapes.clear(); }
 
-void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& cameraData) {
+void Dev_tools_manager::renderDebugShapes(const Camera_data& cameraData) {
   auto& entityRenderManager = _scene.manager<IEntity_render_manager>();
   for (auto& debugShape : _debugShapes) {
     const auto& transform = std::get<SSE::Matrix4>(debugShape);

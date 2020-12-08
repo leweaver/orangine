@@ -8,7 +8,7 @@
 using namespace oe;
 
 // Static initialization order means we can't use Matrix::Identity here.
-const Render_pass::Camera_data Render_pass::Camera_data::IDENTITY = {
+const Camera_data Camera_data::IDENTITY = {
     SSE::Matrix4::identity(),
     SSE::Matrix4::identity(),
 };

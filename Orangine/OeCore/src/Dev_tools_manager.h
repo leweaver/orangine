@@ -40,7 +40,7 @@ class Dev_tools_manager : public IDev_tools_manager {
   void addDebugAxisWidget(const SSE::Matrix4& worldTransform) override;
   void setGuiDebugText(const std::string& text) override;
   void clearDebugShapes() override;
-  void renderDebugShapes(const Render_pass::Camera_data& cameraData) override;
+  void renderDebugShapes(const Camera_data& cameraData) override;
   void renderImGui() override;
   void setVectorLog(VectorLog* vectorLog) override { _vectorLog = vectorLog; }
 

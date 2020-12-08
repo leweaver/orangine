@@ -41,14 +41,14 @@ class Entity_render_manager : public IEntity_render_manager {
       Renderable& renderable,
       const SSE::Matrix4& worldMatrix,
       float radius,
-      const Render_pass::Camera_data& cameraData,
+      const Camera_data& cameraData,
       const Light_provider::Callback_type& lightDataProvider,
       Render_pass_blend_mode blendMode,
       bool wireFrame) override;
 
   void renderEntity(
       Renderable_component& renderable,
-      const Render_pass::Camera_data& cameraData,
+      const Camera_data& cameraData,
       const Light_provider::Callback_type& lightDataProvider,
       Render_pass_blend_mode blendMode) override;
 
@@ -64,7 +64,7 @@ class Entity_render_manager : public IEntity_render_manager {
       const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes);
 
   virtual void drawRendererData(
-      const Render_pass::Camera_data& cameraData,
+      const Camera_data& cameraData,
       const SSE::Matrix4& worldTransform,
       Renderer_data& rendererData,
       Render_pass_blend_mode blendMode,

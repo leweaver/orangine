@@ -9,7 +9,6 @@
 
 using namespace DirectX;
 using namespace oe;
-using namespace internal;
 
 D3D_device_repository::D3D_device_repository(DX::DeviceResources& deviceResources)
     : _deviceResources(deviceResources), _commonStates(nullptr), _window(nullptr) {}

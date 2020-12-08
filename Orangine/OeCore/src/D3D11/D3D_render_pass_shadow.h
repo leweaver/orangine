@@ -1,7 +1,6 @@
 ﻿#pragma once
 
-#include "Render_light_data.h"
-#include "Render_pass.h"
+#include "OeCore/Render_pass.h"
 
 #include <memory>
 #include <vector>
@@ -10,16 +9,13 @@ namespace oe {
 
 class Entity_filter;
 class Scene;
-
-namespace internal {
 class D3D_device_repository;
-}
 
 class Render_pass_shadow : public Render_pass {
  public:
   Render_pass_shadow(
       Scene& scene,
-      std::shared_ptr<internal::D3D_device_repository> device_repository,
+      std::shared_ptr<D3D_device_repository> device_repository,
       size_t maxRenderTargetViews);
 
   void render(const Camera_data& cameraData) override;
@@ -31,6 +27,6 @@ class Render_pass_shadow : public Render_pass {
   std::shared_ptr<Entity_filter> _lightEntities;
 
   std::vector<ID3D11RenderTargetView*> _renderTargetViews;
-  std::shared_ptr<oe::internal::D3D_device_repository> _deviceRepository;
+  std::shared_ptr<oe::D3D_device_repository> _deviceRepository;
 };
 } // namespace oe

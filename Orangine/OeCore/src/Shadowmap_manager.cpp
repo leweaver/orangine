@@ -1,19 +1,17 @@
 ﻿#include "pch.h"
 
-#include "OeCore/Scene.h"
-#include "OeCore/Shadow_map_texture_pool.h"
 #include "Shadowmap_manager.h"
 
+#include "OeCore/Scene.h"
+#include "OeCore/Shadow_map_texture_pool.h"
+
 using namespace oe;
-using namespace internal;
 
 std::string Shadowmap_manager::_name = "Shadowmap_manager";
 
 template <>
-IShadowmap_manager* oe::create_manager(
-    Scene& scene,
-    std::shared_ptr<D3D_device_repository>& deviceRepository) {
-  return new Shadowmap_manager(scene, deviceRepository);
+IShadowmap_manager* oe::create_manager(Scene& scene) {
+  return new Shadowmap_manager(scene);
 }
 
 const std::string& Shadowmap_manager::name() const { return _name; }

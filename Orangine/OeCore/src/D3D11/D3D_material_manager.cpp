@@ -29,7 +29,7 @@ const size_t g_d3d_compiled_material_sentinel = 0xFFA500;
 template <>
 IMaterial_manager* oe::create_manager(
     Scene& scene,
-    std::shared_ptr<internal::D3D_device_repository>& deviceRepository) {
+    std::shared_ptr<D3D_device_repository>& deviceRepository) {
   return new D3D_material_manager(scene, deviceRepository);
 }
 
@@ -72,7 +72,7 @@ void D3D_material_context::reset() {
 
 D3D_material_manager::D3D_material_manager(
     Scene& scene,
-    std::shared_ptr<internal::D3D_device_repository> deviceRepository)
+    std::shared_ptr<D3D_device_repository> deviceRepository)
     : Material_manager(scene), _materialConstants({}), _deviceRepository(deviceRepository) {
 
   _textureAddressModeLUT = {
@@ -565,7 +565,7 @@ void D3D_material_manager::render(
     const Renderer_data& rendererData,
     const SSE::Matrix4& worldMatrix,
     const Renderer_animation_data& rendererAnimationData,
-    const Render_pass::Camera_data& camera) {
+    const Camera_data& camera) {
   assert(getBoundMaterial() != nullptr);
   const auto& boundMaterial = *getBoundMaterial();
 

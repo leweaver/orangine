@@ -14,7 +14,6 @@ add_library(${PROJECT_NAME} STATIC
         src/User_interface_manager.h
         src/Shadowmap_manager.h
         src/Scene_graph_manager.h
-        src/Render_step_manager.h
         src/Material_manager.h
         src/Entity_render_manager.h
         src/Dev_tools_manager.h
@@ -54,7 +53,7 @@ add_library(${PROJECT_NAME} STATIC
         src/PBR_material.cpp
         src/Primitive_mesh_data_factory.cpp
         src/Render_pass.cpp
-        src/Render_pass_shadow.cpp
+        "src/D3D11/D3D_render_pass_shadow.cpp"
         src/Render_pass_skybox.cpp
         src/Render_step_manager.cpp
         src/Renderable_component.cpp
@@ -84,7 +83,8 @@ add_library(${PROJECT_NAME} STATIC
         src/D3D11/D3D_material_manager.h
         src/D3D11/D3D_material_manager.cpp
         src/D3D11/D3D_renderer_data.cpp
-        )
+        "src/D3D11/D3D_render_step_manager.cpp" 
+        "src/D3D11/D3D_render_step_manager.h")
 file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 

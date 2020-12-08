@@ -101,4 +101,14 @@ struct Float4 {
   float x, y, z, w;
 };
 
+struct Camera_data {
+  SSE::Matrix4 viewMatrix;
+  SSE::Matrix4 projectionMatrix;
+  float fov;
+  float aspectRatio;
+  bool enablePixelShader = true;
+
+  static const Camera_data IDENTITY;
+};
+
 } // namespace oe

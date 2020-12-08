@@ -1,20 +1,19 @@
 ﻿#pragma once
 
+#include <OeCore/Entity_sorter.h>
 #include <OeCore/IRender_step_manager.h>
 #include <OeCore/Light_provider.h>
 #include <OeCore/Render_pass.h>
 #include <OeCore/Render_pass_config.h>
 #include <OeCore/Renderable.h>
 
-#include "D3D11/D3D_device_repository.h"
-
 #include <memory>
 
-namespace oe::internal {
+namespace oe {
+class Color;
+
 class Render_step_manager : public IRender_step_manager {
  public:
-  Render_step_manager(Scene& scene, std::shared_ptr<D3D_device_repository> device_repository);
-
   // Manager_base implementations
   void initialize() override;
   void shutdown() override;
@@ -30,46 +29,30 @@ class Render_step_manager : public IRender_step_manager {
 
   // IRender_step_manager implementation
   void createRenderSteps() override;
-  Render_pass::Camera_data createCameraData(Camera_component& component) const override;
-  Viewport screenViewport() const override;
+  Camera_data createCameraData(Camera_component& component) const override;
   void render(std::shared_ptr<Entity> cameraEntity) override;
 
- private:
-  Render_pass::Camera_data createCameraData(
+  static constexpr size_t maxRenderTargetViews() { return 3; }
+
+ protected:
+  Render_step_manager(Scene& scene);
+
+  // pure virtual method interface
+  virtual void clearRenderTargetView(const Color& color) = 0;
+  virtual void clearDepthStencil(float depth = 1.0f, uint8_t stencil = 0) = 0;
+  virtual std::unique_ptr<Render_pass> createShadowMapRenderPass() = 0;
+  virtual void beginRenderNamedEvent(const wchar_t* name) = 0;
+  virtual void endRenderNamedEvent() = 0;
+  virtual void createRenderStepResources() = 0;
+  virtual void destroyRenderStepResources() = 0;
+  virtual void renderSteps(const Camera_data& cameraData) = 0;
+
+ protected:
+  Camera_data createCameraData(
       const SSE::Matrix4& worldTransform,
       float fov,
       float nearPlane,
       float farPlane) const;
-
-  DX::DeviceResources& deviceResources() const;
-  void clearDepthStencil(float depth = 1.0f, uint8_t stencil = 0) const;
-
-  template <int TRender_pass_idx = 0, class TData, class... TRender_passes>
-  void createRenderStepResources(Render_step<TData, TRender_passes...>& step);
-
-  template <int TRender_pass_idx = 0, class TData, class... TRender_passes>
-  void destroyRenderStepResources(Render_step<TData, TRender_passes...>& step);
-
-  template <int TRender_pass_idx = 0, class TData, class... TRender_passes>
-  void renderStep(
-      Render_step<TData, TRender_passes...>& step,
-      const Render_pass::Camera_data& cameraData);
-
-  template <
-      Render_pass_blend_mode TBlend_mode,
-      Render_pass_depth_mode TDepth_mode,
-      Render_pass_stencil_mode TStencil_mode,
-      uint32_t TStencil_read_mask,
-      uint32_t TStencil_write_mask>
-  void renderPass(
-      Render_pass_config<
-          TBlend_mode,
-          TDepth_mode,
-          TStencil_mode,
-          TStencil_read_mask,
-          TStencil_write_mask>& renderPassInfo,
-      Render_pass& renderPass,
-      const Render_pass::Camera_data& cameraData);
 
   template <
       Render_pass_blend_mode TBlend_mode,
@@ -79,7 +62,7 @@ class Render_step_manager : public IRender_step_manager {
       uint32_t TStencil_write_mask>
   void renderEntity(
       Entity* entity,
-      const Render_pass::Camera_data& cameraData,
+      const Camera_data& cameraData,
       Light_provider::Callback_type& lightProvider,
       const Render_pass_config<
           TBlend_mode,
@@ -88,7 +71,7 @@ class Render_step_manager : public IRender_step_manager {
           TStencil_read_mask,
           TStencil_write_mask>& renderPassInfo);
 
-  void renderLights(const Render_pass::Camera_data& cameraData, Render_pass_blend_mode blendMode);
+  void renderLights(const Camera_data& cameraData, Render_pass_blend_mode blendMode);
 
   // RenderStep definitions
   struct Render_step_deferred_data {
@@ -135,7 +118,6 @@ class Render_step_manager : public IRender_step_manager {
   // Broad rendering
   std::unique_ptr<Entity_alpha_sorter> _alphaSorter;
   std::unique_ptr<Entity_cull_sorter> _cullSorter;
-  std::shared_ptr<D3D_device_repository> _deviceRepository;
 
   // Entities
   std::shared_ptr<Entity_filter> _renderableEntities;
@@ -149,4 +131,4 @@ class Render_step_manager : public IRender_step_manager {
   std::array<double, 5> _renderTimes = {};
   uint32_t _renderCount = 0;
 };
-} // namespace oe::internal
+} // namespace oe

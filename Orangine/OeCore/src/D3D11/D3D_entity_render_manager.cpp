@@ -69,7 +69,7 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
   }
 
   void drawRendererData(
-      const Render_pass::Camera_data& cameraData,
+      const Camera_data& cameraData,
       const SSE::Matrix4& worldTransform,
       Renderer_data& rendererData,
       Render_pass_blend_mode blendMode,
@@ -325,6 +325,6 @@ template <>
 oe::IEntity_render_manager* oe::create_manager(
     Scene& scene,
     std::shared_ptr<IMaterial_repository>& materialRepository,
-    std::shared_ptr<oe::internal::D3D_device_repository>& deviceRepository) {
+    std::shared_ptr<oe::D3D_device_repository>& deviceRepository) {
   return new oe::internal::D3D_entity_render_manager(scene, materialRepository, deviceRepository);
 }

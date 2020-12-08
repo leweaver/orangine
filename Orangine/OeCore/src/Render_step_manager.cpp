@@ -1,6 +1,6 @@
 ﻿#include "pch.h"
 
-#include "Render_step_manager.h"
+#include <OeCore/Render_step_manager.h>
 
 #include <OeCore/Camera_component.h>
 #include <OeCore/Clear_gbuffer_material.h>
@@ -11,42 +11,21 @@
 #include <OeCore/IEntity_render_manager.h>
 #include <OeCore/Light_component.h>
 #include <OeCore/Math_constants.h>
-#include <OeCore/Perf_timer.h>
 #include <OeCore/Render_pass_generic.h>
-#include <OeCore/Render_pass_shadow.h>
 #include <OeCore/Render_pass_skybox.h>
-#include <OeCore/Renderable.h>
 #include <OeCore/Scene.h>
 
-#include "D3D11/D3D_device_repository.h"
-
-#include <CommonStates.h>
-
-using namespace DirectX;
 using namespace oe;
-using namespace internal;
 
 std::string Render_step_manager::_name = "Render_step_manager";
 
-template <>
-IRender_step_manager* oe::create_manager(
-    Scene& scene,
-    std::shared_ptr<D3D_device_repository>& device_repository) {
-  return new Render_step_manager(scene, device_repository);
-}
-
-constexpr size_t g_max_render_target_views = 3;
-
-Render_step_manager::Render_step_manager(
-    Scene& scene,
-    std::shared_ptr<D3D_device_repository> deviceRepository)
+Render_step_manager::Render_step_manager(Scene& scene)
     : IRender_step_manager(scene)
     , _renderStep_shadowMap({})
     , _renderStep_entityDeferred({})
     , _renderStep_entityStandard({})
     , _renderStep_debugElements({})
     , _renderStep_skybox({})
-    , _deviceRepository(deviceRepository)
     , _fatalError(false)
     , _enableDeferredRendering(true) {
   _simpleLightProvider =
@@ -58,10 +37,6 @@ Render_step_manager::Render_step_manager(
           lights.push_back(iter->get());
         }
       };
-}
-
-inline DX::DeviceResources& Render_step_manager::deviceResources() const {
-  return _deviceRepository->deviceResources();
 }
 
 void Render_step_manager::initialize() {
@@ -95,15 +70,6 @@ void Render_step_manager::shutdown() {
 
   _renderStep_entityDeferred.data.reset();
 
-  auto context = deviceResources().GetD3DDeviceContext();
-  if (context) {
-    std::array<ID3D11RenderTargetView*, g_max_render_target_views> renderTargetViews = {nullptr,
-                                                                                        nullptr,
-                                                                                        nullptr};
-    context->OMSetRenderTargets(
-        static_cast<UINT>(renderTargetViews.size()), renderTargetViews.data(), nullptr);
-  }
-
   _renderStep_shadowMap.renderPasses[0].reset();
   _renderStep_entityDeferred.renderPasses[0].reset();
   _renderStep_entityDeferred.renderPasses[1].reset();
@@ -120,8 +86,7 @@ const std::string& Render_step_manager::name() const { return _name; }
 
 void Render_step_manager::createRenderSteps() {
   // Shadow maps
-  _renderStep_shadowMap.renderPasses[0] =
-      std::make_unique<Render_pass_shadow>(_scene, _deviceRepository, g_max_render_target_views);
+  _renderStep_shadowMap.renderPasses[0] = createShadowMapRenderPass();
   _renderStep_shadowMap.renderPasses[0]->setStencilRef(1);
 
   // Deferred Lighting
@@ -132,8 +97,7 @@ void Render_step_manager::createRenderSteps() {
         auto& entityRenderManager = _scene.manager<IEntity_render_manager>();
 
         // Clear the rendered textures (ignoring depth)
-        auto& d3DDeviceResources = deviceResources();
-        d3DDeviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step0");
+        beginRenderNamedEvent(L"renderPass_EntityDeferred_Step0");
         auto& quad = _renderStep_entityDeferred.data->pass0ScreenSpaceQuad;
         if (!quad.rendererData.expired() && quad.material) {
           try {
@@ -141,7 +105,7 @@ void Render_step_manager::createRenderSteps() {
                 quad,
                 SSE::Matrix4::identity(),
                 0.0f,
-                Render_pass::Camera_data::IDENTITY,
+                Camera_data::IDENTITY,
                 Light_provider::no_light_provider,
                 Render_pass_config_type::blendMode(),
                 false);
@@ -150,7 +114,7 @@ void Render_step_manager::createRenderSteps() {
             LOG(WARNING) << "Failed to clear G Buffer.\n" << e.what();
           }
         }
-        d3DDeviceResources.PIXEndEvent();
+        endRenderNamedEvent();
       });
 
   _renderStep_entityDeferred.renderPasses[1] =
@@ -158,8 +122,7 @@ void Render_step_manager::createRenderSteps() {
         auto renderPassConfig = std::get<1>(_renderStep_entityDeferred.renderPassConfigs);
 
         if (_enableDeferredRendering) {
-          auto& d3DDeviceResources = deviceResources();
-          d3DDeviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step1");
+          beginRenderNamedEvent(L"renderPass_EntityDeferred_Step1");
 
           _cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
             for (const auto& entry : entities) {
@@ -170,7 +133,7 @@ void Render_step_manager::createRenderSteps() {
             }
           });
 
-          d3DDeviceResources.PIXEndEvent();
+          endRenderNamedEvent();
         }
       });
 
@@ -180,20 +143,15 @@ void Render_step_manager::createRenderSteps() {
             std::tuple_element<2, decltype(_renderStep_entityDeferred.renderPassConfigs)>::type;
         const auto blendMode = Render_pass_config_type::blendMode();
 
-        auto& d3DDeviceResources = deviceResources();
-        d3DDeviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step2_setup");
-
-        // TODO: Clear the render target view in a more generic way.
-        d3DDeviceResources.GetD3DDeviceContext()->ClearRenderTargetView(
-            d3DDeviceResources.GetRenderTargetView(), DirectX::Colors::Black);
-
-        d3DDeviceResources.PIXEndEvent();
+        beginRenderNamedEvent(L"renderPass_EntityDeferred_Step2_setup");
+        clearRenderTargetView(oe::Colors::Black);
+        endRenderNamedEvent();
 
         if (!_fatalError) {
           if (_enableDeferredRendering) {
-            d3DDeviceResources.PIXBeginEvent(L"renderPass_EntityDeferred_Step2_draw");
+            beginRenderNamedEvent(L"renderPass_EntityDeferred_Step2_draw");
             renderLights(cameraData, blendMode);
-            d3DDeviceResources.PIXEndEvent();
+            endRenderNamedEvent();
           }
         }
       });
@@ -205,9 +163,8 @@ void Render_step_manager::createRenderSteps() {
 
         _alphaSorter->waitThen([this, &renderPassConfig, &cameraData](
                                    const std::vector<Entity_alpha_sorter_entry>& entries) {
-          auto& d3DDeviceResources = deviceResources();
           if (!_fatalError) {
-            d3DDeviceResources.PIXBeginEvent(L"renderPass_EntityStandard_draw");
+            beginRenderNamedEvent(L"renderPass_EntityStandard_draw");
 
             _cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
               for (const auto& entry : entities) {
@@ -217,7 +174,7 @@ void Render_step_manager::createRenderSteps() {
               }
             });
 
-            d3DDeviceResources.PIXEndEvent();
+            endRenderNamedEvent();
           }
         });
       });
@@ -254,11 +211,7 @@ void Render_step_manager::createDeviceDependentResources() {
   _renderStep_debugElements.data =
       std::make_shared<decltype(_renderStep_debugElements.data)::element_type>();
 
-  createRenderStepResources(_renderStep_shadowMap);
-  createRenderStepResources(_renderStep_entityDeferred);
-  createRenderStepResources(_renderStep_entityStandard);
-  createRenderStepResources(_renderStep_debugElements);
-  createRenderStepResources(_renderStep_skybox);
+  createRenderStepResources();
 }
 
 void Render_step_manager::createWindowSizeDependentResources(
@@ -270,7 +223,7 @@ void Render_step_manager::createWindowSizeDependentResources(
   // Step Deferred, Pass 0
   {
     std::vector<std::shared_ptr<Texture>> renderTargets0;
-    renderTargets0.resize(g_max_render_target_views);
+    renderTargets0.resize(maxRenderTargetViews());
     for (auto& renderTargetViewTexture : renderTargets0) {
       const auto renderTargetTexture = textureManager.createRenderTargetTexture(width, height);
       textureManager.load(*renderTargetTexture);
@@ -305,7 +258,7 @@ void Render_step_manager::createWindowSizeDependentResources(
   // Step Deferred, Pass 2
   {
     std::vector<std::shared_ptr<Texture>> renderTargets;
-    renderTargets.resize(g_max_render_target_views, nullptr);
+    renderTargets.resize(maxRenderTargetViews(), nullptr);
 
     renderTargets[0] = renderTargetViewTexture;
     std::get<2>(_renderStep_entityDeferred.renderPasses)
@@ -315,7 +268,7 @@ void Render_step_manager::createWindowSizeDependentResources(
   // Step Standard, Pass 0
   {
     std::vector<std::shared_ptr<Texture>> renderTargets;
-    renderTargets.resize(g_max_render_target_views, nullptr);
+    renderTargets.resize(maxRenderTargetViews(), nullptr);
 
     renderTargets[0] = renderTargetViewTexture;
     std::get<0>(_renderStep_entityStandard.renderPasses)
@@ -339,11 +292,7 @@ void Render_step_manager::destroyDeviceDependentResources() {
     }
   }
 
-  destroyRenderStepResources(_renderStep_shadowMap);
-  destroyRenderStepResources(_renderStep_entityDeferred);
-  destroyRenderStepResources(_renderStep_entityStandard);
-  destroyRenderStepResources(_renderStep_debugElements);
-  destroyRenderStepResources(_renderStep_skybox);
+  destroyRenderStepResources();
 
   _renderStep_shadowMap.data.reset();
   _renderStep_entityDeferred.data.reset();
@@ -370,16 +319,9 @@ void Render_step_manager::destroyWindowSizeDependentResources() {
   }
 }
 
-void Render_step_manager::clearDepthStencil(float depth, uint8_t stencil) const {
-  auto& d3DDeviceResources = deviceResources();
-  const auto depthStencil = d3DDeviceResources.GetDepthStencilView();
-  d3DDeviceResources.GetD3DDeviceContext()->ClearDepthStencilView(
-      depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, depth, stencil);
-}
-
 void Render_step_manager::render(std::shared_ptr<Entity> cameraEntity) {
   // Create a camera matrix
-  Render_pass::Camera_data cameraData;
+  Camera_data cameraData;
   SSE::Vector3 cameraPos = {};
   if (cameraEntity) {
     const auto cameraComponent = cameraEntity->getFirstComponentOfType<Camera_component>();
@@ -415,33 +357,12 @@ void Render_step_manager::render(std::shared_ptr<Entity> cameraEntity) {
 
         clearDepthStencil();
 
-        auto timer = Perf_timer::start();
-        renderStep(_renderStep_shadowMap, cameraData);
-        timer.stop();
-        _renderTimes[0] += timer.elapsedSeconds();
-
-        timer.restart();
-        renderStep(_renderStep_entityDeferred, cameraData);
-        timer.stop();
-        _renderTimes[1] += timer.elapsedSeconds();
-
-        timer.restart();
-        renderStep(_renderStep_entityStandard, cameraData);
-        timer.stop();
-        _renderTimes[2] += timer.elapsedSeconds();
-
-        timer.restart();
-        renderStep(_renderStep_debugElements, cameraData);
-        timer.stop();
-        _renderTimes[3] += timer.elapsedSeconds();
-
-        timer.restart();
-        renderStep(_renderStep_skybox, cameraData);
-        timer.stop();
-        _renderTimes[4] += timer.elapsedSeconds();
+        renderSteps(cameraData);
       });
 
   ++_renderCount;
+
+  // Erase the first frame render timings as they will be massively spiked.
   if (_renderCount == 1) {
     std::fill(_renderTimes.begin(), _renderTimes.end(), 0.0);
   }
@@ -449,7 +370,7 @@ void Render_step_manager::render(std::shared_ptr<Entity> cameraEntity) {
 
 // TODO: Move this to a Render_pass_deferred class?
 void Render_step_manager::renderLights(
-    const Render_pass::Camera_data& cameraData,
+    const Camera_data& cameraData,
     Render_pass_blend_mode blendMode) {
   try {
     auto& quad = _renderStep_entityDeferred.data->pass2ScreenSpaceQuad;
@@ -514,7 +435,7 @@ void Render_step_manager::renderLights(
   }
 }
 
-Render_pass::Camera_data Render_step_manager::createCameraData(Camera_component& component) const {
+Camera_data Render_step_manager::createCameraData(Camera_component& component) const {
   return createCameraData(
       component.entity().worldTransform(),
       component.fov(),
@@ -522,13 +443,13 @@ Render_pass::Camera_data Render_step_manager::createCameraData(Camera_component&
       component.farPlane());
 }
 
-Render_pass::Camera_data Render_step_manager::createCameraData(
+Camera_data Render_step_manager::createCameraData(
     const SSE::Matrix4& worldTransform,
     float fov,
     float nearPlane,
     float farPlane) const {
-  const auto viewport = deviceResources().GetScreenViewport();
-  const auto aspectRatio = viewport.Width / viewport.Height;
+  const auto viewport = getScreenViewport();
+  const auto aspectRatio = viewport.width / viewport.height;
 
   // Construct camera axis vectors, to create a view matrix using lookAt.
   const auto pos = SSE::Point3(worldTransform.getTranslation());
@@ -549,172 +470,6 @@ Render_pass::Camera_data Render_step_manager::createCameraData(
           aspectRatio};
 }
 
-Viewport Render_step_manager::screenViewport() const {
-  const auto viewport = deviceResources().GetScreenViewport();
-  return {viewport.TopLeftX,
-          viewport.TopLeftY,
-          viewport.Width,
-          viewport.Height,
-          viewport.MinDepth,
-          viewport.MaxDepth};
-}
-
-template <int TRender_pass_idx, class TData, class... TRender_passes>
-void Render_step_manager::createRenderStepResources(Render_step<TData, TRender_passes...>& step) {
-  using Render_pass_config_type =
-      typename std::tuple_element<TRender_pass_idx, decltype(step.renderPassConfigs)>::type;
-  auto& pass = *std::get<TRender_pass_idx>(step.renderPasses);
-
-  auto& commonStates = _deviceRepository->commonStates();
-
-  // Blend state
-  if constexpr (Render_pass_config_type::blendMode() == Render_pass_blend_mode::Opaque)
-    pass.setBlendState(commonStates.Opaque());
-  else if constexpr (Render_pass_config_type::blendMode() == Render_pass_blend_mode::Blended_alpha)
-    pass.setBlendState(commonStates.AlphaBlend());
-  else if constexpr (Render_pass_config_type::blendMode() == Render_pass_blend_mode::Additive)
-    pass.setBlendState(commonStates.Additive());
-
-  // Depth/Stencil
-  D3D11_DEPTH_STENCIL_DESC desc = {};
-
-  constexpr auto depthReadEnabled =
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Read_only ||
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Read_write;
-  constexpr auto depthWriteEnabled =
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Write_only ||
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Read_write;
-
-  desc.DepthEnable = depthReadEnabled || depthWriteEnabled ? TRUE : FALSE;
-  desc.DepthWriteMask =
-      depthWriteEnabled ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-  desc.DepthFunc = depthReadEnabled ? D3D11_COMPARISON_LESS_EQUAL : D3D11_COMPARISON_ALWAYS;
-
-  if constexpr (Render_pass_stencil_mode::Disabled == Render_pass_config_type::stencilMode()) {
-    desc.StencilEnable = FALSE;
-    desc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
-    desc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
-  } else {
-    desc.StencilEnable = TRUE;
-    desc.StencilReadMask = Render_pass_config_type::stencilReadMask();
-    desc.StencilWriteMask = Render_pass_config_type::stencilWriteMask();
-    desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
-    desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_REPLACE;
-  }
-
-  desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-  desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-
-  desc.BackFace = desc.FrontFace;
-
-  const auto device = _deviceRepository->deviceResources().GetD3DDevice();
-  ID3D11DepthStencilState* pResult;
-  ThrowIfFailed(device->CreateDepthStencilState(&desc, &pResult));
-
-  if (pResult) {
-    if constexpr (Render_pass_stencil_mode::Disabled == Render_pass_config_type::stencilMode()) {
-      SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilEnabled");
-    } else {
-      SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilDisabled");
-    }
-    pass.setDepthStencilState(pResult);
-    pResult->Release();
-
-    pass.createDeviceDependentResources();
-  }
-
-  if constexpr (TRender_pass_idx + 1 < sizeof...(TRender_passes)) {
-    createRenderStepResources<TRender_pass_idx + 1, TData, TRender_passes...>(step);
-  }
-}
-
-template <int TRender_pass_idx, class TData, class... TRender_passes>
-void Render_step_manager::destroyRenderStepResources(Render_step<TData, TRender_passes...>& step) {
-  auto& pass = std::get<TRender_pass_idx>(step.renderPasses);
-  if (pass) {
-    pass->setBlendState(nullptr);
-    pass->setDepthStencilState(nullptr);
-    pass->destroyDeviceDependentResources();
-  }
-
-  if constexpr (TRender_pass_idx + 1 < sizeof...(TRender_passes)) {
-    destroyRenderStepResources<TRender_pass_idx + 1, TData, TRender_passes...>(step);
-  }
-}
-
-template <int TIdx, class TData, class... TRender_passes>
-void Render_step_manager::renderStep(
-    Render_step<TData, TRender_passes...>& step,
-    const Render_pass::Camera_data& cameraData) {
-  if (!step.enabled)
-    return;
-
-  auto passConfig = std::get<TIdx>(step.renderPassConfigs);
-  auto& pass = *std::get<TIdx>(step.renderPasses);
-
-  auto& d3DDeviceResources = deviceResources();
-  auto [renderTargetViews, numRenderTargets] = pass.renderTargetViewArray();
-  if (numRenderTargets) {
-    auto context = d3DDeviceResources.GetD3DDeviceContext();
-
-    // TODO: Fix me!!!
-
-    if constexpr (Render_pass_depth_mode::Disabled == passConfig.depthMode())
-      context->OMSetRenderTargets(static_cast<UINT>(numRenderTargets), renderTargetViews, nullptr);
-    else
-      context->OMSetRenderTargets(
-          static_cast<UINT>(numRenderTargets),
-          renderTargetViews,
-          d3DDeviceResources.GetDepthStencilView());
-  }
-
-  renderPass(passConfig, pass, cameraData);
-
-  if constexpr (TIdx + 1 < sizeof...(TRender_passes)) {
-    renderStep<TIdx + 1, TData, TRender_passes...>(step, cameraData);
-  }
-}
-
-template <
-    Render_pass_blend_mode TBlend_mode,
-    Render_pass_depth_mode TDepth_mode,
-    Render_pass_stencil_mode TStencil_mode,
-    uint32_t TStencil_read_mask,
-    uint32_t TStencil_write_mask>
-void Render_step_manager::renderPass(
-    Render_pass_config<
-        TBlend_mode,
-        TDepth_mode,
-        TStencil_mode,
-        TStencil_read_mask,
-        TStencil_write_mask>& renderPassInfo,
-    Render_pass& renderPass,
-    const Render_pass::Camera_data& cameraData) {
-  auto context = deviceResources().GetD3DDeviceContext();
-  auto& commonStates = _deviceRepository->commonStates();
-
-
-  // Set the blend mode
-  constexpr auto opaqueSampleMask = 0xffffffff;
-  constexpr std::array<float, 4> opaqueBlendFactor{0.0f, 0.0f, 0.0f, 0.0f};
-
-  context->OMSetBlendState(renderPass.blendState(), opaqueBlendFactor.data(), opaqueSampleMask);
-
-  // Depth/Stencil buffer mode
-  context->OMSetDepthStencilState(renderPass.depthStencilState(), renderPass.stencilRef());
-
-  // Make sure wire-frame is disabled
-  context->RSSetState(commonStates.CullClockwise());
-
-  // Set the viewport.
-  auto& d3DDeviceResources = deviceResources();
-  auto viewport = d3DDeviceResources.GetScreenViewport();
-  d3DDeviceResources.GetD3DDeviceContext()->RSSetViewports(1, &viewport);
-
-  // Call the render method.
-  renderPass.render(cameraData);
-}
-
 template <
     Render_pass_blend_mode TBlend_mode,
     Render_pass_depth_mode TDepth_mode,
@@ -723,7 +478,7 @@ template <
     uint32_t TStencilWriteMask>
 void Render_step_manager::renderEntity(
     Entity* entity,
-    const Render_pass::Camera_data& cameraData,
+    const Camera_data& cameraData,
     Light_provider::Callback_type& lightProvider,
     const Render_pass_config<
         TBlend_mode,

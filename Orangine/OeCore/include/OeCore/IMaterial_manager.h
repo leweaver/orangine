@@ -42,7 +42,7 @@ class IMaterial_manager
       const Renderer_data& rendererData,
       const SSE::Matrix4& worldMatrix,
       const Renderer_animation_data& rendererAnimationState,
-      const Render_pass::Camera_data& camera) = 0;
+      const Camera_data& camera) = 0;
 
   // Unbinds the current material. Must be called when rendering of an object is complete.
   virtual void unbind() = 0;

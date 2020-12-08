@@ -14,7 +14,7 @@ std::string D3D_texture_manager::_name = "Texture_manager";
 template <>
 oe::ITexture_manager* create_manager(
     Scene& scene,
-    std::shared_ptr<internal::D3D_device_repository>& deviceRepository) {
+    std::shared_ptr<D3D_device_repository>& deviceRepository) {
   return new D3D_texture_manager(scene, deviceRepository);
 }
 
@@ -336,7 +336,7 @@ class D3D_shadow_map_texture_pool : public Shadow_map_texture_pool {
   D3D_shadow_map_texture_pool(
       uint32_t maxDimension,
       uint32_t textureArraySize,
-      std::shared_ptr<internal::D3D_device_repository> deviceRepository)
+      std::shared_ptr<D3D_device_repository> deviceRepository)
       : _dimension(maxDimension)
       , _textureArraySize(textureArraySize)
       , _deviceRepository(deviceRepository) {
@@ -486,7 +486,7 @@ class D3D_shadow_map_texture_pool : public Shadow_map_texture_pool {
   const uint32_t _dimension;
   const uint32_t _textureArraySize;
 
-  std::shared_ptr<internal::D3D_device_repository> _deviceRepository;
+  std::shared_ptr<D3D_device_repository> _deviceRepository;
   Microsoft::WRL::ComPtr<ID3D11Texture2D> _shadowMapArrayTexture2D;
   std::shared_ptr<D3D_texture> _shadowMapDepthArrayTexture;
   std::shared_ptr<D3D_texture> _shadowMapStencilArrayTexture;

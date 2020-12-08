@@ -3,16 +3,13 @@
 #include "OeCore/IShadowmap_manager.h"
 #include "OeCore/Shadow_map_texture_pool.h"
 
-#include "D3D11/D3D_device_repository.h"
-
 #include <memory>
 
-namespace oe::internal {
-class D3D_device_repository;
+namespace oe {
 class Shadowmap_manager : public IShadowmap_manager {
  public:
-  Shadowmap_manager(Scene& scene, std::shared_ptr<D3D_device_repository> deviceRepository)
-      : IShadowmap_manager(scene), _texturePool(nullptr), _deviceRepository(deviceRepository) {}
+  Shadowmap_manager(Scene& scene)
+      : IShadowmap_manager(scene), _texturePool(nullptr) {}
   virtual ~Shadowmap_manager() = default;
 
   // Manager_base implementation
@@ -35,7 +32,5 @@ class Shadowmap_manager : public IShadowmap_manager {
 
   void verifyTexturePool() const;
   std::unique_ptr<Shadow_map_texture_pool> _texturePool;
-
-  std::shared_ptr<D3D_device_repository> _deviceRepository;
 };
 } // namespace oe::internal

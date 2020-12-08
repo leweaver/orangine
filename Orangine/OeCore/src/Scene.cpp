@@ -286,7 +286,7 @@ Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& de
   // Repositories
   _entityRepository = make_shared<Entity_repository>(*this);
   _materialRepository = make_shared<Material_repository>();
-  auto deviceRepository = make_shared<internal::D3D_device_repository>(deviceResources);
+  auto deviceRepository = make_shared<D3D_device_repository>(deviceResources);
   _deviceRepository = deviceRepository;
 
   // Services / Managers
@@ -294,7 +294,7 @@ Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& de
   createManager<IDev_tools_manager>();
   createManager<IEntity_render_manager>(_materialRepository, deviceRepository);
   createManager<IRender_step_manager>(deviceRepository);
-  createManager<IShadowmap_manager>(deviceRepository);
+  createManager<IShadowmap_manager>();
   createManager<IEntity_scripting_manager>();
   createManager<IAsset_manager>();
   createManager<IInput_manager>();

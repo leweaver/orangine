@@ -80,8 +80,10 @@ void Render_step_manager::createRenderSteps() {
   // Shadow maps
   {
     auto pass = createShadowMapRenderPass();
+    auto stencilConfig = Depth_stencil_config(Default_values());
+    stencilConfig.stencilMode = Render_pass_stencil_mode::Enabled;
+    pass->setDepthStencilConfig(stencilConfig);
     pass->setStencilRef(1);
-    pass->setDepthStencilConfig(Depth_stencil_config(Default_values()));
 
     _renderSteps.emplace_back(new Render_step(std::move(pass), L"Shadow Map"));
   }

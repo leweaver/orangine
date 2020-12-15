@@ -113,18 +113,18 @@ void D3D_render_step_manager::renderStep(
   constexpr std::array<float, 4> opaqueBlendFactor{0.0f, 0.0f, 0.0f, 0.0f};
 
   bool groupRenderEvents = step.renderPasses.size() > 1;
-  for (int i = 0; i < step.renderPasses.size(); ++i) {
+  for (auto passIdx = 0; passIdx < step.renderPasses.size(); ++passIdx) {
     if (groupRenderEvents) {
-      if (_passNames.size() == i) {
+      if (_passNames.size() == passIdx) {
         std::wstringstream ss;
-        ss << L"Pass " << i;
+        ss << L"Pass " << passIdx;
         _passNames.push_back(ss.str());
       }
-      beginRenderNamedEvent(_passNames[i].c_str());
+      beginRenderNamedEvent(_passNames[passIdx].c_str());
     }
 
-    auto& pass = *step.renderPasses[i];
-    auto& renderPassData = renderStepData.renderPassData[i];
+    auto& pass = *step.renderPasses[passIdx];
+    auto& renderPassData = renderStepData.renderPassData[passIdx];
     auto numRenderTargets = renderPassData._renderTargetViews.size();
     const auto& depthStencilConfig = pass.getDepthStencilConfig();
 
@@ -149,8 +149,8 @@ void D3D_render_step_manager::renderStep(
         }
       }
     }
-    beginRenderNamedEvent(L"RSM-OMSetRenderTargets");
-    if (renderPassData._renderTargetViews.size() > 0) {
+    ////beginRenderNamedEvent(L"RSM-OMSetRenderTargets");
+    if (pass.stencilRef() == 0 && renderPassData._renderTargetViews.size() > 0) {
       ID3D11DepthStencilView* dsv = nullptr;
       if (Render_pass_depth_mode::Disabled != depthStencilConfig.depthMode) {
         dsv = d3dDeviceResources.GetDepthStencilView();
@@ -158,9 +158,9 @@ void D3D_render_step_manager::renderStep(
       context->OMSetRenderTargets(
           static_cast<UINT>(numRenderTargets), renderPassData._renderTargetViews.data(), dsv);
     }
-    endRenderNamedEvent();
+    ////endRenderNamedEvent();
 
-    beginRenderNamedEvent(L"RSM-OMSetBlendStateEtc");
+    ////beginRenderNamedEvent(L"RSM-OMSetBlendStateEtc");
     // Set the blend mode
     context->OMSetBlendState(
         renderPassData._blendState.Get(), opaqueBlendFactor.data(), opaqueSampleMask);
@@ -174,12 +174,12 @@ void D3D_render_step_manager::renderStep(
     // Set the viewport.
     auto viewport = d3dDeviceResources.GetScreenViewport();
     d3dDeviceResources.GetD3DDeviceContext()->RSSetViewports(1, &viewport);
-    endRenderNamedEvent();
+    ////endRenderNamedEvent();
 
-    beginRenderNamedEvent(L"RSM-Render");
+    ////beginRenderNamedEvent(L"RSM-Render");
     // Call the render method.
     pass.render(cameraData);
-    endRenderNamedEvent();
+    ////endRenderNamedEvent();
 
     if (groupRenderEvents) {
       endRenderNamedEvent();
@@ -247,9 +247,9 @@ void D3D_render_step_manager::createRenderStepResources(
 
     if (pResult) {
       if (Render_pass_stencil_mode::Disabled == depthStencilConfig.stencilMode) {
-        SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilEnabled");
-      } else {
         SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilDisabled");
+      } else {
+        SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilEnabled");
       }
       renderPassData._depthStencilState = pResult;
       pResult->Release();

@@ -314,6 +314,11 @@ class D3D_shadow_map_texture_array_slice : public D3D_shadow_map_texture {
         device->CreateDepthStencilView(
             shadowMapTexture.texture, &depthStencilViewDesc, &_depthStencilView),
         "Creating Shadow_map_texture depthStencilView");
+    {
+      std::string name = "shadpwmap slice " + std::to_string(_arraySlice) + "depthStencilView";
+      DX::ThrowIfFailed(_depthStencilView->SetPrivateData(
+          WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str()));
+    }
 
     // Should use a shader resource view from the array texture, not the slice. Make sure that the
     // caller assigned one.
@@ -396,6 +401,11 @@ class D3D_shadow_map_texture_pool : public Shadow_map_texture_pool {
         device->CreateShaderResourceView(
             _shadowMapArrayTexture2D.Get(), &shaderResourceViewDesc, &depthShaderResourceView),
         "Creating Shadow_map_texture_pool depth shaderResourceView");
+    {
+      std::string name = "shadpwmap arr stencilShaderResourceView";
+      DX::ThrowIfFailed(depthShaderResourceView->SetPrivateData(
+          WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str()));
+    }
 
     shaderResourceViewDesc.Format = DXGI_FORMAT_X24_TYPELESS_G8_UINT;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> stencilShaderResourceView;
@@ -403,6 +413,12 @@ class D3D_shadow_map_texture_pool : public Shadow_map_texture_pool {
         device->CreateShaderResourceView(
             _shadowMapArrayTexture2D.Get(), &shaderResourceViewDesc, &stencilShaderResourceView),
         "Creating Shadow_map_texture_pool stencil shaderResourceView");
+
+    {
+      std::string name = "shadpwmap arr stencilShaderResourceView";
+      DX::ThrowIfFailed(stencilShaderResourceView->SetPrivateData(
+          WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str()));
+    }
 
     // Create the shadow maps
     _shadowMapDepthArrayTexture = std::make_shared<D3D_shadow_map_texture_array_texture>(

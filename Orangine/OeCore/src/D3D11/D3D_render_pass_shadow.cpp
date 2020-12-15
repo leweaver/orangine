@@ -35,12 +35,11 @@ Render_pass_shadow::Render_pass_shadow(
 
 void Render_pass_shadow::render(const Camera_data&) {
   auto& d3DDeviceResources = _deviceRepository->deviceResources();
-  d3DDeviceResources.PIXBeginEvent(L"_renderPass_shadowMap_draw");
 
   // Render shadow maps for each shadow enabled light
   for (const auto& lightEntity : *_lightEntities) {
     // Directional light only, right now
-    const auto component = lightEntity->getFirstComponentOfType<Directional_light_component>();
+    auto* const component = lightEntity->getFirstComponentOfType<Directional_light_component>();
     if (component && component->shadowsEnabled()) {
 
       Shadow_map_data* shadowData = component->shadowData().get();
@@ -61,7 +60,7 @@ void Render_pass_shadow::render(const Camera_data&) {
       auto worldToLightViewMatrix = SSE::Matrix4(lightEntity->worldRotation(), SSE::Vector3(0));
       auto shadowVolumeBoundingBox = mesh_utils::aabbForEntities(
           *_renderableEntities, lightEntity->worldRotation(), [](const Entity& entity) {
-            const auto renderable = entity.getFirstComponentOfType<Renderable_component>();
+            auto* const renderable = entity.getFirstComponentOfType<Renderable_component>();
             assert(renderable != nullptr);
 
             if (!renderable->castShadow())
@@ -109,7 +108,7 @@ void Render_pass_shadow::render(const Camera_data&) {
 
       auto& shadowMapTexture = D3D_texture_manager::verifyAsD3dShadowMapTexture(*shadowData->shadowMap);
 
-      const auto depthStencilView = shadowMapTexture.depthStencilView();
+      auto* const depthStencilView = shadowMapTexture.depthStencilView();
 
       // note that there are NO render target views - we are only rendering to the depth buffer.
       context->OMSetRenderTargets(
@@ -131,11 +130,8 @@ void Render_pass_shadow::render(const Camera_data&) {
 
       auto& entityRenderManager = _scene.manager<IEntity_render_manager>();
 
-      // TODO: Why isn't this needed? 
-      // entityRenderManager.setRenderTarget(shadowData->shadowMap);
-
-      for (auto& entity : *_renderableEntities) {
-        const auto renderable = entity->getFirstComponentOfType<Renderable_component>();
+      for (const auto& entity : *_renderableEntities) {
+        auto* const renderable = entity->getFirstComponentOfType<Renderable_component>();
         assert(renderable != nullptr);
 
         if (!renderable->castShadow())
@@ -151,6 +147,4 @@ void Render_pass_shadow::render(const Camera_data&) {
       }
     }
   }
-
-  d3DDeviceResources.PIXEndEvent();
 }

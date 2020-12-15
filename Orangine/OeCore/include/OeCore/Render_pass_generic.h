@@ -5,18 +5,14 @@
 #include <functional>
 
 namespace oe {
-	class Render_pass_generic : public Render_pass {
-	public:
-		Render_pass_generic(std::function<void(const Camera_data&)> render) 
-			: _render(render) 
-		{}
+class Render_pass_generic : public Render_pass {
+ public:
+  Render_pass_generic(std::function<void(const Camera_data&, const Render_pass& pass)> render)
+      : _render(render) {}
 
-		virtual void render(const Camera_data& cameraData)
-		{
-			_render(cameraData);
-		}
+  void render(const Camera_data& cameraData) override { _render(cameraData, *this); }
 
-	private:
-		std::function<void(const Camera_data&)> _render;
-	};
-}
+ private:
+  std::function<void(const Camera_data&, const Render_pass&)> _render;
+};
+} // namespace oe

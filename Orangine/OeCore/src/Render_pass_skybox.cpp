@@ -5,11 +5,14 @@
 #include "OeCore/Scene.h"
 #include "OeCore/Skybox_material.h"
 
-using namespace oe;
+using oe::Render_pass_skybox;
 
 Render_pass_skybox::Render_pass_skybox(Scene& scene) : _scene(scene) {
-  _meshData = Primitive_mesh_data_factory::createSphere(1.0f, 3);
+  _renderable = std::make_unique<Renderable>();
+  _renderable->meshData = Primitive_mesh_data_factory::createSphere(1.0f, 3);
+
   _material = std::make_shared<Skybox_material>();
+  _renderable->material = _material;
 }
 
 void Render_pass_skybox::render(const Camera_data& cameraData) {
@@ -32,11 +35,3 @@ void Render_pass_skybox::render(const Camera_data& cameraData) {
       Render_pass_blend_mode::Opaque,
       false);
 }
-
-void Render_pass_skybox::createDeviceDependentResources() {
-  _renderable = std::make_unique<Renderable>();
-  _renderable->meshData = _meshData;
-  _renderable->material = _material;
-}
-
-void Render_pass_skybox::destroyDeviceDependentResources() { _renderable.reset(); }

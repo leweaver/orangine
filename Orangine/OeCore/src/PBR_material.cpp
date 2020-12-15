@@ -4,7 +4,6 @@
 #include "OeCore/Material_repository.h"
 #include "OeCore/Mesh_vertex_layout.h"
 #include "OeCore/PBR_material.h"
-#include "OeCore/Render_pass_config.h"
 
 using namespace oe;
 using namespace std::literals;
@@ -35,12 +34,9 @@ const std::string g_flag_skinned_joints_sint32 = "joints_sint32";
 
 PBR_material::PBR_material()
     : Base_type(static_cast<uint8_t>(Material_type_index::PBR)), _baseColor(Colors::White),
-      _metallic(1.0), _roughness(1.0), _emissive(Colors::Black), _alphaCutoff(0.5),
-      _boundTextureCount(0)
+      _metallic(1.0), _roughness(1.0), _emissive(Colors::Black), _alphaCutoff(0.5)
 {
   std::fill(_textures.begin(), _textures.end(), nullptr);
-  std::fill(_shaderResourceViews.begin(), _shaderResourceViews.end(), nullptr);
-  std::fill(_samplerStates.begin(), _samplerStates.end(), nullptr);
 }
 
 const std::string& PBR_material::materialType() const { return g_material_type; }

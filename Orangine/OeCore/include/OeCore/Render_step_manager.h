@@ -4,7 +4,6 @@
 #include <OeCore/IRender_step_manager.h>
 #include <OeCore/Light_provider.h>
 #include <OeCore/Render_pass.h>
-#include <OeCore/Render_pass_config.h>
 #include <OeCore/Renderable.h>
 
 #include <memory>
@@ -54,22 +53,11 @@ class Render_step_manager : public IRender_step_manager {
       float nearPlane,
       float farPlane) const;
 
-  template <
-      Render_pass_blend_mode TBlend_mode,
-      Render_pass_depth_mode TDepth_mode,
-      Render_pass_stencil_mode TStencil_mode,
-      uint32_t TStencil_read_mask,
-      uint32_t TStencil_write_mask>
   void renderEntity(
       Entity* entity,
       const Camera_data& cameraData,
       Light_provider::Callback_type& lightProvider,
-      const Render_pass_config<
-          TBlend_mode,
-          TDepth_mode,
-          TStencil_mode,
-          TStencil_read_mask,
-          TStencil_write_mask>& renderPassInfo);
+      const Depth_stencil_config& depthStencilConfig) const;
 
   void renderLights(const Camera_data& cameraData, Render_pass_blend_mode blendMode);
 
@@ -79,41 +67,19 @@ class Render_step_manager : public IRender_step_manager {
     Renderable pass0ScreenSpaceQuad;
     Renderable pass2ScreenSpaceQuad;
   };
-  struct Render_step_empty_data {};
 
   static std::string _name;
 
-  Render_step<
-      Render_step_empty_data,
-      Render_pass_config<
-          Render_pass_blend_mode::Opaque,
-          Render_pass_depth_mode::Read_write,
-          Render_pass_stencil_mode::Enabled,
-          0xFF,
-          0xFF>>
-      _renderStep_shadowMap;
+  struct Render_step {
+    explicit Render_step(const std::wstring& name) : name(name) {}
+    Render_step(std::unique_ptr<Render_pass>&& renderPass, const std::wstring& name);
+    std::wstring name;
+    bool enabled = true;
+    std::vector<std::unique_ptr<Render_pass>> renderPasses;
+  };
 
-  Render_step<
-      Render_step_deferred_data,
-      Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Disabled>,
-      Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_write>,
-      Render_pass_config<Render_pass_blend_mode::Additive, Render_pass_depth_mode::Disabled>>
-      _renderStep_entityDeferred;
-
-  Render_step<
-      Render_step_empty_data,
-      Render_pass_config<Render_pass_blend_mode::Blended_alpha, Render_pass_depth_mode::Read_write>>
-      _renderStep_entityStandard;
-
-  Render_step<
-      Render_step_empty_data,
-      Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Write_only>>
-      _renderStep_debugElements;
-
-  Render_step<
-      Render_step_empty_data,
-      Render_pass_config<Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_write>>
-      _renderStep_skybox;
+  std::vector<std::unique_ptr<Render_step>> _renderSteps;
+  Render_step_deferred_data _renderPassDeferredData;
 
   // Broad rendering
   std::unique_ptr<Entity_alpha_sorter> _alphaSorter;

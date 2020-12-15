@@ -3,8 +3,8 @@
 #include "Collision.h"
 #include "Renderer_enums.h"
 
-#include <vectormath/vectormath.hpp>
 #include <string>
+#include <vectormath/vectormath.hpp>
 
 namespace oe {
 
@@ -109,6 +109,26 @@ struct Camera_data {
   bool enablePixelShader = true;
 
   static const Camera_data IDENTITY;
+};
+
+struct Depth_stencil_config {
+  Depth_stencil_config() {}
+  Depth_stencil_config(Render_pass_blend_mode blendMode, Render_pass_depth_mode depthMode)
+      : Depth_stencil_config(Default_values()) {
+    this->blendMode = blendMode;
+    this->depthMode = depthMode;
+  }
+  explicit Depth_stencil_config(Default_values)
+      : blendMode(Render_pass_blend_mode::Opaque)
+      , depthMode(Render_pass_depth_mode::Read_write)
+      , stencilMode(Render_pass_stencil_mode::Disabled)
+      , stencilReadMask(0xff)
+      , stencilWriteMask(0xff) {}
+  Render_pass_blend_mode blendMode;
+  Render_pass_depth_mode depthMode;
+  Render_pass_stencil_mode stencilMode;
+  uint32_t stencilReadMask;
+  uint32_t stencilWriteMask;
 };
 
 } // namespace oe

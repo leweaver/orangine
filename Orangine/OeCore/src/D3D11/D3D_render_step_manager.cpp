@@ -4,12 +4,12 @@
 #include "D3D_render_pass_shadow.h"
 #include "D3D_render_step_manager.h"
 
-#include "OeCore/Perf_timer.h"
 
+#include "D3D_texture_manager.h"
+#include "OeCore/Perf_timer.h"
 
 #include <OeCore/Color.h>
 #include <OeCore/Render_pass_generic.h>
-#include <OeCore/Render_pass_skybox.h>
 
 #include <CommonStates.h>
 
@@ -72,203 +72,195 @@ void D3D_render_step_manager::beginRenderNamedEvent(const wchar_t* name) {
 void D3D_render_step_manager::endRenderNamedEvent() { getDeviceResources().PIXEndEvent(); }
 
 void D3D_render_step_manager::createRenderStepResources() {
-  createRenderStepResources(_renderStep_shadowMap);
-  createRenderStepResources(_renderStep_entityDeferred);
-  createRenderStepResources(_renderStep_entityStandard);
-  createRenderStepResources(_renderStep_debugElements);
-  createRenderStepResources(_renderStep_skybox);
+  _renderStepData.resize(_renderSteps.size(), {});
+  for (size_t i = 0; i < _renderSteps.size(); ++i) {
+    createRenderStepResources(*_renderSteps[i], _renderStepData[i]);
+  }
 }
 
 void D3D_render_step_manager::destroyRenderStepResources() {
-  destroyRenderStepResources(_renderStep_shadowMap);
-  destroyRenderStepResources(_renderStep_entityDeferred);
-  destroyRenderStepResources(_renderStep_entityStandard);
-  destroyRenderStepResources(_renderStep_debugElements);
-  destroyRenderStepResources(_renderStep_skybox);
+  for (size_t i = 0; i < _renderSteps.size(); ++i) {
+    destroyRenderStepResources(*_renderSteps[i], _renderStepData[i]);
+  }
+  _renderStepData.clear();
 }
 
 void D3D_render_step_manager::renderSteps(const Camera_data& cameraData) {
-
   auto timer = Perf_timer::start();
-  renderStep(_renderStep_shadowMap, cameraData);
-  timer.stop();
-  _renderTimes[0] += timer.elapsedSeconds();
-
-  timer.restart();
-  renderStep(_renderStep_entityDeferred, cameraData);
-  timer.stop();
-  _renderTimes[1] += timer.elapsedSeconds();
-
-  timer.restart();
-  renderStep(_renderStep_entityStandard, cameraData);
-  timer.stop();
-  _renderTimes[2] += timer.elapsedSeconds();
-
-  timer.restart();
-  renderStep(_renderStep_debugElements, cameraData);
-  timer.stop();
-  _renderTimes[3] += timer.elapsedSeconds();
-
-  timer.restart();
-  renderStep(_renderStep_skybox, cameraData);
-  timer.stop();
-  _renderTimes[4] += timer.elapsedSeconds();
+  for (size_t i = 0; i < _renderSteps.size(); ++i) {
+    timer.restart();
+    auto& step = *_renderSteps[i];
+    beginRenderNamedEvent(step.name.c_str());
+    renderStep(step, _renderStepData[i], cameraData);
+    endRenderNamedEvent();
+    timer.stop();
+    _renderTimes[i] += timer.elapsedSeconds();
+  }
 }
 
-
-template <int TIdx, class TData, class... TRender_passes>
 void D3D_render_step_manager::renderStep(
-    Render_step<TData, TRender_passes...>& step,
+    Render_step& step,
+    D3D_render_step_data& renderStepData,
     const Camera_data& cameraData) {
   if (!step.enabled)
     return;
 
-  auto passConfig = std::get<TIdx>(step.renderPassConfigs);
-  auto& pass = *std::get<TIdx>(step.renderPasses);
-
   auto& d3dDeviceResources = getDeviceResources();
-  auto [renderTargetViews, numRenderTargets] = pass.renderTargetViewArray();
-  if (numRenderTargets) {
-    auto context = d3dDeviceResources.GetD3DDeviceContext();
-
-    // TODO: Fix me!!!
-
-    if constexpr (Render_pass_depth_mode::Disabled == passConfig.depthMode())
-      context->OMSetRenderTargets(static_cast<UINT>(numRenderTargets), renderTargetViews, nullptr);
-    else
-      context->OMSetRenderTargets(
-          static_cast<UINT>(numRenderTargets),
-          renderTargetViews,
-          d3dDeviceResources.GetDepthStencilView());
-  }
-
-  renderPass(passConfig, pass, cameraData);
-
-  if constexpr (TIdx + 1 < sizeof...(TRender_passes)) {
-    renderStep<TIdx + 1, TData, TRender_passes...>(step, cameraData);
-  }
-}
-
-template <
-    Render_pass_blend_mode TBlend_mode,
-    Render_pass_depth_mode TDepth_mode,
-    Render_pass_stencil_mode TStencil_mode,
-    uint32_t TStencil_read_mask,
-    uint32_t TStencil_write_mask>
-void D3D_render_step_manager::renderPass(
-    Render_pass_config<
-        TBlend_mode,
-        TDepth_mode,
-        TStencil_mode,
-        TStencil_read_mask,
-        TStencil_write_mask>& renderPassInfo,
-    Render_pass& renderPass,
-    const Camera_data& cameraData) {
-  auto& d3dDeviceResources = getDeviceResources();
-  auto context = d3dDeviceResources.GetD3DDeviceContext();
+  auto* const context = d3dDeviceResources.GetD3DDeviceContext();
   auto& commonStates = _deviceRepository->commonStates();
 
-  // Set the blend mode
   constexpr auto opaqueSampleMask = 0xffffffff;
   constexpr std::array<float, 4> opaqueBlendFactor{0.0f, 0.0f, 0.0f, 0.0f};
 
-  context->OMSetBlendState(renderPass.blendState(), opaqueBlendFactor.data(), opaqueSampleMask);
-
-  // Depth/Stencil buffer mode
-  context->OMSetDepthStencilState(renderPass.depthStencilState(), renderPass.stencilRef());
-
-  // Make sure wire-frame is disabled
-  context->RSSetState(commonStates.CullClockwise());
-
-  // Set the viewport.
-  auto viewport = d3dDeviceResources.GetScreenViewport();
-  d3dDeviceResources.GetD3DDeviceContext()->RSSetViewports(1, &viewport);
-
-  // Call the render method.
-  renderPass.render(cameraData);
-}
-
-template <int TRender_pass_idx, class TData, class... TRender_passes>
-void D3D_render_step_manager::createRenderStepResources(Render_step<TData, TRender_passes...>& step) {
-  using Render_pass_config_type =
-      typename std::tuple_element<TRender_pass_idx, decltype(step.renderPassConfigs)>::type;
-  auto& pass = *std::get<TRender_pass_idx>(step.renderPasses);
-
-  auto& commonStates = _deviceRepository->commonStates();
-
-  // Blend state
-  if constexpr (Render_pass_config_type::blendMode() == Render_pass_blend_mode::Opaque)
-    pass.setBlendState(commonStates.Opaque());
-  else if constexpr (Render_pass_config_type::blendMode() == Render_pass_blend_mode::Blended_alpha)
-    pass.setBlendState(commonStates.AlphaBlend());
-  else if constexpr (Render_pass_config_type::blendMode() == Render_pass_blend_mode::Additive)
-    pass.setBlendState(commonStates.Additive());
-
-  // Depth/Stencil
-  D3D11_DEPTH_STENCIL_DESC desc = {};
-
-  constexpr auto depthReadEnabled =
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Read_only ||
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Read_write;
-  constexpr auto depthWriteEnabled =
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Write_only ||
-      Render_pass_config_type::depthMode() == Render_pass_depth_mode::Read_write;
-
-  desc.DepthEnable = depthReadEnabled || depthWriteEnabled ? TRUE : FALSE;
-  desc.DepthWriteMask =
-      depthWriteEnabled ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-  desc.DepthFunc = depthReadEnabled ? D3D11_COMPARISON_LESS_EQUAL : D3D11_COMPARISON_ALWAYS;
-
-  if constexpr (Render_pass_stencil_mode::Disabled == Render_pass_config_type::stencilMode()) {
-    desc.StencilEnable = FALSE;
-    desc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
-    desc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
-  } else {
-    desc.StencilEnable = TRUE;
-    desc.StencilReadMask = Render_pass_config_type::stencilReadMask();
-    desc.StencilWriteMask = Render_pass_config_type::stencilWriteMask();
-    desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
-    desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_REPLACE;
-  }
-
-  desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-  desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-
-  desc.BackFace = desc.FrontFace;
-
-  const auto device = _deviceRepository->deviceResources().GetD3DDevice();
-  ID3D11DepthStencilState* pResult;
-  ThrowIfFailed(device->CreateDepthStencilState(&desc, &pResult));
-
-  if (pResult) {
-    if constexpr (Render_pass_stencil_mode::Disabled == Render_pass_config_type::stencilMode()) {
-      SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilEnabled");
-    } else {
-      SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilDisabled");
+  bool groupRenderEvents = step.renderPasses.size() > 1;
+  for (int i = 0; i < step.renderPasses.size(); ++i) {
+    if (groupRenderEvents) {
+      if (_passNames.size() == i) {
+        std::wstringstream ss;
+        ss << L"Pass " << i;
+        _passNames.push_back(ss.str());
+      }
+      beginRenderNamedEvent(_passNames[i].c_str());
     }
-    pass.setDepthStencilState(pResult);
-    pResult->Release();
 
-    pass.createDeviceDependentResources();
-  }
+    auto& pass = *step.renderPasses[i];
+    auto& renderPassData = renderStepData.renderPassData[i];
+    auto numRenderTargets = renderPassData._renderTargetViews.size();
+    const auto& depthStencilConfig = pass.getDepthStencilConfig();
 
-  if constexpr (TRender_pass_idx + 1 < sizeof...(TRender_passes)) {
-    createRenderStepResources<TRender_pass_idx + 1, TData, TRender_passes...>(step);
+    // Update render target views array if it is out of sync
+    if (pass.popRenderTargetsChanged()) {
+      const auto& renderTargets = pass.getRenderTargets();
+      for (auto& renderTargetView : renderPassData._renderTargetViews) {
+        if (renderTargetView) {
+          renderTargetView->Release();
+          renderTargetView = nullptr;
+        }
+      }
+
+      numRenderTargets = renderTargets.size();
+      renderPassData._renderTargetViews.resize(numRenderTargets, nullptr);
+
+      for (size_t i = 0; i < renderPassData._renderTargetViews.size(); ++i) {
+        if (renderTargets[i]) {
+          auto& rtt = D3D_texture_manager::verifyAsD3dRenderTargetViewTexture(*renderTargets[i]);
+          renderPassData._renderTargetViews[i] = rtt.renderTargetView();
+          renderPassData._renderTargetViews[i]->AddRef();
+        }
+      }
+    }
+    beginRenderNamedEvent(L"RSM-OMSetRenderTargets");
+    if (renderPassData._renderTargetViews.size() > 0) {
+      ID3D11DepthStencilView* dsv = nullptr;
+      if (Render_pass_depth_mode::Disabled != depthStencilConfig.depthMode) {
+        dsv = d3dDeviceResources.GetDepthStencilView();
+      }
+      context->OMSetRenderTargets(
+          static_cast<UINT>(numRenderTargets), renderPassData._renderTargetViews.data(), dsv);
+    }
+    endRenderNamedEvent();
+
+    beginRenderNamedEvent(L"RSM-OMSetBlendStateEtc");
+    // Set the blend mode
+    context->OMSetBlendState(
+        renderPassData._blendState.Get(), opaqueBlendFactor.data(), opaqueSampleMask);
+
+    // Depth/Stencil buffer mode
+    context->OMSetDepthStencilState(renderPassData._depthStencilState.Get(), pass.stencilRef());
+
+    // Make sure wire-frame is disabled
+    context->RSSetState(commonStates.CullClockwise());
+
+    // Set the viewport.
+    auto viewport = d3dDeviceResources.GetScreenViewport();
+    d3dDeviceResources.GetD3DDeviceContext()->RSSetViewports(1, &viewport);
+    endRenderNamedEvent();
+
+    beginRenderNamedEvent(L"RSM-Render");
+    // Call the render method.
+    pass.render(cameraData);
+    endRenderNamedEvent();
+
+    if (groupRenderEvents) {
+      endRenderNamedEvent();
+    }
   }
 }
 
-template <int TRender_pass_idx, class TData, class... TRender_passes>
-void D3D_render_step_manager::destroyRenderStepResources(Render_step<TData, TRender_passes...>& step) {
-  auto& pass = std::get<TRender_pass_idx>(step.renderPasses);
-  if (pass) {
-    pass->setBlendState(nullptr);
-    pass->setDepthStencilState(nullptr);
-    pass->destroyDeviceDependentResources();
-  }
+void D3D_render_step_manager::createRenderStepResources(
+    Render_step& step,
+    D3D_render_step_data& renderStepData) {
+  auto& commonStates = _deviceRepository->commonStates();
+  renderStepData.renderPassData.resize(step.renderPasses.size());
+  for (size_t i = 0; i < step.renderPasses.size(); ++i) {
+    auto* const pass = step.renderPasses[i].get();
+    if (!pass) {
+      continue;
+    }
+    auto& renderPassData = renderStepData.renderPassData[i];
 
-  if constexpr (TRender_pass_idx + 1 < sizeof...(TRender_passes)) {
-    destroyRenderStepResources<TRender_pass_idx + 1, TData, TRender_passes...>(step);
+    const auto& depthStencilConfig = pass->getDepthStencilConfig();
+
+    // Blend state
+    if (depthStencilConfig.blendMode == Render_pass_blend_mode::Opaque)
+      renderPassData._blendState = commonStates.Opaque();
+    else if (depthStencilConfig.blendMode == Render_pass_blend_mode::Blended_alpha)
+      renderPassData._blendState = commonStates.AlphaBlend();
+    else if (depthStencilConfig.blendMode == Render_pass_blend_mode::Additive)
+      renderPassData._blendState = commonStates.Additive();
+
+    // Depth/Stencil
+    D3D11_DEPTH_STENCIL_DESC desc = {};
+
+    const auto depthReadEnabled =
+        depthStencilConfig.depthMode == Render_pass_depth_mode::Read_only ||
+        depthStencilConfig.depthMode == Render_pass_depth_mode::Read_write;
+    const auto depthWriteEnabled =
+        depthStencilConfig.depthMode == Render_pass_depth_mode::Write_only ||
+        depthStencilConfig.depthMode == Render_pass_depth_mode::Read_write;
+
+    desc.DepthEnable = depthReadEnabled || depthWriteEnabled ? TRUE : FALSE;
+    desc.DepthWriteMask =
+        depthWriteEnabled ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+    desc.DepthFunc = depthReadEnabled ? D3D11_COMPARISON_LESS_EQUAL : D3D11_COMPARISON_ALWAYS;
+
+    if (Render_pass_stencil_mode::Disabled == depthStencilConfig.stencilMode) {
+      desc.StencilEnable = FALSE;
+      desc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+      desc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+    } else {
+      desc.StencilEnable = TRUE;
+      desc.StencilReadMask = depthStencilConfig.stencilReadMask;
+      desc.StencilWriteMask = depthStencilConfig.stencilWriteMask;
+      desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
+      desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_REPLACE;
+    }
+
+    desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+    desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+
+    desc.BackFace = desc.FrontFace;
+
+    const auto device = _deviceRepository->deviceResources().GetD3DDevice();
+    ID3D11DepthStencilState* pResult;
+    ThrowIfFailed(device->CreateDepthStencilState(&desc, &pResult));
+
+    if (pResult) {
+      if (Render_pass_stencil_mode::Disabled == depthStencilConfig.stencilMode) {
+        SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilEnabled");
+      } else {
+        SetDebugObjectName(pResult, "Render_step_manager:DepthStencil:StencilDisabled");
+      }
+      renderPassData._depthStencilState = pResult;
+      pResult->Release();
+    }
   }
+}
+
+void D3D_render_step_manager::destroyRenderStepResources(
+    Render_step& step,
+    D3D_render_step_data& renderStepData) {
+  renderStepData.renderPassData.clear();
 }
 
 oe::Viewport D3D_render_step_manager::getScreenViewport() const {

@@ -55,6 +55,14 @@
             ]
         },
         {
+            "name": "render pass destination",
+            "values": [
+                "default",
+                "gbuffer",
+                "render target view"
+            ]
+        },
+        {
             "name": "vertex attribute",
             "values": [
                 "position",

@@ -3,8 +3,6 @@
 #include "Manager_base.h"
 #include "Primitive_mesh_data_factory.h"
 #include "Deferred_light_material.h"
-#include "Render_pass.h"
-#include "Render_pass_config.h"
 #include "Collision.h"
 
 #include <memory>

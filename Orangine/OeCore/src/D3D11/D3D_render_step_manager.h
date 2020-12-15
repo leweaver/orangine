@@ -1,12 +1,21 @@
 #pragma once
 
-#include "OeCore/Render_step_manager.h"
 #include "D3D_device_repository.h"
+#include "OeCore/Render_step_manager.h"
 
 namespace oe {
 
 class D3D_render_step_manager : public Render_step_manager {
-public:
+ public:
+  struct D3D_render_pass_data {
+    std::vector<ID3D11RenderTargetView*> _renderTargetViews = {};
+    Microsoft::WRL::ComPtr<ID3D11BlendState> _blendState;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> _depthStencilState;
+  };
+  struct D3D_render_step_data {
+    std::vector<D3D_render_pass_data> renderPassData;
+  };
+
   D3D_render_step_manager(Scene& scene, std::shared_ptr<D3D_device_repository> device_repository);
 
   // Base class overrides
@@ -26,31 +35,17 @@ public:
  private:
   DX::DeviceResources& getDeviceResources() const;
 
-  template <int TRender_pass_idx = 0, class TData, class... TRender_passes>
-  void createRenderStepResources(Render_step<TData, TRender_passes...>& step);
+  void createRenderStepResources(Render_step& step, D3D_render_step_data& renderStepData);
 
-  template <int TRender_pass_idx = 0, class TData, class... TRender_passes>
-  void destroyRenderStepResources(Render_step<TData, TRender_passes...>& step);
+  void destroyRenderStepResources(Render_step& step, D3D_render_step_data& renderStepData);
 
-  template <int TRender_pass_idx = 0, class TData, class... TRender_passes>
-  void renderStep(Render_step<TData, TRender_passes...>& step, const Camera_data& cameraData);
-
-  template <
-      Render_pass_blend_mode TBlend_mode,
-      Render_pass_depth_mode TDepth_mode,
-      Render_pass_stencil_mode TStencil_mode,
-      uint32_t TStencil_read_mask,
-      uint32_t TStencil_write_mask>
-  void renderPass(
-      Render_pass_config<
-          TBlend_mode,
-          TDepth_mode,
-          TStencil_mode,
-          TStencil_read_mask,
-          TStencil_write_mask>& renderPassInfo,
-      Render_pass& renderPass,
+  void renderStep(
+      Render_step& step,
+      D3D_render_step_data& renderStepData,
       const Camera_data& cameraData);
 
+  std::vector<D3D_render_step_data> _renderStepData;
+  std::vector<std::wstring> _passNames;
   std::shared_ptr<D3D_device_repository> _deviceRepository;
 };
-}
+} // namespace oe

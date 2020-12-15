@@ -6,7 +6,6 @@
 namespace oe {
 
 struct Shadow_map_data {
-  Viewport viewport;
   BoundingOrientedBox boundingOrientedBox; // previously 'castingVolume'
   SSE::Matrix4 worldViewProjMatrix;
 

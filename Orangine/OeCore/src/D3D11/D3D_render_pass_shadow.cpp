@@ -119,13 +119,9 @@ void Render_pass_shadow::render(const Camera_data&) {
       context->ClearDepthStencilView(
           depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-      auto dxViewport = CD3D11_VIEWPORT(
-          shadowData->viewport.topLeftX,
-          shadowData->viewport.topLeftX,
-          shadowData->viewport.width,
-          shadowData->viewport.height,
-          shadowData->viewport.minDepth,
-          shadowData->viewport.maxDepth);
+      const auto viewportWidth = static_cast<float>(shadowMapTexture.dimension().x);
+      const auto viewportHeight = static_cast<float>(shadowMapTexture.dimension().y);
+      const auto dxViewport = CD3D11_VIEWPORT(0.f, 0.f, viewportWidth, viewportHeight);
       context->RSSetViewports(1, &dxViewport);
 
       auto& entityRenderManager = _scene.manager<IEntity_render_manager>();

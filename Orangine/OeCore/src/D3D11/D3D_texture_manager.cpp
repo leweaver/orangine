@@ -315,7 +315,7 @@ class D3D_shadow_map_texture_array_slice : public D3D_shadow_map_texture {
             shadowMapTexture.texture, &depthStencilViewDesc, &_depthStencilView),
         "Creating Shadow_map_texture depthStencilView");
     {
-      std::string name = "shadpwmap slice " + std::to_string(_arraySlice) + "depthStencilView";
+      std::string name = "shadowmap slice " + std::to_string(_arraySlice) + " depthStencilView";
       DX::ThrowIfFailed(_depthStencilView->SetPrivateData(
           WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str()));
     }
@@ -402,7 +402,7 @@ class D3D_shadow_map_texture_pool : public Shadow_map_texture_pool {
             _shadowMapArrayTexture2D.Get(), &shaderResourceViewDesc, &depthShaderResourceView),
         "Creating Shadow_map_texture_pool depth shaderResourceView");
     {
-      std::string name = "shadpwmap arr stencilShaderResourceView";
+      std::string name = "shadowmap arr stencilShaderResourceView";
       DX::ThrowIfFailed(depthShaderResourceView->SetPrivateData(
           WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str()));
     }
@@ -415,7 +415,7 @@ class D3D_shadow_map_texture_pool : public Shadow_map_texture_pool {
         "Creating Shadow_map_texture_pool stencil shaderResourceView");
 
     {
-      std::string name = "shadpwmap arr stencilShaderResourceView";
+      std::string name = "shadowmap arr stencilShaderResourceView";
       DX::ThrowIfFailed(stencilShaderResourceView->SetPrivateData(
           WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.c_str()));
     }

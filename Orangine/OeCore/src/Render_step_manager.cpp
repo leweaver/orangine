@@ -211,7 +211,7 @@ void Render_step_manager::createDeviceDependentResources() {
   auto deferredLightMaterial = std::make_shared<Deferred_light_material>();
   _renderPassDeferredData.deferredLightMaterial = deferredLightMaterial;
 
-  const auto& entityRenderManager = _scene.manager<IEntity_render_manager>();
+  auto& entityRenderManager = _scene.manager<IEntity_render_manager>();
   _renderPassDeferredData.pass0ScreenSpaceQuad =
       entityRenderManager.createScreenSpaceQuad(std::make_shared<Clear_gbuffer_material>());
   _renderPassDeferredData.pass2ScreenSpaceQuad =

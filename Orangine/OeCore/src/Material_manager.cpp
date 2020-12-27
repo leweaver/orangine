@@ -98,6 +98,7 @@ void Material_manager::bind(
 
       // TODO: Look in a cache for a compiled material that matches the hash
       materialContext.compilerInputs = compiledMaterial;
+      materialContext.compilerInputsValid = true;
 
       compiledMaterial.materialHash = materialHash;
       compiledMaterial.meshHash = meshVertexLayout.propertiesHash();
@@ -117,6 +118,7 @@ void Material_manager::bind(
         materialContext.reset();
 
       } catch (std::exception& ex) {
+        materialContext.compilerInputsValid = false;
         OE_THROW(std::runtime_error(
             "Failed to create resources in Material_manager::bind. "s + ex.what()));
       }

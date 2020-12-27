@@ -15,9 +15,26 @@ using oe::Entity;
 using oe::Sample_scene;
 
 Sample_scene::Sample_scene(Scene& scene, const std::vector<std::wstring>& extraAssetPaths)
-    : _extraAssetPaths(extraAssetPaths), _scene(scene), _entityManager(scene.manager<IScene_graph_manager>()) {
+    : _extraAssetPaths(extraAssetPaths)
+    , _scene(scene)
+    , _entityManager(scene.manager<IScene_graph_manager>())
+    , _inputManager(scene.manager<IInput_manager>()) {
   _root = _entityManager.instantiate("Sample Scene Root");
 }
+
+void Sample_scene::tick() { tickCamera(); }
+
+void Sample_scene::tickCamera() {
+  const auto mouseState = _inputManager.getMouseState().lock();
+  if (mouseState == nullptr) {
+    return;
+  }
+
+  if (mouseState->left == IInput_manager::Mouse_state::Button_state::Held) {
+    
+  }
+}
+
 
 std::shared_ptr<Entity> Sample_scene::addFloor() {
   const auto& floor = _entityManager.instantiate("Floor", *_root);
@@ -107,6 +124,8 @@ void Sample_scene::addCamera() {
   camera->lookAt({0, 0, 0}, math::up);
 
   _scene.setMainCamera(camera);
+
+  _scene.manager<IEntity_scripting_manager>().loadSceneScript("camera.OrbitCamera");
 }
 
 std::shared_ptr<Entity> Sample_scene::addDirectionalLight(

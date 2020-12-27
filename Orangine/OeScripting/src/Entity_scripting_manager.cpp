@@ -12,10 +12,10 @@
 #include "OeCore/Light_component.h"
 #include "OeCore/Math_constants.h"
 //#include "OeCore/Renderable_component.h"
+#include "Engine_bindings.h"
 #include "OeCore/Scene.h"
 #include "OeCore/Test_component.h"
 #include "OeCore/Shadow_map_texture.h"
-#include "OeScripting/Script_component.h"
 
 #include <OeThirdParty/imgui.h>
 
@@ -37,6 +37,13 @@ using namespace internal;
 #endif
 #endif
 
+// I don't know why this needs to be in this file, but it does.
+// If I put it inside Engine_bindings.cpp it (sometimes) doesn't get called.
+PYBIND11_EMBEDDED_MODULE(oe, m) {
+  m.doc() = "Orangine scripting API";
+  Engine_bindings::create(m);
+}
+
 Entity_scripting_manager::EngineInternalPythonModule::EngineInternalPythonModule(
     py::module engineInternal)
     : instance(engineInternal)
@@ -49,58 +56,6 @@ template <> IEntity_scripting_manager* oe::create_manager(Scene& scene) {
 
 Entity_scripting_manager::Entity_scripting_manager(Scene& scene)
     : IEntity_scripting_manager(scene) {}
-
-void engine_log_func(const std::string& message, LEVELS level) {
-  if (!g3::logLevel(level)) {
-    return;
-  }
-
-  auto inspectModule = py::module::import("inspect");
-  auto stackArray = inspectModule.attr("stack")();
-  if (py::isinstance<py::list>(stackArray)) {
-    auto stackList = py::list(stackArray);
-    if (stackList.size() > 0) {
-      auto frame = stackList[0];
-
-      auto filename = std::string(py::str(frame.attr("filename")));
-      auto lastSlash = std::max(filename.find_last_of('/'), filename.find_last_of('\\'));
-      if (lastSlash != std::string::npos) {
-        filename = filename.substr(lastSlash);
-      }
-      auto lineno = frame.attr("lineno").cast<int>();
-      auto function = std::string(py::str(frame.attr("function")));
-
-      LogCapture(filename.c_str(), lineno, function.c_str(), level).stream() << message;
-    }
-  } else {
-    LOG(level) << "[python] " << message;
-  }
-}
-
-bool engine_log_debug_enabled_func() { return g3::logLevel(G3LOG_DEBUG); }
-
-void engine_log_debug_func(const std::string& message) { engine_log_func(message, G3LOG_DEBUG); }
-
-bool engine_log_info_enabled_func() { return g3::logLevel(INFO); }
-
-void engine_log_info_func(const std::string& message) { engine_log_func(message, INFO); }
-
-bool engine_log_warning_enabled_func() { return g3::logLevel(WARNING); }
-
-void engine_log_warning_func(const std::string& message) { engine_log_func(message, WARNING); }
-
-PYBIND11_EMBEDDED_MODULE(engine, m) {
-  m.doc() = "Orangine scripting API";
-
-  m.def("log_debug_enabled", &engine_log_debug_enabled_func);
-  m.def("log_debug", &engine_log_debug_func);
-
-  m.def("log_info_enabled", &engine_log_info_enabled_func);
-  m.def("log_info", &engine_log_info_func);
-
-  m.def("log_warning_enabled", &engine_log_warning_enabled_func);
-  m.def("log_warning", &engine_log_warning_func);
-}
 
 void Entity_scripting_manager::preInit_addAbsoluteScriptsPath(const std::wstring& path) {
   if (_pythonInitialized) {
@@ -117,18 +72,8 @@ void Entity_scripting_manager::preInit_addAbsoluteScriptsPath(const std::wstring
 
 void Entity_scripting_manager::initialize() {
   {
-    _scriptableEntityFilter =
-        _scene.manager<IScene_graph_manager>().getEntityFilter({Script_component::type()});
     _testEntityFilter =
         _scene.manager<IScene_graph_manager>().getEntityFilter({Test_component::type()});
-    _scriptableEntityFilterListener = std::make_unique<Entity_filter::Entity_filter_listener>();
-    _scriptableEntityFilterListener->onAdd = [this](Entity* entity) {
-      _addedEntities.push_back(entity->getId());
-    };
-    _scriptableEntityFilterListener->onRemove = [this](Entity* entity) {
-      _removedEntities.push_back(entity->getId());
-    };
-    _scriptableEntityFilter->add_listener(_scriptableEntityFilterListener);
 
     // TODO: can't inlclude renderable_component right now
     /*
@@ -140,7 +85,6 @@ void Entity_scripting_manager::initialize() {
          Point_light_component::type(),
          Ambient_light_component::type()},
         Entity_filter_mode::Any);
-    _scriptData.yaw = XM_PI;
 
     try {
       initializePythonInterpreter();
@@ -180,115 +124,24 @@ void Entity_scripting_manager::logPythonError(
 }
 
 void Entity_scripting_manager::tick() {
-  const auto& sceneGraphManager = _scene.manager<IScene_graph_manager>();
-  for (const auto entityId : _addedEntities) {
-    auto entity = sceneGraphManager.getEntityPtrById(entityId);
-    if (entity == nullptr)
-      continue;
+  for (auto& runtimeDataPtr : _loadedScripts) {
+    assert(runtimeDataPtr.get());
+    auto& runtimeData = *runtimeDataPtr;
 
-    const auto& component = entity->getFirstComponentOfType<Script_component>();
-    const auto& componentScriptPath = component->scriptName();
-
-    if (componentScriptPath.empty()) {
-      continue;
-    }
-    if (componentScriptPath.at(componentScriptPath.size() - 1) == '.') {
-      LOG(WARNING) << "Invalid script name, cannot end with .";
-      continue;
-    }
-
-    try {
-      const auto lastDot = componentScriptPath.find_last_of('.');
-      std::unique_ptr<Script_runtime_data, Script_component::Script_runtime_data_deleter>
-          runtimeData;
-      runtimeData.reset(new Script_runtime_data());
-
-      if (lastDot != std::string::npos) {
-        const auto scriptModuleName = componentScriptPath.substr(0, lastDot);
-        const auto scriptClassName = componentScriptPath.substr(lastDot + 1);
-
-        const auto scriptModule = py::module::import(scriptModuleName.c_str());
-        const auto scriptClassDefn = scriptModule.attr(scriptClassName.c_str());
-
-        runtimeData->instance = scriptClassDefn();
-      } else {
-        const auto scriptClassDefn = py::globals().attr(componentScriptPath.c_str());
-
-        runtimeData->instance = scriptClassDefn();
-      }
-
-      // If required, initialize the instance
-      if (py::hasattr(runtimeData->instance, "init")) {
-        auto initFn = runtimeData->instance.attr("init");
-        auto result = initFn();
-      }
-
-      runtimeData->hasTick = py::hasattr(runtimeData->instance, "tick");
-      component->_scriptRuntimeData = move(runtimeData);
-    } catch (const py::error_already_set& err) {
-      std::stringstream whereStr;
-      whereStr << "Entity ID " << entityId;
-      if (!entity->getName().empty()) {
-        whereStr << " (" << entity->getName() << ")";
-      }
-      whereStr << " init()" << componentScriptPath;
-      logPythonError(err, whereStr.str());
-    }
-
-    // TODO: Bind to this entity somehow?
-    // TODO: Start script init lifecycle.
-  }
-  _addedEntities.clear();
-
-  for (const auto entityId : _removedEntities) {
-    auto entity = sceneGraphManager.getEntityPtrById(entityId);
-    if (entity == nullptr)
-      continue;
-
-    const auto& component = entity->getFirstComponentOfType<Script_component>();
-    if (component->_scriptRuntimeData != nullptr) {
-      if (py::hasattr(component->_scriptRuntimeData->instance, "shutdown")) {
-        try {
-          auto _ = component->_scriptRuntimeData->instance.attr("shutdown")();
-        } catch (const py::error_already_set& err) {
-          std::stringstream whereStr;
-          whereStr << "Entity ID " << entityId;
-          if (!entity->getName().empty()) {
-            whereStr << " (" << entity->getName() << ")";
-          }
-          whereStr << " shutdown()";
-          logPythonError(err, whereStr.str());
-        }
-      }
-      component->_scriptRuntimeData = nullptr;
-    }
-  }
-  _removedEntities.clear();
-
-  for (auto iter = _scriptableEntityFilter->begin(); iter != _scriptableEntityFilter->end();
-       ++iter) {
-    auto& entity = **iter;
-    const auto component = entity.getFirstComponentOfType<Script_component>();
-    if (component->_scriptRuntimeData == nullptr || !component->_scriptRuntimeData->hasTick)
+    if (!runtimeData.hasTick)
       continue;
 
     try {
-      auto _ = component->_scriptRuntimeData->instance.attr("tick")();
+      auto _ = runtimeData.instance.attr("tick")();
     } catch (const py::error_already_set& err) {
-      std::stringstream whereStr;
-      whereStr << "Entity ID " << entity.getId();
-      if (!entity.getName().empty()) {
-        whereStr << " (" << entity.getName() << ")";
-      }
-      whereStr << " tick()";
-      logPythonError(err, whereStr.str());
+      logPythonError(err, "Native::tick() " + runtimeData.scriptName);
     }
   }
 
   try {
     flushStdIo();
   } catch (const py::error_already_set& err) {
-    logPythonError(err, "Flushing stdout and stderr");
+    logPythonError(err, "Native::tick() - Flushing stdout and stderr");
   }
 
   const auto elapsedTime = _scene.elapsedTime();
@@ -309,50 +162,100 @@ void Entity_scripting_manager::tick() {
     entity.setRotation(animTimeYaw * animTimePitch * animTimeRoll);
   }
 
-  const auto mouseSpeed = 1.0f / 600.0f;
-  const auto mouseState = _scene.manager<IInput_manager>().mouseState().lock();
-  if (mouseState) {
-    if (mouseState->left == IInput_manager::Mouse_state::Button_state::HELD) {
-      _scriptData.yaw += -mouseState->deltaPosition.x * XM_2PI * mouseSpeed;
-      _scriptData.pitch += mouseState->deltaPosition.y * XM_2PI * mouseSpeed;
+  /*
+  def init(self): 
+    _scriptData.yaw = XM_PI;
 
-      _scriptData.pitch = std::max(XM_PI * -0.45f, std::min(XM_PI * 0.45f, _scriptData.pitch));
+  def tick(self):
+    const auto mouseSpeed = 1.0f / 600.0f;
+    const auto mouseState = _scene.manager<IInput_manager>().mouseState().lock();
+    if (mouseState) {
+      if (mouseState->left == IInput_manager::Mouse_state::Button_state::HELD) {
+        _scriptData.yaw += -mouseState->deltaPosition.x * XM_2PI * mouseSpeed;
+        _scriptData.pitch += mouseState->deltaPosition.y * XM_2PI * mouseSpeed;
+
+        _scriptData.pitch = std::max(XM_PI * -0.45f, std::min(XM_PI * 0.45f, _scriptData.pitch));
+      }
+      // if (mouseState->middle == Input_manager::Mouse_state::Button_state::HELD) {
+      _scriptData.distance = std::max(
+          1.0f,
+          std::min(
+              40.0f,
+              _scriptData.distance + static_cast<float>(mouseState->scrollWheelDelta) * -mouseSpeed));
+      //}
+
+      // if (mouseState->right == IInput_manager::Mouse_state::Button_state::HELD) {
+      //  renderDebugSpheres();
+      //}
+
+      const auto cameraRot = SSE::Matrix4::rotationY(_scriptData.yaw + math::pi) *
+                             SSE::Matrix4::rotationX(-_scriptData.pitch);
+      auto cameraPosition = cameraRot * math::backward;
+      cameraPosition *= _scriptData.distance;
+  }
+  */
+}
+
+void Entity_scripting_manager::loadSceneScript(const std::string& scriptClassString) {
+
+  if (scriptClassString.empty()) {
+    LOG(WARNING) << "Invalid script name, cannot be empty";
+    return;
+  }
+  if (scriptClassString.at(scriptClassString.size() - 1) == '.') {
+    LOG(WARNING) << "Invalid script name, cannot end with .";
+    return;
+  }
+
+  try {
+    const auto lastDot = scriptClassString.find_last_of('.');
+    auto runtimeDataPtr = std::make_unique<Script_runtime_data>();
+    runtimeDataPtr->scriptName = scriptClassString;
+
+    // Load the python class/module and create an instance.
+    if (lastDot != std::string::npos) {
+      const auto scriptModuleName = scriptClassString.substr(0, lastDot);
+      const auto scriptClassName = scriptClassString.substr(lastDot + 1);
+
+      const auto scriptModule = py::module::import(scriptModuleName.c_str());
+      const auto scriptClassDefn = scriptModule.attr(scriptClassName.c_str());
+
+      runtimeDataPtr->instance = scriptClassDefn();
+    } else {
+      const auto scriptClassDefn = py::globals().attr(scriptClassString.c_str());
+
+      runtimeDataPtr->instance = scriptClassDefn();
     }
-    // if (mouseState->middle == Input_manager::Mouse_state::Button_state::HELD) {
-    _scriptData.distance = std::max(
-        1.0f,
-        std::min(
-            40.0f,
-            _scriptData.distance + static_cast<float>(mouseState->scrollWheelDelta) * -mouseSpeed));
-    //}
 
-    // if (mouseState->right == IInput_manager::Mouse_state::Button_state::HELD) {
-    //  renderDebugSpheres();
-    //}
+    runtimeDataPtr->hasInit = py::hasattr(runtimeDataPtr->instance, "init");
+    runtimeDataPtr->hasTick = py::hasattr(runtimeDataPtr->instance, "tick");
 
-    const auto cameraRot = SSE::Matrix4::rotationY(_scriptData.yaw + math::pi) *
-                           SSE::Matrix4::rotationX(-_scriptData.pitch);
-    auto cameraPosition = cameraRot * math::backward;
-    cameraPosition *= _scriptData.distance;
+    _loadedScripts.emplace_back(std::move(runtimeDataPtr));
+  } catch (const py::error_already_set& err) {
+    logPythonError(err, "Native::loadSceneScript create - " + scriptClassString);
+    return;
+  }
 
-    auto entity = _scene.mainCamera();
-    /*
-    if (entity != nullptr) {
-      entity->setPosition({cameraPosition.getX(), cameraPosition.getY(), cameraPosition.getZ()});
-      auto cameraRotQuat = SSE::Quat(cameraRot.getUpper3x3());
-      entity->setRotation(
-          {cameraRotQuat.getX(), cameraRotQuat.getY(), cameraRotQuat.getZ(), cameraRotQuat.getW()});
+  try {
+    // If required, initialize the via the init method instance
+    auto* const runtimeData = _loadedScripts.back().get();
+    assert(runtimeData->scriptName == scriptClassString);
+
+    if (runtimeData->hasInit) {
+      auto _ = runtimeData->instance.attr("init")();
     }
-    */
+  } catch (const py::error_already_set& err) {
+    logPythonError(err, "Native::loadSceneScript init - " + scriptClassString);
   }
 }
 
+
 void Entity_scripting_manager::flushStdIo() const {
-  const auto _ = _pythonContext.engine_internal_module->reset_output_streams();
+  const auto _ = _pythonContext._engineInternalModule->reset_output_streams();
 }
 
 void Entity_scripting_manager::enableRemoteDebugging() const {
-  const auto _ = _pythonContext.engine_internal_module->enable_remote_debugging();
+  const auto _ = _pythonContext._engineInternalModule->enable_remote_debugging();
 }
 
 void Entity_scripting_manager::shutdown() { finalizePythonInterpreter(); }
@@ -430,20 +333,20 @@ void Entity_scripting_manager::initializePythonInterpreter() {
 
   LOG(INFO) << "Python path set to: " << sysPathListSs.str();
 
-  _pythonContext.sys = py::module::import("sys");
-  _pythonContext.sys.attr("path") = sysPathList;
+  _pythonContext._sysModule = py::module::import("sys");
+  _pythonContext._sysModule.attr("path") = sysPathList;
 
-  _pythonContext.engine_internal_module =
+  _pythonContext._engineInternalModule =
       std::make_unique<EngineInternalPythonModule>(py::module::import("engine_internal"));
 
-  auto scenePtr = &_scene;
+  const auto scenePtr = &_scene;
 #ifdef _AMD64_
-  _pythonContext.engine_internal_module->instance.attr("scenePtr_uint64") =
+  _pythonContext._engineInternalModule->instance.attr("scenePtr_uint64") =
       reinterpret_cast<uint64_t>(scenePtr);
 #elif _X86_
   _pythonContext.engine_internal_module->instance.attr("scenePtr_uint32") =
       reinterpret_cast<uint32_t>(scenePtr);
-#endif
+#endif  
 
   // This must be called at least once before python attempts to write to stdout or stderr.
   // Now that we have our internal library, set up stdout and stderr properly.
@@ -451,13 +354,17 @@ void Entity_scripting_manager::initializePythonInterpreter() {
 
   enableRemoteDebugging();
 
-  auto initLoggerFn = _pythonContext.engine_internal_module->instance.attr("init_logger");
-  auto _ = initLoggerFn();
+  auto initFn = _pythonContext._engineInternalModule->instance.attr("init");
+  auto _ = initFn();
 }
 
 void Entity_scripting_manager::finalizePythonInterpreter() {
+
+  _loadedScripts.clear();
+  _pythonContext = {};
+
   if (_pythonInitialized) {
-    _pythonContext = {};
+    // This must happen last, after all our handles to python objects are cleared.
     py::finalize_interpreter();
     _pythonInitialized = false;
   }

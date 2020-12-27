@@ -59,6 +59,6 @@ bool Input_manager::processMessage(UINT message, WPARAM wParam, LPARAM lParam) {
   return false;
 }
 
-std::weak_ptr<Input_manager::Mouse_state> Input_manager::mouseState() const {
+std::weak_ptr<Input_manager::Mouse_state> Input_manager::getMouseState() const {
   return std::weak_ptr<Mouse_state>(_mouseState);
 }

@@ -47,7 +47,7 @@ namespace oe {
             Render_pass_blend_mode blendMode
         ) = 0;
 
-        virtual Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) const = 0;
+        virtual Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) = 0;
         virtual void clearRenderStats() = 0;
     };
 }

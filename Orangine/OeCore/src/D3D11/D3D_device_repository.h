@@ -9,6 +9,7 @@ namespace oe {
 class D3D_device_repository : public IDevice_repository {
  public:
   D3D_device_repository(DX::DeviceResources& deviceResources);
+  virtual ~D3D_device_repository() = default;
 
   void createDeviceDependentResources() override;
   void destroyDeviceDependentResources() override;

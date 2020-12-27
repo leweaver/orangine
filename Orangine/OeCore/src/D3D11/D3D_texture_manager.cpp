@@ -196,7 +196,7 @@ class D3D_render_target_texture : public D3D_render_target_view_texture {
 class D3D_shadow_map_texture_array_texture : public D3D_texture {
  public:
   D3D_shadow_map_texture_array_texture(
-      Uint2 dimension,
+      Vector2u dimension,
       Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv)
       : D3D_texture(
             dimension,
@@ -422,9 +422,9 @@ class D3D_shadow_map_texture_pool : public Shadow_map_texture_pool {
 
     // Create the shadow maps
     _shadowMapDepthArrayTexture = std::make_shared<D3D_shadow_map_texture_array_texture>(
-        Uint2{_dimension, _dimension}, depthShaderResourceView);
+        Vector2u{_dimension, _dimension}, depthShaderResourceView);
     _shadowMapStencilArrayTexture = std::make_shared<D3D_shadow_map_texture_array_texture>(
-        Uint2{_dimension, _dimension}, stencilShaderResourceView);
+        Vector2u{_dimension, _dimension}, stencilShaderResourceView);
 
     auto arrayTextureRetriever = [this, depthShaderResourceView]() {
       return D3D_shadow_map_texture_array_slice::Array_texture{

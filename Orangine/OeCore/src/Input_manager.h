@@ -24,7 +24,7 @@ namespace oe::internal {
 	    bool processMessage(UINT message, WPARAM wParam, LPARAM lParam) override;
 
 	    // Mouse functions
-	    std::weak_ptr<Mouse_state> mouseState() const override;
+	    std::weak_ptr<Mouse_state> getMouseState() const override;
 	    
     private:
 

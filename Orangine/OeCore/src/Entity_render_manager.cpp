@@ -436,7 +436,7 @@ void Entity_render_manager::renderRenderable(
       wireFrame);
 }
 
-Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material> material) const {
+Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material> material) {
   auto renderable = Renderable();
   if (renderable.meshData == nullptr)
     renderable.meshData = Primitive_mesh_data_factory::createQuad(2.0f, 2.0f, {-1.f, -1.f, 0.f});

@@ -1,5 +1,5 @@
 import sys
-import engine
+import oe
 import logging
 
 from io import StringIO
@@ -28,21 +28,21 @@ class NativeHandler(logging.StreamHandler):
         try:
             msg = self.format(record)
             if record.levelno >= logging.WARNING:
-                engine.log_warning(msg)
+                oe.log_warning(msg)
             elif record.levelno >= logging.INFO:
-                engine.log_info(msg)
+                oe.log_info(msg)
             elif record.levelno >= logging.DEBUG:
-                engine.log_debug(msg)
+                oe.log_debug(msg)
         except RecursionError:  # See issue logger 36272
             raise
         except Exception:
             self.handleError(record)
 
-def init_logger():
+def _init_logger():
     logger = logging.getLogger()
-    if engine.log_debug_enabled():
+    if oe.log_debug_enabled():
         logger.setLevel(logging.DEBUG)
-    elif engine.log_info_enabled():
+    elif oe.log_info_enabled():
         logger.setLevel(logging.INFO)
     else:
         logger.setLevel(logging.WARNING)
@@ -52,6 +52,13 @@ def init_logger():
     native_handler.setLevel(logger.level)
     logger.addHandler(native_handler)
 
+def _init_statics():
+  oe.init_statics()
+  
+def init():
+  _init_logger()
+  _init_statics()
+
 # Captures stdout and stderr. This is just a bucket for any output not using logger
 # (which is handled by init_logger, above)
 def reset_output_streams():
@@ -60,9 +67,9 @@ def reset_output_streams():
         sys.stdout.flush()
     else:
         s = sys.stdout.getvalue()
-        if engine.log_info_enabled() and len(s):
+        if oe.log_info_enabled() and len(s):
             for line in s.split("\\n"):
-                engine.log_info(line)
+                oe.log_info(line)
         sys.stdout.seek(0)
         sys.stdout.truncate()
 
@@ -71,8 +78,8 @@ def reset_output_streams():
         sys.stderr.flush()
     else:
         s = sys.stderr.getvalue()
-        if engine.log_warning_enabled() and len(s):
+        if oe.log_warning_enabled() and len(s):
             for line in s.split("\\n"):
-                engine.log_warning(line)
+                oe.log_warning(line)
         sys.stderr.seek(0)
         sys.stderr.truncate()

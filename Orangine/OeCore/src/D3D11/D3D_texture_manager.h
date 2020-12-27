@@ -18,7 +18,7 @@ class D3D_texture : public Texture {
   }
 
   D3D_texture(
-      Uint2 dimension,
+      Vector2u dimension,
       uint32_t extraFlags,
       Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv)
       : Texture(
@@ -65,7 +65,7 @@ class D3D_shadow_map_texture : public D3D_texture {
   ID3D11DepthStencilView* depthStencilView() const { return _depthStencilView.Get(); }
 
  protected:
-  D3D_shadow_map_texture(Uint2 dimension, uint32_t flags)
+  D3D_shadow_map_texture(Vector2u dimension, uint32_t flags)
       : D3D_texture(dimension, flags, nullptr), _depthStencilView({}) {}
   explicit D3D_shadow_map_texture(uint32_t flags) : D3D_texture(flags), _depthStencilView({}) {}
 

@@ -61,9 +61,14 @@ struct Viewport {
   float maxDepth;
 };
 
-struct Uint2 {
+struct Vector2u {
   uint32_t x;
   uint32_t y;
+};
+
+struct Vector2i {
+  int32_t x;
+  int32_t y;
 };
 
 // SIMPLE VECTOR TYPES

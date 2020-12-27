@@ -6,7 +6,7 @@
 #include "OeCore/Scene.h"
 
 #include "D3D_device_repository.h"
-#include "D3D_Renderer_data.h"
+#include "D3D_renderer_data.h"
 
 #include "CommonStates.h"
 #include "DirectX_utils.h"
@@ -174,7 +174,7 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
   std::shared_ptr<Renderer_data> Entity_render_manager::createRendererData(
       std::shared_ptr<Mesh_data> meshData,
       const std::vector<Vertex_attribute_element>& vertexAttributes,
-      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const override {
+      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) override {
     auto rendererData = std::make_shared<Renderer_data>();
 
     switch (meshData->m_meshIndexType) {
@@ -294,6 +294,8 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
       rendererData->vertexBuffers[vertexAttr] = std::move(d3DAccessor);
     }
 
+    _createdRendererData.push_back(rendererData);
+
     return rendererData;
   }
 
@@ -305,8 +307,8 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
   };
 
   Buffer_array_set _bufferArraySet = {};
-  std::shared_ptr<D3D_device_repository> _deviceRepository;
-  std::vector<std::shared_ptr<Renderer_data>> _createdRendererData;
+  std::shared_ptr<oe::D3D_device_repository> _deviceRepository;
+  std::vector<std::shared_ptr<oe::Renderer_data>> _createdRendererData;
 };
 } // namespace oe::internal
 

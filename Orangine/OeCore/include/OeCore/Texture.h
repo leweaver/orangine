@@ -20,7 +20,7 @@ class Texture {
       , _dimension({0, 0})
       , _flags(static_cast<uint32_t>(Texture_flags::Invalid))
       , _arraySlice(0) {}
-  Texture(Uint2 dimension, uint32_t flags)
+  Texture(Vector2u dimension, uint32_t flags)
       : _samplerDescriptor(Sampler_descriptor())
       , _dimension(dimension)
       , _flags(flags)
@@ -32,7 +32,7 @@ class Texture {
 
   const Sampler_descriptor& getSamplerDescriptor() const { return _samplerDescriptor; }
 
-  Uint2 dimension() const { return _dimension; }
+  Vector2u dimension() const { return _dimension; }
   bool isArraySlice() const {
     return _flags & static_cast<uint32_t>(Texture_flags::Is_array_slice);
   }
@@ -43,7 +43,7 @@ class Texture {
  protected:
   Sampler_descriptor _samplerDescriptor;
 
-  Uint2 _dimension;
+  Vector2u _dimension;
 
   // mask of Texture_flags
   uint32_t _flags;

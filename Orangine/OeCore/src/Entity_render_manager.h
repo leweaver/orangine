@@ -53,7 +53,7 @@ class Entity_render_manager : public IEntity_render_manager {
       Render_pass_blend_mode blendMode) override;
 
   // Be warned - YOU are responsible for cleaning up this Renderable's D3D data on a device reset.
-  Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) const override;
+  Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) override;
 
   void clearRenderStats() override;
 
@@ -93,7 +93,7 @@ class Entity_render_manager : public IEntity_render_manager {
   virtual std::shared_ptr<Renderer_data> createRendererData(
       std::shared_ptr<Mesh_data> meshData,
       const std::vector<Vertex_attribute_element>& vertexAttributes,
-      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const = 0;
+      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) = 0;
 
   // Entities
   std::shared_ptr<IMaterial_repository> _materialRepository;

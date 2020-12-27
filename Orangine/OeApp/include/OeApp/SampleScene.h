@@ -7,6 +7,8 @@ class Sample_scene {
  public:
   explicit Sample_scene(Scene& scene, const std::vector<std::wstring>& extraAssetPaths);
 
+  void tick();
+
   Scene& getScene() const { return _scene; }
   std::shared_ptr<Entity> getRoot() const { return _root; }
 
@@ -38,6 +40,8 @@ class Sample_scene {
  protected:
   std::string createLightEntityName(const char* lightType, const std::string& userName);
 
+  void tickCamera();
+
   int _lightCount = 0;
   int _teapotCount = 0;
 
@@ -45,6 +49,7 @@ class Sample_scene {
 
   Scene& _scene;
   IScene_graph_manager& _entityManager;
+  IInput_manager& _inputManager;
 
   std::shared_ptr<Entity> _root;
 };

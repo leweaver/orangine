@@ -1,6 +1,5 @@
 #include "pch.h"
 
-
 #include "OeCore/EngineUtils.h"
 #include "OeCore/ITexture_manager.h"
 #include "OeCore/Mesh_utils.h"
@@ -8,8 +7,8 @@
 #include "OeCore/Scene.h"
 
 #include "D3D_material_manager.h"
-#include "D3D_texture_manager.h"
 #include "D3D_renderer_data.h"
+#include "D3D_texture_manager.h"
 
 #include <comdef.h> // for _com_error
 #include <d3d11.h>
@@ -153,10 +152,18 @@ void D3D_material_manager::createDeviceDependentResources() {
       WKPDID_D3DDebugObjectName, static_cast<UINT>(bufferName.size()), bufferName.c_str()));
 
   _boneTransformConstantBuffer = std::make_unique<D3D_buffer>(d3dBuffer, dataSize);
+
+  // Material specific rendering properties
+  auto d3dDevice = _deviceRepository->deviceResources().GetD3DDevice();
+  _renderLightData_unlit =
+      std::make_unique<decltype(_renderLightData_unlit)::element_type>(d3dDevice);
+  _renderLightData_lit = std::make_unique<decltype(_renderLightData_lit)::element_type>(d3dDevice);
 }
 
 void D3D_material_manager::destroyDeviceDependentResources() {
   _createdMaterialContexts.clear();
+  _renderLightData_unlit.reset();
+  _renderLightData_lit.reset();
 }
 
 std::shared_ptr<D3D_buffer> D3D_material_manager::createVsConstantBuffer(
@@ -530,8 +537,17 @@ void D3D_material_manager::loadShaderResourcesToContext(
   }
 }
 
+void D3D_material_manager::updateLightBuffers() {
+  _renderLightData_lit->updateBuffer(deviceResources().GetD3DDeviceContext());
+}
+
 void D3D_material_manager::bindLightDataToDevice(const Render_light_data* renderLightData) {
-  _boundLightDataConstantBuffer = renderLightData->buffer();
+  if (renderLightData == _renderLightData_lit.get())
+    _boundLightDataConstantBuffer = _renderLightData_lit->buffer();
+  else if (renderLightData == _renderLightData_unlit.get())
+    _boundLightDataConstantBuffer = _renderLightData_lit->buffer();
+  else
+    OE_THROW(std::exception("trying to bind an unknown renderLightData object."));
 }
 
 void D3D_material_manager::bindMaterialContextToDevice(

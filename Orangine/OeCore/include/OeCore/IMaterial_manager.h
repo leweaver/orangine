@@ -4,6 +4,7 @@
 #include "Render_pass.h"
 #include "Renderer_data.h"
 #include "Renderer_types.h"
+#include "Render_light_data.h"
 
 namespace oe {
 struct Renderer_data;
@@ -50,5 +51,12 @@ class IMaterial_manager
   virtual void setRendererFeaturesEnabled(
       const Renderer_features_enabled& renderer_feature_enabled) = 0;
   virtual const Renderer_features_enabled& rendererFeatureEnabled() const = 0;
+
+  // The template arguments here must match the size of the lights array in the shader constant
+  // buffer files.
+  virtual Render_light_data_impl<0>* getRenderLightDataUnlit() = 0;
+  virtual Render_light_data_impl<8>* getRenderLightDataLit() = 0;
+
+  virtual void updateLightBuffers() = 0;
 };
 } // namespace oe

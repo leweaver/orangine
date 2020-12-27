@@ -5,6 +5,8 @@
 #include "OeCore/Material_context.h"
 
 #include "D3D_device_repository.h"
+#include "D3D_Renderer_data.h"
+
 
 #include <vector>
 
@@ -93,6 +95,15 @@ class D3D_material_manager : public Material_manager {
       const Camera_data& camera) override;
   void unbind() override;
 
+  // The template arguments here must match the size of the lights array in the shader constant
+  // buffer files.
+  Render_light_data_impl<8>* getRenderLightDataLit() override { return _renderLightData_lit.get(); }
+  Render_light_data_impl<0>* getRenderLightDataUnlit() override {
+    return _renderLightData_unlit.get();
+  }
+
+  void updateLightBuffers() override;
+
   static const D3D_material_context& verifyAsD3dMaterialContext(
       const Material_context& materialContext);
   static D3D_material_context& verifyAsD3dMaterialContext(Material_context& materialContext);
@@ -158,5 +169,10 @@ class D3D_material_manager : public Material_manager {
   std::shared_ptr<D3D_device_repository> _deviceRepository;
   std::vector<uint8_t> _bufferTemp;
   std::vector<std::shared_ptr<D3D_material_context>> _createdMaterialContexts;
+
+  // The template arguments here must match the size of the lights array in the shader constant
+  // buffer files.
+  std::unique_ptr<D3D_render_light_data<0>> _renderLightData_unlit;
+  std::unique_ptr<D3D_render_light_data<8>> _renderLightData_lit;
 };
 } // namespace oe

@@ -52,24 +52,26 @@ const std::string& Entity_render_manager::name() const { return _name; }
 
 void Entity_render_manager::tick() {
   const auto& environmentVolume = _scene.environmentVolume();
+  auto* const renderLightData = _scene.manager<IMaterial_manager>().getRenderLightDataLit();
+
   if (environmentVolume.environmentIbl.skyboxTexture.get() != _environmentIbl.skyboxTexture.get()) {
     _environmentIbl = environmentVolume.environmentIbl;
 
     // Force reload of textures
-    if (_renderLightData_lit) {
-      _renderLightData_lit->setEnvironmentIblMap(nullptr, nullptr, nullptr);
+    if (renderLightData != nullptr) {
+      renderLightData->setEnvironmentIblMap(nullptr, nullptr, nullptr);
     }
   }
 
-  if (_renderLightData_lit && _environmentIbl.iblDiffuseTexture &&
-      !_renderLightData_lit->environmentMapDiffuse()) {
+  if (renderLightData && _environmentIbl.iblDiffuseTexture &&
+      !renderLightData->environmentMapDiffuse()) {
 
     auto& textureManager = _scene.manager<ITexture_manager>();
     textureManager.load(*_environmentIbl.iblBrdfTexture);
     textureManager.load(*_environmentIbl.iblDiffuseTexture);
     textureManager.load(*_environmentIbl.iblSpecularTexture);
 
-    _renderLightData_lit->setEnvironmentIblMap(
+    renderLightData->setEnvironmentIblMap(
         _environmentIbl.iblBrdfTexture,
         _environmentIbl.iblDiffuseTexture,
         _environmentIbl.iblSpecularTexture);
@@ -247,26 +249,29 @@ void Entity_render_manager::renderEntity(
 
     const auto lightMode = material->lightMode();
     Render_light_data* renderLightData;
+
+    // TODY: FIXME: I think this is really broken. We shouldn't be clearing the render light data per entity; but instead per frame.
     if (Material_light_mode::Lit == lightMode) {
-      renderLightData = _renderLightData_lit.get();
+      auto renderLightDataLit = _scene.manager<IMaterial_manager>().getRenderLightDataLit();
+      renderLightData = renderLightDataLit;
 
       // Ask the caller what lights are affecting this entity.
       _renderLights.clear();
-      _renderLightData_lit->clear();
-      lightDataProvider(entity.boundSphere(), _renderLights, _renderLightData_lit->maxLights());
-      if (_renderLights.size() > _renderLightData_lit->maxLights()) {
+      renderLightDataLit->clear();
+      lightDataProvider(entity.boundSphere(), _renderLights, renderLightDataLit->maxLights());
+      if (_renderLights.size() > renderLightDataLit->maxLights()) {
         OE_THROW(std::logic_error("Light_provider::Callback_type added too many lights to entity"));
       }
 
       for (auto& lightEntity : _renderLights) {
-        if (!addLightToRenderLightData(*lightEntity, *_renderLightData_lit)) {
+        if (!addLightToRenderLightData(*lightEntity, *renderLightDataLit)) {
           OE_THROW(std::logic_error("Failed to add light to light data"));
         }
       }
 
-      updateLightBuffers();
+      _scene.manager<IMaterial_manager>().updateLightBuffers();
     } else {
-      renderLightData = _renderLightData_unlit.get();
+      renderLightData = _scene.manager<IMaterial_manager>().getRenderLightDataUnlit();
     }
 
     // Morphed animation?
@@ -389,28 +394,29 @@ void Entity_render_manager::renderRenderable(
   const auto lightMode = material->lightMode();
   Render_light_data* renderLightData;
   if (Material_light_mode::Lit == lightMode) {
-    renderLightData = _renderLightData_lit.get();
+    auto* const renderLightDataLit = _scene.manager<IMaterial_manager>().getRenderLightDataLit();
+    renderLightData = renderLightDataLit;
 
     // Ask the caller what lights are affecting this entity.
     _renderLights.clear();
-    _renderLightData_lit->clear();
+    renderLightDataLit->clear();
     BoundingSphere lightTarget;
     lightTarget.center = worldMatrix.getTranslation();
     lightTarget.radius = radius;
-    lightDataProvider(lightTarget, _renderLights, _renderLightData_lit->maxLights());
-    if (_renderLights.size() > _renderLightData_lit->maxLights()) {
+    lightDataProvider(lightTarget, _renderLights, renderLightDataLit->maxLights());
+    if (_renderLights.size() > renderLightDataLit->maxLights()) {
       OE_THROW(std::logic_error("Light_provider::Callback_type added too many lights to entity"));
     }
 
     for (auto& lightEntity : _renderLights) {
-      if (!addLightToRenderLightData(*lightEntity, *_renderLightData_lit)) {
+      if (!addLightToRenderLightData(*lightEntity, *renderLightDataLit)) {
         OE_THROW(std::logic_error("Failed to add light to light data"));
       }
     }
 
-    updateLightBuffers();
+    _scene.manager<IMaterial_manager>().updateLightBuffers();
   } else {
-    renderLightData = _renderLightData_unlit.get();
+    renderLightData = _scene.manager<IMaterial_manager>().getRenderLightDataUnlit();
   }
 
   auto* rendererAnimationData = renderable.rendererAnimationData.get();

@@ -5,6 +5,9 @@
 #include <memory>
 #include <vector>
 
+#include "D3D_directx11.h"
+
+
 namespace oe {
 
 class Entity_filter;

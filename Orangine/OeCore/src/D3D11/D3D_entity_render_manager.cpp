@@ -128,11 +128,6 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
 
   void createDeviceDependentResources() override {
     auto* const device = deviceResources().GetD3DDevice();
-
-    // Material specific rendering properties
-    _renderLightData_unlit =
-        std::make_unique<decltype(_renderLightData_unlit)::element_type>(device);
-    _renderLightData_lit = std::make_unique<decltype(_renderLightData_lit)::element_type>(device);
   }
 
   std::shared_ptr<D3D_buffer> createBufferFromData(
@@ -166,13 +161,7 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
   }
 
   void destroyDeviceDependentResources() override {
-    _renderLightData_unlit.reset();
-    _renderLightData_lit.reset();
     _createdRendererData.clear();
-  }
-
-  void updateLightBuffers() override {
-    _renderLightData_lit->updateBuffer(deviceResources().GetD3DDeviceContext());
   }
 
   std::shared_ptr<D3D_buffer> createBufferFromData(

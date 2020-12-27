@@ -80,8 +80,6 @@ class Entity_render_manager : public IEntity_render_manager {
       const Renderer_data& rendererData,
       const Material_context& context) = 0;
 
-  virtual void updateLightBuffers() = 0;
-
   /**
    * \brief Creates a new Renderer_data instance from the given mesh data, in a format
    *        that satisfies the given vertex attributes (normally generated from a material)
@@ -112,11 +110,6 @@ class Entity_render_manager : public IEntity_render_manager {
   std::vector<Entity*> _renderLights = {};
 
   Environment_volume::EnvironmentIBL _environmentIbl = {};
-
-  // The template arguments here must match the size of the lights array in the shader constant
-  // buffer files.
-  std::unique_ptr<Render_light_data_impl<0>> _renderLightData_unlit;
-  std::unique_ptr<Render_light_data_impl<8>> _renderLightData_lit;
 
   static std::string _name;
 };

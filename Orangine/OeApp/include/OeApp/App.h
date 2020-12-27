@@ -44,5 +44,8 @@ class App {
 
   // Called after the managers are ticked, and just before the engine renders the next scene
   virtual void onScenePreRender(Scene& scene) {}
+
+  // Called when the application is about to shut down, before managers are destroyed.
+  virtual void onSceneShutdown(Scene& scene) {}
 };
 } // namespace oe

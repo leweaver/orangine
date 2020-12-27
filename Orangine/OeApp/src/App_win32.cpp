@@ -209,6 +209,8 @@ int oe::App::run(const oe::App_start_settings& settings) {
     }
   } while (false);
 
+  onSceneShutdown(g_game->scene());
+
   g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(nullptr);
   g_game.reset();
 

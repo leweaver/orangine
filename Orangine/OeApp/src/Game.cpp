@@ -91,7 +91,7 @@ void Game::Render() {
     return;
   }
 
-  m_scene->manager<IRender_step_manager>().render(m_scene->mainCamera());
+  m_scene->manager<IRender_step_manager>().render(m_scene->getMainCamera());
   m_scene->manager<IUser_interface_manager>().render();
 
   // Show the new frame.

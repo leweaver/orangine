@@ -10,6 +10,8 @@ using oe::Engine_bindings;
 
 namespace oe {
 
+Scene* Engine_bindings::_scene = nullptr;
+
 void engine_log_func(const std::string& message, const LEVELS& level) {
   if (!g3::logLevel(level)) {
     return;
@@ -83,11 +85,76 @@ void Engine_bindings::create(pybind11::module& m) {
       .def_readwrite("x", &Vector2i::x)
       .def_readwrite("y", &Vector2i::y);
 
+  // Math types
+  py::class_<SSE::Vector3>(m, "Vector3")
+      // Default constructor; does no initialization
+      .def(py::init<>())
+      // Constructor with values
+      .def(py::init<float, float, float>())
+      .def_property(
+          "x",
+          [](const SSE::Vector3& v) { return static_cast<float>(v.getX()); },
+          [](SSE::Vector3& v, float val) { v.setX(val); })
+      .def_property(
+          "y",
+          [](const SSE::Vector3& v) { return static_cast<float>(v.getY()); },
+          [](SSE::Vector3& v, float val) { v.setY(val); })
+      .def_property(
+          "z",
+          [](const SSE::Vector3& v) { return static_cast<float>(v.getZ()); },
+          [](SSE::Vector3& v, float val) { v.setZ(val); });
+
+  py::class_<SSE::Quat>(m, "Quat")
+      // Default constructor; does no initialization
+      .def(py::init<>())
+      // Constructor with values
+      .def(py::init<float, float, float, float>())
+      .def_property(
+          "x",
+          [](const SSE::Quat& v) { return static_cast<float>(v.getX()); },
+          [](SSE::Quat& v, float val) { v.setX(val); })
+      .def_property(
+          "y",
+          [](const SSE::Quat& v) { return static_cast<float>(v.getY()); },
+          [](SSE::Quat& v, float val) { v.setY(val); })
+      .def_property(
+          "z",
+          [](const SSE::Quat& v) { return static_cast<float>(v.getZ()); },
+          [](SSE::Quat& v, float val) { v.setZ(val); })
+      .def_property(
+          "w",
+          [](const SSE::Quat& v) { return static_cast<float>(v.getW()); },
+          [](SSE::Quat& v, float val) { v.setW(val); })
+      .def_static("rotation_x", static_cast<const Quat (*)(float)>(&Quat::rotationX))
+      .def_static("rotation_y", static_cast<const Quat (*)(float)>(&Quat::rotationY))
+      .def_static("rotation_z", static_cast<const Quat (*)(float)>(&Quat::rotationZ))
+      .def("__mul__", [](const Quat& lhs, const Quat& rhs)
+      {
+        return lhs * rhs;
+      });
+
+  // Entity
+  py::class_<Entity, std::shared_ptr<Entity>>(m, "Entity")
+      .def("get_name", &Entity::getName)
+      .def_property("position", &Entity::position, &Entity::setPosition)
+      .def_property("rotation", &Entity::rotation, &Entity::setRotation)
+      .def_property(
+          "scale",
+          &Entity::scale,
+          static_cast<void (Entity::*)(const SSE::Vector3&)>(&Entity::setScale))
+      .def_property(
+          "scale", &Entity::scale, static_cast<void (Entity::*)(float)>(&Entity::setScale));
+
+  // Scene
+  py::class_<Scene>(m, "Scene")
+      .def("get_main_camera", &Scene::getMainCamera)
+      .def("set_main_camera", &Scene::setMainCamera);
+
   // Input Manager
   const auto clsInput =
       pybind11::class_<PyClass_input>(m, "Input")
           .def(py::init<>())
-          .def("getMouseState", &PyClass_input::getMouseState, py::return_value_policy::copy);
+          .def("get_mouse_state", &PyClass_input::getMouseState, py::return_value_policy::copy);
 
   py::enum_<IInput_manager::Mouse_state::Button_state>(clsInput, "MouseButtonState")
       .value("Up", IInput_manager::Mouse_state::Button_state::Up)
@@ -106,7 +173,11 @@ void Engine_bindings::create(pybind11::module& m) {
 
   // Managers
   py::class_<PyClass_managers>(m, "Managers")
-                         .def_property_readonly("input", &PyClass_managers::getInput);
+      .def_property_readonly("input", &PyClass_managers::getInput);
 
-  m.def("init_statics", [m]() { m.attr("managers") = new PyClass_managers(); });
+  m.def("init_statics", [m]() { m.attr("managers") = std::make_unique<PyClass_managers>(); });
+  m.def(
+      "get_scene", []() { return _scene; }, py::return_value_policy::reference);
+
+  LOG(INFO) << "Created engine bindings";
 }

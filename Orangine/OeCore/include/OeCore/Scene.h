@@ -86,7 +86,7 @@ class Scene {
     return ml;
   }
 
-  std::shared_ptr<Entity> mainCamera() const { return _mainCamera; }
+  std::shared_ptr<Entity> getMainCamera() const { return _mainCamera; }
   void setMainCamera(const std::shared_ptr<Entity>& cameraEntity);
 
   const Environment_volume& environmentVolume() const { return _environmentVolume; }

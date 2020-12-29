@@ -71,7 +71,6 @@ void Entity_scripting_manager::preInit_addAbsoluteScriptsPath(const std::wstring
 }
 
 void Entity_scripting_manager::initialize() {
-  {
     _testEntityFilter =
         _scene.manager<IScene_graph_manager>().getEntityFilter({Test_component::type()});
 
@@ -87,12 +86,12 @@ void Entity_scripting_manager::initialize() {
         Entity_filter_mode::Any);
 
     try {
+      Engine_bindings::setScene(&_scene);
       initializePythonInterpreter();
       return;
     } catch (const py::error_already_set& err) {
       logPythonError(err, "service initialization");
     }
-  }
 
   // This must happen outside of a catch, so that the error_already_set object is destructed prior
   // to throwing.
@@ -362,6 +361,7 @@ void Entity_scripting_manager::finalizePythonInterpreter() {
 
   _loadedScripts.clear();
   _pythonContext = {};
+  Engine_bindings::setScene(nullptr);
 
   if (_pythonInitialized) {
     // This must happen last, after all our handles to python objects are cleared.
@@ -406,7 +406,7 @@ void Entity_scripting_manager::renderDebugSpheres() const {
     }
   }
 
-  const auto mainCameraEntity = _scene.mainCamera();
+  const auto mainCameraEntity = _scene.getMainCamera();
   if (mainCameraEntity != nullptr) {
     const auto cameraComponent = mainCameraEntity->getFirstComponentOfType<Camera_component>();
     if (cameraComponent) {

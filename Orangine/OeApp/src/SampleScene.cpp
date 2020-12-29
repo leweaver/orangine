@@ -125,7 +125,7 @@ void Sample_scene::addCamera() {
 
   _scene.setMainCamera(camera);
 
-  _scene.manager<IEntity_scripting_manager>().loadSceneScript("camera.OrbitCamera");
+  _scene.manager<IEntity_scripting_manager>().loadSceneScript("camera.FirstPersonCamera");
 }
 
 std::shared_ptr<Entity> Sample_scene::addDirectionalLight(

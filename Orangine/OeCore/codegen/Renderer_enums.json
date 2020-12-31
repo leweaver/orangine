@@ -1,0 +1,167 @@
+{
+    "output_header": "../include/OeCore/Renderer_enums.h",
+    "output_cpp": "../src/Renderer_enums.cpp",
+    "includes": [
+        "pch.h",
+        "OeCore/EngineUtils.h",
+        "OeCore/Renderer_enums.h"
+    ],
+    "enums": [
+        {
+            "name": "material alpha mode",
+            "values": [
+                "opaque",
+                "mask",
+                "blend"
+            ]
+        },
+        {
+            "name": "material face cull mode",
+            "values": [
+                "back face",
+                "front face",
+                "none"
+            ]
+        },
+        {
+            "name": "material light mode",
+            "values": [
+                "unlit",
+                "lit"
+            ]
+        },
+        {
+            "name": "render pass blend mode",
+            "values": [
+                "opaque",
+                "blended alpha",
+                "additive"
+            ]
+        },
+        {
+            "name": "render pass depth mode",
+            "values": [
+                "read write",
+                "read only",
+                "write only",
+                "disabled"
+            ]
+        },
+        {
+            "name": "render pass stencil mode",
+            "values": [
+                "enabled",
+                "disabled"
+            ]
+        },
+        {
+            "name": "render pass destination",
+            "values": [
+                "default",
+                "gbuffer",
+                "render target view"
+            ]
+        },
+        {
+            "name": "vertex attribute",
+            "values": [
+                "position",
+                "color",
+                "normal",
+                "tangent",
+                "bi tangent",
+                "tex coord",
+                "joints",
+                "weights"
+            ]
+        },
+        {
+            "name": "mesh index type",
+            "values": [
+                "triangles",
+                "lines"
+            ]
+        },
+        {
+            "name": "animation type",
+            "values": [
+  "translation",
+  "rotation",
+  "scale",
+  "morph"
+            ]
+            
+        },
+        {
+            "name": "animation interpolation",
+            "values": [
+  "linear",
+  "step",
+  "cubic spline"
+            ]
+        },
+        {
+            "name": "element type",
+            "values": [
+  "scalar",
+  "vector2",
+  "vector3",
+  "vector4",
+  "matrix2",
+  "matrix3",
+  "matrix4"
+            ]
+        },
+        {
+            "name": "element component",
+            "values": [
+  "signed byte",
+  "unsigned byte",
+  "signed short",
+  "unsigned short",
+  "signed int",
+  "unsigned int",
+  "float"
+            ]
+        },
+        {
+            "name": "debug display mode",
+            "values": [
+                "none",
+                "normals",
+                "world positions",
+                "lighting"]
+        },
+        {
+            "name": "sampler filter type",
+            "values": [
+                "point",
+                "linear",
+                "point mipmap point",
+                "point mipmap linear",
+                "linear mipmap point",
+                "linear mipmap linear"]
+        },
+        {
+            "name": "sampler texture address mode",
+            "values": [
+                "wrap",
+                "mirror",
+                "clamp",
+                "border",
+                "mirror once"]
+        },
+        {
+            "name": "sampler comparison func",
+            "values": [
+                "never",
+                "less",
+                "equal",
+                "less equal",
+                "greater",
+                "not equal",
+                "greater equal",
+                "always"]
+        }
+    ]
+}

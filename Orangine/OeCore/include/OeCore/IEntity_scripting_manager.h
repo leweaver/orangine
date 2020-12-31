@@ -17,5 +17,8 @@ class IEntity_scripting_manager : public Manager_base, public Manager_tickable {
   virtual void execute(const std::string& command) = 0;
   virtual bool commandSuggestions(const std::string& command,
                                   std::vector<std::string>& suggestions) = 0;
+
+  // Python class name - can include a module (sych as mygame.MyClass)
+  virtual void loadSceneScript(const std::string& scriptClassString) = 0;
 };
 } // namespace oe

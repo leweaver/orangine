@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Collision.h"
-#include "Renderer_enum.h"
+#include "Renderer_types.h"
 #include "EngineUtils.h"
 
 #include <dxgiformat.h>
@@ -24,23 +24,23 @@ inline uint32_t convert_index_value(
     Element_component srcComponent,
     const std::uint8_t* srcIndexBuffer) {
   switch (srcComponent) {
-  case Element_component::Unsigned_Byte:
+  case Element_component::Unsigned_byte:
     return static_cast<uint32_t>(*reinterpret_cast<const uint8_t*>(srcIndexBuffer));
-  case Element_component::Unsigned_Short:
+  case Element_component::Unsigned_short:
     return static_cast<uint32_t>(*reinterpret_cast<const uint16_t*>(srcIndexBuffer));
-  case Element_component::Unsigned_Int:
+  case Element_component::Unsigned_int:
     return static_cast<uint32_t>(*reinterpret_cast<const uint32_t*>(srcIndexBuffer));
-  case Element_component::Signed_Byte: {
+  case Element_component::Signed_byte: {
     auto* signedValue = reinterpret_cast<const int8_t*>(srcIndexBuffer);
     assert(*signedValue >= 0);
     return static_cast<uint32_t>(*signedValue);
   }
-  case Element_component::Signed_Short: {
+  case Element_component::Signed_short: {
     auto* signedValue = reinterpret_cast<const int16_t*>(srcIndexBuffer);
     assert(*signedValue >= 0);
     return static_cast<uint32_t>(*signedValue);
   }
-  case Element_component::Signed_Int: {
+  case Element_component::Signed_int: {
     auto* signedValue = reinterpret_cast<const int32_t*>(srcIndexBuffer);
     assert(*signedValue >= 0);
     return static_cast<uint32_t>(*signedValue);

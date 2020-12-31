@@ -1,20 +1,19 @@
 ﻿#pragma once
-#include "OeCore/IMaterial_manager.h"
-#include "OeCore/Material_context.h"
-#include "OeCore/Renderer_data.h"
-#include "OeCore/Renderer_enum.h"
 
-#include "D3D11/Device_repository.h"
+#include "OeCore/IMaterial_manager.h"
+#include "OeCore/Material.h"
+#include "OeCore/Renderer_data.h"
+#include "OeCore/Renderer_types.h"
 
 namespace oe {
 class Texture;
+class Scene;
 struct Renderer_animation_data;
 
 class Material_manager : public IMaterial_manager {
  public:
-  explicit Material_manager(
-      Scene& scene,
-      std::shared_ptr<internal::Device_repository> deviceRepository);
+  explicit Material_manager(Scene& scene);
+  ~Material_manager() = default;
 
   Material_manager(const Material_manager& other) = delete;
   Material_manager(Material_manager&& other) = delete;
@@ -29,25 +28,16 @@ class Material_manager : public IMaterial_manager {
   // Manager_tickable implementation
   void tick() override;
 
-  // Manager_deviceDependent implementation
-  void createDeviceDependentResources() override;
-  void destroyDeviceDependentResources() override;
-
   // IMaterial_manager implementation
   const std::wstring& shaderPath() const;
+
   void bind(
       Material_context& materialContext,
       std::shared_ptr<const Material> material,
       const Mesh_vertex_layout& meshVertexLayout,
-      const Render_light_data& renderLightData,
+      const Render_light_data* renderLightData,
       Render_pass_blend_mode blendMode,
       bool enablePixelShader) override;
-
-  void render(
-      const Renderer_data& rendererData,
-      const SSE::Matrix4& worldMatrix,
-      const Renderer_animation_data& rendererAnimationState,
-      const Render_pass::Camera_data& camera) override;
 
   void unbind() override;
 
@@ -56,31 +46,29 @@ class Material_manager : public IMaterial_manager {
   const Renderer_features_enabled& rendererFeatureEnabled() const override;
 
  protected:
-  struct Material_constants {
-    std::shared_ptr<D3D_buffer> vertexConstantBuffer;
-    std::shared_ptr<D3D_buffer> pixelConstantBuffer;
-  };
-  // Indexed by Material::materialTypeIndex()
-  std::vector<Material_constants> _materialConstants;
-
   void setShaderPath(const std::wstring& path);
 
-  DX::DeviceResources& deviceResources() const;
+  const Material* getBoundMaterial() const { return _boundMaterial.get(); }
 
-  void ensureMaterialConstants(const Material& material, Material_constants*& materialConstants);
-  bool ensureSamplerState(
-      Texture& texture,
-      D3D11_TEXTURE_ADDRESS_MODE textureAddressMode,
-      ID3D11SamplerState** d3D11SamplerState) const;
+  virtual void createVertexShader(
+      bool enableOptimizations,
+      const Material& material,
+      Material_context& materialContext) const = 0;
+  virtual void createPixelShader(
+      bool enableOptimizations,
+      const Material& material,
+      Material_context& materialContext) const = 0;
 
-  void createVertexShader(
-      bool enableOptimizations,
-      Material_context::Compiled_material& compiledMaterial,
-      const Material& material) const;
-  void createPixelShader(
-      bool enableOptimizations,
-      Material_context::Compiled_material& compiledMaterial,
-      const Material& material) const;
+  virtual void createMaterialConstants(const Material& material) = 0;
+
+  virtual void loadShaderResourcesToContext(
+      const Material::Shader_resources& shader_resources,
+      Material_context& material_context) = 0;
+
+  virtual void bindLightDataToDevice(const Render_light_data* renderLightData) = 0;
+  virtual void bindMaterialContextToDevice(
+      const Material_context& materialContext,
+      bool enablePixelShader) = 0;
 
  private:
   static std::string _name;
@@ -92,11 +80,5 @@ class Material_manager : public IMaterial_manager {
 
   std::shared_ptr<const Material> _boundMaterial;
   Render_pass_blend_mode _boundBlendMode;
-  Microsoft::WRL::ComPtr<ID3D11Buffer> _boundLightDataConstantBuffer;
-  std::shared_ptr<D3D_buffer> _boneTransformConstantBuffer;
-  uint32_t _boundSrvCount = 0;
-  uint32_t _boundSsCount = 0;
-
-  std::shared_ptr<internal::Device_repository> _deviceRepository;
 };
 } // namespace oe

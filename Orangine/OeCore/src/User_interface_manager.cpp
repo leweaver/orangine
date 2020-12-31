@@ -16,13 +16,13 @@ std::string User_interface_manager::_name = "User_interface_manager";
 template <>
 IUser_interface_manager* oe::create_manager(
     Scene& scene,
-    std::shared_ptr<Device_repository>& device_repository) {
+    std::shared_ptr<D3D_device_repository>& device_repository) {
   return new User_interface_manager(scene, device_repository);
 }
 
 User_interface_manager::User_interface_manager(
     Scene& scene,
-    std::shared_ptr<Device_repository> device_repository)
+    std::shared_ptr<D3D_device_repository> device_repository)
     : IUser_interface_manager(scene), _deviceRepository(device_repository) {}
 
 void User_interface_manager::initialize() {

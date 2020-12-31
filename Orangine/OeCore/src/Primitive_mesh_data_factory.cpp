@@ -25,7 +25,7 @@ void addIndicesAccessor(Mesh_data& meshData, std::vector<uint16_t>&& indices)
 	memcpy_s(meshBuffer->data, meshBuffer->dataSize, indices.data(), srcSize);
 
 	meshData.indexBufferAccessor = std::make_unique<Mesh_index_buffer_accessor>(meshBuffer, 
-        Element_component::Unsigned_Short,
+        Element_component::Unsigned_short,
 		static_cast<uint32_t>(indices.size()), 
         static_cast<uint32_t>(sizeof(uint16_t)), 
         0);
@@ -67,9 +67,9 @@ void addNormalBufferAccessor(std::shared_ptr<Mesh_data> meshData, std::shared_pt
 template <class TVertex_type, int TSemantic_index = 0>
 void addTextureBufferAccessor(std::shared_ptr<Mesh_data> meshData, std::shared_ptr<Mesh_buffer> meshBuffer, const std::vector<TVertex_type>& vertices) {
     constexpr auto vertexSize = sizeof(TVertex_type);
-    meshData->vertexBufferAccessors[{Vertex_attribute::Tex_Coord, TSemantic_index}] = std::make_unique<Mesh_vertex_buffer_accessor>(
+    meshData->vertexBufferAccessors[{Vertex_attribute::Tex_coord, TSemantic_index}] = std::make_unique<Mesh_vertex_buffer_accessor>(
         meshBuffer,
-        Vertex_attribute_element{ {Vertex_attribute::Tex_Coord, TSemantic_index}, Element_type::Vector2, Element_component::Float },
+        Vertex_attribute_element{ {Vertex_attribute::Tex_coord, TSemantic_index}, Element_type::Vector2, Element_component::Float },
         static_cast<uint32_t>(vertices.size()), static_cast<uint32_t>(vertexSize),
         static_cast<uint32_t>(offsetof(TVertex_type, textureCoordinate))
         );
@@ -162,7 +162,7 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNor
     auto meshData = std::make_shared<Mesh_data>(Mesh_vertex_layout({
         {Vertex_attribute::Position, 0},
         {Vertex_attribute::Normal, 0},
-        {Vertex_attribute::Tex_Coord, 0}
+        {Vertex_attribute::Tex_coord, 0}
         }));
     addIndicesAccessor(*meshData.get(), move(indices));
 
@@ -349,7 +349,7 @@ void Primitive_mesh_data_factory::generateNormals(
 	const auto normalBufferEnd = normalBufferStart + normalBufferAccessor.count * normalBufferAccessor.stride + sizeof(XMFLOAT3);
 		
 	// Iterate over each triangle, creating a flat normal.
-	if (indexBufferAccessor.component == Element_component::Unsigned_Short)
+	if (indexBufferAccessor.component == Element_component::Unsigned_short)
 	{		
 		assert(sizeof(uint16_t) <= indexBufferAccessor.stride);
 		const uint16_t numVertices = positionBufferAccessor.count;

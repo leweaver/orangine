@@ -23,7 +23,7 @@ enum class Entity_state : uint8_t { Uninitialized, Initialized, Ready, Destroyed
  * functionality and behaviors should be added in the form of Components (for storing state)
  * and GameServices (for executing behavior).
  */
-class Entity {
+class Entity : public std::enable_shared_from_this<Entity> {
  public:
   using Id_type = unsigned int;
   using Entity_ptr_vec = std::vector<std::shared_ptr<Entity>>;

@@ -3,10 +3,7 @@
 #include "Manager_base.h"
 #include "Primitive_mesh_data_factory.h"
 #include "Deferred_light_material.h"
-#include "Render_pass.h"
-#include "Render_pass_config.h"
 #include "Collision.h"
-#include "Renderable.h"
 
 #include <memory>
 #include "Light_provider.h"
@@ -22,6 +19,7 @@ namespace oe {
     class Entity_alpha_sorter;
     class Entity_cull_sorter;
     class Shadow_map_texture_pool;
+    class Renderable;
 
     class IEntity_render_manager :
         public Manager_base,
@@ -37,19 +35,19 @@ namespace oe {
         virtual void renderRenderable(Renderable& renderable,
             const SSE::Matrix4& worldMatrix,
             float radius,
-            const Render_pass::Camera_data& cameraData,
+            const Camera_data& cameraData,
             const Light_provider::Callback_type& lightDataProvider,
             Render_pass_blend_mode blendMode,
             bool wireFrame
         ) = 0;
 
         virtual void renderEntity(Renderable_component& renderable,
-            const Render_pass::Camera_data& cameraData,
+            const Camera_data& cameraData,
             const Light_provider::Callback_type& lightDataProvider,
             Render_pass_blend_mode blendMode
         ) = 0;
 
-        virtual Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) const = 0;
+        virtual Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) = 0;
         virtual void clearRenderStats() = 0;
     };
 }

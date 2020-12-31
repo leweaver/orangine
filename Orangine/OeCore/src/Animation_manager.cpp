@@ -6,6 +6,8 @@
 #include "OeCore/Morph_weights_component.h"
 #include "OeCore/Scene.h"
 
+#include <algorithm>
+
 using namespace oe;
 using namespace DirectX;
 
@@ -147,7 +149,7 @@ void Animation_manager::tick()
           fn(*animatedEntity, *animationChannel, minIndex);
           break;
         }
-        case Animation_interpolation::Cubic_Spline: {
+        case Animation_interpolation::Cubic_spline: {
           const auto& fn = g_cubic_spline_animation_type_handlers[static_cast<unsigned>(
               animationChannel->animationType)];
           fn(*animatedEntity, *animationChannel, minIndex, maxIndex, factor);

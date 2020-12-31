@@ -27,7 +27,7 @@ namespace oe {
         virtual void setGuiDebugText(const std::string& text) = 0;
         virtual void clearDebugShapes() = 0;
 
-        virtual void renderDebugShapes(const Render_pass::Camera_data& cameraData) = 0;
+        virtual void renderDebugShapes(const Camera_data& cameraData) = 0;
         virtual void renderImGui() = 0;
 
         virtual void setVectorLog(VectorLog* logSink) = 0;

@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "OeCore/Component.h"
 #include "OeCore/Mesh_data.h"
-#include "OeCore/Renderer_enum.h"
+#include "OeCore/Renderer_types.h"
 
 namespace oe {
 struct Mesh_buffer_accessor;

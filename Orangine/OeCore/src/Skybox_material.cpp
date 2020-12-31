@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+
 #include "OeCore/Skybox_material.h"
 #include "OeCore/Texture.h"
 #include "OeCore/Material_repository.h"
@@ -10,7 +11,7 @@ const std::string g_json_cubeMapTexture = "cube_map_texture";
 
 // Uses blended alpha, to ensure standard rendering pipeline (not deferred)
 Skybox_material::Skybox_material()
-    : Base_type(static_cast<uint8_t>(Material_type_index::Skybox), Material_alpha_mode::Opaque, Material_face_cull_mode::Front_Face)
+    : Base_type(static_cast<uint8_t>(Material_type_index::Skybox), Material_alpha_mode::Opaque, Material_face_cull_mode::Front_face)
 {	
 }
 
@@ -33,10 +34,10 @@ Material::Shader_resources Skybox_material::shaderResources(const std::set<std::
     if (_cubeMapTexture) {
         sr.textures.push_back(_cubeMapTexture);
 
-        auto samplerDesc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
-        samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+        auto samplerDesc = Sampler_descriptor();
+        samplerDesc.wrapU = Sampler_texture_address_mode::Wrap;
+        samplerDesc.wrapV = Sampler_texture_address_mode::Wrap;
+        samplerDesc.wrapW = Sampler_texture_address_mode::Wrap;
         sr.samplerDescriptors.push_back(samplerDesc);
     }
     return sr;

@@ -75,7 +75,7 @@ namespace oe::mesh_utils {
 
         return std::make_unique<Mesh_index_buffer_accessor>(
             meshBuffer, 
-            Element_component::Unsigned_Int, 
+            Element_component::Unsigned_int, 
             srcElementCount, 
             static_cast<uint32_t>(dstElementSize),
             0);
@@ -83,32 +83,32 @@ namespace oe::mesh_utils {
 
     const std::map<Element_type, std::map<Element_component, DXGI_FORMAT>> g_elementTypeComponent_dxgiFormat = {
         { Element_type::Scalar, {
-            { Element_component::Unsigned_Short, DXGI_FORMAT_R16_UINT },
-            { Element_component::Signed_Short, DXGI_FORMAT_R16_SINT },
-            { Element_component::Unsigned_Int, DXGI_FORMAT_R32_UINT },
-            { Element_component::Signed_Int, DXGI_FORMAT_R32_SINT },
+            { Element_component::Unsigned_short, DXGI_FORMAT_R16_UINT },
+            { Element_component::Signed_short, DXGI_FORMAT_R16_SINT },
+            { Element_component::Unsigned_int, DXGI_FORMAT_R32_UINT },
+            { Element_component::Signed_int, DXGI_FORMAT_R32_SINT },
             { Element_component::Float, DXGI_FORMAT_R32_FLOAT },
             }
         },
         { Element_type::Vector2, {
-            { Element_component::Unsigned_Short, DXGI_FORMAT_R16G16_UINT },
-            { Element_component::Signed_Short, DXGI_FORMAT_R16G16_SINT },
-            { Element_component::Unsigned_Int, DXGI_FORMAT_R32G32_UINT },
-            { Element_component::Signed_Int, DXGI_FORMAT_R32G32_SINT },
+            { Element_component::Unsigned_short, DXGI_FORMAT_R16G16_UINT },
+            { Element_component::Signed_short, DXGI_FORMAT_R16G16_SINT },
+            { Element_component::Unsigned_int, DXGI_FORMAT_R32G32_UINT },
+            { Element_component::Signed_int, DXGI_FORMAT_R32G32_SINT },
             { Element_component::Float, DXGI_FORMAT_R32G32_FLOAT },
             }
         },
         { Element_type::Vector3, {
-            { Element_component::Unsigned_Int, DXGI_FORMAT_R32G32B32_UINT },
-            { Element_component::Signed_Int, DXGI_FORMAT_R32G32B32_SINT },
+            { Element_component::Unsigned_int, DXGI_FORMAT_R32G32B32_UINT },
+            { Element_component::Signed_int, DXGI_FORMAT_R32G32B32_SINT },
             { Element_component::Float, DXGI_FORMAT_R32G32B32_FLOAT },
             }
         },
         { Element_type::Vector4, {
-            { Element_component::Unsigned_Short, DXGI_FORMAT_R16G16B16A16_UINT },
-            { Element_component::Signed_Short, DXGI_FORMAT_R16G16B16A16_SINT },
-            { Element_component::Unsigned_Int, DXGI_FORMAT_R32G32B32A32_UINT },
-            { Element_component::Signed_Int, DXGI_FORMAT_R32G32B32A32_SINT },
+            { Element_component::Unsigned_short, DXGI_FORMAT_R16G16B16A16_UINT },
+            { Element_component::Signed_short, DXGI_FORMAT_R16G16B16A16_SINT },
+            { Element_component::Unsigned_int, DXGI_FORMAT_R32G32B32A32_UINT },
+            { Element_component::Signed_int, DXGI_FORMAT_R32G32B32A32_SINT },
             { Element_component::Float, DXGI_FORMAT_R32G32B32A32_FLOAT },
             }
         }

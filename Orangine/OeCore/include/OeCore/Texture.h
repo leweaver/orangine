@@ -1,80 +1,57 @@
 ﻿#pragma once
 
-#include "DeviceResources.h"
+#include "Renderer_types.h"
+
 #include <tinygltf/json.hpp>
 
-namespace oe
-{
-	class Texture {
-	public:
-		virtual ~Texture() = default;
+namespace oe {
 
-		bool isValid() const { return _shaderResourceView != nullptr; }
+enum class Texture_flags {
+  Invalid = 0,
+  Is_valid = 1 << 0,
+  Is_array_texture = 1 << 1, // this is a 3d (array) texture
+  Is_array_slice = 1 << 2,   // is a single slice of an array texture
+};
 
-		ID3D11ShaderResourceView* getShaderResourceView() const { return _shaderResourceView.Get(); }
+class Texture {
+ public:
+  Texture()
+      : _samplerDescriptor(Sampler_descriptor())
+      , _dimension({0, 0})
+      , _flags(static_cast<uint32_t>(Texture_flags::Invalid))
+      , _arraySlice(0) {}
+  Texture(Vector2u dimension, uint32_t flags)
+      : _samplerDescriptor(Sampler_descriptor())
+      , _dimension(dimension)
+      , _flags(flags)
+      , _arraySlice(0) {}
+  virtual ~Texture() = default;
 
-		// Will throw a std::exception if texture failed to load.
-		virtual void load(ID3D11Device* device) = 0;
-		virtual void unload();
+  // All other fields are only guaranteed to return valid data if this method returns true.
+  bool isValid() const { return _flags & static_cast<uint32_t>(Texture_flags::Is_valid); }
 
-	protected:
-		Texture()
-			: _shaderResourceView(nullptr)
-		{}
-		explicit Texture(ID3D11ShaderResourceView* srv)
-			: _shaderResourceView(srv)
-		{}
+  const Sampler_descriptor& getSamplerDescriptor() const { return _samplerDescriptor; }
 
-		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _shaderResourceView;
-	};
+  Vector2u dimension() const { return _dimension; }
+  bool isArraySlice() const {
+    return _flags & static_cast<uint32_t>(Texture_flags::Is_array_slice);
+  }
 
-	class Buffer_texture : public Texture
-	{
-	public:
+  // Returns which array slice this texture is; only valid when Is_array_slice flag is present.
+  uint32_t arraySlice() const { return _arraySlice; }
 
-		Buffer_texture(uint32_t stride, uint32_t buffer_size, std::unique_ptr<uint8_t>& buffer)
-			: _stride(stride)
-			, _bufferSize(buffer_size)
-			, _buffer(std::move(buffer))
-		{
-		}
+ protected:
+  Sampler_descriptor _samplerDescriptor;
 
-		void load(ID3D11Device* device) override;
+  Vector2u _dimension;
 
-	private:
-		uint32_t _stride;
-		uint32_t _bufferSize;
-		std::unique_ptr<uint8_t> _buffer;
-	};
+  // mask of Texture_flags
+  uint32_t _flags;
 
-	class File_texture : public Texture
-	{
-		Microsoft::WRL::ComPtr<ID3D11Resource> _textureResource;
-		std::wstring _filename;
-	public:
+  uint32_t _arraySlice;
+};
 
-	    // Filename must be an absolute path to a supported texture file.
-	    // If the file does not exist or is not supported, the load() method will throw.
-		explicit File_texture(std::wstring&& filename)
-			: _filename(std::move(filename))
-		{
-		}
+void to_json(nlohmann::json& j, const std::shared_ptr<Texture> texture);
 
-		void load(ID3D11Device* device) override;
-		void unload() override;
-		const std::wstring& filename() const { return _filename; }
-	};
-
-	class Depth_texture : public Texture
-	{
-		const DX::DeviceResources& _deviceResources;
-
-	public:
-		explicit Depth_texture(const DX::DeviceResources& deviceResources);
-		void load(ID3D11Device* device) override;
-	};
-
-    void to_json(nlohmann::json& j, const std::shared_ptr<Texture> texture);
-
-    void from_json(const nlohmann::json& j, std::shared_ptr<Texture>& texture);
-}
+void from_json(const nlohmann::json& j, std::shared_ptr<Texture>& texture);
+} // namespace oe

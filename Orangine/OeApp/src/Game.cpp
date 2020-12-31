@@ -34,7 +34,7 @@ Game::~Game() {
   ComPtr<ID3D11Device> device = m_deviceResources->GetD3DDevice();
   ComPtr<ID3D11Debug> d3DDebug;
   if (device && SUCCEEDED(device.As(&d3DDebug))) {
-    // d3DDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+    //d3DDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
   }
 
   m_deviceResources.reset();
@@ -91,7 +91,7 @@ void Game::Render() {
     return;
   }
 
-  m_scene->manager<IRender_step_manager>().render(m_scene->mainCamera());
+  m_scene->manager<IRender_step_manager>().render(m_scene->getMainCamera());
   m_scene->manager<IUser_interface_manager>().render();
 
   // Show the new frame.

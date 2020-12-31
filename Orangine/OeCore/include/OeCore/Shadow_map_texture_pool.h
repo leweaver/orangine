@@ -1,14 +1,10 @@
 ﻿#pragma once
 
-#include "Shadow_map_texture.h"
+#include "OeCore/Texture.h"
 
 #include <memory>
-#include <stack>
 
 namespace oe {
-namespace internal {
-class Device_repository;
-}
 /*
  * This is a simple shadow map texture pool, that allows creation of shadow map depth textures
  * that exist in a single Array Texture2D.
@@ -17,38 +13,26 @@ class Device_repository;
  */
 class Shadow_map_texture_pool {
  public:
-  Shadow_map_texture_pool(
-      uint32_t maxDimension,
-      uint32_t textureArraySize,
-      std::shared_ptr<internal::Device_repository> deviceRepository);
-  ~Shadow_map_texture_pool();
+  virtual ~Shadow_map_texture_pool() {}
 
-  void createDeviceDependentResources();
-  void destroyDeviceDependentResources();
+  /// Must be called by the owner of this pool
+  virtual void createDeviceDependentResources() = 0;
+
+  /// Must be called by the owner of this pool
+  virtual void destroyDeviceDependentResources() = 0;
 
   // If the pool is waiting for textures to be returned, this will throw.
   // If the pool is exhausted (all textures are allocated) then this will return nullptr.
-  std::unique_ptr<Shadow_map_texture_array_slice> borrowTexture();
+  virtual std::shared_ptr<Texture> borrowTexture() = 0;
 
   // once a texture has been returned to the pool, no more can be borrowed until
   // all have been returned back to the pool.
-  void returnTexture(std::unique_ptr<Shadow_map_texture> shadowMap);
+  virtual void returnTexture(std::shared_ptr<Texture> shadowMap) = 0;
 
   // Shader resource view that can be used when sampling the shadow map depth
-  std::shared_ptr<Texture> shadowMapDepthTextureArray() { return _shadowMapDepthArrayTexture; };
+  virtual std::shared_ptr<Texture> shadowMapDepthTextureArray() = 0;
 
   // Shader resource view that can be used when sampling the shadow map stencil
-  std::shared_ptr<Texture> shadowMapStencilTextureArray() { return _shadowMapStencilArrayTexture; };
-
- protected:
-  const uint32_t _dimension;
-  const uint32_t _textureArraySize;
-
-  std::shared_ptr<internal::Device_repository> _deviceRepository;
-  Microsoft::WRL::ComPtr<ID3D11Texture2D> _shadowMapArrayTexture2D;
-  std::shared_ptr<Texture> _shadowMapDepthArrayTexture;
-  std::shared_ptr<Texture> _shadowMapStencilArrayTexture;
-
-  std::vector<std::unique_ptr<Shadow_map_texture_array_slice>> _shadowMaps;
+  virtual std::shared_ptr<Texture> shadowMapStencilTextureArray() = 0;
 };
 } // namespace oe

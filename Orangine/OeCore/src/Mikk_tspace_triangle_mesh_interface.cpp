@@ -2,7 +2,6 @@
 
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Mikk_tspace_triangle_mesh_interface.h"
-#include "OeCore/Simple_types.h"
 
 using namespace oe;
 using namespace std::literals;
@@ -19,7 +18,7 @@ Mikk_tspace_triangle_mesh_interface::Mikk_tspace_triangle_mesh_interface(
                          meshData->vertexBufferAccessors[{Vertex_attribute::Normal, 0}].get(),
                          meshData->vertexBufferAccessors[texCoordAttribute].get(),
                          meshData->vertexBufferAccessors[{Vertex_attribute::Tangent, 0}].get(),
-                         meshData->vertexBufferAccessors[{Vertex_attribute::Bi_Tangent, 0}].get(),
+                         meshData->vertexBufferAccessors[{Vertex_attribute::Bi_tangent, 0}].get(),
                      }
 {
   if (meshData->m_meshIndexType != Mesh_index_type::Triangles)
@@ -29,10 +28,10 @@ Mikk_tspace_triangle_mesh_interface::Mikk_tspace_triangle_mesh_interface(
   if (!meshData->indexBufferAccessor || (meshData->indexBufferAccessor->count % 3) != 0)
     OE_THROW(std::logic_error("MikkTSpaceTriangleMeshInterface requires MeshData with a valid index "
                            "buffer (count must be multiple of 3)."));
-  if (!(meshData->indexBufferAccessor->component == Element_component::Unsigned_Short ||
-        meshData->indexBufferAccessor->component == Element_component::Unsigned_Int ||
-        meshData->indexBufferAccessor->component == Element_component::Signed_Short ||
-        meshData->indexBufferAccessor->component == Element_component::Signed_Int)) {
+  if (!(meshData->indexBufferAccessor->component == Element_component::Unsigned_short ||
+        meshData->indexBufferAccessor->component == Element_component::Unsigned_int ||
+        meshData->indexBufferAccessor->component == Element_component::Signed_short ||
+        meshData->indexBufferAccessor->component == Element_component::Signed_int)) {
     OE_THROW(std::logic_error(g_msg_index_buffer_format));
   }
 

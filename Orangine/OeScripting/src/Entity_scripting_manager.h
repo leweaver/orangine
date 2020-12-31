@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Script_runtime_data.h"
 #include "OeCore/Entity_filter.h"
 #include "OeCore/IEntity_scripting_manager.h"
 
@@ -23,14 +24,13 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
   bool commandSuggestions(const std::string& command,
                           std::vector<std::string>& suggestions) override;
 
+  void loadSceneScript(const std::string& scriptClassString) override;
+
+
  private:
   const std::string _name = "Entity_scripting_manager";
 
-  std::shared_ptr<Entity_filter> _scriptableEntityFilter;
   std::shared_ptr<Entity_filter> _testEntityFilter;
-  std::shared_ptr<Entity_filter::Entity_filter_listener> _scriptableEntityFilterListener;
-  std::vector<unsigned> _addedEntities;
-  std::vector<unsigned> _removedEntities;
 
   std::shared_ptr<Entity_filter> _renderableEntityFilter;
   std::shared_ptr<Entity_filter> _lightEntityFilter;
@@ -40,14 +40,6 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
   std::wstring _pythonProgramName;
   std::vector<std::wstring> _preInit_additionalPaths;
 
-  // TODO: This would be part of a script context
-  struct ScriptData {
-    float yaw = 0.0f;
-    float pitch = 0.0f;
-    float distance = 10.0f;
-  };
-  ScriptData _scriptData;
-
   struct EngineInternalPythonModule {
     EngineInternalPythonModule(pybind11::module engineInternal);
 
@@ -55,11 +47,12 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
     pybind11::detail::str_attr_accessor reset_output_streams;
     pybind11::detail::str_attr_accessor enable_remote_debugging;
   };
+
   struct PythonContext {
-    pybind11::module sys;
-    //pybind11::dict globals;
-    std::unique_ptr<EngineInternalPythonModule> engine_internal_module;
+    pybind11::module _sysModule;
+    std::unique_ptr<EngineInternalPythonModule> _engineInternalModule;
   };
+
   PythonContext _pythonContext;
 
   void initializePythonInterpreter();
@@ -71,5 +64,6 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
   void renderDebugSpheres() const;
 
   bool _pythonInitialized = false;
+  std::vector < std::unique_ptr<Script_runtime_data>> _loadedScripts;
 };
 } // namespace oe::internal

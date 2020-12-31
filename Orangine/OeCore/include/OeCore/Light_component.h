@@ -3,9 +3,9 @@
 #include "Color.h"
 #include "Component.h"
 
-namespace oe {
-class Shadow_map_texture;
+#include "OeCore/Shadow_map_texture.h"
 
+namespace oe {
 class Light_component : public Component {
  public:
   explicit Light_component(Entity& entity) : Component(entity) {}
@@ -18,10 +18,10 @@ class Light_component : public Component {
   virtual void setIntensity(float intensity) = 0;
 
   // Runtime, non-serializable
-  std::unique_ptr<Shadow_map_texture>& shadowData() { return _shadowData; }
+  std::unique_ptr<Shadow_map_data>& shadowData() { return _shadowMapData; }
 
  private:
-  std::unique_ptr<Shadow_map_texture> _shadowData;
+  std::unique_ptr<Shadow_map_data> _shadowMapData;
 };
 
 class Directional_light_component : public Light_component {

@@ -2,19 +2,15 @@
 
 #include "Color.h"
 #include "Shadow_map_texture.h"
-#include "Simple_types.h"
 
 namespace oe {
 class Render_light_data {
  public:
-  ID3D11Buffer* buffer() const { return _constantBuffer.Get(); }
-
   std::shared_ptr<Texture> environmentMapBrdf() const { return _environmentIblMapBrdf; }
   std::shared_ptr<Texture> environmentMapDiffuse() const { return _environmentIblMapDiffuse; }
   std::shared_ptr<Texture> environmentMapSpecular() const { return _environmentIblMapSpecular; }
 
  protected:
-  Microsoft::WRL::ComPtr<ID3D11Buffer> _constantBuffer;
   std::shared_ptr<Texture> _environmentIblMapBrdf;
   std::shared_ptr<Texture> _environmentIblMapDiffuse;
   std::shared_ptr<Texture> _environmentIblMapSpecular;
@@ -23,28 +19,6 @@ class Render_light_data {
 template <uint8_t TMax_lights> class Render_light_data_impl : public Render_light_data {
  public:
   enum class Light_type : int32_t { Directional, Point, Ambient };
-
-  explicit Render_light_data_impl(ID3D11Device* device)
-  {
-    // DirectX constant buffers must be aligned to 16 byte boundaries (vector4)
-    static_assert(sizeof(Light_constants) % 16 == 0);
-
-    D3D11_BUFFER_DESC bufferDesc;
-    bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-    bufferDesc.ByteWidth = sizeof(Light_constants);
-    bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bufferDesc.CPUAccessFlags = 0;
-    bufferDesc.MiscFlags = 0;
-
-    D3D11_SUBRESOURCE_DATA initData;
-    initData.pSysMem = &_lightConstants;
-    initData.SysMemPitch = 0;
-    initData.SysMemSlicePitch = 0;
-
-    DX::ThrowIfFailed(device->CreateBuffer(&bufferDesc, &initData, &_constantBuffer));
-
-    DirectX::SetDebugObjectName(_constantBuffer.Get(), L"Render_light_data constant buffer");
-  }
 
   bool addPointLight(const SSE::Vector3& lightPosition, const Color& color, float intensity)
   {
@@ -59,17 +33,17 @@ template <uint8_t TMax_lights> class Render_light_data_impl : public Render_ligh
                                      Light_constants::shadow_map_disabled_index});
   }
   bool addDirectionalLight(const SSE::Vector3& lightDirection, const Color& color, float intensity,
-                           const Shadow_map_texture_array_slice& shadowMapTexture,
+                           const Shadow_map_data& shadowMapData,
                            float shadowMapBias)
   {
     typename Light_constants::Light_entry lightEntry = {
         Light_type::Directional,
         static_cast<Float3>(lightDirection),
         encodeColor(color, intensity),
-        static_cast<int32_t>(shadowMapTexture.arraySlice()),
-        shadowMapTexture.worldViewProjMatrix(),
+        static_cast<int32_t>(shadowMapData.shadowMap->arraySlice()),
+        shadowMapData.worldViewProjMatrix,
         shadowMapBias,
-        static_cast<int32_t>(shadowMapTexture.textureWidth())};
+        static_cast<int32_t>(shadowMapData.shadowMap->dimension().x)};
 
     if (_lightConstants.addLight(std::move(lightEntry))) {
       return true;
@@ -89,16 +63,12 @@ template <uint8_t TMax_lights> class Render_light_data_impl : public Render_ligh
     _environmentIblMapDiffuse = diffuse;
     _environmentIblMapSpecular = specular;
   }
-  void updateBuffer(ID3D11DeviceContext* context)
-  {
-    context->UpdateSubresource(_constantBuffer.Get(), 0, nullptr, &_lightConstants, 0, 0);
-  }
   void clear() { _lightConstants.clear(); }
   bool empty() const { return _lightConstants.empty(); }
   bool full() const { return _lightConstants.full(); }
   static uint8_t maxLights() { return TMax_lights; }
 
- private:
+ protected:
   class alignas(16) Light_constants {
    public:
     static constexpr int32_t shadow_map_disabled_index = -1;

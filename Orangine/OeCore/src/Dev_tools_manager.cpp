@@ -18,6 +18,8 @@
 
 #include "D3D11/DirectX_utils.h"
 
+#include <algorithm>
+
 using namespace DirectX;
 using namespace oe;
 using namespace internal;
@@ -206,7 +208,7 @@ void Dev_tools_manager::setGuiDebugText(const std::string& text) { _guiDebugText
 
 void Dev_tools_manager::clearDebugShapes() { _debugShapes.clear(); }
 
-void Dev_tools_manager::renderDebugShapes(const Render_pass::Camera_data& cameraData) {
+void Dev_tools_manager::renderDebugShapes(const Camera_data& cameraData) {
   auto& entityRenderManager = _scene.manager<IEntity_render_manager>();
   for (auto& debugShape : _debugShapes) {
     const auto& transform = std::get<SSE::Matrix4>(debugShape);
@@ -233,7 +235,7 @@ void Dev_tools_manager::renderImGui() {
 
     const char* items[] = {debugDisplayModeToString(Debug_display_mode::None).c_str(),
                            debugDisplayModeToString(Debug_display_mode::Normals).c_str(),
-                           debugDisplayModeToString(Debug_display_mode::World_Positions).c_str(),
+                           debugDisplayModeToString(Debug_display_mode::World_positions).c_str(),
                            debugDisplayModeToString(Debug_display_mode::Lighting).c_str()};
     auto item_current = static_cast<int>(featuresEnabled.debugDisplayMode);
     if (ImGui::Checkbox("Skinning", &featuresEnabled.skinnedAnimation) ||

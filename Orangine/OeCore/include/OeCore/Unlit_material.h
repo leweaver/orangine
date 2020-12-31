@@ -2,7 +2,7 @@
 
 #include "OeCore/Material_base.h"
 #include "OeCore/Color.h"
-#include "Simple_types.h"
+#include "Renderer_types.h"
 
 namespace oe {
 	struct Unlit_material_vs_constant_buffer : Vertex_constant_buffer_base {
@@ -37,7 +37,7 @@ namespace oe {
 
 	protected:
 		
-		void updateVSConstantBufferValues(Unlit_material_vs_constant_buffer& constants, 
+		void updateVsConstantBufferValues(Unlit_material_vs_constant_buffer& constants, 
 			const SSE::Matrix4& worldMatrix,
 			const SSE::Matrix4& viewMatrix,
 			const SSE::Matrix4& projMatrix,

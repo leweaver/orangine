@@ -11,10 +11,11 @@
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Morph_weights_component.h"
 #include "OeCore/PBR_material.h"
-#include "OeCore/Unlit_material.h"
 #include "OeCore/Renderable_component.h"
 #include "OeCore/Skinned_mesh_component.h"
 #include "OeCore/Texture.h"
+#include "OeCore/Unlit_material.h"
+#include "OeCore/ITexture_manager.h"
 
 #include <functional>
 #include <wincodec.h>
@@ -41,7 +42,7 @@ const map<string, Vertex_attribute_semantic> g_gltfAttributeToVertexAttributeMap
     {s_primAttrName_normal, {Vertex_attribute::Normal, 0}},
     {s_primAttrName_tangent, {Vertex_attribute::Tangent, 0}},
     {s_primAttrName_color + "0", {Vertex_attribute::Color, 0}},
-    {s_primAttrName_texCoord + "0", {Vertex_attribute::Tex_Coord, 0}},
+    {s_primAttrName_texCoord + "0", {Vertex_attribute::Tex_coord, 0}},
     {s_primAttrName_joints + "0", {Vertex_attribute::Joints, 0}},
     {s_primAttrName_weights + "0", {Vertex_attribute::Weights, 0}},
 };
@@ -56,7 +57,7 @@ const map<string, Vertex_attribute_semantic> g_gltfMorphAttributeMapping = {
 const map<string, Animation_interpolation> g_animationSamplerInterpolationToTypeMap = {
     {"LINEAR", Animation_interpolation::Linear},
     {"STEP", Animation_interpolation::Step},
-    {"CUBICSPLINE", Animation_interpolation::Cubic_Spline},
+    {"CUBICSPLINE", Animation_interpolation::Cubic_spline},
 };
 
 const map<string, Animation_type> g_animationChannelTargetPathToTypeMap = {
@@ -95,7 +96,7 @@ const std::array<const std::map<int, std::set<int>>*, 4> g_animTypeToAllowedAcce
     &g_anim_morph_allowedAccessorTypes};
 static_assert(
     g_animTypeToAllowedAccessorTypes.size() ==
-    static_cast<unsigned>(Animation_type::Num_Animation_Type));
+    static_cast<unsigned>(Animation_type::Num_animation_type));
 const std::map<int, std::set<int>> g_index_allowedAccessorTypes = {
     {TINYGLTF_TYPE_SCALAR,
      {
@@ -130,11 +131,11 @@ const std::map<int, Element_type> g_gltfType_elementType = {
 };
 const std::map<int, Element_component> g_gltfComponent_elementComponent = {
     //{ TINYGLTF_COMPONENT_TYPE_BYTE, },
-    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, Element_component::Unsigned_Byte},
+    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE, Element_component::Unsigned_byte},
     //{ TINYGLTF_COMPONENT_TYPE_SHORT, },
-    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT, Element_component::Unsigned_Short},
+    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT, Element_component::Unsigned_short},
     //{ TINYGLTF_COMPONENT_TYPE_INT, },
-    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT, Element_component::Unsigned_Int},
+    {TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT, Element_component::Unsigned_int},
     {TINYGLTF_COMPONENT_TYPE_FLOAT, Element_component::Float},
     //{ TINYGLTF_COMPONENT_TYPE_DOUBLE, },
 };
@@ -181,26 +182,31 @@ struct Loader_data {
       Model& model,
       wstring&& baseDir,
       IWICImagingFactory* imagingFactory,
+      IEntity_repository& entityRepository,
+      IMaterial_repository& materialRepository,
+      ITexture_manager& textureManager,
       bool calculateBounds)
       : model(model)
       , baseDir(std::move(baseDir))
       , imagingFactory(imagingFactory)
-      , calculateBounds(calculateBounds) {}
+      , calculateBounds(calculateBounds)
+      , entityRepository(entityRepository)
+      , materialRepository(materialRepository)
+      , textureManager(textureManager) {}
 
   Model& model;
   wstring baseDir;
   IWICImagingFactory* imagingFactory;
+  IEntity_repository& entityRepository;
+  IMaterial_repository& materialRepository;
+  ITexture_manager& textureManager;
   map<size_t, shared_ptr<Mesh_buffer>> accessorIdxToMeshBuffers;
   vector<shared_ptr<Entity>> nodeIdxToEntity;
   bool calculateBounds;
   shared_ptr<Entity> rootEntity;
 };
 
-shared_ptr<Entity> create_entity(
-    vector<Node>::size_type nodeIdx,
-    IEntity_repository& entityRepository,
-    IMaterial_repository& materialRepository,
-    Loader_data& loaderData);
+shared_ptr<Entity> create_entity(vector<Node>::size_type nodeIdx, Loader_data& loaderData);
 void create_animation(int animIdx, Loader_data loaderData);
 
 const char* g_pbrPropertyName_baseColorFactor = "baseColorFactor";
@@ -252,7 +258,8 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(
   if (!allowedAccessorTypePos->second.empty() &&
       allowedAccessorTypePos->second.find(accessor.componentType) ==
           allowedAccessorTypePos->second.end()) {
-    OE_THROW(domain_error("Unexpected accessor component type: " + to_string(accessor.componentType)));
+    OE_THROW(
+        domain_error("Unexpected accessor component type: " + to_string(accessor.componentType)));
   }
 
   const auto componentSizeInBytes = GetComponentSizeInBytes(accessor.componentType);
@@ -313,8 +320,8 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(
     // Convert index buffers from 8-bit to 32 bit.
     if (elementType == Element_type::Scalar &&
         expectedBufferViewTarget == TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER &&
-        (elementComponent == Element_component::Unsigned_Byte ||
-         elementComponent == Element_component::Signed_Byte)) {
+        (elementComponent == Element_component::Unsigned_byte ||
+         elementComponent == Element_component::Signed_byte)) {
       // Transform the data to a known format
       const auto convertedIndexAccessor = mesh_utils::create_index_buffer(
           buffer.data,
@@ -422,6 +429,7 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
     wstring_view filePath,
     IEntity_repository& entityRepository,
     IMaterial_repository& materialRepository,
+    ITexture_manager& textureManager,
     bool calculateBounds) const {
   vector<shared_ptr<Entity>> entities;
   Model model;
@@ -468,12 +476,12 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
   const auto& scene = model.scenes[model.defaultScene];
   if (baseDir.empty())
     baseDir = L".";
-  Loader_data loaderData(model, move(baseDir), _imagingFactory.Get(), calculateBounds);
+  Loader_data loaderData(model, move(baseDir), _imagingFactory.Get(), entityRepository, materialRepository, textureManager, calculateBounds);
 
   // Load Entities
   loaderData.rootEntity = entityRepository.instantiate(filenameUtf8);
   for (auto nodeIdx : scene.nodes) {
-    auto entity = create_entity(nodeIdx, entityRepository, materialRepository, loaderData);
+    auto entity = create_entity(nodeIdx, loaderData);
     entity->setParent(*loaderData.rootEntity);
     entities.push_back(entity);
   }
@@ -548,6 +556,47 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
   return entities;
 }
 
+bool tryParseAddressMode(int gltfWrap, Sampler_texture_address_mode& parsedValue) {
+  switch (gltfWrap) {
+  case TINYGLTF_TEXTURE_WRAP_REPEAT:
+    parsedValue = Sampler_texture_address_mode::Wrap;
+    return true;
+  case TINYGLTF_TEXTURE_WRAP_MIRRORED_REPEAT:
+    parsedValue = Sampler_texture_address_mode::Mirror;
+    return true;
+  case TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE:
+    parsedValue = Sampler_texture_address_mode::Clamp;
+    return true;
+  default:
+    return false;
+  }
+}
+
+bool tryParseFilterType(int gltfFilter, Sampler_filter_type& parsedValue) {
+  switch (gltfFilter) {
+  case TINYGLTF_TEXTURE_FILTER_LINEAR:
+    parsedValue = Sampler_filter_type::Linear;
+    return true;
+  case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
+    parsedValue = Sampler_filter_type::Linear_mipmap_linear;
+    return true;
+  case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
+    parsedValue = Sampler_filter_type::Linear_mipmap_point;
+    return true;
+  case TINYGLTF_TEXTURE_FILTER_NEAREST:
+    parsedValue = Sampler_filter_type::Point;
+    return true;
+  case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:
+    parsedValue = Sampler_filter_type::Point_mipmap_linear;
+    return true;
+  case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
+    parsedValue = Sampler_filter_type::Point_mipmap_point;
+    return true;
+  default:
+    return false;
+  }
+}
+
 shared_ptr<oe::Texture> try_create_texture(
     const Loader_data& loaderData,
     const tinygltf::Material& gltfMaterial,
@@ -583,18 +632,36 @@ shared_ptr<oe::Texture> try_create_texture(
         "invalid texture index '" + to_string(gltfTextureIndex) + "' for " + textureName));
 
   const auto& gltfTexture = loaderData.model.textures.at(gltfTextureIndex);
+
+  auto samplerDescriptor = Sampler_descriptor(Default_values());
   if (gltfTexture.sampler >= 0) {
-    // TODO: Read the sampler for sampling details and store on our texture
     const auto& gltfSampler = loaderData.model.samplers.at(gltfTexture.sampler);
-  } else {
-    // todo: create default sampler
+    {
+      const auto validWrap = tryParseAddressMode(gltfSampler.wrapS, samplerDescriptor.wrapU) &&
+                             tryParseAddressMode(gltfSampler.wrapT, samplerDescriptor.wrapV);
+      if (!validWrap) {
+        OE_THROW(
+            domain_error("image " + to_string(gltfTexture.source) + " invalid sample wrap value"));
+      }
+    }
+
+    {
+      const auto validFilterType =
+          tryParseFilterType(gltfSampler.minFilter, samplerDescriptor.minFilter) &&
+          tryParseFilterType(gltfSampler.magFilter, samplerDescriptor.magFilter);
+
+      if (!validFilterType) {
+        OE_THROW(domain_error(
+            "image " + to_string(gltfTexture.source) + " invalid sample filter value"));
+      }
+    }
   }
 
   const auto& gltfImage = loaderData.model.images.at(gltfTexture.source);
 
   if (!gltfImage.uri.empty()) {
     const auto filename = loaderData.baseDir + L"\\" + utf8_decode(gltfImage.uri);
-    return make_shared<File_texture>(wstring(filename));
+    return loaderData.textureManager.createTextureFromFile(wstring(filename), samplerDescriptor);
   }
   if (!gltfImage.mimeType.empty()) {
     OE_THROW(runtime_error("not implemented"));
@@ -605,7 +672,6 @@ shared_ptr<oe::Texture> try_create_texture(
 
 shared_ptr<oe::Material> create_material(
     const Primitive& prim,
-    IMaterial_repository& materialRepository,
     Loader_data& loaderData) {
   auto material = std::make_shared<PBR_material>();
   if (prim.material < 0) {
@@ -614,8 +680,7 @@ shared_ptr<oe::Material> create_material(
 
   if (prim.material >= loaderData.model.materials.size()) {
     OE_THROW(domain_error(
-        "refers to material index " + to_string(prim.material) +
-        " which doesn't exist."));
+        "refers to material index " + to_string(prim.material) + " which doesn't exist."));
   }
 
   const auto& gltfMaterial = loaderData.model.materials[prim.material];
@@ -738,20 +803,23 @@ void setEntityTransform(Entity& entity, const Node& node) {
     entity.setTransform(createMatrix4FromGltfArray(node.matrix));
   } else {
     if (node.translation.size() == 3) {
-      entity.setPosition({static_cast<float>(node.translation[0]),
-                          static_cast<float>(node.translation[1]),
-                          static_cast<float>(node.translation[2])});
+      entity.setPosition(
+          {static_cast<float>(node.translation[0]),
+           static_cast<float>(node.translation[1]),
+           static_cast<float>(node.translation[2])});
     }
     if (node.rotation.size() == 4) {
-      entity.setRotation({static_cast<float>(node.rotation[0]),
-                          static_cast<float>(node.rotation[1]),
-                          static_cast<float>(node.rotation[2]),
-                          static_cast<float>(node.rotation[3])});
+      entity.setRotation(
+          {static_cast<float>(node.rotation[0]),
+           static_cast<float>(node.rotation[1]),
+           static_cast<float>(node.rotation[2]),
+           static_cast<float>(node.rotation[3])});
     }
     if (node.scale.size() == 3) {
-      entity.setScale({static_cast<float>(node.scale[0]),
-                       static_cast<float>(node.scale[1]),
-                       static_cast<float>(node.scale[2])});
+      entity.setScale(
+          {static_cast<float>(node.scale[0]),
+           static_cast<float>(node.scale[1]),
+           static_cast<float>(node.scale[2])});
     }
   }
 }
@@ -804,11 +872,9 @@ bool loadJointsWeights(
 
 shared_ptr<Entity> create_entity(
     vector<Node>::size_type nodeIdx,
-    IEntity_repository& entityRepository,
-    IMaterial_repository& materialRepository,
     Loader_data& loaderData) {
   const auto& node = loaderData.model.nodes.at(nodeIdx);
-  auto rootEntity = entityRepository.instantiate(node.name);
+  auto rootEntity = loaderData.entityRepository.instantiate(node.name);
   if (loaderData.nodeIdxToEntity.size() <= nodeIdx)
     loaderData.nodeIdxToEntity.resize(nodeIdx + 1);
   loaderData.nodeIdxToEntity[nodeIdx] = rootEntity;
@@ -826,7 +892,7 @@ shared_ptr<Entity> create_entity(
       const auto& prim = mesh.primitives.at(primIdx);
       const auto primitiveName = mesh.name + " primitive " + to_string(primIdx);
       LOG(G3LOG_DEBUG) << "Creating entity for glTF mesh " << primitiveName;
-      auto primitiveEntity = entityRepository.instantiate(primitiveName);
+      auto primitiveEntity = loaderData.entityRepository.instantiate(primitiveName);
 
       primitiveEntity->setParent(*rootEntity.get());
       auto& meshDataComponent = primitiveEntity->addComponent<Mesh_data_component>();
@@ -856,9 +922,8 @@ shared_ptr<Entity> create_entity(
           OE_THROW(std::domain_error(
               "Unsupported gltf accessor component type: " + accessor.componentType));
 
-        meshLayoutAttributes.push_back(Vertex_attribute_element{vaPos->second,
-                                                                accessorTypePos->second,
-                                                                accessorComponentTypePos->second});
+        meshLayoutAttributes.push_back(Vertex_attribute_element{
+            vaPos->second, accessorTypePos->second, accessorComponentTypePos->second});
       }
 
       vector<Vertex_attribute_semantic> morphTargetLayout;
@@ -880,7 +945,7 @@ shared_ptr<Entity> create_entity(
       meshDataComponent.setMeshData(meshData);
 
       try {
-        const auto material = create_material(prim, materialRepository, loaderData);
+        const auto material = create_material(prim, loaderData);
 
         // Read Index
         try {
@@ -1008,7 +1073,7 @@ shared_ptr<Entity> create_entity(
   }
 
   for (auto childIdx : node.children) {
-    auto childEntity = create_entity(childIdx, entityRepository, materialRepository, loaderData);
+    auto childEntity = create_entity(childIdx, loaderData);
     childEntity->setParent(*rootEntity.get());
   }
 
@@ -1117,7 +1182,7 @@ void create_animation(int animIdx, Loader_data loaderData) {
     }
 
     uint8_t valuesPerKeyFrame = 1;
-    if (interpolationType == Animation_interpolation::Cubic_Spline)
+    if (interpolationType == Animation_interpolation::Cubic_spline)
       valuesPerKeyFrame *= 3;
 
     // For morph animations, need to add a single channel per primitive as the

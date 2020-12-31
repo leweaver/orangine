@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <OeCore/Math_constants.h>
+#include <OeCore/WindowsDefines.h>
 
 #include <string>
 #include <string_view>
@@ -120,6 +121,17 @@ inline void decompose_matrix(
   rotMat.setCol1(rotMat.getCol1() / scale.getY());
   rotMat.setCol2(rotMat.getCol2() / scale.getZ());
   rotation = SSE::Quat(rotMat);
+}
+
+template <typename TEnum, size_t TCount>
+TEnum stringToEnum(const std::string& value, const std::string (&strings)[TCount]) {
+  for (auto i = 0; i < TCount; i++) {
+    {
+      if (strings[i] == value)
+        return static_cast<TEnum>(i);
+    }
+  }
+  OE_THROW(std::runtime_error("Unknown enum value: " + value));
 }
 } // namespace oe
 

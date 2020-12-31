@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Renderer_enum.h"
+#include "Renderer_types.h"
 #include "Mesh_vertex_layout.h"
 #include "EngineUtils.h"
 

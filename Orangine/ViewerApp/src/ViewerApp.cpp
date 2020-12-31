@@ -132,7 +132,8 @@ class ViewerApp : public oe::App {
     // CreateShadowTestScene(*_sampleScene);
     //
     //
-    CreateLightingTestScene(*_sampleScene);
+    CreateShadowTestScene(*_sampleScene);
+    //CreateLightingTestScene(*_sampleScene);
 
     // Load the skybox
     auto& assetManager = scene.manager<IAsset_manager>();

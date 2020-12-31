@@ -4,7 +4,7 @@ import math
 
 class FirstPersonCamera:
   def __init__(self):
-    self.yaw = math.pi
+    self.yaw = 0.0
     self.pitch = 0.0
     self.mouse_speed = 1.0 / 600.0
     

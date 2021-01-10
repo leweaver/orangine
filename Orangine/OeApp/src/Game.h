@@ -5,12 +5,10 @@
 #pragma once
 
 #include <OeApp/App.h>
-#include <OeCore/DeviceResources.h>
 #include <OeCore/Scene.h>
-#include <OeCore/StepTimer.h>
 
 #include <memory>
-
+/*
 namespace oe {
 class Entity;
 }
@@ -66,13 +64,6 @@ class Game : public oe::App, public DX::IDeviceNotify {
   std::unique_ptr<oe::Scene_device_resource_aware> m_scene;
 
   bool m_fatalError;
-  HWND _window;
 };
 
-bool Game::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const
-{
-  if (m_scene != nullptr) {
-    return m_scene->processMessage(message, wParam, lParam);
-  }
-  return false;
-}
+*/

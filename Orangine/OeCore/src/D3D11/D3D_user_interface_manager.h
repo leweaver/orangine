@@ -2,12 +2,14 @@
 
 #include "OeCore/IUser_interface_manager.h"
 
-#include "D3D11/D3D_device_repository.h"
+#include "D3D_device_repository.h"
 
 namespace oe::internal {
-class User_interface_manager : public IUser_interface_manager {
+class D3D_user_interface_manager : public IUser_interface_manager {
  public:
-  User_interface_manager(Scene& scene, std::shared_ptr<D3D_device_repository> device_repository);
+  D3D_user_interface_manager(
+      Scene& scene,
+      std::shared_ptr<D3D_device_repository> device_repository);
 
   // Manager_base implementation
   void initialize() override;

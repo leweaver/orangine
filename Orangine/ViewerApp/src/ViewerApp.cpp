@@ -154,7 +154,7 @@ class ViewerApp : public oe::App {
 
   void onSceneShutdown(Scene&) override { _sampleScene.reset(); }
 
-  void onSceneTick(Scene& scene) override { _sampleScene->tick(); }
+  void onScenePreTick(Scene& scene) override { _sampleScene->tick(); }
 
  protected:
   std::unique_ptr<Sample_scene> _sampleScene;

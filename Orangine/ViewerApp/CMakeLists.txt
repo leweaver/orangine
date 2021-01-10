@@ -39,7 +39,8 @@ add_precompiled_header(${PROJECT_NAME} pch.h
 # Dependencies
 
 # Use this for embedding in the built application, but also for some build scripts in CMake
-find_package(Python3 COMPONENTS Interpreter)
+find_package(Python COMPONENTS Interpreter)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC Oe::App)
 
 add_custom_command(TARGET ${PROJECT_NAME}
@@ -60,11 +61,11 @@ set(ViewerApp_DATA_PATHS_CONFIG_FILE "${PROJECT_BINARY_DIR}/config.data_paths.js
 set(ViewerApp_BUILD_CONFIG_FILE "${PROJECT_BINARY_DIR}/config.json")
 add_custom_command(OUTPUT "${ViewerApp_DATA_PATHS_CONFIG_FILE}"
 		COMMENT "Creating data_paths configuration file"
-		COMMAND "${Python3_EXECUTABLE}" "${Orangine_SOURCE_DIR}/cmake/scripts/make_data_paths_config.py" "${ViewerApp_DATA_DIRECTORIES}" > "${ViewerApp_DATA_PATHS_CONFIG_FILE}"
+		COMMAND "${Python_EXECUTABLE}" "${Orangine_SOURCE_DIR}/cmake/scripts/make_data_paths_config.py" "${ViewerApp_DATA_DIRECTORIES}" > "${ViewerApp_DATA_PATHS_CONFIG_FILE}"
 		)
 add_custom_command(OUTPUT "${ViewerApp_BUILD_CONFIG_FILE}"
 		COMMENT "Creating build configuration file"
-		COMMAND "${Python3_EXECUTABLE}" "${Orangine_SOURCE_DIR}/cmake/scripts/merge_config.py" "${ViewerApp_SOURCE_CONFIG_FILE}" "${ViewerApp_DATA_PATHS_CONFIG_FILE}" > "${ViewerApp_BUILD_CONFIG_FILE}"
+		COMMAND "${Python_EXECUTABLE}" "${Orangine_SOURCE_DIR}/cmake/scripts/merge_config.py" "${ViewerApp_SOURCE_CONFIG_FILE}" "${ViewerApp_DATA_PATHS_CONFIG_FILE}" > "${ViewerApp_BUILD_CONFIG_FILE}"
 		DEPENDS "${ViewerApp_SOURCE_CONFIG_FILE}" "${ViewerApp_DATA_PATHS_CONFIG_FILE}"
 		)
 add_custom_target(
@@ -102,15 +103,15 @@ include(OeUtils)
 install_target_pdb(ViewerApp)
 
 # Manually install the g3logger DLL from Orangine to this apps import directory
-find_package(g3logger REQUIRED)
-get_target_property(IMPORTED_CONFIGURATIONS_g3logger g3logger IMPORTED_CONFIGURATIONS)
-get_target_property(IMPORTED_LOCATION_g3logger g3logger "IMPORTED_LOCATION_${IMPORTED_CONFIGURATIONS_g3logger}")
+find_package(g3log REQUIRED)
+get_target_property(IMPORTED_CONFIGURATIONS_g3log g3log IMPORTED_CONFIGURATIONS)
+get_target_property(IMPORTED_LOCATION_g3log g3log "IMPORTED_LOCATION_${IMPORTED_CONFIGURATIONS_g3log}")
 
 add_custom_command(TARGET ${PROJECT_NAME}
 		POST_BUILD
-		COMMAND "${CMAKE_COMMAND}" -E copy "${IMPORTED_LOCATION_g3logger}" "${PROJECT_BINARY_DIR}"
+		COMMAND "${CMAKE_COMMAND}" -E copy "${IMPORTED_LOCATION_g3log}" "${PROJECT_BINARY_DIR}"
 		)
-install(FILES ${IMPORTED_LOCATION_g3logger}
+install(FILES ${IMPORTED_LOCATION_g3log}
         DESTINATION bin
 )
 

@@ -57,7 +57,7 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
 
   void initializePythonInterpreter();
   void finalizePythonInterpreter();
-  static void logPythonError(const pybind11::error_already_set& err, const std::string& whereStr);
+  static std::string logPythonError(const pybind11::error_already_set& err, const std::string& whereStr);
   void flushStdIo() const;
   void enableRemoteDebugging() const;
 

@@ -28,7 +28,7 @@ const size_t g_d3d_compiled_material_sentinel = 0xFFA500;
 template <>
 IMaterial_manager* oe::create_manager(
     Scene& scene,
-    std::shared_ptr<D3D_device_repository>& deviceRepository) {
+    std::shared_ptr<D3D12_device_resources>& deviceRepository) {
   return new D3D_material_manager(scene, deviceRepository);
 }
 
@@ -71,7 +71,7 @@ void D3D_material_context::reset() {
 
 D3D_material_manager::D3D_material_manager(
     Scene& scene,
-    std::shared_ptr<D3D_device_repository> deviceRepository)
+    std::shared_ptr<D3D12_device_resources> deviceRepository)
     : Material_manager(scene), _materialConstants({}), _deviceRepository(deviceRepository) {
 
   _textureAddressModeLUT = {

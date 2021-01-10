@@ -4,11 +4,11 @@
 
 #include "pch.h"
 
-#include "Game.h"
 #include "LogFileSink.h"
 #include "VectorLogSink.h"
 #include "VisualStudioLogSink.h"
 
+#include "OeCore/Scene.h"
 #include <OeApp/App.h>
 #include <OeCore/EngineUtils.h>
 #include <OeCore/WindowsDefines.h>
@@ -17,12 +17,6 @@
 
 #include <filesystem>
 #include <wrl/wrappers/corewrappers.h>
-
-using namespace DirectX;
-
-namespace {
-std::unique_ptr<Game> g_game;
-};
 
 const std::string path_to_log_file = "./";
 
@@ -34,6 +28,205 @@ extern "C" {
 __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
+
+extern std::unique_ptr<oe::IDevice_resources> createWin32DeviceResources(HWND hwnd);
+
+namespace oe {
+class App_impl {
+ public:
+  App_impl(
+      App* app,
+      HWND hwnd,
+      IDevice_resources* deviceResources,
+      Scene_device_resource_aware* scene)
+      : _app(app)
+      , _deviceResources(deviceResources)
+      , _scene(scene)
+      , _hwnd(hwnd)
+      , _fatalError(false) {}
+
+  // Game Loop
+  HWND getWindow() const { return _hwnd; }
+  void onTick() {
+
+    _timer.Tick([this]() { _scene->tick(_timer); });
+  }
+  void onRender() {
+
+    // Don't try to render anything before the first Update.
+    if (_timer.GetFrameCount() == 0) {
+      return;
+    }
+
+    _scene->manager<IRender_step_manager>().render(_scene->getMainCamera());
+    _scene->manager<IUser_interface_manager>().render();
+  }
+
+  // Messages
+  bool processMessage(UINT message, WPARAM wParam, LPARAM lParam) const {
+    return _scene->processMessage(message, wParam, lParam);
+  }
+  void onActivated() {
+    // TODO: Game is becoming active window.
+  }
+  void onDeactivated() {
+    // TODO: Game is becoming background window.
+  }
+  void onSuspending() {
+    // TODO: Game is being power-suspended (or minimized).
+  }
+  void onResuming() {
+    _timer.ResetElapsedTime();
+
+    // TODO: Game is being power-resumed (or returning from minimize).
+  }
+  void onWindowMoved() {
+    int width, height;
+    if (!_deviceResources->getWindowSize(width, height)) {
+      LOG(WARNING) << "onWindowMoved: Failed to get last window size.";
+      return;
+    }
+    _deviceResources->setWindowSize(width, height);
+  }
+  void onWindowSizeChanged(int width, int height) {
+    int oldWidth, oldHeight;
+    if (!_deviceResources->getWindowSize(oldWidth, oldHeight)) {
+      LOG(WARNING) << "onWindowSizeChanged: Failed to get last window size.";
+      return;
+    }
+
+    if (oldWidth == width && oldHeight == height) {
+      LOG(INFO) << "Window size unchanged, ignoring event: " << width << ", " << height;
+      return;
+    }
+
+    LOG(INFO) << "Window size changed: " << width << ", " << height;
+    _scene->destroyWindowSizeDependentResources();
+
+    if (!_deviceResources->setWindowSize(width, height)) {
+      LOG(WARNING) << "Device resources failed to handle WindowSizeChanged event.";
+    }
+
+    createWindowSizeDependentResources();
+  }
+
+  // Properties
+  void createDeviceDependentResources() {
+    try {
+      _deviceResources->createDeviceDependentResources();
+      _scene->createDeviceDependentResources();
+    } catch (std::exception& e) {
+      LOG(FATAL) << "Failed to create device dependent resources: " << e.what();
+      _fatalError = true;
+    }
+  }
+
+  void createWindowSizeDependentResources() {
+    try {
+      _deviceResources->recreateWindowSizeDependentResources();
+      int width, height;
+      if (!_deviceResources->getWindowSize(width, height)) {
+        LOG(WARNING) << "createWindowSizeDependentResources: Failed to get last window size.";
+        return;
+      }
+
+      _scene->createWindowSizeDependentResources(
+          _hwnd, std::max<UINT>(width, 1), std::max<UINT>(height, 1));
+    } catch (std::exception& e) {
+      LOG(FATAL) << "Failed to create window size dependent resources: " << e.what();
+      _fatalError = true;
+    }
+  }
+
+  void destroyDeviceDependentResources() {
+    _scene->destroyDeviceDependentResources();
+    _deviceResources->destroyDeviceDependentResources();
+  }
+
+  bool hasFatalError() const { return _fatalError; }
+  static bool createWindow(const App_start_settings& settings, HWND& hwnd) {
+    // TODO: We should try and get the hInstance that was passed to WinMain somehow.
+    // BUT... using the HINST_THISCOMPONENT macro defined above seems to break 64bit builds.
+    HINSTANCE hInstance = 0;
+
+    // Register class and create window
+    // Register class
+    WNDCLASSEX wcex;
+    wcex.cbSize = sizeof(WNDCLASSEX);
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = WndProc;
+    wcex.cbClsExtra = 0;
+    wcex.cbWndExtra = 0;
+    wcex.hInstance = hInstance;
+    wcex.hIcon = LoadIcon(hInstance, L"IDI_ICON");
+    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName = nullptr;
+    wcex.lpszClassName = L"OeAppWindowClass";
+    wcex.hIconSm = LoadIcon(wcex.hInstance, L"IDI_ICON");
+    if (!RegisterClassEx(&wcex)) {
+      LOG(WARNING) << "Failed to register window class: " << getlasterror_to_str();
+      return 1;
+    }
+
+    // Create window
+    int w = 0, h = 0;
+    getDefaultWindowSize(w, h);
+
+    RECT rc;
+    rc.top = 0;
+    rc.left = 0;
+    rc.right = static_cast<LONG>(w);
+    rc.bottom = static_cast<LONG>(h);
+
+    AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+
+    auto dwExStyle = settings.fullScreen ? WS_EX_TOPMOST : 0;
+    auto dwStyle = settings.fullScreen ? WS_POPUP : WS_OVERLAPPEDWINDOW;
+    hwnd = CreateWindowEx(
+        dwExStyle,
+        L"OeAppWindowClass",
+        settings.title.c_str(),
+        dwStyle,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        rc.right - rc.left,
+        rc.bottom - rc.top,
+        nullptr,
+        nullptr,
+        hInstance,
+        nullptr);
+
+    if (!hwnd) {
+      LOG(WARNING) << "Failed to create window: " << getlasterror_to_str();
+      return false;
+    }
+
+    ShowWindow(hwnd, settings.fullScreen ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
+
+    return true;
+  }
+
+  static void getDefaultWindowSize(int w, int h) {
+
+    // Get dimensions of the primary monitor
+    RECT rc;
+    GetWindowRect(GetDesktopWindow(), &rc);
+
+    // Set window to 75% of the desktop size
+    w = std::max(320l, (rc.right * 3) / 4);
+    h = std::max(200l, (rc.bottom * 3) / 4);
+  }
+
+ protected:
+  App* const _app;
+  IDevice_resources* const _deviceResources;
+  Scene_device_resource_aware* const _scene;
+  HWND const _hwnd;
+  bool _fatalError;
+  StepTimer _timer;
+};
+} // namespace oe
 
 // Do NOT do this in 64 bit builds, it is incompatible with json.hpp for some reason.
 // EXTERN_C IMAGE_DOS_HEADER __ImageBase;
@@ -69,11 +262,6 @@ int oe::App::run(const oe::App_start_settings& settings) {
 
   g3::initializeLogging(logWorker.get());
 
-  if (!XMVerifyCPUSupport()) {
-    LOG(WARNING) << "Unsupported CPU";
-    return 1;
-  }
-
 #if (_WIN32_WINNT >= 0x0A00 /*_WIN32_WINNT_WIN10*/)
   Microsoft::WRL::Wrappers::RoInitializeWrapper initialize(RO_INIT_MULTITHREADED);
   if (FAILED(initialize)) {
@@ -88,114 +276,79 @@ int oe::App::run(const oe::App_start_settings& settings) {
   }
 #endif
 
-  // TODO: We should try and get the hInstance that was passed to WinMain somehow.
-  // BUT... using the HINST_THISCOMPONENT macro defined above seems to break 64bit builds.
-  HINSTANCE hInstance = 0;
-
-  // Register class and create window
-  // Register class
-  WNDCLASSEX wcex;
-  wcex.cbSize = sizeof(WNDCLASSEX);
-  wcex.style = CS_HREDRAW | CS_VREDRAW;
-  wcex.lpfnWndProc = WndProc;
-  wcex.cbClsExtra = 0;
-  wcex.cbWndExtra = 0;
-  wcex.hInstance = hInstance;
-  wcex.hIcon = LoadIcon(hInstance, L"IDI_ICON");
-  wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-  wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-  wcex.lpszMenuName = nullptr;
-  wcex.lpszClassName = L"OeAppWindowClass";
-  wcex.hIconSm = LoadIcon(wcex.hInstance, L"IDI_ICON");
-  if (!RegisterClassEx(&wcex)) {
-    LOG(WARNING) << "Failed to register window class: " << getlasterror_to_str();
+  HWND hwnd;
+  if (!App_impl::createWindow(settings, hwnd)) {
+    LOG(WARNING) << "Failed to create window";
     return 1;
   }
 
-  // Create window
-  int w, h;
-  Game::GetDefaultSize(w, h);
-
-  RECT rc;
-  rc.top = 0;
-  rc.left = 0;
-  rc.right = static_cast<LONG>(w);
-  rc.bottom = static_cast<LONG>(h);
-
-  AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-
-  auto dwExStyle = settings.fullScreen ? WS_EX_TOPMOST : 0;
-  auto dwStyle = settings.fullScreen ? WS_POPUP : WS_OVERLAPPEDWINDOW;
-  HWND hwnd = CreateWindowEx(
-      dwExStyle,
-      L"OeAppWindowClass",
-      settings.title.c_str(),
-      dwStyle,
-      CW_USEDEFAULT,
-      CW_USEDEFAULT,
-      rc.right - rc.left,
-      rc.bottom - rc.top,
-      nullptr,
-      nullptr,
-      hInstance,
-      nullptr);
-
-  if (!hwnd) {
-    LOG(WARNING) << "Failed to create window: " << getlasterror_to_str();
+  // Try to create a rendering device
+  auto deviceResources = createWin32DeviceResources(hwnd);
+  if (!deviceResources || !deviceResources->checkSystemSupport(true)) {
     return 1;
   }
 
-  ShowWindow(hwnd, settings.fullScreen ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
+  // Create the scene
+  auto scene = Scene_device_resource_aware(*deviceResources);
 
   int progReturnVal = 1;
-  do {
-    g_game = std::make_unique<Game>();
-    SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()));
+  auto appDeviceContext = App_impl(this, hwnd, deviceResources.get(), &scene);
+  _impl = &appDeviceContext;
 
-    GetClientRect(hwnd, &rc);
+  bool sceneConfigured = false;
+  do {
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     try {
-      g_game->Configure(hwnd, GetDpiForWindow(hwnd), rc.right - rc.left, rc.bottom - rc.top);
-      if (g_game->hasFatalError()) {
-        progReturnVal = 1;
-        break;
-      }
-      onSceneConfigured(g_game->scene());
+
+      scene.configure();
+      sceneConfigured = true;
+
+      scene.manager<oe::IDev_tools_manager>().setVectorLog(vectorLog.get());
+      onSceneConfigured(scene);
     } catch (const std::exception& e) {
       LOG(WARNING) << "Failed to configure scene: " << e.what();
       progReturnVal = 1;
       break;
     }
 
-    g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(vectorLog.get());
-
     try {
-      g_game->Initialize();
-      if (g_game->hasFatalError()) {
-        progReturnVal = 1;
-        break;
-      }
+      // Some things need setting before initialization.
+      scene.manager<IUser_interface_manager>().preInit_setUIScale(
+          static_cast<float>(getScreenDpi()) / 96.0f);
 
-      onSceneInitialized(g_game->scene());
+      scene.initialize();
+
+      onSceneInitialized(scene);
+    } catch (std::exception& e) {
+      LOG(WARNING) << "Failed to init scene: " << e.what();
+      progReturnVal = 1;
+      break;
+    }
+
+    // Create device resources
+    try {
+      appDeviceContext.createDeviceDependentResources();
+      appDeviceContext.createWindowSizeDependentResources();
     } catch (const std::exception& e) {
-      LOG(WARNING) << "Failed to initialize scene: " << e.what();
+      LOG(WARNING) << "Failed to create device resources: " << e.what();
       progReturnVal = 1;
       break;
     }
 
     // Main message loop
     MSG msg = {};
-    while (WM_QUIT != msg.message && !g_game->hasFatalError()) {
+    while (WM_QUIT != msg.message && !appDeviceContext.hasFatalError()) {
       if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
         progReturnVal = (int)msg.wParam;
       } else {
         try {
-          onSceneTick(g_game->scene());
-          g_game->Tick();
+          onScenePreTick(scene);
+          appDeviceContext.onTick();
 
-          onScenePreRender(g_game->scene());
-          g_game->Render();
+          onScenePreRender(scene);
+          appDeviceContext.onRender();
         } catch (const std::exception& ex) {
           LOG(WARNING) << "Terminating on uncaught exception: " << ex.what();
           progReturnVal = 1;
@@ -209,15 +362,46 @@ int oe::App::run(const oe::App_start_settings& settings) {
     }
   } while (false);
 
-  onSceneShutdown(g_game->scene());
+  _impl = nullptr;
+  SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(nullptr));
 
-  g_game->scene().manager<oe::IDev_tools_manager>().setVectorLog(nullptr);
-  g_game.reset();
+  if (sceneConfigured) {
+    try {
+      scene.destroyWindowSizeDependentResources();
+      scene.destroyDeviceDependentResources();
+
+      scene.manager<oe::IDev_tools_manager>().setVectorLog(nullptr);
+
+      onSceneShutdown(scene);
+      scene.shutdown();
+    } catch (const std::exception& ex) {
+      LOG(WARNING) << "Terminating on uncaught exception while shutting down: " << ex.what();
+      progReturnVal = 1;
+    } catch (...) {
+      LOG(WARNING) << "Terminating on uncaught error while shutting down";
+      progReturnVal = 1;
+    }
+  }
 
   // This must be the last thing that happens.
   CoUninitialize();
 
   return progReturnVal;
+}
+
+void oe::App::getDefaultWindowSize(int& w, int& h) const { _impl->getDefaultWindowSize(w, h); }
+
+// Get DPI of the screen that the current window is on
+int oe::App::getScreenDpi() const {
+  if (_impl == nullptr) {
+    OE_THROW(std::runtime_error("App is not initialized"));
+  }
+  HWND window = _impl->getWindow();
+  if (window == nullptr) {
+    OE_THROW(std::runtime_error("App window not valid"));
+  }
+
+  return GetDpiForWindow(window);
 }
 
 // Windows procedure
@@ -231,19 +415,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
   static bool s_fullscreen = false;
   // TODO: Set s_fullscreen to true if defaulting to fullscreen.
 
-  auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+  auto* app = reinterpret_cast<oe::App*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+  oe::App_impl* appImpl = nullptr;
+  if (app != nullptr) {
+    appImpl = app->getAppImpl();
+  }
 
   // Give the game managers a change to process messages (for mouse input etc)
-  if (game != nullptr) {
-    if (game->processMessage(message, wParam, lParam)) {
+  if (appImpl != nullptr) {
+    if (appImpl->processMessage(message, wParam, lParam)) {
       return true;
     }
   }
 
   switch (message) {
   case WM_PAINT:
-    if (s_in_sizemove && game) {
-      game->Tick();
+    if (s_in_sizemove && appImpl) {
+      appImpl->onTick();
     } else {
       hdc = BeginPaint(hWnd, &ps);
       EndPaint(hWnd, &ps);
@@ -251,8 +439,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     break;
 
   case WM_MOVE:
-    if (game) {
-      game->OnWindowMoved();
+    if (appImpl) {
+      appImpl->onWindowMoved();
     }
     break;
 
@@ -260,17 +448,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     if (wParam == SIZE_MINIMIZED) {
       if (!s_minimized) {
         s_minimized = true;
-        if (!s_in_suspend && game)
-          game->OnSuspending();
+        if (!s_in_suspend && appImpl)
+          appImpl->onSuspending();
         s_in_suspend = true;
       }
     } else if (s_minimized) {
       s_minimized = false;
-      if (s_in_suspend && game)
-        game->OnResuming();
+      if (s_in_suspend && appImpl)
+        appImpl->onResuming();
       s_in_suspend = false;
-    } else if (!s_in_sizemove && game) {
-      game->OnWindowSizeChanged(LOWORD(lParam), HIWORD(lParam));
+    } else if (!s_in_sizemove && appImpl) {
+      appImpl->onWindowSizeChanged(LOWORD(lParam), HIWORD(lParam));
     }
     break;
 
@@ -280,11 +468,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
   case WM_EXITSIZEMOVE:
     s_in_sizemove = false;
-    if (game) {
+    if (appImpl) {
       RECT rc;
       GetClientRect(hWnd, &rc);
 
-      game->OnWindowSizeChanged(rc.right - rc.left, rc.bottom - rc.top);
+      appImpl->onWindowSizeChanged(rc.right - rc.left, rc.bottom - rc.top);
     }
     break;
 
@@ -295,11 +483,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
   } break;
 
   case WM_ACTIVATEAPP:
-    if (game) {
+    if (appImpl) {
       if (wParam) {
-        game->OnActivated();
+        appImpl->onActivated();
       } else {
-        game->OnDeactivated();
+        appImpl->onDeactivated();
       }
     }
     break;
@@ -307,15 +495,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
   case WM_POWERBROADCAST:
     switch (wParam) {
     case PBT_APMQUERYSUSPEND:
-      if (!s_in_suspend && game)
-        game->OnSuspending();
+      if (!s_in_suspend && appImpl)
+        appImpl->onSuspending();
       s_in_suspend = true;
       return TRUE;
 
     case PBT_APMRESUMESUSPEND:
       if (!s_minimized) {
-        if (s_in_suspend && game)
-          game->OnResuming();
+        if (s_in_suspend && appImpl)
+          appImpl->onResuming();
         s_in_suspend = false;
       }
       return TRUE;
@@ -333,10 +521,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
         SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
 
-        int width = 800;
-        int height = 600;
-        if (game)
-          game->GetDefaultSize(width, height);
+        auto width = 800;
+        auto height = 600;
+        if (app)
+          app->getDefaultWindowSize(width, height);
 
         ShowWindow(hWnd, SW_SHOWNORMAL);
 

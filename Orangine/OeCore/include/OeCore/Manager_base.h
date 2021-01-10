@@ -4,10 +4,6 @@
 
 #include "OeCore/WindowsDefines.h"
 
-namespace DX {
-class DeviceResources;
-}
-
 namespace oe {
 class Scene;
 class IConfigReader;

@@ -16,8 +16,6 @@
 #include <OeThirdParty/imgui.h>
 #include <OeThirdParty/imgui_stdlib.h>
 
-#include "D3D11/DirectX_utils.h"
-
 #include <algorithm>
 
 using namespace DirectX;

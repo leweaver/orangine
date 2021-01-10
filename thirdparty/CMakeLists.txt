@@ -62,7 +62,20 @@ target_include_directories(MikktSpace
         )
 target_link_libraries(OeImgui PUBLIC OeCompilerFlags)
 
-install(TARGETS OeImgui MikktSpace
+# DirectXHelpers library
+add_library(DirectXHelpers INTERFACE)
+set_target_properties(DirectXHelpers PROPERTIES
+        PUBLIC_HEADER "DirectXHelpers/include/d3dx12.h"
+)
+add_library(Oe::DirectXHelpers ALIAS DirectXHelpers)
+target_include_directories(DirectXHelpers
+        INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+        )
+target_link_libraries(OeImgui PUBLIC OeCompilerFlags)
+
+install(TARGETS OeImgui MikktSpace DirectXHelpers
     EXPORT OeThirdPartyTargets
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib

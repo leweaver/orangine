@@ -11,7 +11,7 @@
 #include "OeCore/Renderable_component.h"
 #include "OeCore/Scene.h"
 
-#include "D3D_device_repository.h"
+#include "D3D12_device_resources.h"
 #include "D3D_texture_manager.h"
 
 using namespace DirectX;
@@ -19,7 +19,7 @@ using namespace oe;
 
 Render_pass_shadow::Render_pass_shadow(
     Scene& scene,
-    std::shared_ptr<D3D_device_repository> device_repository,
+    std::shared_ptr<D3D12_device_resources> device_repository,
     size_t maxRenderTargetViews)
     : _scene(scene), _deviceRepository(device_repository) {
   _renderTargetViews.resize(maxRenderTargetViews, nullptr);

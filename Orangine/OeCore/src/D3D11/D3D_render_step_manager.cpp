@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "D3D_device_repository.h"
+#include "D3D12_device_resources.h"
 #include "D3D_render_pass_shadow.h"
 #include "D3D_render_step_manager.h"
 
@@ -23,13 +23,13 @@ using oe::Render_pass_stencil_mode;
 template <>
 oe::IRender_step_manager* oe::create_manager(
     Scene& scene,
-    std::shared_ptr<D3D_device_repository>& device_repository) {
+    std::shared_ptr<D3D12_device_resources>& device_repository) {
   return new D3D_render_step_manager(scene, device_repository);
 }
 
 D3D_render_step_manager::D3D_render_step_manager(
     Scene& scene,
-    std::shared_ptr<D3D_device_repository> device_repository)
+    std::shared_ptr<D3D12_device_resources> device_repository)
     : Render_step_manager(scene), _deviceRepository(device_repository) {}
 
 void D3D_render_step_manager::shutdown() {
@@ -96,6 +96,9 @@ void D3D_render_step_manager::renderSteps(const Camera_data& cameraData) {
     timer.stop();
     _renderTimes[i] += timer.elapsedSeconds();
   }
+
+  // TODO: Call present
+  _deviceRepository->Present();
 }
 
 void D3D_render_step_manager::renderStep(

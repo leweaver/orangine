@@ -32,7 +32,7 @@ class Texture;
 
 class IEntity_repository;
 class IMaterial_repository;
-class IDevice_repository;
+class IDevice_resources;
 
 class Scene {
  public:
@@ -45,7 +45,7 @@ class Scene {
 
   virtual void configure();
   virtual void initialize();
-  void tick(DX::StepTimer const& timer);
+  void tick(StepTimer const& timer);
   virtual void shutdown();
 
   template <typename TMgr> TMgr& manager() const;
@@ -98,7 +98,7 @@ class Scene {
   // Repositories
   std::shared_ptr<IEntity_repository> _entityRepository;
   std::shared_ptr<IMaterial_repository> _materialRepository;
-  std::shared_ptr<IDevice_repository> _deviceRepository;
+  std::shared_ptr<IDevice_resources> _deviceResources;
 
   // Managers
   using Manager_tuple = std::tuple<
@@ -146,7 +146,7 @@ template <typename TMgr> TMgr& Scene::manager() const
 
 class Scene_device_resource_aware : public Scene {
  public:
-  explicit Scene_device_resource_aware(DX::DeviceResources& deviceResources);
+  explicit Scene_device_resource_aware(IDevice_resources& deviceResources);
 
   void initialize() override;
 
@@ -163,6 +163,6 @@ class Scene_device_resource_aware : public Scene {
     std::get<std::shared_ptr<TManager>>(_managers) = std::unique_ptr<TManager>(
         create_manager<TManager, TDependencies...>(*this, dependencies...));
   }
-  DX::DeviceResources& _deviceResources;
+  IDevice_resources& _deviceResources;
 };
 } // namespace oe

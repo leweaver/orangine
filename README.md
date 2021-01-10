@@ -1,22 +1,24 @@
 ﻿# Software Pre-requisites
 
 ## Windows 10
-You must be running Windows 10 build version 1703 (Creators Update) or higher. Run the `winver` program to view which build version you have. If you are running an earlier version of Windows, run Windows Update or [Download Windows 10 Disk Image](https://go.microsoft.com/fwlink/p/?LinkId=821363)
+You must be running Windows 10 build version 2004 (20H1) or higher. Run the `winver` program to view which build version you have. If you are running an earlier version of Windows, run Windows Update or [Download Windows 10 Disk Image](https://go.microsoft.com/fwlink/p/?LinkId=821363)
 
 ## Visual Studio
 Visual Studio must be installed in order to satisfy library dependencies and get the windows SDK.
 
-Visual Studio 2019 16.2 (also Preview 3) is the recommended option (due to [this bug](https://developercommunity.visualstudio.com/content/problem/514953/c-standard-for-intellisense-in-open-folder-cmake-p.html))
+An up to date Visual Studio 2019 
 
-Visual Studio 2017 15.7.5 is the minimum required.
+Visual Studio 2017 15.7.5 is the minimum required (DirectX11 builds only). 2017 is not supported for DirectX12 builds.
 
 When installing, ensure you select the following options (in addition to whatever defaults are selected):
 
 - Desktop Development with Visual C++
   - C++ CMake tools for Windows (see https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-160)
 - Game Development with C++
-  - Windows 10 SDK (10.0.18362.0) - 
-    - min version required to fix this bug: https://bugs.chromium.org/p/chromium/issues/detail?id=969698
+  - Windows 10 SDK (10.0.19041.0) - 
+    - 18362 is min version required to fix this bug: https://bugs.chromium.org/p/chromium/issues/detail?id=969698
+    - 19041 is min version supported by DirectX Helper Library (d3dx12.h)
+    
   - Test Adapter for Google Test (If you want to use the visual studio gtest UI)
 - Python Development (if you want to use mixed mode python debugging in the editor, which you should want! See: https://docs.microsoft.com/en-us/visualstudio/python/debugging-mixed-mode-c-cpp-python-in-visual-studio?view=vs-2019)
   - Python native development tools

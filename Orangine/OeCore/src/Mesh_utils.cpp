@@ -5,7 +5,6 @@
 #include "OeCore/Entity_filter.h"
 #include "OeCore/Entity.h"
 #include "OeCore/EngineUtils.h"
-#include "D3D11/DirectX_utils.h"
 
 namespace oe::mesh_utils {
 

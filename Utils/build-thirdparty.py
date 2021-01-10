@@ -15,14 +15,14 @@ class Builder:
         self.env_target_arch = os.environ.get("VSCMD_ARG_TGT_ARCH")
         self.env_vs_version = os.environ.get("VisualStudioVersion")
 
+        for env_var in ['VCToolsInstallDir', 'DevEnvDir', 'VSCMD_ARG_TGT_ARCH', 'VisualStudioVersion']:
+            if not os.environ.get(env_var):
+                raise Exception(f"{env_var} environment variable is not set. Did you run vcvars32.bat or vcvars64.bat ?")
+
         print ("env_vctools=" + self.env_vctools)
         print ("env_DevEnvDir=" + self.env_DevEnvDir)
         print ("env_target_arch=" + self.env_target_arch)
         print ("env_vs_version=" + self.env_vs_version)
-
-        for env_var in ['VCToolsInstallDir', 'DevEnvDir', 'VSCMD_ARG_TGT_ARCH', 'VisualStudioVersion']:
-            if not os.environ.get(env_var):
-                raise Exception(f"{env_var} environment variable is not set. Did you run vcvars32.bat or vcvars64.bat ?")
         
         self.path_cmake = f"{self.env_DevEnvDir}COMMONEXTENSIONS/MICROSOFT/CMAKE/CMake/bin/cmake.exe"
         self.path_ninja = f"{self.env_DevEnvDir}COMMONEXTENSIONS/MICROSOFT/CMAKE/Ninja/ninja.exe".replace('/', '\\')
@@ -64,7 +64,7 @@ class Builder:
                     break
                     
             rc = proc.poll()
-            if 0 is not rc:
+            if 0 != rc:
                 # if we surpressed output before, it might be useful now, so print it.
                 if p_stdout and not self.verbose:
                     print(p_stdout)
@@ -76,7 +76,10 @@ class Builder:
 
             print("  [[32mOK[0m] " + note)
 
-    def build_all(self):
+    def build_all(self):        
+        # DirectXTK
+        self.msbuild_directxtk_sln(self.oe_root + "/thirdparty/DirectXTK")
+
         # pybind11
         self.cmake_ninja_install(self.oe_root + "/thirdparty/pybind11", "pybind11", "Debug")
         self.cmake_ninja_install(self.oe_root + "/thirdparty/pybind11", "pybind11", "Release")
@@ -92,9 +95,6 @@ class Builder:
         # gtest and gmock
         self.cmake_msvc_shared(self.oe_root + "/thirdparty/googletest/googletest", "gtest")
         self.cmake_msvc_shared(self.oe_root + "/thirdparty/googletest/googlemock", "gmock")
-        
-        # DirectXTK
-        self.msbuild_directxtk_sln(self.oe_root + "/thirdparty/DirectXTK")
 
         # Hacky Steps:
         # For some reason, the g3logger cmake find_module needs these directories to exist. Even though they are empty.
@@ -193,11 +193,9 @@ class Builder:
         else:
             raise Exception("Unsupported visual studio version: " + self.env_vs_version)
 
-        make_architecture = "Win32" if self.env_target_arch == "x86" else "x64"
-
         print(f"DirectXTK: {self.env_target_arch}")
-        self._call(f'msbuild {sln}.sln /p:Configuration=Debug /p:Platform="{make_architecture}"', "msbuild Debug")
-        self._call(f'msbuild {sln}.sln /p:Configuration=Release /p:Platform="{make_architecture}"', "msbuild Release")
+        self._call(f'msbuild {sln}.sln /p:Configuration=Debug /p:Platform="{self.env_target_arch}"', "msbuild Debug")
+        self._call(f'msbuild {sln}.sln /p:Configuration=Release /p:Platform="{self.env_target_arch}"', "msbuild Release")
 
 if __name__ == "__main__":
     

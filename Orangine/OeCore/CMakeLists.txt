@@ -11,38 +11,56 @@ configure_file (
 add_library(${PROJECT_NAME} STATIC
         src/pch.h
         src/pch.cpp
-        src/User_interface_manager.h
-        src/Shadowmap_manager.h
-        src/Scene_graph_manager.h
-        src/Material_manager.h
-        src/Entity_render_manager.h
-        src/Dev_tools_manager.h
-        src/Animation_manager.h
-        src/Asset_manager.h
         src/Animation_controller_component.cpp
         src/Animation_manager.cpp
+        src/Animation_manager.h
         src/Asset_manager.cpp
+        src/Asset_manager.h
         src/Behavior_manager.cpp
         src/Camera_component.cpp
-        src/Color.cpp
         src/Clear_gbuffer_material.cpp
+        src/Color.cpp
         src/Component.cpp
+        # src/D3D11/D3D_collision.cpp
+        # src/D3D11/D3D_device_repository.cpp
+        # src/D3D11/D3D_device_repository.h
+        # src/D3D11/D3D_entity_render_manager.cpp
+        # src/D3D11/D3D_material_manager.cpp
+        # src/D3D11/D3D_material_manager.h
+        # src/D3D11/D3D_render_pass_shadow.cpp
+        # src/D3D11/D3D_render_step_manager.cpp
+        # src/D3D11/D3D_render_step_manager.h
+        # src/D3D11/D3D_renderer_data.cpp
+        # src/D3D11/D3D_renderer_data.h
+        # src/D3D11/D3D_texture_manager.cpp
+        # src/D3D11/D3D_texture_manager.h
+        # src/D3D11/D3D_directX_utils.h
+        # src/D3D11/D3D_user_interface_manager.cpp
+        # src/D3D11/D3D_user_interface_manager.h
+        "src/D3D12/D3D12_device_resources.cpp"
+        "src/D3D12/D3D12_vendor.h"
+        src/Stubs/Stub_managers.cpp
         src/Deferred_light_material.cpp
         src/Dev_tools_manager.cpp
-        src/DeviceResources.cpp
+        src/Dev_tools_manager.h
+        src/EngineUtils.cpp
         src/Entity.cpp
-        src/Entity_graph_loader_gltf.cpp
-        src/Entity_filter_impl.h
         src/Entity_filter_impl.cpp
+        src/Entity_filter_impl.h
+        src/Entity_graph_loader_gltf.cpp
         src/Entity_render_manager.cpp
+        src/Entity_render_manager.h
         src/Entity_repository.cpp
         src/Entity_sorter.cpp
         src/Fps_counter.cpp
         src/Input_manager.cpp
+        src/JsonConfigReader.cpp
+        src/JsonConfigReader.h
         src/Light_component.cpp
         src/Light_provider.cpp
         src/Material.cpp
         src/Material_manager.cpp
+        src/Material_manager.h
         src/Math_constants.cpp
         src/Mesh_data.cpp
         src/Mesh_data_component.cpp
@@ -53,7 +71,6 @@ add_library(${PROJECT_NAME} STATIC
         src/PBR_material.cpp
         src/Primitive_mesh_data_factory.cpp
         src/Render_pass.cpp
-        "src/D3D11/D3D_render_pass_shadow.cpp"
         src/Render_pass_skybox.cpp
         src/Render_step_manager.cpp
         src/Renderable_component.cpp
@@ -61,30 +78,17 @@ add_library(${PROJECT_NAME} STATIC
         src/Renderer_enums.cpp
         src/Scene.cpp
         src/Scene_graph_manager.cpp
+        src/Scene_graph_manager.h
         src/Shadowmap_manager.cpp
+        src/Shadowmap_manager.h
         src/Skinned_mesh_component.cpp
         src/Skybox_material.cpp
         src/Test_component.cpp
         src/Texture.cpp
         src/Unlit_material.cpp
-        src/User_interface_manager.cpp
-        src/EngineUtils.cpp
         src/VectorLog.cpp
-        src/JsonConfigReader.cpp
-        src/JsonConfigReader.h
-        src/D3D11/DirectX_utils.h
-        src/D3D11/Collision.cpp
-        src/D3D11/D3D_entity_render_manager.cpp
-        src/D3D11/D3D_device_repository.h
-        src/D3D11/D3D_device_repository.cpp
-        src/D3D11/D3D_renderer_data.h
-        src/D3D11/D3D_texture_manager.cpp
-        src/D3D11/D3D_texture_manager.h
-        src/D3D11/D3D_material_manager.h
-        src/D3D11/D3D_material_manager.cpp
-        src/D3D11/D3D_renderer_data.cpp
-        "src/D3D11/D3D_render_step_manager.cpp" 
-        "src/D3D11/D3D_render_step_manager.h")
+        "src/Stubs/pch.h" 
+        "src/D3D12/pch.h" "src/D3D12/D3D12_collision.cpp" "src/Collision.cpp")
 file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
@@ -111,9 +115,9 @@ target_include_directories(${PROJECT_NAME}
         )
 
 # g3log
-find_package(g3logger REQUIRED)
+find_package(g3log REQUIRED)
 target_include_directories(${PROJECT_NAME} PUBLIC ${G3LOG_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PUBLIC g3logger)
+target_link_libraries(${PROJECT_NAME} PUBLIC g3log)
 
 # Third Party (imgui, MikktSpace)
 find_package(OeThirdParty REQUIRED)

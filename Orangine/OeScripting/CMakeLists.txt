@@ -42,14 +42,15 @@ target_include_directories(${PROJECT_NAME}
         )
 
 # PyBind
-# Override the PYTHON_EXECUTABLE variable with the results of FindPython3, so that pybind 
-# uses the 32-bit interpreter in x86 builds.
-# Get the name of the python runtime DLL
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
-# set(PYTHON_EXECUTABLE "${Python_EXECUTABLE}")
-# set(PYBIND11_CPP_STANDARD /std:c++17)
 find_package(pybind11 CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC pybind11::embed pybind11::python_link_helper)
+
+# It is critical that the version of python we compile against matches the scripts loaded into the virtualenv
+if (NOT "${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}" MATCHES "3.7")
+    message(FATAL_ERROR "Found python ${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}, but must be compiled against 3.7")
+endif()
+
 
 # --------------------------------
 # Install
@@ -81,12 +82,15 @@ install(DIRECTORY data
         DESTINATION bin
         )
 
+message(NOTICE "Python_LIBRARY_DIRS=${Python_LIBRARY_DIRS}")
+message(NOTICE "Python_INCLUDE_DIRS=${Python_INCLUDE_DIRS}")
+message(NOTICE "Python_RUNTIME_LIBRARY_DIRS=${Python_RUNTIME_LIBRARY_DIRS}")
+
 # Install Python binaries
-get_filename_component(OeScripting_PYTHON_RUNTIME_DLL "${Python_EXECUTABLE}" DIRECTORY)
 if (${OeScripting_PYTHON_DEBUG})
-        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python_VERSION_MAJOR}${Python_VERSION_MINOR}_d.dll")
+        set(OeScripting_PYTHON_RUNTIME_DLL "${Python_RUNTIME_LIBRARY_DIRS}/python${Python_VERSION_MAJOR}${Python_VERSION_MINOR}_d.dll")
 else ()
-        set(OeScripting_PYTHON_RUNTIME_DLL "${OeScripting_PYTHON_RUNTIME_DLL}/python${Python_VERSION_MAJOR}${Python_VERSION_MINOR}.dll")
+        set(OeScripting_PYTHON_RUNTIME_DLL "${Python_RUNTIME_LIBRARY_DIRS}/python${Python_VERSION_MAJOR}${Python_VERSION_MINOR}.dll")
 endif()
 install(FILES "${OeScripting_PYTHON_RUNTIME_DLL}" DESTINATION bin)
 set(OeScripting_PYTHON_RUNTIME_DLL ${OeScripting_PYTHON_RUNTIME_DLL} PARENT_SCOPE)

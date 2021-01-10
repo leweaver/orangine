@@ -9,11 +9,11 @@
     },
     "g3log": {
         "url": "git@github.com:KjellKod/g3log.git",
-        "ref": "376c417ad170228fa6d1b9994a6e07a2ac143a51"
+        "ref": "1.3.4"
     },
     "DirectXTK": {
-        "url": "git@github.com:Microsoft/DirectXTK.git",
-        "ref": "dec2019"
+        "url": "git@github.com:Microsoft/DirectXTK12.git",
+        "ref": "nov2020b"
     },
     "googletest": {
         "url": "git@github.com:google/googletest.git",

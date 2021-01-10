@@ -1,4 +1,5 @@
 #include "pch.h"
+
 #include "OeCore/Primitive_mesh_data_factory.h"
 #include "OeCore/Mesh_data.h"
 #include "OeCore/Mikk_tspace_triangle_mesh_interface.h"
@@ -6,10 +7,10 @@
 #include "OeCore/Color.h"
 #include "OeCore/Math_constants.h"
 
-#include "D3D11/DirectX_utils.h"
-
 #include <array>
 #include <cstddef>
+
+#include "D3D12/D3D12_vendor.h"
 #include <GeometricPrimitive.h>
 
 using namespace oe;

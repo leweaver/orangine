@@ -3,7 +3,6 @@
 #include "Entity_scripting_manager.h"
 #include "Script_runtime_data.h"
 
-#include "OeCore/Renderer_types.h"
 #include "OeCore/Camera_component.h"
 #include "OeCore/Entity.h"
 #include "OeCore/Entity_filter.h"
@@ -11,11 +10,12 @@
 #include "OeCore/IScene_graph_manager.h"
 #include "OeCore/Light_component.h"
 #include "OeCore/Math_constants.h"
+#include "OeCore/Renderer_types.h"
 //#include "OeCore/Renderable_component.h"
 #include "Engine_bindings.h"
 #include "OeCore/Scene.h"
-#include "OeCore/Test_component.h"
 #include "OeCore/Shadow_map_texture.h"
+#include "OeCore/Test_component.h"
 
 #include <OeThirdParty/imgui.h>
 
@@ -71,39 +71,42 @@ void Entity_scripting_manager::preInit_addAbsoluteScriptsPath(const std::wstring
 }
 
 void Entity_scripting_manager::initialize() {
-    _testEntityFilter =
-        _scene.manager<IScene_graph_manager>().getEntityFilter({Test_component::type()});
+  _testEntityFilter =
+      _scene.manager<IScene_graph_manager>().getEntityFilter({Test_component::type()});
 
-    // TODO: can't inlclude renderable_component right now
-    /*
-    _renderableEntityFilter =
-        _scene.manager<IScene_graph_manager>().getEntityFilter({Renderable_component::type()});
-        */
-    _lightEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter(
-        {Directional_light_component::type(),
-         Point_light_component::type(),
-         Ambient_light_component::type()},
-        Entity_filter_mode::Any);
+  // TODO: can't inlclude renderable_component right now
+  /*
+  _renderableEntityFilter =
+      _scene.manager<IScene_graph_manager>().getEntityFilter({Renderable_component::type()});
+      */
+  _lightEntityFilter = _scene.manager<IScene_graph_manager>().getEntityFilter(
+      {Directional_light_component::type(),
+       Point_light_component::type(),
+       Ambient_light_component::type()},
+      Entity_filter_mode::Any);
 
-    try {
-      Engine_bindings::setScene(&_scene);
-      initializePythonInterpreter();
-      return;
-    } catch (const py::error_already_set& err) {
-      logPythonError(err, "service initialization");
-    }
+  std::string errorStr;
+  try {
+    Engine_bindings::setScene(&_scene);
+    initializePythonInterpreter();
+    return;
+  } catch (const py::error_already_set& err) {
+    errorStr = logPythonError(err, "service initialization");
+  }
 
   // This must happen outside of a catch, so that the error_already_set object is destructed prior
   // to throwing.
   finalizePythonInterpreter();
-  throw ::std::runtime_error("Failed to initialize Entity Scripting Manager.");
+  throw ::std::runtime_error(errorStr);
 }
 
-void Entity_scripting_manager::logPythonError(
+std::string Entity_scripting_manager::logPythonError(
     const py::error_already_set& err,
     const std::string& whereStr) {
   std::stringstream ss;
   ss << "Python error in " << whereStr << ": " << std::string(py::str(err.value()));
+
+  const auto errorString = ss.str();
 
   auto traceback = err.trace();
   while (!traceback.is_none() && traceback.ptr() != nullptr) {
@@ -120,6 +123,7 @@ void Entity_scripting_manager::logPythonError(
   }
 
   LOG(WARNING) << ss.str();
+  return errorString;
 }
 
 void Entity_scripting_manager::tick() {
@@ -162,7 +166,7 @@ void Entity_scripting_manager::tick() {
   }
 
   /*
-  def init(self): 
+  def init(self):
     _scriptData.yaw = XM_PI;
 
   def tick(self):
@@ -180,7 +184,8 @@ void Entity_scripting_manager::tick() {
           1.0f,
           std::min(
               40.0f,
-              _scriptData.distance + static_cast<float>(mouseState->scrollWheelDelta) * -mouseSpeed));
+              _scriptData.distance + static_cast<float>(mouseState->scrollWheelDelta) *
+  -mouseSpeed));
       //}
 
       // if (mouseState->right == IInput_manager::Mouse_state::Button_state::HELD) {
@@ -247,7 +252,6 @@ void Entity_scripting_manager::loadSceneScript(const std::string& scriptClassStr
     logPythonError(err, "Native::loadSceneScript init - " + scriptClassString);
   }
 }
-
 
 void Entity_scripting_manager::flushStdIo() const {
   const auto _ = _pythonContext._engineInternalModule->reset_output_streams();
@@ -345,7 +349,7 @@ void Entity_scripting_manager::initializePythonInterpreter() {
 #elif _X86_
   _pythonContext.engine_internal_module->instance.attr("scenePtr_uint32") =
       reinterpret_cast<uint32_t>(scenePtr);
-#endif  
+#endif
 
   // This must be called at least once before python attempts to write to stdout or stderr.
   // Now that we have our internal library, set up stdout and stderr properly.
@@ -421,7 +425,8 @@ void Entity_scripting_manager::renderDebugSpheres() const {
     if (directionalLight && directionalLight->shadowsEnabled()) {
       const auto& shadowData = directionalLight->shadowData();
       if (shadowData) {
-        devToolsManager.addDebugBoundingBox(shadowData->boundingOrientedBox, directionalLight->color());
+        devToolsManager.addDebugBoundingBox(
+            shadowData->boundingOrientedBox, directionalLight->color());
       }
     }
   }

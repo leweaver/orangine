@@ -3,7 +3,6 @@
 #include "OeCore/Scene.h"
 #include "Scene_graph_manager.h"
 
-#include "D3D11/DirectX_utils.h"
 #include <OeThirdParty/imgui.h>
 
 #include <algorithm>

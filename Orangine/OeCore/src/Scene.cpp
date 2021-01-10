@@ -8,7 +8,6 @@
 #include "OeCore/Entity_graph_loader_gltf.h"
 #include "OeCore/IInput_manager.h"
 
-#include "D3D11/D3D_device_repository.h"
 #include "OeCore/Entity_repository.h"
 #include "OeCore/Material_repository.h"
 
@@ -176,7 +175,7 @@ void Scene::loadEntities(const std::wstring& filename, Entity* parentEntity) {
   manager<IScene_graph_manager>().handleEntitiesLoaded(newRootEntities);
 }
 
-void Scene::tick(DX::StepTimer const& timer) {
+void Scene::tick(StepTimer const& timer) {
   _deltaTime = timer.GetElapsedSeconds();
   _elapsedTime += _deltaTime;
   ++_tickCount;
@@ -259,7 +258,6 @@ void Scene_device_resource_aware::destroyWindowSizeDependentResources() {
 
 void Scene_device_resource_aware::createDeviceDependentResources() {
   LOG(INFO) << "Creating device dependent resources";
-  _deviceRepository->createDeviceDependentResources();
   forEachOfType<Manager_deviceDependent>(
       _managers, [this](int idx, Manager_deviceDependent* manager) {
         LOG(DEBUG) << "Creating device dependent resources for manager " << idx;
@@ -272,37 +270,34 @@ void Scene_device_resource_aware::destroyDeviceDependentResources() {
   forEachOfType<Manager_deviceDependent>(_managers, [](int, Manager_deviceDependent* manager) {
     manager->destroyDeviceDependentResources();
   });
-  _deviceRepository->destroyDeviceDependentResources();
 }
 
 bool Scene_device_resource_aware::processMessage(UINT message, WPARAM wParam, LPARAM lParam) const {
   return forEach_processMessage(_managers, message, wParam, lParam);
 }
 
-Scene_device_resource_aware::Scene_device_resource_aware(DX::DeviceResources& deviceResources)
+Scene_device_resource_aware::Scene_device_resource_aware(IDevice_resources& deviceResources)
     : _deviceResources(deviceResources) {
   using namespace std;
 
   // Repositories
   _entityRepository = make_shared<Entity_repository>(*this);
   _materialRepository = make_shared<Material_repository>();
-  auto deviceRepository = make_shared<D3D_device_repository>(deviceResources);
-  _deviceRepository = deviceRepository;
 
   // Services / Managers
   createManager<IScene_graph_manager>(_entityRepository);
   createManager<IDev_tools_manager>();
-  createManager<IEntity_render_manager>(_materialRepository, deviceRepository);
-  createManager<IRender_step_manager>(deviceRepository);
+  createManager<IEntity_render_manager>(_materialRepository, deviceResources);
+  createManager<IRender_step_manager>(deviceResources);
   createManager<IShadowmap_manager>();
   createManager<IEntity_scripting_manager>();
   createManager<IAsset_manager>();
   createManager<IInput_manager>();
-  createManager<IUser_interface_manager>(deviceRepository);
+  createManager<IUser_interface_manager>(deviceResources);
   createManager<IAnimation_manager>();
-  createManager<IMaterial_manager>(deviceRepository);
+  createManager<IMaterial_manager>(deviceResources);
   createManager<IBehavior_manager>();
-  createManager<ITexture_manager>(deviceRepository);
+  createManager<ITexture_manager>(deviceResources);
 }
 
 void Scene_device_resource_aware::initialize() { Scene::initialize(); }

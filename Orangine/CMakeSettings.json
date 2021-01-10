@@ -14,6 +14,11 @@
           "name": "CMAKE_CXX_FLAGS",
           "value": "-std:c++17",
           "type": "STRING"
+        },
+        {
+          "name": "CMAKE_SYSTEM_VERSION",
+          "value": "10.0.19041.0",
+          "type": "STRING"
         }
       ]
     },

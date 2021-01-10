@@ -17,8 +17,6 @@ add_library(${PROJECT_NAME} STATIC
         src/App_win32.cpp
         src/pch.h
         src/pch.cpp
-        src/Game.h
-        src/Game.cpp
         src/LogFileSink.h
         src/LogFileSink.cpp
         src/VectorLogSink.h

@@ -10,15 +10,17 @@ set "OE_ROOT=%cd%"
 set "OE_ORIG_PATH=%PATH%"
 
 if exist "C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python37\python.exe" (
-    set "PYTHON_32_EXE=C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python37\python.exe"
+    set "PYTHON_32_PATH=C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python37\"
 ) else (
-    set "PYTHON_32_EXE=%LOCALAPPDATA%\Programs\Python\Python37-32\python.exe"
+    set "PYTHON_32_PATH=%LOCALAPPDATA%\Programs\Python\Python37-32\"
 )
+set "PYTHON_32_EXE=%PYTHON_32_PATH%python.exe"
 if exist "C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python37_64\python.exe" (
-    set "PYTHON_64_EXE=C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python37_64\python.exe"
+    set "PYTHON_64_PATH=C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python37_64\"
 ) else (
-    set "PYTHON_64_EXE=%LOCALAPPDATA%\Programs\Python\Python37\python.exe"
+    set "PYTHON_64_PATH=%LOCALAPPDATA%\Programs\Python\Python37\"
 )
+set "PYTHON_64_EXE=%PYTHON_64_PATH%python.exe"
 
 if not exist "%PYTHON_32_EXE%" (
     echo "Could not find 32-bit python. Is it installed?"
@@ -29,8 +31,8 @@ if not exist "%PYTHON_64_EXE%" (
     goto:eof
 )
 
-echo Using 32-bit python at !PYTHON_32_EXE!
-echo Using 64-bit python at !PYTHON_64_EXE!
+echo Using 32-bit python at %PYTHON_32_EXE%
+echo Using 64-bit python at %PYTHON_64_EXE%
 
 if not defined VSINSTALLDIR (
     powershell -command "Get-VSSetupInstance" > NUL
@@ -61,7 +63,7 @@ if not exist "%OE_ROOT%\thirdparty\glTF-Sample-Models" (
 ) else (
     echo * [[33mThis will take a few minutes if there are changes since your last run.[0m]
 )
-rem python Utils\update-thirdparty.py 1> %OE_THIRDPARTY_OUTPUT% 2>&1
+
 call :oe_verify_errorlevel "update-thirdparty.py" || goto:eof
 
 rem ******************************
@@ -74,8 +76,9 @@ if not exist "%OE_ROOT%\thirdparty\pyenv_37_x64" (
     "%PYTHON_64_EXE%" -m venv %OE_ROOT%\thirdparty\pyenv_37_x64
     call :oe_verify_errorlevel "Create pyenv_37_x64" || goto:eof
     
-    call :init_pyenv pyenv_37_x64 || goto:eof
+    call :create_pyenv pyenv_37_x64 || goto:eof
 )
+
 if not exist "%OE_ROOT%\thirdparty\pyenv_37_x86" (
     rem If this fails with: 
     rem   No such file or directory: 'C:\\Users\\hotma\\AppData\\Local\\Programs\\Python\\Python37\\lib\\venv\\scripts\\nt\\python_d.exe'
@@ -83,7 +86,7 @@ if not exist "%OE_ROOT%\thirdparty\pyenv_37_x86" (
     "%PYTHON_32_EXE%" -m venv %OE_ROOT%\thirdparty\pyenv_37_x86
     call :oe_verify_errorlevel "Create pyenv_37_x86" || goto:eof
     
-    call :init_pyenv pyenv_37_x86 || goto:eof
+    call :create_pyenv pyenv_37_x86 || goto:eof
 )
 
 rem enable this if you are a madman and want to run the engine against a debug build of python
@@ -129,16 +132,18 @@ rem *****************************
 rem !!!       Build All       !!!
 rem *****************************
 
-:init_pyenv
+:create_pyenv
 rem takes 1 arg; py env name
 setlocal
 set "OE_PYENV=%~1"
-set "OE_PYENV_LOGFILE=%OE_ROOT%\thirdparty\%OE_PYENV%\init_pyenv.log"
+set "OE_PYENV_LOGFILE=%OE_ROOT%\thirdparty\%OE_PYENV%\create_pyenv.log"
+echo "Installing modules into python env, detailed logs: !OE_PYENV_LOGFILE!"
 
-call %OE_ROOT%\thirdparty\%OE_PYENV%\Scripts\activate.bat
+call %OE_ROOT%\thirdparty\%OE_PYENV%\Scripts\activate.bat >> !OE_PYENV_LOGFILE! 2>&1
 call :oe_verify_errorlevel "%OE_PYENV%\Scripts\activate.bat" || EXIT /B 1
 
-echo "Installing modules via PIP " > !OE_PYENV_LOGFILE!
+rem Install modules into the virtualenv. Note since we called activate.bat above, 
+rem this should use the correct python 3.7 version inside the venv.
 pip install numpy==1.18.0 >> !OE_PYENV_LOGFILE! 2>&1
 call :oe_verify_errorlevel "!OE_PYENV! pip install numpy" || EXIT /B 1
 pip install ptvsd==4.3.2 >> !OE_PYENV_LOGFILE! 2>&1
@@ -159,8 +164,7 @@ EXIT /B 0
 rem Takes 1 arg; architecture
 set "CM_ARCHITECTURE=%~1"
 
-call :init_python || EXIT /B 1
-
+call :init_python %CM_ARCHITECTURE% || EXIT /B 1
 if not "%CM_ARCHITECTURE%"=="%VSCMD_ARG_TGT_ARCH%" (
     if "%CM_ARCHITECTURE%"=="x64" (
         call "%VCINSTALLDIR%Auxiliary\Build\vcvars64.bat"
@@ -169,41 +173,53 @@ if not "%CM_ARCHITECTURE%"=="%VSCMD_ARG_TGT_ARCH%" (
     )
 )
 
-python Utils/build-thirdparty.py
+if "%CM_ARCHITECTURE%" == "x64" ( 
+    "%PYTHON_64_EXE%" Utils/build-thirdparty.py
+) else (
+    "%PYTHON_32_EXE%" Utils/build-thirdparty.py
+)
 
 EXIT /B 0
 
 
 
 :init_python
-if "%CM_ARCHITECTURE%" == "x64" ( 
+REM Verifies that the version of python is supported, and that it has the appropriate modules installed.
+if "%~1" == "x64" ( 
     set PY_ARCHITECTURE=64
-    set CM_EXPECTED_PYTHON_PATH=%LOCALAPPDATA%\Programs\Python\Python37\
+    set "PY_EXE=%PYTHON_64_EXE%"
+    set "PY_PATH=%PYTHON_64_PATH%"
 ) else (
     set PY_ARCHITECTURE=32
-    set CM_EXPECTED_PYTHON_PATH=%LOCALAPPDATA%\Programs\Python\Python37-32\
+    set "PY_EXE=%PYTHON_32_EXE%"
+    set "PY_PATH=%PYTHON_32_PATH%"
 )
-set "PATH=%CM_EXPECTED_PYTHON_PATH%;%CM_EXPECTED_PYTHON_PATH%Scripts\;%PATH%"
+set "PATH=%PY_PATH%;%PY_PATH%Scripts\;%PATH%"
+
+rem Check that python.exe actually exists
+"%PY_EXE%" -c exit()
+call :oe_verify_errorlevel "verify python !PY_ARCHITECTURE! is installed" || EXIT /B 1
 
 rem Check that the correct python version is installed for this architecture.
-for /f "tokens=*" %%a in ('python -c "exec(""import platform\n(bits,linkage)=platform.architecture()\n(major,minor,patch)=platform.python_version_tuple()\nprint('Python',major,bits,'OK' if int(major)==3 and int(minor)>=6 else 'TOO_OLD')"")"') do @set "PYTHON_VERSION_OK=%%a"
-for /f "tokens=*" %%a in ('python --version') do @set "PYTHON_VERSION=%%a"
+for /f "tokens=*" %%a in ('"!PY_EXE!" Utils\print-version-compat.py') do @set "PYTHON_VERSION_OK=%%a"
+for /f "tokens=*" %%a in ('"!PY_EXE!" --version') do @set "PYTHON_VERSION=%%a"
 if NOT "%PYTHON_VERSION_OK%" == "Python 3 %PY_ARCHITECTURE%bit OK" (
     echo * detected major version/arch: %PYTHON_VERSION_OK%
     echo * detected minor version: %PYTHON_VERSION%
-    echo * [[31mFailed[0m] Invalid python version. Must have 3.6 %PY_ARCHITECTURE% bit or greater at %CM_EXPECTED_PYTHON_PATH%.
+    echo * [[31mFailed[0m] Invalid python version. Must have 3.7 %PY_ARCHITECTURE% bit or greater at "!PY_PATH!".
     EXIT /B 1
 ) else (
     echo * [[32mOK[0m] Python version: %PYTHON_VERSION%, %PYTHON_VERSION_OK%
 )
+
 rem check that pip is installed
-python -m pip -V > NUL
+"%PY_EXE%" -m pip -V > NUL
 call :oe_verify_errorlevel "check python PIP is installed" || EXIT /B 1
 
 rem install pytest if it's missing
-python -m pip show pytest > NUL
+"%PY_EXE%" -m pip show pytest > NUL
 if "%errorlevel%" == "1" (
-    python -m pip install pytest > NUL
+    "%PY_EXE%" -m pip install pytest > NUL
     call :oe_verify_errorlevel "python -m pip install pytest" || EXIT /B 1
 ) else (
     rem this should always succeed, just using it for a nicely formatted OK message
@@ -211,8 +227,6 @@ if "%errorlevel%" == "1" (
 )
 
 EXIT /B 0
-
-
 
 :oe_verify_errorlevel
 rem Takes 1 arg; operation name
@@ -224,3 +238,4 @@ if not %errorlevel% == 0 (
     echo * [[32mOK[0m] %~1
 )
 EXIT /B 0
+

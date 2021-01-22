@@ -123,7 +123,6 @@ class App_impl {
 
   void createWindowSizeDependentResources() {
     try {
-      _deviceResources->recreateWindowSizeDependentResources();
       int width, height;
       if (!_deviceResources->getWindowSize(width, height)) {
         LOG(WARNING) << "createWindowSizeDependentResources: Failed to get last window size.";
@@ -207,7 +206,7 @@ class App_impl {
     return true;
   }
 
-  static void getDefaultWindowSize(int w, int h) {
+  static void getDefaultWindowSize(int& w, int& h) {
 
     // Get dimensions of the primary monitor
     RECT rc;

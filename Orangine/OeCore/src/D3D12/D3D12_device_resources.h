@@ -29,6 +29,7 @@ class D3D12_device_resources : public IDevice_resources {
   void registerDeviceNotify(IDevice_notify* deviceNotify) override {
     m_deviceNotify = deviceNotify;
   }
+
   void createDeviceDependentResources() override;
   void destroyDeviceDependentResources() override;
   bool getWindowSize(int& width, int& height) override;
@@ -45,8 +46,6 @@ class D3D12_device_resources : public IDevice_resources {
 
   // Direct3D Accessors.
   ID3D12Device1* GetD3DDevice() const { return m_d3dDevice.Get(); }
-  // ID3D11DeviceContext1*   GetD3DDeviceContext() const             { return m_d3dContext.Get(); }
-  IDXGISwapChain1* GetSwapChain() const { return m_swapChain.Get(); }
   D3D_FEATURE_LEVEL GetDeviceFeatureLevel() const { return m_d3dFeatureLevel; }
   // ID3D11Texture2D*        GetRenderTarget() const                 { return m_renderTarget.Get();
   // } ID3D11Texture2D*        GetDepthStencil() const                 { return
@@ -74,16 +73,44 @@ class D3D12_device_resources : public IDevice_resources {
   }
 
  private:
+  struct Render_pipeline {
+    static const std::size_t frameCount = 2;
+
+    // Pipeline Objects
+    Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue;
+    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
+    Microsoft::WRL::ComPtr<IDXGISwapChain3> swapChain;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtcDescriptorHeap;
+    UINT rtcDescriptorSize;
+    std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, frameCount> rtvBackBuffer;
+
+
+    // Synchronization objects.
+    UINT frameIndex;
+    HANDLE fenceEvent;
+    Microsoft::WRL::ComPtr<ID3D12Fence> fence;
+    UINT64 fenceValue;
+  };
+
   void HandleDeviceLost();
   void CreateFactory();
   void GetHardwareAdapter(IDXGIAdapter1** ppAdapter);
-  void UpdateColorSpace();
+
+
+  void createRenderPipeline(Render_pipeline& renderPipeline);
+  void resizePipelineResources(
+      Render_pipeline& renderPipeline,
+      UINT backBufferWidth,
+      UINT backBufferHeight);
+
+  // If a null colour space is passed, just sets the state of m_colorSpace
+  void updateColorSpace(const Microsoft::WRL::ComPtr<IDXGISwapChain>& swapChain);
 
   // Direct3D objects.
   Microsoft::WRL::ComPtr<IDXGIFactory4> m_dxgiFactory;
   Microsoft::WRL::ComPtr<ID3D12Device6> m_d3dDevice;
-  Microsoft::WRL::ComPtr<IDXGISwapChain1> m_swapChain;
   // Microsoft::WRL::ComPtr<ID3DUserDefinedAnnotation>   m_d3dAnnotation;
+
 
   // Direct3D rendering objects. Required for 3D.
   // Microsoft::WRL::ComPtr<ID3D11Texture2D>         m_renderTarget;
@@ -105,6 +132,8 @@ class D3D12_device_resources : public IDevice_resources {
 
   // HDR Support
   DXGI_COLOR_SPACE_TYPE m_colorSpace;
+
+  Render_pipeline _renderPipeline;
 
   // DeviceResources options (see flags above)
   unsigned int m_options;

@@ -73,14 +73,24 @@ If you want to forge ahead, it DOES WORK. All, with the exception of remote debu
 -DOeScripting_PYTHON_DEBUG=ON
 ```
 
-## Git
-If you are reading this you probably already have GIT installed. If not, [follow these instructions](https://confluence.atlassian.com/get-started-with-bitbucket/install-and-set-up-git-860009658.html) and clone the repository to somewhere convenient on your hard drive:
+## Git SSH Keys
+Some of the third party dependencies are hosted on github.com. The orangine repository itself is on bitbucket.com.
+
+Test GIT connectivity using git bash:
+
+```
+ssh git@github.com
+ssh git@bitbucket.com
+```
+
+If either of those fail, add your ssh keys to the website using by [following these instructions](https://confluence.atlassian.com/get-started-with-bitbucket/install-and-set-up-git-860009658.html).
+
+## Clone the Orangine Repo
+clone the repository to somewhere convenient on your hard drive:
 
 ```
 git clone git@bitbucket.org:orangine/orangine.git c:\repos\orangine
 ```
-
-**Note**: Make sure you have added your SSH public key to both github.com and bitbucket.com
 
 ## Build dependencies
 Our third party dependencies have a number of build and integration methods. To make things easier, a helper script in the root directory will configure, build and install these:

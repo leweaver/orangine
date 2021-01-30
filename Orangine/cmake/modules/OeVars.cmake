@@ -24,6 +24,11 @@ if (NOT "${CMAKE_SYSTEM_VERSION}" MATCHES "${OE_EXPECTED_WINSDK_VER}")
      message(FATAL_ERROR "CMAKE_SYSTEM_VERSION is '${CMAKE_SYSTEM_VERSION}', but must be '${OE_EXPECTED_WINSDK_VER}'")
 endif()
 
+set (OE_WINSDK_DIR "$ENV{ProgramFiles\(x86\)}\\Windows Kits\\10\\Include\\10.0.19041.0")
+if (NOT EXISTS "${OE_WINSDK_DIR}")
+     MESSAGE(FATAL_ERROR "Windows SDK '${OE_EXPECTED_WINSDK_VER}' not installed. Expected location: ${OE_WINSDK_DIR}")
+endif()
+
 # Python search paths
 if ("${Orangine_ARCHITECTURE}" MATCHES "x86")
         set(ENV{VIRTUAL_ENV} "${OE_THIRDPARTY_PATH}/pyenv_37_x86")

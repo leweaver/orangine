@@ -1,7 +1,0 @@
-{
-    "python.pythonPath": "C:\\Users\\hotma\\AppData\\Local\\Programs\\Python\\Python37\\python.exe",
-    "python.unitTest.unittestEnabled": true,
-    "python.unitTest.pyTestEnabled": false,
-    "python.unitTest.nosetestsEnabled": false,
-    "editor.rulers": [100]
-}

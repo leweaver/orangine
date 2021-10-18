@@ -56,14 +56,15 @@ rem Clone third party repositories
 rem ******************************
 
 cd "%OE_ROOT%"
-set "OE_THIRDPARTY_OUTPUT=%OE_ROOT%\thirdparty\update-thirdparty.log"
-echo Updating thirdparty repositories: %OE_THIRDPARTY_OUTPUT%
+set "OE_UPDATE_THIRDPARTY_LOGFILE=%OE_ROOT%\thirdparty\update-thirdparty.log"
+echo Updating thirdparty repositories: %OE_UPDATE_THIRDPARTY_LOGFILE%
 if not exist "%OE_ROOT%\thirdparty\glTF-Sample-Models" (
     echo * [[33mThis will take 5 to 10 minutes, go walk the dog.[0m]
 ) else (
     echo * [[33mThis will take a few minutes if there are changes since your last run.[0m]
 )
 
+"%PYTHON_64_EXE%" "Utils\update-thirdparty.py" >> !OE_UPDATE_THIRDPARTY_LOGFILE! 2>&1
 call :oe_verify_errorlevel "update-thirdparty.py" || goto:eof
 
 rem ******************************

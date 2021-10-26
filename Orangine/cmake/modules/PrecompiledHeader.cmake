@@ -77,7 +77,7 @@ function(export_all_flags _filename)
 endfunction()
 
 function(add_precompiled_header _target _input)
-  cmake_parse_arguments(_PCH "FORCEINCLUDE" "SOURCE_CXX;SOURCE_C;BUILD_DIR" "" ${ARGN})
+  cmake_parse_arguments(_PCH "FORCEINCLUDE" "SOURCE_CXX;SOURCE_C;BUILD_DIR" "IGNORE_FILES" ${ARGN})
 
   get_filename_component(_input_we ${_input} NAME_WE)
   if(NOT _PCH_SOURCE_CXX)
@@ -96,6 +96,9 @@ function(add_precompiled_header _target _input)
 
     get_target_property(sources ${_target} SOURCES)
     foreach(_source ${sources})
+      if(${_source} IN_LIST _PCH_IGNORE_FILES)
+        continue()
+      endif()
       set(_pch_compile_flags "")
       if(_source MATCHES \\.\(cc|cxx|cpp|c\)$)
         if(_source MATCHES \\.\(cpp|cxx|cc\)$)
@@ -183,6 +186,9 @@ function(add_precompiled_header _target _input)
 
     get_property(_sources TARGET ${_target} PROPERTY SOURCES)
     foreach(_source ${_sources})
+      if(${_source} IN_LIST _PCH_IGNORE_FILES)
+        continue()
+      endif()
       set(_pch_compile_flags "")
 
       if(_source MATCHES \\.\(cc|cxx|cpp|c\)$)

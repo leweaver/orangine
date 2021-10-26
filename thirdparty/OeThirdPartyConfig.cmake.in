@@ -12,4 +12,4 @@ set(OETHIRDPARTY_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
 include("${THIRDPARTY_CMAKE_DIR}/OeThirdPartyTargets.cmake")
 
 # These are IMPORTED targets created by OeThirdPartyTargets.cmake
-set(OETHIRDPARTY_LIBRARIES OeImgui MikktSpace)
+set(OETHIRDPARTY_LIBRARIES MikktSpace)

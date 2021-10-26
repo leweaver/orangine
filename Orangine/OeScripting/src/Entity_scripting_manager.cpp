@@ -17,7 +17,7 @@
 #include "OeCore/Shadow_map_texture.h"
 #include "OeCore/Test_component.h"
 
-#include <OeThirdParty/imgui.h>
+#include <imgui.h>
 
 #include <cmath>
 #include <filesystem>

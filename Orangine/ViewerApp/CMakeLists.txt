@@ -1,5 +1,5 @@
 project(ViewerApp VERSION 1.0
-        DESCRIPTION "Orangine Sample Application"
+        DESCRIPTION "Orangine Sample GLTF Viewer Application"
         LANGUAGES CXX)
 
 # --------------------------------
@@ -82,30 +82,14 @@ install(DIRECTORY data;${OeCore_DATA_PATH};${OeScripting_DATA_PATH};${OeApp_DATA
         DESTINATION bin
         )
 
-# Install executable
-install(TARGETS ${PROJECT_NAME}
-        EXPORT ViewerAppTargets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include
-        PUBLIC_HEADER DESTINATION include/${PROJECT_NAME}
-        )
-install(
-        EXPORT ViewerAppTargets
-        FILE ViewerAppTargets.cmake
-        NAMESPACE Oe::
-        DESTINATION lib/cmake/${PROJECT_NAME}
-        )
-
 # Install PDB
 include(OeUtils)
 install_target_pdb(ViewerApp)
 
 # Manually install the g3logger DLL from Orangine to this apps import directory
 find_package(g3log REQUIRED)
-get_target_property(IMPORTED_CONFIGURATIONS_g3log g3log IMPORTED_CONFIGURATIONS)
-get_target_property(IMPORTED_LOCATION_g3log g3log "IMPORTED_LOCATION_${IMPORTED_CONFIGURATIONS_g3log}")
+get_target_property(IMPORTED_CONFIGURATIONS_g3log g3log::g3log IMPORTED_CONFIGURATIONS)
+get_target_property(IMPORTED_LOCATION_g3log g3log::g3log "IMPORTED_LOCATION_${IMPORTED_CONFIGURATIONS}")
 
 add_custom_command(TARGET ${PROJECT_NAME}
 		POST_BUILD

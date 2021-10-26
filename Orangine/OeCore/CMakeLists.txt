@@ -1,6 +1,6 @@
 project(OeCore VERSION 1.0
         DESCRIPTION "Orangine Core Library"
-        LANGUAGES CXX)
+        LANGUAGES CXX C)
 
 configure_file (
         "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
@@ -88,7 +88,15 @@ add_library(${PROJECT_NAME} STATIC
         src/Unlit_material.cpp
         src/VectorLog.cpp
         "src/Stubs/pch.h" 
-        "src/D3D12/pch.h" "src/D3D12/D3D12_collision.cpp" "src/Collision.cpp")
+        "src/D3D12/pch.h"
+        "src/D3D12/D3D12_collision.cpp"
+        "src/Collision.cpp"
+        "ThirdParty/d3dx12/d3dx12.h"
+        "ThirdParty/MikktSpace/mikktspace.h"
+        "ThirdParty/MikktSpace/mikktspace.c"
+        "ThirdParty/imgui/misc/cpp/imgui_stdlib.h"
+        "ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp"
+        )
 file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
@@ -98,7 +106,13 @@ add_library(Oe::Core ALIAS OeCore)
 
 # Precompiled Headers
 include(PrecompiledHeader)
-add_precompiled_header(${PROJECT_NAME} pch.h SOURCE_CXX src/pch.cpp)
+add_precompiled_header(${PROJECT_NAME} pch.h
+        SOURCE_CXX
+                src/pch.cpp
+        IGNORE_FILES
+                ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp
+                ThirdParty/MikktSpace/mikktspace.c
+        )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
 
@@ -108,20 +122,26 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
-        "${OE_THIRDPARTY_PATH}/tinygltf"
-        "${OE_THIRDPARTY_PATH}/vectormath"
         "${OE_THIRDPARTY_PATH}/filewatch"
         "${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
+        PRIVATE
+        ThirdParty
         )
 
 # g3log
 find_package(g3log REQUIRED)
-target_include_directories(${PROJECT_NAME} PUBLIC ${G3LOG_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PUBLIC g3log)
+target_link_libraries(${PROJECT_NAME} PUBLIC g3log::g3log)
 
-# Third Party (imgui, MikktSpace)
-find_package(OeThirdParty REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC Oe::MikktSpace Oe::OeImgui)
+# imgui
+find_package(imgui REQUIRED)
+target_link_libraries(${PROJECT_NAME} PUBLIC imgui::imgui)
+
+# tinygltf
+target_link_libraries(${PROJECT_NAME} PUBLIC Oe3p::tinygltf)
+#target_include_directories(${PROJECT_NAME} ${TinyGLTF_INCLUDE_DIR})
+
+# Other 3P Libraries
+target_link_libraries(${PROJECT_NAME} PUBLIC Oe3p::vectormath)
 
 # DirectX
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -132,28 +152,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         )
 
 # DirectXTK
-find_package(directxtk REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC ${DIRECTXTK_LIBRARIES})
-
-# Install
-install(TARGETS ${PROJECT_NAME}
-        EXPORT OeCoreTargets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include
-        PUBLIC_HEADER DESTINATION include/${PROJECT_NAME}
-        )
+target_link_libraries(${PROJECT_NAME} PUBLIC DirectXTK12)
 
 include(OeUtils)
 install_target_pdb(OeCore)
-
-install(
-        EXPORT OeCoreTargets
-        FILE OeCoreTargets.cmake
-        NAMESPACE Oe::
-        DESTINATION lib/cmake/${PROJECT_NAME}
-        )
 
 # Data and Assets
 set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data")

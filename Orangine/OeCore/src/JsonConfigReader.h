@@ -3,7 +3,7 @@
 #include <OeCore/IConfigReader.h>
 
 #include <string>
-#include <tinygltf/json.hpp>
+#include <json.hpp>
 
 namespace oe {
 class JsonConfigReader : public IConfigReader {

@@ -23,7 +23,7 @@
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #define STB_IMAGE_IMPLEMENTATION
-#include <tinygltf/tiny_gltf.h>
+#include <tiny_gltf.h>
 
 using namespace std;
 using namespace tinygltf;
@@ -263,12 +263,12 @@ unique_ptr<TMesh_buffer_accessor> useOrCreateBufferForAccessor(
   }
 
   const auto componentSizeInBytes = GetComponentSizeInBytes(accessor.componentType);
-  const auto typeSizeInBytes = GetTypeSizeInBytes(accessor.type);
-  const auto sourceElementSize = componentSizeInBytes * typeSizeInBytes;
+  const auto numComponentsInType = GetNumComponentsInType(accessor.type);
+  const auto sourceElementSize = componentSizeInBytes * numComponentsInType;
   if (sourceElementSize <= 0) {
     OE_THROW(domain_error(
         "missing or unsupported accessor field: "s +
-        (typeSizeInBytes == -1 ? "type" : "componentType")));
+        (numComponentsInType == -1 ? "type" : "componentType")));
   }
 
   // Get the buffer view

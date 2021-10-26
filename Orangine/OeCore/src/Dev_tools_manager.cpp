@@ -13,8 +13,8 @@
 #include "OeCore/Unlit_material.h"
 #include "OeCore/VectorLog.h"
 
-#include <OeThirdParty/imgui.h>
-#include <OeThirdParty/imgui_stdlib.h>
+#include <imgui.h>
+#include <imgui/misc/cpp/imgui_stdlib.h>
 
 #include <algorithm>
 

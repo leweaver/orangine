@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 
-#include "g3log/logmessage.hpp"
+#include <g3log/logmessage.hpp>
 namespace oe {
 
 // Mostly copied from g3::FileSink - modified to allow overwrite of same logfile each run.

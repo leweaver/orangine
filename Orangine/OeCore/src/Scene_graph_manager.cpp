@@ -3,7 +3,7 @@
 #include "OeCore/Scene.h"
 #include "Scene_graph_manager.h"
 
-#include <OeThirdParty/imgui.h>
+#include <imgui.h>
 
 #include <algorithm>
 #include <deque>

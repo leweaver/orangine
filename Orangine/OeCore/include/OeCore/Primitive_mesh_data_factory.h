@@ -1,6 +1,6 @@
 #pragma once
 #include "Mesh_data.h"
-#include <vectormath/vectormath.hpp>
+#include <vectormath.hpp>
 
 namespace oe {
 struct BoundingFrustumRH;

@@ -5,7 +5,7 @@
 
 #include <string>
 #include <string_view>
-#include <vectormath/vectormath.hpp>
+#include <vectormath.hpp>
 
 #include <g3log/g3log.hpp>
 

@@ -41,41 +41,57 @@ target_include_directories(${PROJECT_NAME}
         $<INSTALL_INTERFACE:include>
         )
 
+# Python Env
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+# Python search paths
+if ("${Orangine_ARCHITECTURE}" MATCHES "x86")
+    set(ENV{VIRTUAL_ENV} "${PROJECT_BINARY_DIR}/pyenv_37")
+elseif ("${Orangine_ARCHITECTURE}" MATCHES "x64")
+    set(ENV{VIRTUAL_ENV} "${PROJECT_BINARY_DIR}/pyenv_37")
+else ()
+    MESSAGE(ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+endif ()
+if (NOT EXISTS "$ENV{VIRTUAL_ENV}")
+    MESSAGE("Creating python environment: $ENV{VIRTUAL_ENV}")
+    execute_process(COMMAND "${Python3_EXECUTABLE}" -m venv "$ENV{VIRTUAL_ENV}"
+            RESULT_VARIABLE _retval)
+    IF (NOT "${_retval}" MATCHES "0")
+        MESSAGE(FATAL_ERROR "Failed to create venv")
+    endif()
+endif()
+
+set(Python_FIND_VIRTUALENV ONLY)
+set(Python3_FIND_VIRTUALENV ONLY)
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
+MESSAGE(STATUS "Verifying pip Packages: $ENV{VIRTUAL_ENV}")
+execute_process(
+        COMMAND "$ENV{VIRTUAL_ENV}/Scripts/pip3.exe"
+        install -r "${PROJECT_SOURCE_DIR}/pyenv-requirements.txt"
+        RESULT_VARIABLE _retval)
+IF (NOT "${_retval}" MATCHES "0")
+    MESSAGE(FATAL_ERROR "Failed to install virtualenv requirements")
+endif()
+
 # PyBind
-find_package(Python COMPONENTS Interpreter Development REQUIRED)
-find_package(pybind11 CONFIG REQUIRED)
+find_package(pybind11 REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC pybind11::embed pybind11::python_link_helper)
 
 # It is critical that the version of python we compile against matches the scripts loaded into the virtualenv
-if (NOT "${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}" MATCHES "3.7")
-    message(FATAL_ERROR "Found python ${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}, but must be compiled against 3.7")
+if (NOT "${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}" MATCHES "3.7")
+    message(FATAL_ERROR "Found python ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}, but must be compiled against 3.7")
 endif()
 
 
 # --------------------------------
 # Install
-install(TARGETS ${PROJECT_NAME}
-        EXPORT OeScriptingTargets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include
-        PUBLIC_HEADER DESTINATION include/${PROJECT_NAME}
-        )
-		
 include(OeUtils)
 install_target_pdb(OeScripting)
 
-install(
-        EXPORT OeScriptingTargets
-        FILE OeScriptingTargets.cmake
-        NAMESPACE Oe::
-        DESTINATION lib/cmake/${PROJECT_NAME}
-)
-
 # Data and Assets
-set(OeScripting_PYENV_DIR "${OE_THIRDPARTY_PATH}/pyenv_37_${Orangine_ARCHITECTURE}$<$<BOOL:${OeScripting_PYTHON_DEBUG}>:_d>")
-set(OeScripting_PYENV_DIR ${OeScripting_PYENV_DIR} PARENT_SCOPE)
+set(OeScripting_PYENV_DIR "$ENV{VIRTUAL_ENV}$<$<BOOL:${OeScripting_PYTHON_DEBUG}>:_d>")
+set(OeScripting_PYENV_DIR $ENV{VIRTUAL_ENV} PARENT_SCOPE)
 set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data;pyenv=${OeScripting_PYENV_DIR}")
 set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${${PROJECT_NAME}_DATA_SOURCE_DIRS}" PARENT_SCOPE)
 install(DIRECTORY data
@@ -88,9 +104,9 @@ message(NOTICE "Python_RUNTIME_LIBRARY_DIRS=${Python_RUNTIME_LIBRARY_DIRS}")
 
 # Install Python binaries
 if (${OeScripting_PYTHON_DEBUG})
-        set(OeScripting_PYTHON_RUNTIME_DLL "${Python_RUNTIME_LIBRARY_DIRS}/python${Python_VERSION_MAJOR}${Python_VERSION_MINOR}_d.dll")
+        set(OeScripting_PYTHON_RUNTIME_DLL "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll")
 else ()
-        set(OeScripting_PYTHON_RUNTIME_DLL "${Python_RUNTIME_LIBRARY_DIRS}/python${Python_VERSION_MAJOR}${Python_VERSION_MINOR}.dll")
+        set(OeScripting_PYTHON_RUNTIME_DLL "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll")
 endif()
 install(FILES "${OeScripting_PYTHON_RUNTIME_DLL}" DESTINATION bin)
 set(OeScripting_PYTHON_RUNTIME_DLL ${OeScripting_PYTHON_RUNTIME_DLL} PARENT_SCOPE)

@@ -2,7 +2,7 @@
 
 #include "Mesh_data.h"
 
-#include <OeThirdParty/mikktspace.h>
+#include <MikktSpace/mikktspace.h>
 
 #include <memory>
 

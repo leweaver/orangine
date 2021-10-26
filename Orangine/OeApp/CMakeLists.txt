@@ -49,24 +49,8 @@ target_include_directories(${PROJECT_NAME}
 
 # --------------------------------
 # Install
-install(TARGETS ${PROJECT_NAME}
-        EXPORT OeAppTargets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include
-        PUBLIC_HEADER DESTINATION include/${PROJECT_NAME}
-        )
-
 include(OeUtils)
 install_target_pdb(OeApp)
-
-install(
-        EXPORT OeAppTargets
-        FILE OeAppTargets.cmake
-        NAMESPACE Oe::
-        DESTINATION lib/cmake/${PROJECT_NAME}
-        )
 
 # Data and Assets
 set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data")

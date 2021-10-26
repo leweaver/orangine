@@ -4,7 +4,7 @@
 #include "Renderer_enums.h"
 
 #include <string>
-#include <vectormath/vectormath.hpp>
+#include <vectormath.hpp>
 
 namespace oe {
 

@@ -3,7 +3,7 @@
 #include "Renderer_types.h"
 
 #include <array>
-#include <vectormath/vectormath.hpp>
+#include <vectormath.hpp>
 
 namespace oe {
 

@@ -19,7 +19,7 @@ namespace oe {
     class Entity_alpha_sorter;
     class Entity_cull_sorter;
     class Shadow_map_texture_pool;
-    class Renderable;
+    struct Renderable;
 
     class IEntity_render_manager :
         public Manager_base,

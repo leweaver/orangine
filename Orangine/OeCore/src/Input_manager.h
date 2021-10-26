@@ -11,7 +11,7 @@ namespace oe::internal {
 	    // Manager_base implementation
 	    void initialize() override;
 	    void shutdown() override;
-        const std::string& name() const override;
+            const std::string& name() const override;
 
 	    // Manager_tickable implementation
 	    void tick() override;

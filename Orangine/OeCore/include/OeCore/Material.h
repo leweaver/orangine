@@ -8,8 +8,8 @@
 #include <set>
 #include <string>
 
-#include <tinygltf/json.hpp>
-#include <vectormath/vectormath.hpp>
+#include <json.hpp>
+#include <vectormath.hpp>
 
 namespace oe {
 class Mesh_vertex_layout;

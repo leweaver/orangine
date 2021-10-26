@@ -4,7 +4,7 @@
 
 // TODO: Shouldn't be in this file!
 #include <DirectXCollision.h>
-#include <vectormath/vectormath.hpp>
+#include <vectormath.hpp>
 
 namespace oe {
 

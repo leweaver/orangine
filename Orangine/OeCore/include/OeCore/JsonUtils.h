@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vectormath/vectormath.hpp>
+#include <vectormath.hpp>
 
-#include <tinygltf/json.hpp>
+#include <json.hpp>
 
 namespace Vectormath::SSE {
 

@@ -8,12 +8,14 @@
 #include <dxgi1_5.h>
 #endif
 
-#include <DirectXColors.h>
+/*
 #include <DirectXHelpers.h>
+*/
+#include <DirectXColors.h>
 #include <DirectXMath.h>
 
 // Microsoft DirectX12 Helpers
-#include "OeThirdParty/d3dx12.h"
+#include "d3dx12/d3dx12.h"
 
 
 #ifdef _DEBUG

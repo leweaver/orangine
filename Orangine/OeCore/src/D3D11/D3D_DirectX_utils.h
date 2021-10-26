@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vectormath/vectormath.hpp>
+#include <vectormath.hpp>
 #include <DirectXMath.h>
 
 namespace oe {

@@ -16,7 +16,7 @@
 #include "OeCore/IMaterial_manager.h"
 #include "OeCore/Perf_timer.h"
 
-#include <tinygltf/json.hpp>
+#include <json.hpp>
 #include <type_traits>
 
 using namespace oe;

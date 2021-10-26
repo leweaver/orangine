@@ -62,24 +62,4 @@ def init():
 # Captures stdout and stderr. This is just a bucket for any output not using logger
 # (which is handled by init_logger, above)
 def reset_output_streams():
-    if not sys.stdout:
-        sys.stdout = StringIO()
-        sys.stdout.flush()
-    else:
-        s = sys.stdout.getvalue()
-        if oe.log_info_enabled() and len(s):
-            for line in s.split("\\n"):
-                oe.log_info(line)
-        sys.stdout.seek(0)
-        sys.stdout.truncate()
-
-    if not sys.stderr:
-        sys.stderr = StringIO()
-        sys.stderr.flush()
-    else:
-        s = sys.stderr.getvalue()
-        if oe.log_warning_enabled() and len(s):
-            for line in s.split("\\n"):
-                oe.log_warning(line)
-        sys.stderr.seek(0)
-        sys.stderr.truncate()
+    pass

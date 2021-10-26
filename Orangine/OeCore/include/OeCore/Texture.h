@@ -2,7 +2,7 @@
 
 #include "Renderer_types.h"
 
-#include <tinygltf/json.hpp>
+#include <json.hpp>
 
 namespace oe {
 

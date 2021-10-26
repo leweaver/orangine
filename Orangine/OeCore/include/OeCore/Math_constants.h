@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vectormath/vectormath.hpp>
+#include <vectormath.hpp>
 
 namespace oe {
 namespace math {

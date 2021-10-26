@@ -28,14 +28,3 @@ set (OE_WINSDK_DIR "$ENV{ProgramFiles\(x86\)}\\Windows Kits\\10\\Include\\10.0.1
 if (NOT EXISTS "${OE_WINSDK_DIR}")
      MESSAGE(FATAL_ERROR "Windows SDK '${OE_EXPECTED_WINSDK_VER}' not installed. Expected location: ${OE_WINSDK_DIR}")
 endif()
-
-# Python search paths
-if ("${Orangine_ARCHITECTURE}" MATCHES "x86")
-        set(ENV{VIRTUAL_ENV} "${OE_THIRDPARTY_PATH}/pyenv_37_x86")
-elseif ("${Orangine_ARCHITECTURE}" MATCHES "x64")
-        set(ENV{VIRTUAL_ENV} "${OE_THIRDPARTY_PATH}/pyenv_37_x64")
-else ()
-        MESSAGE(ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-endif ()
-set(Python_FIND_VIRTUALENV ONLY)
-set(Python3_FIND_VIRTUALENV ONLY)

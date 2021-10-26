@@ -3,7 +3,7 @@
 #include <OeCore/Collision.h>
 #include <OeCore/Component.h>
 
-#include "vectormath/vectormath.hpp"
+#include "vectormath.hpp"
 
 #include <map>
 #include <vector>

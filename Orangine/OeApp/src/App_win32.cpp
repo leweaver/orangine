@@ -48,13 +48,12 @@ class App_impl {
   // Game Loop
   HWND getWindow() const { return _hwnd; }
   void onTick() {
-
-    _timer.Tick([this]() { _scene->tick(_timer); });
+    _scene->tick();
   }
   void onRender() {
 
     // Don't try to render anything before the first Update.
-    if (_timer.GetFrameCount() == 0) {
+    if (_scene->getFrameCount() == 0) {
       return;
     }
 
@@ -73,12 +72,13 @@ class App_impl {
     // TODO: Game is becoming background window.
   }
   void onSuspending() {
-    // TODO: Game is being power-suspended (or minimized).
+    // Game is being power-suspended (or minimized).
+    _scene->suspendPlay();
   }
   void onResuming() {
-    _timer.ResetElapsedTime();
+    // Game is being power-resumed (or returning from minimize).
+    _scene->resumePlay();
 
-    // TODO: Game is being power-resumed (or returning from minimize).
   }
   void onWindowMoved() {
     int width, height;
@@ -223,7 +223,6 @@ class App_impl {
   Scene_device_resource_aware* const _scene;
   HWND const _hwnd;
   bool _fatalError;
-  StepTimer _timer;
 };
 } // namespace oe
 
@@ -238,7 +237,7 @@ int oe::App::run(const oe::App_start_settings& settings) {
   auto logWorker = g3::LogWorker::createLogWorker();
   {
     auto execName = oe::utf8_encode(__wargv[0]);
-    auto pos = execName.find_last_of("\\");
+    auto pos = execName.find_last_of('\\');
     if (pos != std::string::npos)
       logFileName = execName.substr(pos + 1);
     else

@@ -1,7 +1,6 @@
 ﻿#include "pch.h"
 
 #include "OeCore/JsonUtils.h"
-#include "OeCore/Material_repository.h"
 #include "OeCore/Mesh_vertex_layout.h"
 #include "OeCore/PBR_material.h"
 
@@ -33,7 +32,7 @@ const std::string g_flag_skinned_joints_sint16 = "joints_sint16";
 const std::string g_flag_skinned_joints_sint32 = "joints_sint32";
 
 PBR_material::PBR_material()
-    : Base_type(static_cast<uint8_t>(Material_type_index::PBR)), _baseColor(Colors::White),
+    : Base_type(static_cast<uint8_t>(Material_type_index::Pbr)), _baseColor(Colors::White),
       _metallic(1.0), _roughness(1.0), _emissive(Colors::Black), _alphaCutoff(0.5)
 {
   std::fill(_textures.begin(), _textures.end(), nullptr);

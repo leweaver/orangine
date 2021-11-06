@@ -13,9 +13,9 @@ using namespace DirectX;
 
 std::string Animation_manager::_name = "Animation_manager";
 
-template <> IAnimation_manager* oe::create_manager(Scene& scene)
+template <> IAnimation_manager* oe::create_manager(Scene& scene, IScene_graph_manager& scene_graph_manager, ITime_step_manager& timeStepManager)
 {
-  return new Animation_manager(scene);
+  return new Animation_manager(scene, scene_graph_manager, timeStepManager);
 }
 
 const std::array<
@@ -63,7 +63,7 @@ const std::array<
 
 void Animation_manager::initialize()
 {
-  _animationControllers = _scene.manager<IScene_graph_manager>().getEntityFilter(
+  _animationControllers = _sceneGraphManager.getEntityFilter(
       {Animation_controller_component::type()});
 }
 
@@ -73,7 +73,7 @@ const std::string& Animation_manager::name() const { return _name; }
 
 void Animation_manager::tick()
 {
-  const auto deltaTime = _scene.deltaTime();
+  const auto deltaTime = _timeStepManager.deltaTime();
   for (const auto entity : *_animationControllers) {
     const auto animComponent = entity->getFirstComponentOfType<Animation_controller_component>();
     assert(animComponent);

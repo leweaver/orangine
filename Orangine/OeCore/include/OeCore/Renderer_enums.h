@@ -6,6 +6,19 @@
 
 namespace oe {
 
+// Material_type_index
+enum class Material_type_index {
+  Pbr = 0,
+  Unlit,
+  Deferred_light,
+  Skybox,
+  Clear_g_buffer,
+
+  Num_material_type_index = 5,
+};
+const std::string& materialTypeIndexToString(Material_type_index enumValue);
+Material_type_index stringToMaterialTypeIndex(const std::string& str);
+
 // Material_alpha_mode
 enum class Material_alpha_mode {
   Opaque = 0,

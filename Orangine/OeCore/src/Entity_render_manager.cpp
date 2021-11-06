@@ -39,10 +39,8 @@ Renderer_animation_data g_emptyRenderableAnimationData = []() {
   return rad;
 }();
 
-Entity_render_manager::Entity_render_manager(
-    Scene& scene,
-    std::shared_ptr<IMaterial_repository> materialRepository)
-    : IEntity_render_manager(scene), _materialRepository(std::move(materialRepository)) {}
+Entity_render_manager::Entity_render_manager(Scene& scene)
+    : IEntity_render_manager(scene) {}
 
 void Entity_render_manager::initialize() {}
 

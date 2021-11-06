@@ -8,6 +8,7 @@ struct IWICImagingFactory;
 
 namespace oe {
 class ITexture_manager;
+class IMaterial_manager;
 class Entity;
 
 class Entity_graph_loader_gltf : public Entity_graph_loader {
@@ -18,7 +19,7 @@ class Entity_graph_loader_gltf : public Entity_graph_loader {
   std::vector<std::shared_ptr<Entity>> loadFile(
       std::wstring_view filename,
       IEntity_repository& entityRepository,
-      IMaterial_repository& materialRepository,
+      IMaterial_manager& materialRepository,
       ITexture_manager& textureManager,
       bool calculateBounds) const override;
 

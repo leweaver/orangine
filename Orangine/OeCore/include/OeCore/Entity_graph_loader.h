@@ -13,7 +13,7 @@ class ITexture_manager;
 class Primitive_mesh_data_factory;
 class Entity;
 class IEntity_repository;
-class IMaterial_repository;
+class IMaterial_manager;
 
 class Entity_graph_loader {
  public:
@@ -29,7 +29,7 @@ class Entity_graph_loader {
   virtual std::vector<std::shared_ptr<Entity>> loadFile(
       std::wstring_view filename,
       IEntity_repository& entityRepository,
-      IMaterial_repository& materialRepository,
+      IMaterial_manager& materialRepository,
       ITexture_manager& textureManager,
       bool calculateBounds) const = 0;
 };

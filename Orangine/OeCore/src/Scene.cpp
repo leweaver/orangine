@@ -9,7 +9,6 @@
 #include "OeCore/IInput_manager.h"
 
 #include "OeCore/Entity_repository.h"
-#include "OeCore/Material_repository.h"
 
 #include "JsonConfigReader.h"
 #include "OeCore/FileUtils.h"
@@ -126,7 +125,6 @@ void Scene::initialize() {
   assert(meshLoader);
 
   std::fill(_tickTimes.begin(), _tickTimes.end(), 0.0);
-  _tickCount = 0;
 
   try {
     forEachOfType<Manager_base>(_managers, [this](auto, auto* manager) {
@@ -165,7 +163,7 @@ void Scene::loadEntities(const std::wstring& filename, Entity* parentEntity) {
     OE_THROW(std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension));
 
   std::vector<std::shared_ptr<Entity>> newRootEntities =
-      extPos->second->loadFile(filename, *_entityRepository, *_materialRepository, manager<ITexture_manager>(), true);
+      extPos->second->loadFile(filename, *_entityRepository, manager<IMaterial_manager>(), manager<ITexture_manager>(), true);
 
   if (parentEntity) {
     for (const auto& entity : newRootEntities)
@@ -175,24 +173,28 @@ void Scene::loadEntities(const std::wstring& filename, Entity* parentEntity) {
   manager<IScene_graph_manager>().handleEntitiesLoaded(newRootEntities);
 }
 
-void Scene::tick(StepTimer const& timer) {
-  _deltaTime = timer.GetElapsedSeconds();
-  _elapsedTime += _deltaTime;
-  ++_tickCount;
+void Scene::tick()
+{
+  _stepTimer.Tick([this]() {
+    forEach_tick(_managers, _tickTimes);
 
-  forEach_tick(_managers, _tickTimes);
+    // Hack to reset timers after first frame which is typically quite heavy.
+    if (_stepTimer.GetFrameCount() == 1) {
+      std::fill(_tickTimes.begin(), _tickTimes.end(), 0.0);
+    }
+  });
+}
 
-  if (_tickCount == 1) {
-    std::fill(_tickTimes.begin(), _tickTimes.end(), 0.0);
-  }
+void Scene::resumePlay() {
+  _stepTimer.ResetElapsedTime();
 }
 
 void Scene::shutdown() {
   std::stringstream ss;
   const auto& tickTimes = _tickTimes;
-  const double tickCount = _tickCount;
+  const double tickCount = getFrameCount();
 
-  if (_tickCount > 0) {
+  if (tickCount > 0) {
     const std::function<void(int, Manager_base*)> timesLog = [&](int idx, Manager_base* manager) {
       if (tickTimes[idx] > 0.0) {
         ss << "  " << manager->name() << ": " << (1000.0 * tickTimes[idx] / tickCount) << std::endl;
@@ -282,19 +284,19 @@ Scene_device_resource_aware::Scene_device_resource_aware(IDevice_resources& devi
 
   // Repositories
   _entityRepository = make_shared<Entity_repository>(*this);
-  _materialRepository = make_shared<Material_repository>();
 
   // Services / Managers
+  createManager<ITime_step_manager>(static_cast<const StepTimer&>(_stepTimer));
   createManager<IScene_graph_manager>(_entityRepository);
   createManager<IDev_tools_manager>();
-  createManager<IEntity_render_manager>(_materialRepository, deviceResources);
+  createManager<IEntity_render_manager>(deviceResources);
   createManager<IRender_step_manager>(deviceResources);
   createManager<IShadowmap_manager>();
-  createManager<IEntity_scripting_manager>();
+  createManager<IEntity_scripting_manager>(manager<ITime_step_manager>());
   createManager<IAsset_manager>();
   createManager<IInput_manager>();
   createManager<IUser_interface_manager>(deviceResources);
-  createManager<IAnimation_manager>();
+  createManager<IAnimation_manager>(manager<IScene_graph_manager>(), manager<ITime_step_manager>());
   createManager<IMaterial_manager>(deviceResources);
   createManager<IBehavior_manager>();
   createManager<ITexture_manager>(deviceResources);

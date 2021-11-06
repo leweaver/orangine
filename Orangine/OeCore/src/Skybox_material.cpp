@@ -2,7 +2,6 @@
 
 #include "OeCore/Skybox_material.h"
 #include "OeCore/Texture.h"
-#include "OeCore/Material_repository.h"
 
 using namespace oe;
 

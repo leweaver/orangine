@@ -1,13 +1,15 @@
 #pragma once
 
+#include <OeCore/Entity_filter.h>
+#include <OeCore/IEntity_scripting_manager.h>
+#include <OeCore/ITime_step_manager.h>
+
 #include "Script_runtime_data.h"
-#include "OeCore/Entity_filter.h"
-#include "OeCore/IEntity_scripting_manager.h"
 
 namespace oe::internal {
 class Entity_scripting_manager : public IEntity_scripting_manager {
  public:
-  explicit Entity_scripting_manager(Scene& scene);
+  Entity_scripting_manager(Scene& scene, ITime_step_manager& timeStepManager);
 
   // Manager_base implementation
   void initialize() override;
@@ -25,7 +27,6 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
                           std::vector<std::string>& suggestions) override;
 
   void loadSceneScript(const std::string& scriptClassString) override;
-
 
  private:
   const std::string _name = "Entity_scripting_manager";
@@ -65,5 +66,7 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
 
   bool _pythonInitialized = false;
   std::vector < std::unique_ptr<Script_runtime_data>> _loadedScripts;
+
+  ITime_step_manager& _timeStepManager;
 };
 } // namespace oe::internal

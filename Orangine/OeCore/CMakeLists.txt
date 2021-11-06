@@ -85,6 +85,8 @@ add_library(${PROJECT_NAME} STATIC
         src/Skybox_material.cpp
         src/Test_component.cpp
         src/Texture.cpp
+        src/Time_step_manager.cpp
+        src/Time_step_manager.h
         src/Unlit_material.cpp
         src/VectorLog.cpp
         "src/Stubs/pch.h" 
@@ -115,6 +117,16 @@ add_precompiled_header(${PROJECT_NAME} pch.h
         )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
+
+# enum codegen
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+add_custom_target(
+ ${PROJECT_NAME}_codegen ALL
+ COMMAND "${Python3_EXECUTABLE}" "${Orangine_SOURCE_DIR}/cmake/scripts/codegen-enum.py" --json "${PROJECT_SOURCE_DIR}/codegen/Renderer_enums.json"
+ BYPRODUCTS include/OeCore/Renderer_enums.h
+ COMMENT "Generating enums"
+)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_codegen)
 
 # Public headers
 target_include_directories(${PROJECT_NAME}

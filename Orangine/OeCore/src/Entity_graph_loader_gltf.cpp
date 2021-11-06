@@ -6,7 +6,6 @@
 #include "OeCore/Entity_repository.h"
 #include "OeCore/FileUtils.h"
 #include "OeCore/Material.h"
-#include "OeCore/Material_repository.h"
 #include "OeCore/Mesh_data.h"
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Morph_weights_component.h"
@@ -16,6 +15,7 @@
 #include "OeCore/Texture.h"
 #include "OeCore/Unlit_material.h"
 #include "OeCore/ITexture_manager.h"
+#include "OeCore/IMaterial_manager.h"
 
 #include <functional>
 #include <wincodec.h>
@@ -183,7 +183,7 @@ struct Loader_data {
       wstring&& baseDir,
       IWICImagingFactory* imagingFactory,
       IEntity_repository& entityRepository,
-      IMaterial_repository& materialRepository,
+      IMaterial_manager& materialManager,
       ITexture_manager& textureManager,
       bool calculateBounds)
       : model(model)
@@ -191,14 +191,14 @@ struct Loader_data {
       , imagingFactory(imagingFactory)
       , calculateBounds(calculateBounds)
       , entityRepository(entityRepository)
-      , materialRepository(materialRepository)
+      , materialManager(materialManager)
       , textureManager(textureManager) {}
 
   Model& model;
   wstring baseDir;
   IWICImagingFactory* imagingFactory;
   IEntity_repository& entityRepository;
-  IMaterial_repository& materialRepository;
+  IMaterial_manager& materialManager;
   ITexture_manager& textureManager;
   map<size_t, shared_ptr<Mesh_buffer>> accessorIdxToMeshBuffers;
   vector<shared_ptr<Entity>> nodeIdxToEntity;
@@ -428,7 +428,7 @@ std::vector<SSE::Matrix4> createMatrix4ArrayFromAccessor(
 vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
     wstring_view filePath,
     IEntity_repository& entityRepository,
-    IMaterial_repository& materialRepository,
+    IMaterial_manager& materialManager,
     ITexture_manager& textureManager,
     bool calculateBounds) const {
   vector<shared_ptr<Entity>> entities;
@@ -476,7 +476,7 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
   const auto& scene = model.scenes[model.defaultScene];
   if (baseDir.empty())
     baseDir = L".";
-  Loader_data loaderData(model, move(baseDir), _imagingFactory.Get(), entityRepository, materialRepository, textureManager, calculateBounds);
+  Loader_data loaderData(model, move(baseDir), _imagingFactory.Get(), entityRepository, materialManager, textureManager, calculateBounds);
 
   // Load Entities
   loaderData.rootEntity = entityRepository.instantiate(filenameUtf8);

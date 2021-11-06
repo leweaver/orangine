@@ -173,8 +173,8 @@ struct Renderer_data {};
 
 class Stub_entity_render_manager : public oe::internal::Entity_render_manager {
  public:
-  Stub_entity_render_manager(Scene& scene, std::shared_ptr<IMaterial_repository> materialRepository)
-      : Entity_render_manager(scene, materialRepository) {}
+  Stub_entity_render_manager(Scene& scene)
+      : Entity_render_manager(scene) {}
 
   void loadRendererDataToDeviceContext(
       const Renderer_data& rendererData,
@@ -238,9 +238,8 @@ class Stub_user_interface_manager final : public IUser_interface_manager {
 template <>
 IEntity_render_manager* oe::create_manager(
     Scene& scene,
-    std::shared_ptr<IMaterial_repository>& materialRepository,
     IDevice_resources&) {
-  return new Stub_entity_render_manager(scene, materialRepository);
+  return new Stub_entity_render_manager(scene);
 }
 
 template <> IRender_step_manager* oe::create_manager(Scene& scene, IDevice_resources&) {

@@ -4,7 +4,6 @@
 #include "OeCore/Environment_volume.h"
 #include "OeCore/IEntity_render_manager.h"
 #include "OeCore/Light_provider.h"
-#include "OeCore/Material_repository.h"
 #include "OeCore/Mesh_data_component.h"
 #include "OeCore/Render_light_data.h"
 #include "OeCore/Render_pass.h"
@@ -22,7 +21,7 @@ class Material_context;
 namespace oe::internal {
 class Entity_render_manager : public IEntity_render_manager {
  public:
-  Entity_render_manager(Scene& scene, std::shared_ptr<IMaterial_repository> materialRepository);
+  Entity_render_manager(Scene& scene);
 
   BoundingFrustumRH createFrustum(const Camera_component& cameraComponent) override;
 
@@ -94,9 +93,6 @@ class Entity_render_manager : public IEntity_render_manager {
       std::shared_ptr<Mesh_data> meshData,
       const std::vector<Vertex_attribute_element>& vertexAttributes,
       const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) = 0;
-
-  // Entities
-  std::shared_ptr<IMaterial_repository> _materialRepository;
 
   struct Render_stats {
     int opaqueEntityCount = 0;

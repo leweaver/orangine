@@ -16,6 +16,7 @@
 #include "IUser_interface_manager.h"
 #include "IMaterial_manager.h"
 #include "ITexture_manager.h"
+#include "ITime_step_manager.h"
 
 #include "Manager_base.h"
 #include "EngineUtils.h"
@@ -45,16 +46,10 @@ class Scene {
 
   virtual void configure();
   virtual void initialize();
-  void tick(StepTimer const& timer);
+  void tick();
   virtual void shutdown();
 
   template <typename TMgr> TMgr& manager() const;
-
-  /** Total time since game start, in seconds. */
-  double elapsedTime() const { return _elapsedTime; }
-
-  /** Time since last frame, in seconds. */
-  double deltaTime() const { return _deltaTime; }
 
   /*
    * Functions that can be used to send events to various managers
@@ -94,17 +89,20 @@ class Scene {
     _environmentVolume = environmentVolume;
   }
 
+  uint32_t getFrameCount() const { return _stepTimer.GetFrameCount(); }
+  void suspendPlay() {}
+  void resumePlay();
+
  protected:
   // Repositories
   std::shared_ptr<IEntity_repository> _entityRepository;
-  std::shared_ptr<IMaterial_repository> _materialRepository;
-  std::shared_ptr<IDevice_resources> _deviceResources;
 
   // Managers
   using Manager_tuple = std::tuple<
       // Managers. IUser_interface_manager should always be first, so it can handle windows messages
       // first.
       std::shared_ptr<IUser_interface_manager>,
+      std::shared_ptr<ITime_step_manager>,
       std::shared_ptr<IAsset_manager>,
       std::shared_ptr<IScene_graph_manager>,
       std::shared_ptr<IDev_tools_manager>,
@@ -123,6 +121,7 @@ class Scene {
   std::vector<Manager_base*> _initializedManagers;
 
   Environment_volume _environmentVolume;
+  StepTimer _stepTimer;
 
  private:
   void loadEntities(const std::wstring& filename, Entity* parentEntity);
@@ -131,12 +130,7 @@ class Scene {
 
   std::shared_ptr<Entity> _mainCamera = nullptr;
 
-  // Values as of the last call to Tick.
-  double _deltaTime = 0;
-  double _elapsedTime = 0;
-
   std::array<double, std::tuple_size_v<Manager_tuple>> _tickTimes = {};
-  uint32_t _tickCount = 0;
 };
 
 template <typename TMgr> TMgr& Scene::manager() const

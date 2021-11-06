@@ -86,19 +86,6 @@ install(DIRECTORY data;${OeCore_DATA_PATH};${OeScripting_DATA_PATH};${OeApp_DATA
 include(OeUtils)
 install_target_pdb(ViewerApp)
 
-# Manually install the g3logger DLL from Orangine to this apps import directory
-find_package(g3log REQUIRED)
-get_target_property(IMPORTED_CONFIGURATIONS_g3log g3log::g3log IMPORTED_CONFIGURATIONS)
-get_target_property(IMPORTED_LOCATION_g3log g3log::g3log "IMPORTED_LOCATION_${IMPORTED_CONFIGURATIONS}")
-
-add_custom_command(TARGET ${PROJECT_NAME}
-		POST_BUILD
-		COMMAND "${CMAKE_COMMAND}" -E copy "${IMPORTED_LOCATION_g3log}" "${PROJECT_BINARY_DIR}"
-		)
-install(FILES ${IMPORTED_LOCATION_g3log}
-        DESTINATION bin
-)
-
 # Config.cmake files
 configure_file(ViewerAppConfig.cmake.in ViewerAppConfig.cmake @ONLY)
 configure_file(ViewerAppConfigVersion.cmake.in ViewerAppConfigVersion.cmake @ONLY)

@@ -1,7 +1,6 @@
 ﻿#include "pch.h"
 
 #include "OeCore/Deferred_light_material.h"
-#include "OeCore/Material_repository.h"
 #include "OeCore/Render_light_data.h"
 
 using namespace oe;
@@ -31,7 +30,7 @@ const std::string g_flag_shadowsEnabled = "shadowsEnabled";
 const std::string g_flag_iblEnabled = "iblEnabled";
 
 Deferred_light_material::Deferred_light_material()
-    : Base_type(static_cast<uint8_t>(Material_type_index::Deferred_Light)) {}
+    : Base_type(static_cast<uint8_t>(Material_type_index::Deferred_light)) {}
 
 const std::string& Deferred_light_material::materialType() const { return g_material_type; }
 

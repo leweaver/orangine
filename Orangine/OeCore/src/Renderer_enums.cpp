@@ -8,6 +8,26 @@
 namespace oe {
 
 ///////////////////////////////////
+// Material_type_index
+//
+std::string g_materialTypeIndexNames[] = {
+    "Pbr",
+    "Unlit",
+    "Deferred_light",
+    "Skybox",
+    "Clear_g_buffer"
+};
+static_assert(static_cast<size_t>(Material_type_index::Num_material_type_index) == array_size(g_materialTypeIndexNames));
+const std::string& materialTypeIndexToString(Material_type_index enumValue)
+{
+    return g_materialTypeIndexNames[static_cast<size_t>(enumValue)];
+}
+Material_type_index stringToMaterialTypeIndex(const std::string & str)
+{
+    return stringToEnum<Material_type_index>(str, g_materialTypeIndexNames);
+}
+
+///////////////////////////////////
 // Material_alpha_mode
 //
 std::string g_materialAlphaModeNames[] = {

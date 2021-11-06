@@ -115,6 +115,11 @@ const std::string& {cpp_tostr_fn_name}({cpp_enum_name} enumValue)
 
     output_header += "\n} // namespace oe"
     output_cpp += "\n} // namespace oe"
+    
+    with open(filepath_h, "r") as header_file:        
+        if (output_header == header_file.read()):
+            print (f"enums up to date.")
+            return
 
     with open(filepath_h, "w") as header_file:
         header_file.write(output_header)
@@ -126,7 +131,7 @@ const std::string& {cpp_tostr_fn_name}({cpp_enum_name} enumValue)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--json", type=str, default="Orangine/OeCore/codegen/Renderer_enums.json", help="The source enum json file")
+    parser.add_argument("--json", type=str, default="OeCore/codegen/Renderer_enums.json", help="The source enum json file")
 
     args = parser.parse_args()
 

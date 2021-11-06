@@ -50,12 +50,13 @@ Entity_scripting_manager::EngineInternalPythonModule::EngineInternalPythonModule
     , reset_output_streams(engineInternal.attr("reset_output_streams"))
     , enable_remote_debugging(engineInternal.attr("enable_remote_debugging")) {}
 
-template <> IEntity_scripting_manager* oe::create_manager(Scene& scene) {
-  return new Entity_scripting_manager(scene);
+template <> IEntity_scripting_manager* oe::create_manager(Scene& scene, ITime_step_manager& timeStepManager) {
+  return new Entity_scripting_manager(scene, timeStepManager);
 }
 
-Entity_scripting_manager::Entity_scripting_manager(Scene& scene)
-    : IEntity_scripting_manager(scene) {}
+Entity_scripting_manager::Entity_scripting_manager(Scene& scene, ITime_step_manager& timeStepManager)
+    : IEntity_scripting_manager(scene)
+    , _timeStepManager(timeStepManager) {}
 
 void Entity_scripting_manager::preInit_addAbsoluteScriptsPath(const std::wstring& path) {
   if (_pythonInitialized) {
@@ -147,7 +148,7 @@ void Entity_scripting_manager::tick() {
     logPythonError(err, "Native::tick() - Flushing stdout and stderr");
   }
 
-  const auto elapsedTime = _scene.elapsedTime();
+  const auto elapsedTime = _timeStepManager.elapsedTime();
   for (auto iter = _testEntityFilter->begin(); iter != _testEntityFilter->end(); ++iter) {
     auto& entity = **iter;
     auto* component = entity.getFirstComponentOfType<Test_component>();

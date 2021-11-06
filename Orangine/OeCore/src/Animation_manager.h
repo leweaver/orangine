@@ -1,13 +1,14 @@
 #pragma once
 #include "OeCore/IAnimation_manager.h"
 #include "OeCore/IScene_graph_manager.h"
+#include "OeCore/ITime_step_manager.h"
 #include "OeCore/Animation_controller_component.h"
 
 namespace oe {
     class Animation_manager : public IAnimation_manager
     {
     public:
-        explicit Animation_manager(Scene& scene) : IAnimation_manager(scene) {}
+        Animation_manager(Scene& scene, IScene_graph_manager& sceneGraphManager, ITime_step_manager& timeStepManager) : IAnimation_manager(scene), _sceneGraphManager(sceneGraphManager), _timeStepManager(timeStepManager) {}
 
         Animation_manager(const Animation_manager& other) = delete;
         Animation_manager(Animation_manager&& other) = delete;
@@ -81,6 +82,8 @@ namespace oe {
 
         static std::string _name;
 
+        IScene_graph_manager& _sceneGraphManager;
+        ITime_step_manager& _timeStepManager;
         std::shared_ptr<Entity_filter> _animationControllers;
     };
 }

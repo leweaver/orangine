@@ -29,5 +29,6 @@ class IRender_step_manager
   virtual Camera_data createCameraData(Camera_component& component) const = 0;
   virtual Viewport getScreenViewport() const = 0;
   virtual void render(std::shared_ptr<Entity> cameraEntity) = 0;
+  virtual BoundingFrustumRH createFrustum(const Camera_component& cameraComponent) = 0;
 };
 } // namespace oe

@@ -2,13 +2,8 @@
 
 #include "Material_manager.h"
 
-#include "OeCore/Material.h"
-#include "OeCore/Material_base.h"
 #include "OeCore/Material_context.h"
 #include "OeCore/Mesh_utils.h"
-#include "OeCore/Mesh_vertex_layout.h"
-#include "OeCore/Render_light_data.h"
-#include "OeCore/Renderer_data.h"
 #include "OeCore/Scene.h"
 
 #include <locale>
@@ -22,15 +17,15 @@ const std::string g_flag_disable_optimisation = "disableOptimizations";
 
 std::string Material_manager::_name = "Material_manager";
 
-Material_manager::Material_manager(Scene& scene)
-    : IMaterial_manager(scene), _boundBlendMode(Render_pass_blend_mode::Opaque) {}
+Material_manager::Material_manager(Scene& scene, IAsset_manager& assetManager)
+    : IMaterial_manager(scene), _boundBlendMode(Render_pass_blend_mode::Opaque), _assetManager(assetManager) {}
 
 void Material_manager::setShaderPath(const std::wstring& path) { _shaderPath = path; }
 
 const std::wstring& Material_manager::shaderPath() const { return _shaderPath; }
 
 void Material_manager::initialize() {
-  _shaderPath = _scene.manager<IAsset_manager>().makeAbsoluteAssetPath(L"OeCore/shaders");
+  _shaderPath = _assetManager.makeAbsoluteAssetPath(L"OeCore/shaders");
   setRendererFeaturesEnabled(Renderer_features_enabled());
 }
 
@@ -80,8 +75,9 @@ void Material_manager::bind(
     auto flags = material->configFlags(_rendererFeatures, blendMode, meshVertexLayout);
 
     // Add flag for shader optimisation, to determine if we need to recompile
-    if (!_rendererFeatures.enableShaderOptimization)
+    if (!_rendererFeatures.enableShaderOptimization) {
       flags.insert(g_flag_disable_optimisation);
+    }
 
     LOG(DEBUG) << "Material flags: " << nlohmann::json(flags).dump(2);
 

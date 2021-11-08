@@ -1,12 +1,14 @@
 ﻿#pragma once
 
-#include "OeCore/IInput_manager.h"
+#include <OeCore/IInput_manager.h>
+#include <OeCore/IUser_interface_manager.h>
+
 #include "Mouse.h"
 
 namespace oe::internal {
     class Input_manager : public IInput_manager {
     public:	    
-	    explicit Input_manager(Scene &scene);
+	    Input_manager(Scene &scene, IUser_interface_manager& userInterfaceManager);
 
 	    // Manager_base implementation
 	    void initialize() override;
@@ -33,5 +35,6 @@ namespace oe::internal {
         DirectX::Mouse::ButtonStateTracker _buttonStateTracker;
         std::unique_ptr<DirectX::Mouse> _mouse;
         std::shared_ptr<Mouse_state> _mouseState;
+        IUser_interface_manager& _userInterfaceManager;
     };
 }

@@ -1,15 +1,17 @@
 ﻿#pragma once
 
 #include "OeCore/IShadowmap_manager.h"
+#include "OeCore/ITexture_manager.h"
 #include "OeCore/Shadow_map_texture_pool.h"
 
 #include <memory>
 
+
 namespace oe {
 class Shadowmap_manager : public IShadowmap_manager {
  public:
-  Shadowmap_manager(Scene& scene)
-      : IShadowmap_manager(scene), _texturePool(nullptr) {}
+  Shadowmap_manager(Scene& scene, ITexture_manager& textureManager)
+      : IShadowmap_manager(scene), _texturePool(nullptr), _textureManager(textureManager) {}
   virtual ~Shadowmap_manager() = default;
 
   // Manager_base implementation
@@ -32,5 +34,6 @@ class Shadowmap_manager : public IShadowmap_manager {
 
   void verifyTexturePool() const;
   std::unique_ptr<Shadow_map_texture_pool> _texturePool;
+  ITexture_manager& _textureManager;
 };
 } // namespace oe::internal

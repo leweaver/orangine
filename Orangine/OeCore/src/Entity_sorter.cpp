@@ -1,6 +1,5 @@
 ﻿#include "pch.h"
 #include "OeCore/Entity_sorter.h"
-#include "OeCore/EngineUtils.h"
 
 using namespace oe;
 using namespace DirectX;

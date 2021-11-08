@@ -2,7 +2,8 @@
 
 #include "Input_manager.h"
 
-#include "OeCore/Scene.h"
+#include <OeCore/Scene.h>
+
 #include <Mouse.h>
 
 using namespace oe;
@@ -10,11 +11,13 @@ using namespace internal;
 
 std::string Input_manager::_name = "Input_manager";
 
-template <> IInput_manager* oe::create_manager(Scene& scene) { return new Input_manager(scene); }
+template <> IInput_manager* oe::create_manager(Scene& scene, IUser_interface_manager& userInterfaceManager) { return new Input_manager(scene, userInterfaceManager); }
 
-// DirectX Singletons
-Input_manager::Input_manager(Scene& scene)
-    : IInput_manager(scene), _mouse(nullptr), _mouseState(std::make_shared<Mouse_state>()) {}
+Input_manager::Input_manager(Scene& scene, IUser_interface_manager& userInterfaceManager)
+    : IInput_manager(scene)
+    , _mouse(nullptr)
+    , _mouseState(std::make_shared<Mouse_state>())
+    , _userInterfaceManager(userInterfaceManager) {}
 
 void Input_manager::initialize() {}
 
@@ -53,12 +56,13 @@ void Input_manager::destroyWindowSizeDependentResources() {
 }
 
 bool Input_manager::processMessage(UINT message, WPARAM wParam, LPARAM lParam) {
-  if (!_scene.manager<IUser_interface_manager>().mouseCaptured())
+  if (!_userInterfaceManager.mouseCaptured()) {
     _mouse->ProcessMessage(message, wParam, lParam);
+  }
 
   return false;
 }
 
 std::weak_ptr<Input_manager::Mouse_state> Input_manager::getMouseState() const {
-  return std::weak_ptr<Mouse_state>(_mouseState);
+  return {_mouseState};
 }

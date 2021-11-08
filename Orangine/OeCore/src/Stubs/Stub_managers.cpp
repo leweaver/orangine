@@ -8,8 +8,6 @@
 #include "OeCore/IUser_interface_manager.h"
 #include "OeCore/Render_pass_generic.h"
 #include "OeCore/Render_step_manager.h"
-#include "OeCore/Renderer_data.h"
-#include "OeCore/Texture.h"
 
 namespace oe {
 
@@ -68,12 +66,12 @@ class Stub_texture_manager final : public ITexture_manager {
     return std::make_shared<Stub_texture>();
   }
 
-  std::unique_ptr<Shadow_map_texture_pool> createShadowMapTexturePool(uint32_t, uint32_t) override {
+  std::unique_ptr<Shadow_map_texture_pool> createShadowMapTexturePool(uint32_t a, uint32_t b) override {
     return std::make_unique<Stub_shadow_map_texture_pool>();
   }
 
-  void load(Texture&) override {}
-  void unload(Texture&) override {}
+  void load(Texture& texture) override {}
+  void unload(Texture& texture) override {}
 
  private:
   std::string _name;
@@ -81,15 +79,21 @@ class Stub_texture_manager final : public ITexture_manager {
 
 class Stub_render_step_manager final : public Render_step_manager {
  public:
-  explicit Stub_render_step_manager(Scene& scene) : Render_step_manager(scene) {}
+  Stub_render_step_manager(
+          Scene& scene, IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
+          ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
+          IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager)
+      : Render_step_manager(
+                scene, sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager, lightingManager)
+  {}
 
   // Base class overrides
   void shutdown() override {}
   Viewport getScreenViewport() const override { return {0, 0, 1, 1, 0, 1}; }
 
   // IRender_step_manager implementation
-  void clearRenderTargetView(const Color&) override {}
-  void clearDepthStencil(float, uint8_t) override {}
+  void clearRenderTargetView(const Color& color) override {}
+  void clearDepthStencil(float f, uint8_t a) override {}
   std::unique_ptr<Render_pass> createShadowMapRenderPass() override {
     return std::make_unique<Render_pass_generic>([](const Camera_data&, const Render_pass&) {});
   }
@@ -105,13 +109,10 @@ class Stub_material_context final : public Material_context {
   void reset() override {}
 };
 
-template <uint32_t TLight_count>
-class Stub_render_light_data final : public Render_light_data_impl<TLight_count> {};
-
 class Stub_material_manager : public Material_manager {
  public:
-  explicit Stub_material_manager(Scene& scene) : Material_manager(scene) {}
-  ~Stub_material_manager() = default;
+  Stub_material_manager(Scene& scene, IAsset_manager& assetManager) : Material_manager(scene, assetManager) {}
+  ~Stub_material_manager() override = default;
 
   Stub_material_manager(const Stub_material_manager& other) = delete;
   Stub_material_manager(Stub_material_manager&& other) = delete;
@@ -151,20 +152,11 @@ class Stub_material_manager : public Material_manager {
       const Camera_data& camera) override {}
   void unbind() override {}
 
-  // The template arguments here must match the size of the lights array in the shader constant
-  // buffer files.
-  Render_light_data_impl<8>* getRenderLightDataLit() override { return _renderLightData_lit.get(); }
-  Render_light_data_impl<0>* getRenderLightDataUnlit() override {
-    return _renderLightData_unlit.get();
-  }
-
   void updateLightBuffers() override {}
 
  private:
   // The template arguments here must match the size of the lights array in the shader constant
   // buffer files.
-  std::unique_ptr<Stub_render_light_data<0>> _renderLightData_unlit;
-  std::unique_ptr<Stub_render_light_data<8>> _renderLightData_lit;
 
   std::vector<std::shared_ptr<Stub_material_context>> _materialContexts;
 };
@@ -173,8 +165,8 @@ struct Renderer_data {};
 
 class Stub_entity_render_manager : public oe::internal::Entity_render_manager {
  public:
-  Stub_entity_render_manager(Scene& scene)
-      : Entity_render_manager(scene) {}
+  Stub_entity_render_manager(Scene& scene, ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager)
+      : Entity_render_manager(scene, textureManager, materialManager, lightingManager) {}
 
   void loadRendererDataToDeviceContext(
       const Renderer_data& rendererData,
@@ -196,10 +188,10 @@ class Stub_entity_render_manager : public oe::internal::Entity_render_manager {
 
   void destroyDeviceDependentResources() override { _createdRendererData.clear(); }
 
-  std::shared_ptr<Renderer_data> Entity_render_manager::createRendererData(
-      std::shared_ptr<Mesh_data> meshData,
-      const std::vector<Vertex_attribute_element>& vertexAttributes,
-      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) override {
+  std::shared_ptr<Renderer_data> createRendererData(
+          std::shared_ptr<Mesh_data> meshData,
+          const std::vector<Vertex_attribute_element>& vertexAttributes,
+          const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) override {
     _createdRendererData.push_back(std::make_shared<Renderer_data>());
     return _createdRendererData.back();
   }
@@ -236,25 +228,29 @@ class Stub_user_interface_manager final : public IUser_interface_manager {
 };
 
 template <>
-IEntity_render_manager* oe::create_manager(
-    Scene& scene,
-    IDevice_resources&) {
-  return new Stub_entity_render_manager(scene);
+IEntity_render_manager* create_manager(Scene& scene, ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager) {
+  return new Stub_entity_render_manager(scene, textureManager, materialManager, lightingManager);
 }
 
-template <> IRender_step_manager* oe::create_manager(Scene& scene, IDevice_resources&) {
-  return new Stub_render_step_manager(scene);
+template<>
+IRender_step_manager* create_manager(
+        Scene& scene, IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
+        ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
+        IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager)
+{
+  return new Stub_render_step_manager(
+          scene, sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager, lightingManager);
 }
 
-template <> IUser_interface_manager* oe::create_manager(Scene& scene, IDevice_resources&) {
+template <> IUser_interface_manager* create_manager(Scene& scene, IDevice_resources& dr) {
   return new Stub_user_interface_manager(scene);
 }
 
-template <> IMaterial_manager* oe::create_manager(Scene& scene, IDevice_resources&) {
-  return new Stub_material_manager(scene);
+template <> IMaterial_manager* create_manager(Scene& scene, IAsset_manager& assetManager) {
+  return new Stub_material_manager(scene, assetManager);
 }
 
-template <> ITexture_manager* oe::create_manager(Scene& scene, IDevice_resources&) {
+template <> ITexture_manager* create_manager(Scene& scene, IDevice_resources& dr) {
   return new Stub_texture_manager(scene);
 }
 

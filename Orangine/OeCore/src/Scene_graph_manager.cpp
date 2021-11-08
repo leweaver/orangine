@@ -51,22 +51,25 @@ void Scene_graph_manager::tick() {
       continue;
     }
 
-    if (!entityPtr->isActive())
+    if (!entityPtr->isActive()) {
       continue;
+    }
 
     updateEntity(entityPtr);
   }
 }
 
 void Scene_graph_manager::updateEntity(Entity* entity) {
-  if (entity->calculateWorldTransform())
+  if (entity->calculateWorldTransform()) {
     entity->computeWorldTransform();
+  }
 
   if (entity->hasChildren()) {
     const auto& children = entity->children();
     for (auto const& child : children) {
-      if (child->isActive())
+      if (child->isActive()) {
         updateEntity(child.get());
+      }
     }
 
     if (entity->calculateBoundSphereFromChildren()) {
@@ -115,14 +118,16 @@ void Scene_graph_manager::renderImGui() {
 std::shared_ptr<Entity> Scene_graph_manager::instantiate(
     const std::string& name,
     Entity* parentEntity) {
-  const auto entityPtr = _entityRepository->instantiate(name);
+  const auto entityPtr = _entityRepository->instantiate(name, *this);
   _rootEntities.push_back(entityPtr);
 
-  if (_initialized)
+  if (_initialized) {
     initializeEntity(entityPtr);
+  }
 
-  if (parentEntity)
+  if (parentEntity) {
     entityPtr->setParent(*parentEntity);
+  }
 
   addEntityToScene(entityPtr);
 
@@ -137,8 +142,9 @@ void Scene_graph_manager::initializeEntity(std::shared_ptr<Entity> entityPtr) co
     auto entity = entities.front();
     entities.pop_front();
 
-    if (entity->calculateWorldTransform())
+    if (entity->calculateWorldTransform()) {
       entity->computeWorldTransform();
+    }
 
     entity->_state = Entity_state::Initialized;
 
@@ -148,9 +154,10 @@ void Scene_graph_manager::initializeEntity(std::shared_ptr<Entity> entityPtr) co
   }
 }
 
-void Scene_graph_manager::addEntityToScene(std::shared_ptr<Entity> entityPtr) const {
+void Scene_graph_manager::addEntityToScene(std::shared_ptr<Entity> entityPtr) {
   entityPtr->_state = Entity_state::Ready;
-  _scene.onEntityAdded(*entityPtr.get());
+
+  onEntityAdd(*entityPtr);
 }
 
 void Scene_graph_manager::destroy(Entity::Id_type entityId) {
@@ -162,6 +169,8 @@ void Scene_graph_manager::destroy(Entity::Id_type entityId) {
     entityPtr->removeParent();
 
     removeFromRoot(entityPtr);
+
+    onEntityRemove(*entityPtr);
 
     // This will delete the object. Make sure it is the last operation!
     _entityRepository->remove(entityId);
@@ -195,46 +204,51 @@ std::shared_ptr<Entity_filter> Scene_graph_manager::getEntityFilter(
   // Does an entity filter exist with all of the given component types?
   for (auto efIter = m_entityFilters.begin(); efIter != m_entityFilters.end(); ++efIter) {
     const auto& ef = *efIter;
-    if (ef->mode != mode)
+    if (ef->mode != mode) {
       continue;
+    }
 
-    if (std::equal(componentTypes.begin(), componentTypes.end(), ef->componentTypes.begin()))
+    if (std::equal(componentTypes.begin(), componentTypes.end(), ef->componentTypes.begin())) {
       return *efIter;
+    }
   }
 
-  auto filter =
-      std::make_shared<Entity_filter_impl>(componentTypes.begin(), componentTypes.end(), mode);
+  auto filter = std::make_shared<Entity_filter_impl>(componentTypes.begin(), componentTypes.end(), mode);
 
   m_entityFilters.push_back(filter);
   return filter;
 }
 
-void Scene_graph_manager::handleEntityAdd(const Entity& entity) {
+void Scene_graph_manager::onEntityAdd(const Entity& entity) {
   const auto entityPtr = _entityRepository->getEntityPtrById(entity.getId());
   if (entityPtr) {
-    for (const auto& filter : m_entityFilters)
+    for (const auto& filter : m_entityFilters) {
       filter->handleEntityAdd(entityPtr);
+    }
+    _entityAddedDispatcher.invoke(*entityPtr);
   }
 }
 
-void Scene_graph_manager::handleEntityRemove(const Entity& entity) {
+void Scene_graph_manager::onEntityRemove(const Entity& entity) {
   const auto entityPtr = _entityRepository->getEntityPtrById(entity.getId());
   if (entityPtr) {
-    for (const auto& filter : m_entityFilters)
+    for (const auto& filter : m_entityFilters) {
       filter->handleEntityRemove(entityPtr);
+    }
   }
 }
 
-void Scene_graph_manager::handleEntityComponentAdd(
+void Scene_graph_manager::onEntityComponentAdd(
     const Entity& entity,
     const Component& componentType) {
   const auto entityPtr = _entityRepository->getEntityPtrById(entity.getId());
   if (entityPtr) {
-    for (const auto& filter : m_entityFilters)
+    for (const auto& filter : m_entityFilters) {
       filter->handleEntityComponentsUpdated(entityPtr);
+    }
   }
 }
-void Scene_graph_manager::handleEntityComponentRemove(
+void Scene_graph_manager::onEntityComponentRemove(
     const Entity& entity,
     const Component& componentType) {
   const auto entityPtr = _entityRepository->getEntityPtrById(entity.getId());
@@ -265,8 +279,9 @@ void Scene_graph_manager::handleEntitiesLoaded(
   }
 
   if (_initialized) {
-    for (const auto& entity : loadedEntities)
+    for (const auto& entity : loadedEntities) {
       initializeEntity(entity);
+    }
   }
 }
 
@@ -317,4 +332,36 @@ bool Scene_graph_manager::findCollidingEntity(
   }
 
   return foundEntity != nullptr;
+}
+Component& Scene_graph_manager::addComponentToEntity(Component::Component_type typeId, Entity& entity)
+{
+  auto component = Component_factory::createComponent(typeId, entity);
+
+  auto ptr = component.get();
+  entity._components.push_back(std::move(component));
+  onEntityComponentAdd(entity, *ptr);
+
+  return *ptr;
+}
+
+Component& Scene_graph_manager::cloneComponentToEntity(const Component& srcComponent, Entity& entity)
+{
+  auto component = srcComponent.clone(entity);
+
+  auto ptr = component.get();
+  entity._components.push_back(std::move(component));
+  onEntityComponentAdd(entity, *ptr);
+
+  return *ptr;
+}
+void Scene_graph_manager::destroyComponent(Component& component)
+{
+  auto& entity = component.getEntity();
+  onEntityComponentRemove(entity, component);
+  for (auto pos = entity._components.begin(); pos != entity._components.end(); ++pos) {
+    if (pos->get() == &component) {
+      entity._components.erase(pos);
+      break;
+    }
+  }
 }

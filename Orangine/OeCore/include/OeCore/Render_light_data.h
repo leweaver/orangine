@@ -66,7 +66,8 @@ template <uint8_t TMax_lights> class Render_light_data_impl : public Render_ligh
   void clear() { _lightConstants.clear(); }
   bool empty() const { return _lightConstants.empty(); }
   bool full() const { return _lightConstants.full(); }
-  static uint8_t maxLights() { return TMax_lights; }
+  static constexpr uint8_t maxLights() { return TMax_lights; }
+  uint8_t getMaxLights() { return TMax_lights; }
 
  protected:
   class alignas(16) Light_constants {

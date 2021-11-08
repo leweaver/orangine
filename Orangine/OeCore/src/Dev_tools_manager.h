@@ -7,12 +7,24 @@
 
 namespace oe {
 class Perf_timer;
+class IEntity_render_manager;
+class IMaterial_manager;
+class IEntity_scripting_manager;
 }
 
 namespace oe::internal {
 class Dev_tools_manager : public IDev_tools_manager {
  public:
-  explicit Dev_tools_manager(Scene& scene) : IDev_tools_manager(scene), _unlitMaterial(nullptr) {}
+  Dev_tools_manager(
+          Scene& scene, IScene_graph_manager& sceneGraphManager, IEntity_render_manager& entityRenderManager,
+          IMaterial_manager& materialManager, IEntity_scripting_manager& entityScriptingManager)
+      : IDev_tools_manager(scene)
+      , _unlitMaterial(nullptr)
+      , _sceneGraphManager(sceneGraphManager)
+      , _entityRenderManager(entityRenderManager)
+      , _materialManager(materialManager)
+      , _entityScriptingManager(entityScriptingManager)
+  {}
 
   // Manager_base implementation
   void initialize() override;
@@ -72,5 +84,10 @@ class Dev_tools_manager : public IDev_tools_manager {
 
   // Map of std::hash output to renderable.
   std::map<std::size_t, std::shared_ptr<Renderable>> _shapeMeshCache;
+
+  IScene_graph_manager& _sceneGraphManager;
+  IEntity_render_manager& _entityRenderManager;
+  IMaterial_manager& _materialManager;
+  IEntity_scripting_manager& _entityScriptingManager;
 };
 } // namespace oe::internal

@@ -7,10 +7,14 @@
 #include <OeCore/Color.h>
 #include <OeCore/IEntity_render_manager.h>
 #include <OeCore/IScene_graph_manager.h>
+#include <OeCore/ILighting_manager.h>
 #include <OeCore/Light_component.h>
 #include <OeCore/PBR_material.h>
 #include <OeCore/Scene.h>
 #include <OeCore/WindowsDefines.h>
+#include <OeCore/Statics.h>
+#include <OeScripting/Statics.h>
+#include <OeApp/Statics.h>
 
 #include <g3log/g3log.hpp>
 
@@ -149,14 +153,14 @@ class ViewerApp : public oe::App {
     ev.environmentIbl.iblSpecularTexture = textureManager.createTextureFromFile(
         assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemapSpecularHDR.dds"));
 
-    scene.setEnvironmentVolume(ev);
+    scene.manager<ILighting_manager>().addEnvironmentVolume(ev);
   }
 
-  void onSceneShutdown(Scene&) override { _sampleScene.reset(); }
+  void onSceneShutdown(Scene& scene) override { _sampleScene.reset(); }
 
   void onScenePreTick(Scene& scene) override { _sampleScene->tick(); }
 
- protected:
+ private:
   std::unique_ptr<Sample_scene> _sampleScene;
 };
 
@@ -175,7 +179,16 @@ int WINAPI wWinMain(
   auto startSettings = App_start_settings();
   startSettings.fullScreen = nCmdShow == SW_SHOWMAXIMIZED;
 
+  oe::core::initStatics();
+  oe::scripting::initStatics();
+  oe::app::initStatics();
+
   auto app = ViewerApp();
   int retVal = app.run(startSettings);
+
+  oe::app::destroyStatics();
+  oe::scripting::destroyStatics();
+  oe::core::destroyStatics();
+
   return retVal;
 }

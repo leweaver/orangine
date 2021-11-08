@@ -10,9 +10,9 @@ Entity_repository::Entity_repository(Scene& scene)
 {
 }
 
-std::shared_ptr<Entity> Entity_repository::instantiate(std::string_view name)
+std::shared_ptr<Entity> Entity_repository::instantiate(std::string_view name, IComponent_factory& componentFactory)
 {
-	const auto entity = new Entity(this->_scene, std::string(name), ++_lastEntityId);
+	const auto entity = new Entity(this->_scene, componentFactory, std::string(name), ++_lastEntityId);
 	auto entityPtr = std::shared_ptr<Entity>(entity);
 	_entities[_lastEntityId] = entityPtr;
 	return entityPtr;

@@ -5,8 +5,9 @@
 #include "Deferred_light_material.h"
 #include "Collision.h"
 
-#include <memory>
+#include "Environment_volume.h"
 #include "Light_provider.h"
+#include <memory>
 
 namespace oe {
     class Unlit_material;
@@ -15,7 +16,6 @@ namespace oe {
     class Scene;
     class Material;
     class Entity_filter;
-    class Render_target_texture;
     class Entity_alpha_sorter;
     class Entity_cull_sorter;
     class Shadow_map_texture_pool;
@@ -23,14 +23,11 @@ namespace oe {
 
     class IEntity_render_manager :
         public Manager_base,
-        public Manager_tickable,
         public Manager_deviceDependent
     {
     public:
 
         explicit IEntity_render_manager(Scene& scene) : Manager_base(scene) {}
-
-        virtual BoundingFrustumRH createFrustum(const Camera_component& cameraComponent) = 0;
 
         virtual void renderRenderable(Renderable& renderable,
             const SSE::Matrix4& worldMatrix,

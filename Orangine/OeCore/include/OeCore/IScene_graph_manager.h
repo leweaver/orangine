@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Component.h"
+#include "Dispatcher.h"
 #include "Entity.h"
 #include "Entity_filter.h"
 #include "Entity_filter_mode.h"
@@ -15,7 +16,8 @@ struct Ray_intersection;
 
 class IScene_graph_manager
     : public Manager_base
-    , public Manager_tickable {
+    , public Manager_tickable
+{
  public:
   using Component_type_set = std::unordered_set<Component::Component_type>;
 
@@ -36,12 +38,6 @@ class IScene_graph_manager
       const Component_type_set& componentTypes,
       Entity_filter_mode mode = Entity_filter_mode::All) = 0;
 
-  virtual void handleEntityAdd(const Entity& entity) = 0;
-  virtual void handleEntityRemove(const Entity& entity) = 0;
-  virtual void handleEntityComponentAdd(const Entity& entity, const Component& componentType) = 0;
-  virtual void handleEntityComponentRemove(
-      const Entity& entity,
-      const Component& componentType) = 0;
   virtual void handleEntitiesLoaded(const std::vector<std::shared_ptr<Entity>>& loadedEntities) = 0;
 
   /**
@@ -61,5 +57,7 @@ class IScene_graph_manager
 
   // Internal use only.
   virtual void addToRoot(std::shared_ptr<Entity> entity) = 0;
+
+  virtual Dispatcher<Entity&>& getEntityAddedDispatcher() = 0;
 };
 } // namespace oe

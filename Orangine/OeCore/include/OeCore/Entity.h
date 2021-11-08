@@ -18,6 +18,18 @@ class Scene_graph_manager;
 
 enum class Entity_state : uint8_t { Uninitialized, Initialized, Ready, Destroyed };
 
+class IComponent_factory {
+ public:
+  virtual Component& addComponentToEntity(Component::Component_type typeId, Entity& entity) = 0;
+  virtual Component& cloneComponentToEntity(const Component& srcComponent, Entity& entity) = 0;
+
+  /**
+   * Removes the given component from the entity that it belongs to, then deletes it.
+   * @param component
+   */
+  virtual void destroyComponent(Component& component) = 0;
+};
+
 /**
  * A node in the scenegraph. This class is not designed to be extended via polymorphism;
  * functionality and behaviors should be added in the form of Components (for storing state)
@@ -29,7 +41,7 @@ class Entity : public std::enable_shared_from_this<Entity> {
   using Entity_ptr_vec = std::vector<std::shared_ptr<Entity>>;
   using Entity_ptr_map = std::map<Id_type, std::shared_ptr<Entity>>;
 
-  Entity(Scene& scene, std::string&& name, Id_type id);
+  Entity(Scene& scene, IComponent_factory& componentFactory, std::string name, Id_type id);
 
   // Don't allow direct copy of Entity objects (we have a unique_ptr list of components).
   Entity(const Entity& that) = delete;
@@ -74,8 +86,14 @@ class Entity : public std::enable_shared_from_this<Entity> {
    */
   template <typename TComponent> TComponent* getFirstComponentOfType() const;
 
+  /**
+   * Helper that calls IComponent_factory::addComponentToEntity
+   */
   template <typename TComponent> TComponent& addComponent();
 
+  /**
+   * Helper that calls IComponent_factory::cloneComponentToEntity
+   */
   Component& addCloneOfComponent(const Component& component);
 
   // Rotation from the forward vector, in local space
@@ -163,11 +181,7 @@ class Entity : public std::enable_shared_from_this<Entity> {
   SSE::Vector3 _worldScale;
 
   BoundingSphere _boundSphere;
-
-  /*
-   * Redirect events to the Scene.
-   */
-  void onComponentAdded(Component& component);
+  IComponent_factory& _componentFactory;
 };
 
 template <typename TComponent>
@@ -175,8 +189,9 @@ std::vector<std::reference_wrapper<TComponent>> Entity::getComponentsOfType() co
   std::vector<std::reference_wrapper<TComponent>> comps;
   for (auto iter = _components.begin(); iter != _components.end(); ++iter) {
     TComponent* comp = dynamic_cast<TComponent*>((*iter).get());
-    if (comp != nullptr)
+    if (comp != nullptr) {
       comps.push_back(std::reference_wrapper<TComponent>(*comp));
+    }
   }
   return comps;
 }
@@ -184,26 +199,22 @@ std::vector<std::reference_wrapper<TComponent>> Entity::getComponentsOfType() co
 template <typename TComponent> TComponent* Entity::getFirstComponentOfType() const {
   for (auto iter = _components.begin(); iter != _components.end(); ++iter) {
     const auto comp = dynamic_cast<TComponent*>((*iter).get());
-    if (comp != nullptr)
+    if (comp != nullptr) {
       return comp;
+    }
   }
   return nullptr;
 }
 
 template <typename TComponent> TComponent& Entity::addComponent() {
-  TComponent* component = new TComponent(*this);
-  _components.push_back(std::unique_ptr<Component>(component));
-
-  this->onComponentAdded(*component);
-
-  return *component;
+  return dynamic_cast<TComponent&>(_componentFactory.addComponentToEntity(TComponent::type(), *this));
 }
 
 struct EntityRef {
   Scene& scene;
   Entity::Id_type id;
 
-  EntityRef(Entity& entity) : scene(entity.scene()), id(entity.getId()) {}
+  explicit EntityRef(Entity& entity) : scene(entity.scene()), id(entity.getId()) {}
 
   EntityRef(Scene& scene, Entity::Id_type id) : scene(scene), id(id) {}
 

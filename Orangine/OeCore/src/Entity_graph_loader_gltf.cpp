@@ -179,20 +179,18 @@ vertexAccessorFactory(Vertex_attribute_semantic vertexAttribute) {
 
 struct Loader_data {
   Loader_data(
-      Model& model,
-      wstring&& baseDir,
-      IWICImagingFactory* imagingFactory,
-      IEntity_repository& entityRepository,
-      IMaterial_manager& materialManager,
-      ITexture_manager& textureManager,
-      bool calculateBounds)
+          Model& model, wstring&& baseDir, IWICImagingFactory* imagingFactory, IEntity_repository& entityRepository,
+          IMaterial_manager& materialManager, ITexture_manager& textureManager, IComponent_factory& componentFactory,
+          bool calculateBounds)
       : model(model)
       , baseDir(std::move(baseDir))
       , imagingFactory(imagingFactory)
       , calculateBounds(calculateBounds)
       , entityRepository(entityRepository)
       , materialManager(materialManager)
-      , textureManager(textureManager) {}
+      , textureManager(textureManager)
+      , componentFactory(componentFactory)
+  {}
 
   Model& model;
   wstring baseDir;
@@ -200,6 +198,7 @@ struct Loader_data {
   IEntity_repository& entityRepository;
   IMaterial_manager& materialManager;
   ITexture_manager& textureManager;
+  IComponent_factory& componentFactory;
   map<size_t, shared_ptr<Mesh_buffer>> accessorIdxToMeshBuffers;
   vector<shared_ptr<Entity>> nodeIdxToEntity;
   bool calculateBounds;
@@ -430,6 +429,7 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
     IEntity_repository& entityRepository,
     IMaterial_manager& materialManager,
     ITexture_manager& textureManager,
+    IComponent_factory& componentFactory,
     bool calculateBounds) const {
   vector<shared_ptr<Entity>> entities;
   Model model;
@@ -445,8 +445,9 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
   std::wstring baseDir;
   {
     const auto lastSlashPos = filePathStr.find_last_of(L"/\\");
-    if (lastSlashPos != std::string::npos)
+    if (lastSlashPos != std::string::npos) {
       baseDir = filePathStr.substr(0, lastSlashPos);
+    }
   }
 
   const auto filename = filePathStr.substr(baseDir.size());
@@ -476,10 +477,10 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
   const auto& scene = model.scenes[model.defaultScene];
   if (baseDir.empty())
     baseDir = L".";
-  Loader_data loaderData(model, move(baseDir), _imagingFactory.Get(), entityRepository, materialManager, textureManager, calculateBounds);
+  Loader_data loaderData(model, move(baseDir), _imagingFactory.Get(), entityRepository, materialManager, textureManager, componentFactory, calculateBounds);
 
   // Load Entities
-  loaderData.rootEntity = entityRepository.instantiate(filenameUtf8);
+  loaderData.rootEntity = entityRepository.instantiate(filenameUtf8, componentFactory);
   for (auto nodeIdx : scene.nodes) {
     auto entity = create_entity(nodeIdx, loaderData);
     entity->setParent(*loaderData.rootEntity);
@@ -874,9 +875,10 @@ shared_ptr<Entity> create_entity(
     vector<Node>::size_type nodeIdx,
     Loader_data& loaderData) {
   const auto& node = loaderData.model.nodes.at(nodeIdx);
-  auto rootEntity = loaderData.entityRepository.instantiate(node.name);
-  if (loaderData.nodeIdxToEntity.size() <= nodeIdx)
+  auto rootEntity = loaderData.entityRepository.instantiate(node.name, loaderData.componentFactory);
+  if (loaderData.nodeIdxToEntity.size() <= nodeIdx) {
     loaderData.nodeIdxToEntity.resize(nodeIdx + 1);
+  }
   loaderData.nodeIdxToEntity[nodeIdx] = rootEntity;
 
   LOG(G3LOG_DEBUG) << "Creating entity for glTF node '" << node.name << "'";
@@ -892,7 +894,7 @@ shared_ptr<Entity> create_entity(
       const auto& prim = mesh.primitives.at(primIdx);
       const auto primitiveName = mesh.name + " primitive " + to_string(primIdx);
       LOG(G3LOG_DEBUG) << "Creating entity for glTF mesh " << primitiveName;
-      auto primitiveEntity = loaderData.entityRepository.instantiate(primitiveName);
+      auto primitiveEntity = loaderData.entityRepository.instantiate(primitiveName, loaderData.componentFactory);
 
       primitiveEntity->setParent(*rootEntity.get());
       auto& meshDataComponent = primitiveEntity->addComponent<Mesh_data_component>();
@@ -916,11 +918,12 @@ shared_ptr<Entity> create_entity(
         const auto accessorComponentTypePos =
             g_gltfComponent_elementComponent.find(accessor.componentType);
 
-        if (accessorTypePos == g_gltfType_elementType.end())
-          OE_THROW(std::domain_error("Unsupported gltf accessor type: " + accessor.type));
-        if (accessorComponentTypePos == g_gltfComponent_elementComponent.end())
-          OE_THROW(std::domain_error(
-              "Unsupported gltf accessor component type: " + accessor.componentType));
+        if (accessorTypePos == g_gltfType_elementType.end()) {
+          OE_THROW(std::domain_error(std::string("Unsupported gltf accessor type: ") + to_string(accessor.type)));
+        }
+        if (accessorComponentTypePos == g_gltfComponent_elementComponent.end()) {
+          OE_THROW(std::domain_error(std::string("Unsupported gltf accessor component type: ") + to_string(accessor.componentType)));
+        }
 
         meshLayoutAttributes.push_back(Vertex_attribute_element{
             vaPos->second, accessorTypePos->second, accessorComponentTypePos->second});

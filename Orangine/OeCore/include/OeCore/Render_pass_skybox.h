@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include <OeCore/Render_pass.h>
+#include <OeCore/ILighting_manager.h>
+#include <OeCore/IEntity_render_manager.h>
 
 #include <memory>
 
@@ -11,14 +13,15 @@ class Skybox_material;
 
 class Render_pass_skybox : public Render_pass {
  public:
-  explicit Render_pass_skybox(Scene& scene);
+  Render_pass_skybox(IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager);
 
   void render(const Camera_data& cameraData) override;
 
  private:
-  Scene& _scene;
-
   std::shared_ptr<Skybox_material> _material;
   std::unique_ptr<Renderable> _renderable;
+
+  IEntity_render_manager& _entityRenderManager;
+  ILighting_manager& _lightingManager;
 };
 } // namespace oe

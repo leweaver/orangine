@@ -8,7 +8,7 @@
 using namespace oe;
 using namespace DirectX;
 
-Entity::Entity(Scene& scene, std::string&& name, Id_type id)
+Entity::Entity(Scene& scene, IComponent_factory& componentFactory, std::string name, Id_type id)
     : _localRotation(SSE::Quat::identity())
     , _localPosition({0, 0, 0})
     , _localScale({1.0f, 1.0f, 1.0f})
@@ -22,7 +22,9 @@ Entity::Entity(Scene& scene, std::string&& name, Id_type id)
     , _scene(scene)
     , _worldTransform(SSE::Matrix4::identity())
     , _worldRotation(SSE::Quat::identity())
-    , _worldScale({1.0f, 1.0f, 1.0f}) {}
+    , _worldScale({1.0f, 1.0f, 1.0f})
+    , _componentFactory(componentFactory)
+{}
 
 void Entity::computeWorldTransform() {
   SSE::Matrix4 t;
@@ -58,8 +60,9 @@ void Entity::lookAt(const SSE::Vector3& position, const SSE::Vector3& worldUp) {
     forward = position - _localPosition;
   }
 
-  if (SSE::lengthSqr(forward) == 0)
+  if (SSE::lengthSqr(forward) == 0) {
     return;
+  }
 
   // The DirectX LookAt function creates a view matrix; we want to create a transform
   // to rotate this object towards a target. So, we need to create the matrix manually.
@@ -79,13 +82,7 @@ void Entity::lookAt(const SSE::Vector3& position, const SSE::Vector3& worldUp) {
 }
 
 Component& Entity::addCloneOfComponent(const Component& srcComponent) {
-  auto component = srcComponent.clone(*this);
-  auto ptr = component.get();
-  _components.push_back(std::move(component));
-
-  this->onComponentAdded(*ptr);
-
-  return *ptr;
+  return _componentFactory.cloneComponentToEntity(srcComponent, *this);
 }
 
 void Entity::setActive(bool bActive) { _active = bActive; }
@@ -107,8 +104,9 @@ void Entity::setParent(Entity& newParent) {
 }
 
 void Entity::removeParent() {
-  if (_parent == nullptr)
+  if (_parent == nullptr) {
     return;
+  }
 
   Entity_ptr_vec& children = _parent->_children;
   for (auto it = children.begin(); it != children.end(); ++it) {
@@ -136,14 +134,12 @@ void Entity::setTransform(const SSE::Matrix4& transform) {
 
 std::shared_ptr<Entity> Entity::verifyEntityPtr() const {
   const auto thisPtr = _scene.manager<IScene_graph_manager>().getEntityPtrById(getId());
-  if (!thisPtr)
-    OE_THROW(std::runtime_error(
-        "Attempting to access deleted Entity (id=" + std::to_string(getId()) + ")"));
+  if (!thisPtr) {
+    OE_THROW(std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(getId()) + ")"));
+  }
 
   return thisPtr;
 }
-
-void Entity::onComponentAdded(Component& component) { _scene.onComponentAdded(*this, component); }
 
 Entity& EntityRef::get() const {
   const auto ptr = scene.manager<IScene_graph_manager>().getEntityPtrById(id);

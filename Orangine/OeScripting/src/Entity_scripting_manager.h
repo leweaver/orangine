@@ -3,13 +3,22 @@
 #include <OeCore/Entity_filter.h>
 #include <OeCore/IEntity_scripting_manager.h>
 #include <OeCore/ITime_step_manager.h>
+#include <OeCore/IScene_graph_manager.h>
+#include <OeCore/IInput_manager.h>
+#include <OeCore/IAsset_manager.h>
+#include <OeCore/IEntity_render_manager.h>
+#include <OeCore/IDev_tools_manager.h>
 
 #include "Script_runtime_data.h"
+#include "Engine_internal_module.h"
 
 namespace oe::internal {
 class Entity_scripting_manager : public IEntity_scripting_manager {
  public:
-  Entity_scripting_manager(Scene& scene, ITime_step_manager& timeStepManager);
+  Entity_scripting_manager(
+          Scene& scene, ITime_step_manager& timeStepManager, IScene_graph_manager& sceneGraphManager,
+          IInput_manager& inputManager, IAsset_manager& assetManager, IEntity_render_manager& entityRenderManager,
+          IDev_tools_manager& devToolsManager);
 
   // Manager_base implementation
   void initialize() override;
@@ -41,17 +50,9 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
   std::wstring _pythonProgramName;
   std::vector<std::wstring> _preInit_additionalPaths;
 
-  struct EngineInternalPythonModule {
-    EngineInternalPythonModule(pybind11::module engineInternal);
-
-    pybind11::module instance;
-    pybind11::detail::str_attr_accessor reset_output_streams;
-    pybind11::detail::str_attr_accessor enable_remote_debugging;
-  };
-
   struct PythonContext {
     pybind11::module _sysModule;
-    std::unique_ptr<EngineInternalPythonModule> _engineInternalModule;
+    std::unique_ptr<Engine_internal_module> _engineInternalModule;
   };
 
   PythonContext _pythonContext;
@@ -68,5 +69,10 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
   std::vector < std::unique_ptr<Script_runtime_data>> _loadedScripts;
 
   ITime_step_manager& _timeStepManager;
+  IScene_graph_manager& _sceneGraphManager;
+  IInput_manager& _inputManager;
+  IAsset_manager& _assetManager;
+  IEntity_render_manager& _entityRenderManager;
+  IDev_tools_manager& _devToolsManager;
 };
 } // namespace oe::internal

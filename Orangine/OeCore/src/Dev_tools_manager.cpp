@@ -12,6 +12,8 @@
 #include "OeCore/Skinned_mesh_component.h"
 #include "OeCore/Unlit_material.h"
 #include "OeCore/VectorLog.h"
+#include "OeCore/IEntity_render_manager.h"
+#include "OeCore/IMaterial_manager.h"
 
 #include <imgui.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
@@ -29,18 +31,19 @@ const auto g_hashSeed_axisWidget = std::hash<std::string>{}("axisWidget");
 
 std::string Dev_tools_manager::_name = "Dev_tools_manager";
 
-template <> IDev_tools_manager* oe::create_manager(Scene& scene) {
-  return new Dev_tools_manager(scene);
+template<>
+IDev_tools_manager* oe::create_manager(
+        Scene& scene, IScene_graph_manager& sceneGraphManager, IEntity_render_manager& entityRenderManager,
+        IMaterial_manager& materialManager, IEntity_scripting_manager& entityScriptingManager)
+{
+  return new Dev_tools_manager(scene, sceneGraphManager, entityRenderManager, materialManager, entityScriptingManager);
 }
 
 void Dev_tools_manager::initialize() {
   _noLightProvider = [](const BoundingSphere&, std::vector<Entity*>&, uint32_t) {};
   _fpsCounter = std::make_unique<Fps_counter>();
-  _animationControllers = _scene.manager<IScene_graph_manager>().getEntityFilter(
-      {Animation_controller_component::type()});
-  _skinnedMeshEntities =
-      _scene.manager<IScene_graph_manager>().getEntityFilter({Skinned_mesh_component::type()});
-
+  _animationControllers = _sceneGraphManager.getEntityFilter({Animation_controller_component::type()});
+  _skinnedMeshEntities = _sceneGraphManager.getEntityFilter({Skinned_mesh_component::type()});
   _unlitMaterial = std::make_shared<Unlit_material>();
 }
 
@@ -207,14 +210,13 @@ void Dev_tools_manager::setGuiDebugText(const std::string& text) { _guiDebugText
 void Dev_tools_manager::clearDebugShapes() { _debugShapes.clear(); }
 
 void Dev_tools_manager::renderDebugShapes(const Camera_data& cameraData) {
-  auto& entityRenderManager = _scene.manager<IEntity_render_manager>();
   for (auto& debugShape : _debugShapes) {
     const auto& transform = std::get<SSE::Matrix4>(debugShape);
     const auto& color = std::get<Color>(debugShape);
     auto& renderable = std::get<std::shared_ptr<Renderable>>(debugShape);
 
     _unlitMaterial->setBaseColor(color);
-    entityRenderManager.renderRenderable(
+    _entityRenderManager.renderRenderable(
         *renderable,
         transform,
         0.0f,
@@ -229,7 +231,7 @@ void Dev_tools_manager::renderImGui() {
   // Display contents in a scrolling region
   ImGui::SetNextWindowSize(ImVec2(554, 300), ImGuiCond_FirstUseEver);
   if (ImGui::Begin("Renderer Features")) {
-    auto featuresEnabled = _scene.manager<IMaterial_manager>().rendererFeatureEnabled();
+    auto featuresEnabled = _materialManager.rendererFeatureEnabled();
 
     const char* items[] = {debugDisplayModeToString(Debug_display_mode::None).c_str(),
                            debugDisplayModeToString(Debug_display_mode::Normals).c_str(),
@@ -243,7 +245,7 @@ void Dev_tools_manager::renderImGui() {
         ImGui::Checkbox("Shader Optimization", &featuresEnabled.enableShaderOptimization) ||
         ImGui::Combo("Debug Rendering", &item_current, items, IM_ARRAYSIZE(items))) {
       featuresEnabled.debugDisplayMode = static_cast<Debug_display_mode>(item_current);
-      _scene.manager<IMaterial_manager>().setRendererFeaturesEnabled(featuresEnabled);
+      _materialManager.setRendererFeaturesEnabled(featuresEnabled);
     }
   }
   ImGui::End();
@@ -256,7 +258,7 @@ void Dev_tools_manager::renderImGui() {
       const auto animComponent = entity->getFirstComponentOfType<Animation_controller_component>();
       assert(animComponent);
 
-      if (ImGui::CollapsingHeader(animComponent->entity().getName().c_str())) {
+      if (ImGui::CollapsingHeader(animComponent->getEntity().getName().c_str())) {
         if (!animComponent->activeAnimations.empty()) {
           if (ImGui::Button("Reset All Times")) {
             for (const auto& animEntry : animComponent->animations()) {
@@ -402,7 +404,7 @@ void Dev_tools_manager::renderImGui() {
     if (ImGui::BeginChild("commands", ImVec2(0, 20.0f * uiScale), false)) {
       if (ImGui::InputText(">", &_consoleInput)) {
         if (_consoleInput.size()) {
-          if (_scene.manager<IEntity_scripting_manager>().commandSuggestions(
+          if (_entityScriptingManager.commandSuggestions(
                   _consoleInput, _commandSuggestions)) {
             // TODO: Show suggestions
           }
@@ -410,7 +412,7 @@ void Dev_tools_manager::renderImGui() {
       }
       ImGui::SameLine();
       if (ImGui::Button("Make some log!")) {
-        _scene.manager<IEntity_scripting_manager>().execute(_consoleInput);
+        _entityScriptingManager.execute(_consoleInput);
       }
       ImGui::SameLine(ImGui::GetWindowWidth() - 30 * uiScale);
       ImGui::Checkbox("Auto Scroll", &_scrollLogToBottom);

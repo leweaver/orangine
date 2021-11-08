@@ -31,7 +31,7 @@ class Animation_controller_component : public Component {
 
   explicit Animation_controller_component(Entity& entity) : Component(entity) {}
 
-  void addAnimation(std::string animationName, std::unique_ptr<Animation> animation);
+  void addAnimation(const std::string& animationName, std::unique_ptr<Animation> animation);
 
   // A map of animation name -> Animation
   const std::map<std::string, std::unique_ptr<Animation>>& animations() const {

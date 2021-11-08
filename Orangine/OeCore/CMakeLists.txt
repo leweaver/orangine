@@ -92,13 +92,16 @@ add_library(${PROJECT_NAME} STATIC
         "src/Stubs/pch.h" 
         "src/D3D12/pch.h"
         "src/D3D12/D3D12_collision.cpp"
+        src/D3D12/D3D12_lighting_manager.cpp
+        src/D3D12/D3D12_lighting_manager.h
+        src/D3D12/D3D12_renderer_data.h
         "src/Collision.cpp"
+        "src/Statics.cpp"
         "ThirdParty/d3dx12/d3dx12.h"
         "ThirdParty/MikktSpace/mikktspace.h"
         "ThirdParty/MikktSpace/mikktspace.c"
         "ThirdParty/imgui/misc/cpp/imgui_stdlib.h"
-        "ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp"
-        )
+        "ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp")
 file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
@@ -150,9 +153,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC imgui::imgui)
 
 # tinygltf
 target_link_libraries(${PROJECT_NAME} PUBLIC Oe3p::tinygltf)
-#target_include_directories(${PROJECT_NAME} ${TinyGLTF_INCLUDE_DIR})
 
-# Other 3P Libraries
+# vectormath
 target_link_libraries(${PROJECT_NAME} PUBLIC Oe3p::vectormath)
 
 # DirectX

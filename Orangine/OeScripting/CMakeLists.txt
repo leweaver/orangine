@@ -11,13 +11,13 @@ SET(OeScripting_PYTHON_DEBUG ${OeScripting_PYTHON_DEBUG} PARENT_SCOPE)
 add_library(${PROJECT_NAME} STATIC
         src/pch.h
         src/pch.cpp
-        src/Binding_helpers.cpp
         src/Engine_bindings.cpp
         src/Engine_bindings.h
         src/Entity_scripting_manager.cpp        
         src/Entity_scripting_manager.h
         src/Script_runtime_data.h
-        )
+        src/Statics.cpp
+        src/Engine_internal_module.cpp src/Engine_internal_module.h)
 
 file(GLOB OeScripting_HEADERS "include/OeScripting/*")
 list(APPEND OeScripting_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")

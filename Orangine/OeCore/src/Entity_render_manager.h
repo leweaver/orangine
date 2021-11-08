@@ -9,29 +9,25 @@
 #include "OeCore/Render_pass.h"
 #include "OeCore/Renderable.h"
 
-// TODO: Remove this include
-//#include "D3D11/Renderer_data.h"
-
 #include <memory>
 
 namespace oe {
 class Material_context;
+class ITexture_manager;
+class IMaterial_manager;
+class ILighting_manager;
 }
 
 namespace oe::internal {
 class Entity_render_manager : public IEntity_render_manager {
  public:
-  Entity_render_manager(Scene& scene);
-
-  BoundingFrustumRH createFrustum(const Camera_component& cameraComponent) override;
+  Entity_render_manager(Scene& scene, ITexture_manager& textureManager,
+                        IMaterial_manager& materialManager, ILighting_manager& lightingManager);
 
   // Manager_base implementation
   void initialize() override;
   void shutdown() override;
   const std::string& name() const override;
-
-  // Manager_tickable implementation
-  void tick() override;
 
   // Manager_deviceDependent must be implemented by subclass
 
@@ -105,7 +101,9 @@ class Entity_render_manager : public IEntity_render_manager {
   Renderer_animation_data _rendererAnimationData = {};
   std::vector<Entity*> _renderLights = {};
 
-  Environment_volume::EnvironmentIBL _environmentIbl = {};
+  ITexture_manager& _textureManager;
+  IMaterial_manager& _materialManager;
+  ILighting_manager& _lightingManager;
 
   static std::string _name;
 };

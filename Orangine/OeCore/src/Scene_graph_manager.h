@@ -11,14 +11,14 @@
 
 namespace oe::internal {
 
-class Scene_graph_manager : public IScene_graph_manager {
+class Scene_graph_manager : public IScene_graph_manager, public IComponent_factory {
   friend Entity;
   friend EntityRef;
 
  public:
   Scene_graph_manager(Scene& scene, std::shared_ptr<IEntity_repository> entityRepository);
   Scene_graph_manager(const Scene_graph_manager& other) = delete;
-  ~Scene_graph_manager() = default;
+  ~Scene_graph_manager() override = default;
 
   // Manager_base implementation
   void initialize() override;
@@ -45,27 +45,34 @@ class Scene_graph_manager : public IScene_graph_manager {
   std::shared_ptr<Entity> getEntityPtrById(Entity::Id_type id) const override;
   std::shared_ptr<Entity_filter> getEntityFilter(
       const Component_type_set& componentTypes,
-      Entity_filter_mode mode = Entity_filter_mode::All) override;
+      Entity_filter_mode mode) override;
 
-  void handleEntityAdd(const Entity& entity) override;
-  void handleEntityRemove(const Entity& entity) override;
-  void handleEntityComponentAdd(const Entity& entity, const Component& componentType) override;
-  void handleEntityComponentRemove(const Entity& entity, const Component& componentType) override;
   void handleEntitiesLoaded(const std::vector<std::shared_ptr<Entity>>& loadedEntities) override;
   bool findCollidingEntity(
       const Ray& ray,
       Entity const*& foundEntity,
       Ray_intersection& foundIntersection,
-      float maxDistance = FLT_MAX) override;
+      float maxDistance) override;
+
+  virtual Dispatcher<Entity&>& getEntityAddedDispatcher() override { return _entityAddedDispatcher; }
+  Component& addComponentToEntity(Component::Component_type typeId, Entity& entity) override;
+  Component& cloneComponentToEntity(const Component& srcComponent, Entity& entity) override;
+  void destroyComponent(Component& component) override;
 
  private:
+
+  void onEntityAdd(const Entity& entity);
+  void onEntityRemove(const Entity& entity);
+  void onEntityComponentAdd(const Entity& entity, const Component& componentType);
+  void onEntityComponentRemove(const Entity& entity, const Component& componentType);
+
   std::shared_ptr<Entity> removeFromRoot(std::shared_ptr<Entity> entity) override;
   void addToRoot(std::shared_ptr<Entity> entity) override;
 
   // Entity Lifecycle
   std::shared_ptr<Entity> instantiate(const std::string& name, Entity* parentEntity);
   void initializeEntity(std::shared_ptr<Entity> entityPtr) const;
-  void addEntityToScene(std::shared_ptr<Entity> entityPtr) const;
+  void addEntityToScene(std::shared_ptr<Entity> entityPtr);
 
   /**
    * Applies transforms recursively down (from root -> leaves),
@@ -85,6 +92,8 @@ class Scene_graph_manager : public IScene_graph_manager {
   std::vector<std::shared_ptr<Entity>> _rootEntities;
 
   bool _initialized = false;
+
+  InvokableDispatcher<Entity&> _entityAddedDispatcher;
 };
 
 } // namespace oe::internal

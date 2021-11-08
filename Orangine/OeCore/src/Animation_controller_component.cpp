@@ -7,7 +7,7 @@ using namespace oe;
 DEFINE_COMPONENT_TYPE(Animation_controller_component);
 
 void Animation_controller_component::addAnimation(
-    std::string animationName,
+    const std::string& animationName,
     std::unique_ptr<Animation> animation) {
   if (animationName.empty()) {
     OE_THROW(std::logic_error("Animation must have a name."));

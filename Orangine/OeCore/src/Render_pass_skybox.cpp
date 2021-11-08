@@ -1,13 +1,17 @@
 ﻿#include "pch.h"
 
-#include "OeCore/Render_pass_skybox.h"
-#include "OeCore/Renderable.h"
-#include "OeCore/Scene.h"
-#include "OeCore/Skybox_material.h"
+#include <OeCore/Light_provider.h>
+#include <OeCore/Primitive_mesh_data_factory.h>
+#include <OeCore/Render_pass_skybox.h>
+#include <OeCore/Renderable.h>
+#include <OeCore/Skybox_material.h>
 
 using oe::Render_pass_skybox;
 
-Render_pass_skybox::Render_pass_skybox(Scene& scene) : _scene(scene) {
+Render_pass_skybox::Render_pass_skybox(IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager)
+    : _entityRenderManager(entityRenderManager)
+    , _lightingManager(lightingManager)
+{
   _renderable = std::make_unique<Renderable>();
   _renderable->meshData = Primitive_mesh_data_factory::createSphere(1.0f, 3);
 
@@ -25,8 +29,10 @@ void Render_pass_skybox::render(const Camera_data& cameraData) {
   // Discard the position
   skyboxCamera.viewMatrix = SSE::Matrix4(cameraData.viewMatrix.getUpper3x3(), SSE::Vector3(0));
 
-  _material->setCubeMapTexture(_scene.environmentVolume().environmentIbl.skyboxTexture);
-  _scene.manager<IEntity_render_manager>().renderRenderable(
+  const auto& environmentVolume = _lightingManager.getEnvironmentLighting();
+
+  _material->setCubeMapTexture(environmentVolume.skyboxTexture);
+  _entityRenderManager.renderRenderable(
       *_renderable,
       SSE::Matrix4::identity(),
       0.0f,

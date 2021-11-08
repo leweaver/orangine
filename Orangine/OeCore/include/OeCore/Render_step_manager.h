@@ -2,6 +2,12 @@
 
 #include <OeCore/Entity_sorter.h>
 #include <OeCore/IRender_step_manager.h>
+#include <OeCore/IScene_graph_manager.h>
+#include <OeCore/IDev_tools_manager.h>
+#include <OeCore/ITexture_manager.h>
+#include <OeCore/IShadowmap_manager.h>
+#include <OeCore/IEntity_render_manager.h>
+#include <OeCore/ILighting_manager.h>
 #include <OeCore/Light_provider.h>
 #include <OeCore/Render_pass.h>
 #include <OeCore/Renderable.h>
@@ -30,15 +36,19 @@ class Render_step_manager : public IRender_step_manager {
   void createRenderSteps() override;
   Camera_data createCameraData(Camera_component& component) const override;
   void render(std::shared_ptr<Entity> cameraEntity) override;
+  BoundingFrustumRH createFrustum(const Camera_component& cameraComponent) override;
 
   static constexpr size_t maxRenderTargetViews() { return 3; }
 
  protected:
-  Render_step_manager(Scene& scene);
+  Render_step_manager(
+          Scene& scene, IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
+          ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
+          IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager);
 
   // pure virtual method interface
   virtual void clearRenderTargetView(const Color& color) = 0;
-  virtual void clearDepthStencil(float depth = 1.0f, uint8_t stencil = 0) = 0;
+  virtual void clearDepthStencil(float depth, uint8_t stencil) = 0;
   virtual std::unique_ptr<Render_pass> createShadowMapRenderPass() = 0;
   virtual void beginRenderNamedEvent(const wchar_t* name) = 0;
   virtual void endRenderNamedEvent() = 0;
@@ -61,6 +71,8 @@ class Render_step_manager : public IRender_step_manager {
 
   void renderLights(const Camera_data& cameraData, Render_pass_blend_mode blendMode);
 
+  void applyEnvironmentVolume(const Vector3& cameraPos);
+
   // RenderStep definitions
   struct Render_step_deferred_data {
     std::shared_ptr<Deferred_light_material> deferredLightMaterial;
@@ -71,8 +83,8 @@ class Render_step_manager : public IRender_step_manager {
   static std::string _name;
 
   struct Render_step {
-    explicit Render_step(const std::wstring& name) : name(name) {}
-    Render_step(std::unique_ptr<Render_pass>&& renderPass, const std::wstring& name);
+    explicit Render_step(std::wstring name) : name(std::move(name)) {}
+    Render_step(std::unique_ptr<Render_pass>&& renderPass, std::wstring name);
     std::wstring name;
     bool enabled = true;
     std::vector<std::unique_ptr<Render_pass>> renderPasses;
@@ -96,5 +108,12 @@ class Render_step_manager : public IRender_step_manager {
 
   std::array<double, 5> _renderTimes = {};
   uint32_t _renderCount = 0;
+
+  IScene_graph_manager& _sceneGraphManager;
+  IDev_tools_manager& _devToolsManager;
+  ITexture_manager& _textureManager;
+  IShadowmap_manager& _shadowmapManager;
+  IEntity_render_manager& _entityRenderManager;
+  ILighting_manager& _lightingManager;
 };
 } // namespace oe

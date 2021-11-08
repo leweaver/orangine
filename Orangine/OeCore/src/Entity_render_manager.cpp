@@ -4,26 +4,18 @@
 #include "Scene_graph_manager.h"
 
 #include "OeCore/Camera_component.h"
-#include "OeCore/Entity.h"
 #include "OeCore/Entity_sorter.h"
 #include "OeCore/IMaterial_manager.h"
+#include "OeCore/ILighting_manager.h"
 #include "OeCore/Light_component.h"
-#include "OeCore/Material.h"
-#include "OeCore/Math_constants.h"
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Morph_weights_component.h"
-#include "OeCore/Render_light_data.h"
-#include "OeCore/Render_pass.h"
-#include "OeCore/Renderable_component.h"
-#include "OeCore/Renderer_data.h"
 #include "OeCore/Scene.h"
-#include "OeCore/Shadow_map_texture.h"
 #include "OeCore/Skinned_mesh_component.h"
 
 #include <cinttypes>
 #include <functional>
 #include <optional>
-#include <set>
 
 using namespace oe;
 using namespace internal;
@@ -39,42 +31,21 @@ Renderer_animation_data g_emptyRenderableAnimationData = []() {
   return rad;
 }();
 
-Entity_render_manager::Entity_render_manager(Scene& scene)
-    : IEntity_render_manager(scene) {}
+Entity_render_manager::Entity_render_manager(
+        Scene& scene, ITexture_manager& textureManager,
+        IMaterial_manager& materialManager,
+        ILighting_manager& lightingManager)
+    : IEntity_render_manager(scene)
+    , _textureManager(textureManager)
+    , _materialManager(materialManager)
+    , _lightingManager(lightingManager)
+{}
 
 void Entity_render_manager::initialize() {}
 
 void Entity_render_manager::shutdown() {}
 
 const std::string& Entity_render_manager::name() const { return _name; }
-
-void Entity_render_manager::tick() {
-  const auto& environmentVolume = _scene.environmentVolume();
-  auto* const renderLightData = _scene.manager<IMaterial_manager>().getRenderLightDataLit();
-
-  if (environmentVolume.environmentIbl.skyboxTexture.get() != _environmentIbl.skyboxTexture.get()) {
-    _environmentIbl = environmentVolume.environmentIbl;
-
-    // Force reload of textures
-    if (renderLightData != nullptr) {
-      renderLightData->setEnvironmentIblMap(nullptr, nullptr, nullptr);
-    }
-  }
-
-  if (renderLightData && _environmentIbl.iblDiffuseTexture &&
-      !renderLightData->environmentMapDiffuse()) {
-
-    auto& textureManager = _scene.manager<ITexture_manager>();
-    textureManager.load(*_environmentIbl.iblBrdfTexture);
-    textureManager.load(*_environmentIbl.iblDiffuseTexture);
-    textureManager.load(*_environmentIbl.iblSpecularTexture);
-
-    renderLightData->setEnvironmentIblMap(
-        _environmentIbl.iblBrdfTexture,
-        _environmentIbl.iblDiffuseTexture,
-        _environmentIbl.iblSpecularTexture);
-  }
-}
 
 template <uint8_t TMax_lights>
 bool addLightToRenderLightData(
@@ -104,29 +75,15 @@ bool addLightToRenderLightData(
   }
 
   const auto pointLight = lightEntity.getFirstComponentOfType<Point_light_component>();
-  if (pointLight)
-    return renderLightData.addPointLight(
-        lightEntity.worldPosition(), pointLight->color(), pointLight->intensity());
+  if (pointLight) {
+    return renderLightData.addPointLight(lightEntity.worldPosition(), pointLight->color(), pointLight->intensity());
+  }
 
   const auto ambientLight = lightEntity.getFirstComponentOfType<Ambient_light_component>();
-  if (ambientLight)
+  if (ambientLight) {
     return renderLightData.addAmbientLight(ambientLight->color(), ambientLight->intensity());
+  }
   return false;
-}
-
-BoundingFrustumRH Entity_render_manager::createFrustum(const Camera_component& cameraComponent) {
-  const auto viewport = _scene.manager<IRender_step_manager>().getScreenViewport();
-  const auto aspectRatio = viewport.width / viewport.height;
-
-  const auto projMatrix = SSE::Matrix4::perspective(
-      cameraComponent.fov(), aspectRatio, cameraComponent.nearPlane(), cameraComponent.farPlane());
-
-  oe::BoundingFrustumRH frustum = oe::BoundingFrustumRH(projMatrix);
-  const auto& entity = cameraComponent.entity();
-  frustum.origin = entity.worldPosition();
-  frustum.orientation = entity.worldRotation();
-
-  return frustum;
 }
 
 void Entity_render_manager::createMissingVertexAttributes(
@@ -144,24 +101,31 @@ void Entity_render_manager::createMissingVertexAttributes(
     if (std::any_of(layout.begin(), layout.end(), [requiredAttribute](const auto& vae) {
           return vae.semantic == requiredAttribute;
         }))
+    {
       continue;
+    }
 
     if (std::find(vertexMorphAttributes.begin(), vertexMorphAttributes.end(), requiredAttribute) !=
         vertexMorphAttributes.end())
+    {
       continue;
+    }
 
     // We only support generation of normals, tangents, bi-tangent
     uint32_t numComponents = 3;
-    if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Normal, 0})
+    if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Normal, 0}) {
       generateNormals = true;
+    }
     else if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Tangent, 0}) {
       numComponents = 4;
       generateTangents = true;
-    } else if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Bi_tangent, 0})
+    }
+    else if (requiredAttribute == Vertex_attribute_semantic{Vertex_attribute::Bi_tangent, 0}) {
       generateBiTangents = true;
+    }
     else {
       OE_THROW(std::logic_error("Mesh does not have required attribute: "s.append(
-          Vertex_attribute_meta::vsInputName(requiredAttribute))));
+              Vertex_attribute_meta::vsInputName(requiredAttribute))));
     }
 
     // Create the missing accessor
@@ -197,10 +161,11 @@ void Entity_render_manager::renderEntity(
     const Camera_data& cameraData,
     const Light_provider::Callback_type& lightDataProvider,
     const Render_pass_blend_mode blendMode) {
-  if (!renderableComponent.visible())
+  if (!renderableComponent.visible()) {
     return;
+  }
 
-  const auto& entity = renderableComponent.entity();
+  const auto& entity = renderableComponent.getEntity();
 
   try {
     const auto material = renderableComponent.material();
@@ -236,7 +201,7 @@ void Entity_render_manager::renderEntity(
     // This may be null if the device was reset since the last render.
     if (materialContext == nullptr) {
       renderableComponent.setMaterialContext(
-          _scene.manager<IMaterial_manager>().createMaterialContext());
+          _materialManager.createMaterialContext());
 
       materialContext = renderableComponent.materialContext().lock();
 
@@ -246,18 +211,20 @@ void Entity_render_manager::renderEntity(
     }
 
     const auto lightMode = material->lightMode();
-    Render_light_data* renderLightData;
+    Render_light_data* renderLightData = nullptr;
 
-    // TODY: FIXME: I think this is really broken. We shouldn't be clearing the render light data per entity; but instead per frame.
+    // TODO: FIXME: I think this is really broken. We shouldn't be clearing the render light data per entity; but instead per frame.
     if (Material_light_mode::Lit == lightMode) {
-      auto renderLightDataLit = _scene.manager<IMaterial_manager>().getRenderLightDataLit();
+      auto renderLightDataLit = _lightingManager.getRenderLightDataLit();
+      auto maxLights = renderLightDataLit->getMaxLights();
+
       renderLightData = renderLightDataLit;
 
       // Ask the caller what lights are affecting this entity.
       _renderLights.clear();
       renderLightDataLit->clear();
-      lightDataProvider(entity.boundSphere(), _renderLights, renderLightDataLit->maxLights());
-      if (_renderLights.size() > renderLightDataLit->maxLights()) {
+      lightDataProvider(entity.boundSphere(), _renderLights, maxLights);
+      if (_renderLights.size() > maxLights) {
         OE_THROW(std::logic_error("Light_provider::Callback_type added too many lights to entity"));
       }
 
@@ -267,9 +234,9 @@ void Entity_render_manager::renderEntity(
         }
       }
 
-      _scene.manager<IMaterial_manager>().updateLightBuffers();
+      _materialManager.updateLightBuffers();
     } else {
-      renderLightData = _scene.manager<IMaterial_manager>().getRenderLightDataUnlit();
+      renderLightData = _lightingManager.getRenderLightDataUnlit();
     }
 
     // Morphed animation?
@@ -292,7 +259,7 @@ void Entity_render_manager::renderEntity(
     // Matrix const* worldTransform;
     const SSE::Matrix4* worldTransform;
     const auto skinningEnabled =
-        _scene.manager<IMaterial_manager>().rendererFeatureEnabled().skinnedAnimation;
+        _materialManager.rendererFeatureEnabled().skinnedAnimation;
     if (skinningEnabled && skinnedMeshComponent != nullptr) {
 
       // Don't need the transform root here, just read the world transforms.
@@ -381,7 +348,7 @@ void Entity_render_manager::renderRenderable(
   auto materialContext = renderable.materialContext.lock();
   // This may be null if the device was reset since the last render.
   if (materialContext == nullptr) {
-    renderable.materialContext = _scene.manager<IMaterial_manager>().createMaterialContext();
+    renderable.materialContext = _materialManager.createMaterialContext();
     materialContext = renderable.materialContext.lock();
 
     if (materialContext == nullptr) {
@@ -392,7 +359,7 @@ void Entity_render_manager::renderRenderable(
   const auto lightMode = material->lightMode();
   Render_light_data* renderLightData;
   if (Material_light_mode::Lit == lightMode) {
-    auto* const renderLightDataLit = _scene.manager<IMaterial_manager>().getRenderLightDataLit();
+    auto* const renderLightDataLit = _lightingManager.getRenderLightDataLit();
     renderLightData = renderLightDataLit;
 
     // Ask the caller what lights are affecting this entity.
@@ -412,9 +379,9 @@ void Entity_render_manager::renderRenderable(
       }
     }
 
-    _scene.manager<IMaterial_manager>().updateLightBuffers();
+    _materialManager.updateLightBuffers();
   } else {
-    renderLightData = _scene.manager<IMaterial_manager>().getRenderLightDataUnlit();
+    renderLightData = _lightingManager.getRenderLightDataUnlit();
   }
 
   auto* rendererAnimationData = renderable.rendererAnimationData.get();

@@ -9,7 +9,7 @@ class Test_component : public Component {
   DECLARE_COMPONENT_TYPE;
 
  public:
-  Test_component(Entity& entity) : Component(entity) {}
+  explicit Test_component(Entity& entity) : Component(entity) {}
 
   void setSpeed(const SSE::Vector3& speed) { _component_properties.speed = speed; }
   const SSE::Vector3& getSpeed() const { return _component_properties.speed; }

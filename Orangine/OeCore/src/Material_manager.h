@@ -4,6 +4,7 @@
 #include "OeCore/Material.h"
 #include "OeCore/Renderer_data.h"
 #include "OeCore/Renderer_types.h"
+#include <OeCore/IAsset_manager.h>
 
 namespace oe {
 class Texture;
@@ -12,7 +13,7 @@ struct Renderer_animation_data;
 
 class Material_manager : public IMaterial_manager {
  public:
-  explicit Material_manager(Scene& scene);
+  Material_manager(Scene& scene, IAsset_manager& assetManager);
   ~Material_manager() = default;
 
   Material_manager(const Material_manager& other) = delete;
@@ -80,5 +81,6 @@ class Material_manager : public IMaterial_manager {
 
   std::shared_ptr<const Material> _boundMaterial;
   Render_pass_blend_mode _boundBlendMode;
+  IAsset_manager& _assetManager;
 };
 } // namespace oe

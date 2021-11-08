@@ -7,6 +7,10 @@
 namespace oe {
 class Scene;
 class IConfigReader;
+class Behavior_manager;
+namespace internal {
+class Entity_render_manager;
+}
 
 class Manager_tickable {
  public:
@@ -35,6 +39,7 @@ class Manager_windowsMessageProcessor {
   virtual bool processMessage(UINT message, WPARAM wParam, LPARAM lParam) = 0;
 };
 
+
 class Manager_base {
  public:
   explicit Manager_base(Scene& scene) : _scene(scene) {}
@@ -49,7 +54,10 @@ class Manager_base {
   virtual void shutdown() = 0;
   virtual const std::string& name() const = 0;
 
- protected:
+ private:
+  // TODO: these are hacks until we figure out a better way to expose the things from Scene.
+  friend Behavior_manager;
+  //friend internal::Entity_render_manager;
   Scene& _scene;
 };
 

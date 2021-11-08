@@ -12,6 +12,7 @@
 #include "IInput_manager.h"
 #include "IRender_step_manager.h"
 #include "IScene_graph_manager.h"
+#include "ILighting_manager.h"
 #include "IShadowmap_manager.h"
 #include "IUser_interface_manager.h"
 #include "IMaterial_manager.h"
@@ -52,14 +53,6 @@ class Scene {
   template <typename TMgr> TMgr& manager() const;
 
   /*
-   * Functions that can be used to send events to various managers
-   */
-  void onComponentAdded(Entity& entity, Component& component) const;
-  void onComponentRemoved(Entity& entity, Component& component) const;
-  void onEntityAdded(Entity& entity) const;
-  void onEntityRemoved(Entity& entity) const;
-
-  /*
    * Add things to the scene, from a file
    */
   void loadEntities(const std::wstring& filename);
@@ -94,6 +87,7 @@ class Scene {
   void resumePlay();
 
  protected:
+
   // Repositories
   std::shared_ptr<IEntity_repository> _entityRepository;
 
@@ -114,7 +108,8 @@ class Scene {
       std::shared_ptr<IBehavior_manager>,
       std::shared_ptr<IAnimation_manager>,
       std::shared_ptr<IMaterial_manager>,
-      std::shared_ptr<ITexture_manager>>
+      std::shared_ptr<ITexture_manager>,
+      std::shared_ptr<ILighting_manager>>
       ;
 
   Manager_tuple _managers;

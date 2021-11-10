@@ -48,6 +48,11 @@ class PyClass_input {
       : _inputManager(inputManager)
   {}
 
+  IInput_manager& getInputManager()
+  {
+    return _inputManager;
+  }
+
   IInput_manager::Mouse_state* getMouseState()
   {
     return _inputManager.getMouseState().lock().get();
@@ -59,9 +64,8 @@ class PyClass_input {
 
 class PyClass_managers {
  public:
-  explicit PyClass_managers(Engine_internal_module& internalModule)
-      : _input(internalModule.getInputManager())
-  {}
+  explicit PyClass_managers(IInput_manager& inputManager)
+      : _input({inputManager}) {}
 
   PyClass_input& getInput()
   {
@@ -73,8 +77,14 @@ class PyClass_managers {
 };
 }// namespace oe
 
+void Engine_bindings::initializeSingletons(IInput_manager& inputManager) {
+   _module.attr("managers") = std::make_unique<PyClass_managers>(inputManager);
+}
+
 void Engine_bindings::create(pybind11::module& m)
 {
+  py::class_<PyClass_managers>(m, "NativeContext")
+          .def_property_readonly("input", &PyClass_managers::getInput);
 
   // Logging
   m.def("log_debug_enabled", []() { return g3::logLevel(G3LOG_DEBUG); });
@@ -169,15 +179,6 @@ void Engine_bindings::create(pybind11::module& m)
           .def_readwrite("right", &IInput_manager::Mouse_state::right)
           .def_readwrite("delta_position", &IInput_manager::Mouse_state::deltaPosition)
           .def_readwrite("scroll_wheel_delta", &IInput_manager::Mouse_state::scrollWheelDelta);
-
-  // Managers
-  py::class_<PyClass_managers>(m, "Managers")
-          .def_property_readonly("input", &PyClass_managers::getInput);
-
-  m.def("init_statics", [m]() {
-    auto engineInternalModule = Engine_internal_module{};
-    m.attr("managers") = std::make_unique<PyClass_managers>(engineInternalModule);
-  });
 
   // TODO:
   /*

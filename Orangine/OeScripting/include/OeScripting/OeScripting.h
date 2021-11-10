@@ -1,8 +1,8 @@
 #pragma once
 
 #include <OeCore/OeCore.h>
-#include <OeScripting/Statics.h>
 
+#include "Statics.h"
 #include "IEntity_scripting_manager.h"
 
 namespace oe::scripting {

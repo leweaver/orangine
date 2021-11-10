@@ -51,12 +51,6 @@ class App_impl {
       : _deviceResources(deviceResources)
       , _hwnd(hwnd)
       , _fatalError(false) {
-    createManagers();
-  }
-
- private:
-  void createManagers() {
-
     _coreManagers = std::make_unique<oe::core::Manager_instances>(*_deviceResources);
     oe::core::for_each_manager_instance(_coreManagers->managers, [&](const Manager_interfaces& interfaces) {
       _managers.addManager(interfaces);
@@ -123,7 +117,6 @@ class App_impl {
         }
 
         _initializedManagers.push_back(managerInterfaces.get());
-        managerInterfaces->asBase->initialize();
       }
     }
     catch (std::exception& ex) {
@@ -451,11 +444,12 @@ int App::run(const App_start_settings& settings) {
 
   // Create the app context
   int progReturnVal = 1;
-  auto appDeviceContext = app::App_impl(hwnd, deviceResources.get());
-  _impl = &appDeviceContext;
+  _impl = new app::App_impl(hwnd, deviceResources.get());
 
   bool sceneConfigured = false;
   do {
+    auto& appDeviceContext = *_impl;
+
     SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     try {
 
@@ -520,18 +514,17 @@ int App::run(const App_start_settings& settings) {
     }
   } while (false);
 
-  _impl = nullptr;
   SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(nullptr));
 
   if (sceneConfigured) {
     try {
-      appDeviceContext.destroyWindowSizeDependentResources();
-      appDeviceContext.destroyDeviceDependentResources();
+      _impl->destroyWindowSizeDependentResources();
+      _impl->destroyDeviceDependentResources();
 
       getDevToolsManager().setVectorLog(nullptr);
 
       onSceneShutdown();
-      appDeviceContext.shutdownManagers();
+      _impl->shutdownManagers();
     } catch (const std::exception& ex) {
       LOG(WARNING) << "Terminating on uncaught exception while shutting down: " << ex.what();
       progReturnVal = 1;
@@ -540,6 +533,8 @@ int App::run(const App_start_settings& settings) {
       progReturnVal = 1;
     }
   }
+
+  delete _impl;
 
   // This must be the last thing that happens.
   CoUninitialize();

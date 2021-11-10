@@ -81,6 +81,6 @@ class App {
 
  private:
   // Platform specific internal implementation
-  App_impl* _impl = nullptr;
+  App_impl* _impl;
 };
 }// namespace oe::app

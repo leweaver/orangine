@@ -52,12 +52,8 @@ def _init_logger():
     native_handler.setLevel(logger.level)
     logger.addHandler(native_handler)
 
-def _init_statics():
-  oe.init_statics()
-  
 def init():
   _init_logger()
-  _init_statics()
 
 # Captures stdout and stderr. This is just a bucket for any output not using logger
 # (which is handled by init_logger, above)

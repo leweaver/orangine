@@ -10,8 +10,9 @@
 
 #include <OeScripting/IEntity_scripting_manager.h>
 
-#include "Script_runtime_data.h"
+#include "Engine_bindings.h"
 #include "Engine_internal_module.h"
+#include "Script_runtime_data.h"
 
 namespace oe::internal {
 class Entity_scripting_manager : public IEntity_scripting_manager, public Manager_base, public Manager_tickable {
@@ -53,6 +54,7 @@ class Entity_scripting_manager : public IEntity_scripting_manager, public Manage
   struct PythonContext {
     pybind11::module _sysModule;
     std::unique_ptr<Engine_internal_module> _engineInternalModule;
+    std::unique_ptr<Engine_bindings> _oeModule;
   };
 
   PythonContext _pythonContext;

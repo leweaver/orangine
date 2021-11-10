@@ -83,7 +83,6 @@ void Entity_scripting_manager::initialize()
 
   std::string errorStr;
   try {
-    //Engine_bindings::setScene(&_scene);
     initializePythonInterpreter();
     return;
   }
@@ -340,8 +339,10 @@ void Entity_scripting_manager::initializePythonInterpreter()
   _pythonContext._sysModule = py::module::import("sys");
   _pythonContext._sysModule.attr("path") = sysPathList;
 
+  _pythonContext._oeModule = std::make_unique<Engine_bindings>(py::module::import("oe"));
+  _pythonContext._oeModule->initializeSingletons(_inputManager);
+
   _pythonContext._engineInternalModule = std::make_unique<Engine_internal_module>();
-  _pythonContext._engineInternalModule->initialize(_inputManager);
 
   // This must be called at least once before python attempts to write to stdout or stderr.
   // Now that we have our internal library, set up stdout and stderr properly.

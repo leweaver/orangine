@@ -8,10 +8,17 @@
 
 
 namespace oe {
-class Shadowmap_manager : public IShadowmap_manager {
+class Shadowmap_manager : public IShadowmap_manager
+    , public Manager_base
+    , public Manager_deviceDependent {
  public:
-  Shadowmap_manager(Scene& scene, ITexture_manager& textureManager)
-      : IShadowmap_manager(scene), _texturePool(nullptr), _textureManager(textureManager) {}
+  explicit Shadowmap_manager(ITexture_manager& textureManager)
+      : IShadowmap_manager()
+      , Manager_base()
+      , Manager_deviceDependent()
+      , _texturePool(nullptr)
+      , _textureManager(textureManager)
+  {}
   virtual ~Shadowmap_manager() = default;
 
   // Manager_base implementation

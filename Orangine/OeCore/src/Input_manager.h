@@ -6,9 +6,13 @@
 #include "Mouse.h"
 
 namespace oe::internal {
-    class Input_manager : public IInput_manager {
+    class Input_manager : public IInput_manager
+    , public Manager_base
+    , public Manager_windowDependent
+    , public Manager_tickable
+    , public Manager_windowsMessageProcessor {
     public:	    
-	    Input_manager(Scene &scene, IUser_interface_manager& userInterfaceManager);
+	    explicit Input_manager(IUser_interface_manager& userInterfaceManager);
 
 	    // Manager_base implementation
 	    void initialize() override;

@@ -6,9 +6,9 @@
 #include <string>
 
 namespace oe {
-class IAsset_manager : public Manager_base {
+class IAsset_manager {
  public:
-  explicit IAsset_manager(Scene& scene) : Manager_base(scene) {}
+  virtual ~IAsset_manager() = default;
 
   // Sets the default data path, that contains scripts/assets/shaders.
   // Must be called before initialize(), otherwise an exception will be thrown.

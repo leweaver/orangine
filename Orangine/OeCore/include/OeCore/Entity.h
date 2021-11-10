@@ -11,7 +11,7 @@
 namespace oe {
 
 class Entity_repository;
-class Scene;
+class IScene_graph_manager;
 namespace internal {
 class Scene_graph_manager;
 }
@@ -41,7 +41,7 @@ class Entity : public std::enable_shared_from_this<Entity> {
   using Entity_ptr_vec = std::vector<std::shared_ptr<Entity>>;
   using Entity_ptr_map = std::map<Id_type, std::shared_ptr<Entity>>;
 
-  Entity(Scene& scene, IComponent_factory& componentFactory, std::string name, Id_type id);
+  Entity(IScene_graph_manager& sceneGraph, IComponent_factory& componentFactory, std::string name, Id_type id);
 
   // Don't allow direct copy of Entity objects (we have a unique_ptr list of components).
   Entity(const Entity& that) = delete;
@@ -124,8 +124,6 @@ class Entity : public std::enable_shared_from_this<Entity> {
   const oe::BoundingSphere& boundSphere() const { return _boundSphere; }
   void setBoundSphere(const oe::BoundingSphere& boundSphere) { _boundSphere = boundSphere; }
 
-  Scene& scene() const { return _scene; }
-
   /*
    * Returns the right handed world transform matrix (T*R*S).
    * If this Entity has no parent, this equals the local transform matrix.
@@ -142,7 +140,10 @@ class Entity : public std::enable_shared_from_this<Entity> {
  private:
   std::shared_ptr<Entity> verifyEntityPtr() const;
 
+  IScene_graph_manager& getSceneGraph() const { return _sceneGraph; }
+
   // TODO: Refactor into a public & private interface, so that friend isn't required.
+  friend struct EntityRef;
   friend class Entity_repository;
   friend class internal::Scene_graph_manager;
 
@@ -169,7 +170,7 @@ class Entity : public std::enable_shared_from_this<Entity> {
   Entity_ptr_vec _children;
   Entity* _parent;
   std::shared_ptr<Entity> _prefab;
-  Scene& _scene;
+  IScene_graph_manager& _sceneGraph;
 
   std::vector<std::unique_ptr<Component>> _components;
   ////
@@ -211,12 +212,12 @@ template <typename TComponent> TComponent& Entity::addComponent() {
 }
 
 struct EntityRef {
-  Scene& scene;
+  IScene_graph_manager& sceneGraph;
   Entity::Id_type id;
 
-  explicit EntityRef(Entity& entity) : scene(entity.scene()), id(entity.getId()) {}
+  explicit EntityRef(Entity& entity) : sceneGraph(entity.getSceneGraph()), id(entity.getId()) {}
 
-  EntityRef(Scene& scene, Entity::Id_type id) : scene(scene), id(id) {}
+  EntityRef(IScene_graph_manager& sceneGraph, Entity::Id_type id) : sceneGraph(sceneGraph), id(id) {}
 
   Entity& get() const;
 

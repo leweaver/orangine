@@ -3,7 +3,6 @@
 #include "Entity_filter_impl.h"
 
 #include <OeCore/Entity.h>
-#include <OeCore/Scene.h>
 
 using namespace oe;
 

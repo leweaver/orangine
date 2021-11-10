@@ -1,7 +1,6 @@
 #include "pch.h"
 
 #include "D3D_texture_manager.h"
-#include "OeCore/Scene.h"
 
 #include <DDSTextureLoader.h>
 #include <WICTextureLoader.h>

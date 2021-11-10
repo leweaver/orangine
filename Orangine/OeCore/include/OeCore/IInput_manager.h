@@ -6,14 +6,8 @@
 
 namespace oe {
 
-class IInput_manager
-    : public Manager_base
-    , public Manager_windowDependent
-    , public Manager_tickable
-    , public Manager_windowsMessageProcessor {
+class IInput_manager {
  public:
-  explicit IInput_manager(Scene& scene) : Manager_base(scene) {}
-
   struct Mouse_state {
     enum class Button_state {
       Up = 0,       // Button is up

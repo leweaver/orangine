@@ -23,7 +23,7 @@ add_library(${PROJECT_NAME} STATIC
         src/VisualStudioLogSink.h
         src/filesinkhelper.ipp
         src/SampleScene.cpp
-        src/Statics.cpp)
+        src/Statics.cpp include/OeApp/Manager_collection.h)
 
 file(GLOB OeApp_HEADERS "include/OeApp/*")
 list(APPEND OeApp_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")

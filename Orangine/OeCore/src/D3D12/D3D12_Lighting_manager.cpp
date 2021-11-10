@@ -8,11 +8,9 @@ using namespace oe;
 
 std::string D3D12_lighting_manager::_name; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
-template <>
-oe::ILighting_manager* oe::create_manager(
-        Scene& scene,
-        ITexture_manager& textureManager) {
-  return new D3D12_lighting_manager(scene, textureManager);
+template<> void oe::create_manager(Manager_instance<ILighting_manager>& out, ITexture_manager& textureManager)
+{
+  out = Manager_instance<ILighting_manager>(std::make_unique<D3D12_lighting_manager>(textureManager));
 }
 
 void D3D12_lighting_manager::initStatics() {

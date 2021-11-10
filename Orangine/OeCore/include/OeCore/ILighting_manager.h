@@ -7,11 +7,8 @@
 
 namespace oe {
 
-class ILighting_manager
-    : public Manager_base {
+class ILighting_manager {
  public:
-  explicit ILighting_manager(Scene& scene) : Manager_base(scene) {}
-
   // ILighting_manager
   virtual void addEnvironmentVolume(Environment_volume& volume) = 0;
   virtual void setCurrentVolumeEnvironmentLighting(const Vector3& position) = 0;

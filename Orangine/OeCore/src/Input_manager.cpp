@@ -2,8 +2,6 @@
 
 #include "Input_manager.h"
 
-#include <OeCore/Scene.h>
-
 #include <Mouse.h>
 
 using namespace oe;
@@ -11,13 +9,21 @@ using namespace internal;
 
 std::string Input_manager::_name = "Input_manager";
 
-template <> IInput_manager* oe::create_manager(Scene& scene, IUser_interface_manager& userInterfaceManager) { return new Input_manager(scene, userInterfaceManager); }
+template<> void oe::create_manager(Manager_instance<IInput_manager>& out, IUser_interface_manager& userInterfaceManager)
+{
+  out = Manager_instance<IInput_manager>(std::make_unique<Input_manager>(userInterfaceManager));
+}
 
-Input_manager::Input_manager(Scene& scene, IUser_interface_manager& userInterfaceManager)
-    : IInput_manager(scene)
+Input_manager::Input_manager(IUser_interface_manager& userInterfaceManager)
+    : IInput_manager()
+    , Manager_base()
+    , Manager_windowDependent()
+    , Manager_tickable()
+    , Manager_windowsMessageProcessor()
     , _mouse(nullptr)
     , _mouseState(std::make_shared<Mouse_state>())
-    , _userInterfaceManager(userInterfaceManager) {}
+    , _userInterfaceManager(userInterfaceManager)
+{}
 
 void Input_manager::initialize() {}
 

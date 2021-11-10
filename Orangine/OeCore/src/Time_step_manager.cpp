@@ -8,10 +8,9 @@ using namespace oe;
 
 std::string Time_step_manager::_name = "Animation_manager";
 
-template <> ITime_step_manager* oe::create_manager(
-    Scene& scene, const StepTimer& stepTimer)
+template <> void oe::create_manager(Manager_instance<ITime_step_manager>& out, const StepTimer& stepTimer)
 {
-  return new Time_step_manager(scene, stepTimer);
+  out = Manager_instance<ITime_step_manager>(std::make_unique<Time_step_manager>(stepTimer));
 }
 
 void Time_step_manager::tick() {

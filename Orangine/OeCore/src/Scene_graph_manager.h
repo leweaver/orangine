@@ -11,12 +11,15 @@
 
 namespace oe::internal {
 
-class Scene_graph_manager : public IScene_graph_manager, public IComponent_factory {
+class Scene_graph_manager : public IScene_graph_manager,
+                            public IComponent_factory,
+                            public Manager_base,
+                            public Manager_tickable {
   friend Entity;
   friend EntityRef;
 
  public:
-  Scene_graph_manager(Scene& scene, std::shared_ptr<IEntity_repository> entityRepository);
+  explicit Scene_graph_manager(std::shared_ptr<IEntity_repository> entityRepository);
   Scene_graph_manager(const Scene_graph_manager& other) = delete;
   ~Scene_graph_manager() override = default;
 
@@ -36,6 +39,9 @@ class Scene_graph_manager : public IScene_graph_manager, public IComponent_facto
   std::shared_ptr<Entity> instantiate(const std::string& name, Entity& parentEntity) override;
 
   void renderImGui() override;
+  void addLoader(std::unique_ptr<Entity_graph_loader> loader) override;
+  void loadFile(const std::wstring& filename) override;
+  void loadFile(const std::wstring& filename, Entity* parentEntity) override;
 
   /**
    * Will do nothing if no entity exists with the given ID.
@@ -94,6 +100,10 @@ class Scene_graph_manager : public IScene_graph_manager, public IComponent_facto
   bool _initialized = false;
 
   InvokableDispatcher<Entity&> _entityAddedDispatcher;
+
+
+  std::vector<std::unique_ptr<Entity_graph_loader>> _entityGraphLoaders = {};
+  std::map<std::string, Entity_graph_loader*> _extensionToEntityGraphLoader = {};
 };
 
 } // namespace oe::internal

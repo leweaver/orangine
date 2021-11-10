@@ -6,10 +6,16 @@
 #include <string>
 
 namespace oe {
-class Time_step_manager : public ITime_step_manager {
+class Time_step_manager : public ITime_step_manager
+    , public Manager_base
+    , public Manager_tickable {
  public:
-  Time_step_manager(Scene& scene, const StepTimer& stepTimer)
-      : ITime_step_manager(scene), _timer(stepTimer) {}
+  Time_step_manager(const StepTimer& stepTimer)
+      : ITime_step_manager()
+      , Manager_base()
+      , Manager_tickable()
+      , _timer(stepTimer)
+  {}
 
   // Manager_base implementation
   void initialize() override {}

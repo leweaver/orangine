@@ -3,23 +3,22 @@
 #include "OeCore/Fps_counter.h"
 #include "OeCore/IDev_tools_manager.h"
 #include "OeCore/IScene_graph_manager.h"
+#include <OeCore/IEntity_render_manager.h>
+#include <OeCore/IMaterial_manager.h>
+#include <OeCore/IEntity_scripting_manager.h>
 #include "OeCore/Mesh_data.h"
 
 namespace oe {
 class Perf_timer;
-class IEntity_render_manager;
-class IMaterial_manager;
-class IEntity_scripting_manager;
 }
 
 namespace oe::internal {
-class Dev_tools_manager : public IDev_tools_manager {
+class Dev_tools_manager : public IDev_tools_manager, public Manager_base, public Manager_tickable, public Manager_deviceDependent {
  public:
   Dev_tools_manager(
-          Scene& scene, IScene_graph_manager& sceneGraphManager, IEntity_render_manager& entityRenderManager,
+          IScene_graph_manager& sceneGraphManager, IEntity_render_manager& entityRenderManager,
           IMaterial_manager& materialManager, IEntity_scripting_manager& entityScriptingManager)
-      : IDev_tools_manager(scene)
-      , _unlitMaterial(nullptr)
+      : IDev_tools_manager(), Manager_base(), Manager_tickable(), Manager_deviceDependent(), _unlitMaterial(nullptr)
       , _sceneGraphManager(sceneGraphManager)
       , _entityRenderManager(entityRenderManager)
       , _materialManager(materialManager)

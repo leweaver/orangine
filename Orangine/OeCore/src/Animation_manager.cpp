@@ -4,7 +4,6 @@
 
 #include "OeCore/Animation_controller_component.h"
 #include "OeCore/Morph_weights_component.h"
-#include "OeCore/Scene.h"
 
 #include <algorithm>
 
@@ -13,9 +12,10 @@ using namespace DirectX;
 
 std::string Animation_manager::_name = "Animation_manager";
 
-template <> IAnimation_manager* oe::create_manager(Scene& scene, IScene_graph_manager& scene_graph_manager, ITime_step_manager& timeStepManager)
+template<>
+void oe::create_manager(Manager_instance<IAnimation_manager>& out, IScene_graph_manager& scene_graph_manager, ITime_step_manager& timeStepManager)
 {
-  return new Animation_manager(scene, scene_graph_manager, timeStepManager);
+  out = Manager_instance<IAnimation_manager>(std::make_unique<Animation_manager>(scene_graph_manager, timeStepManager));
 }
 
 const std::array<

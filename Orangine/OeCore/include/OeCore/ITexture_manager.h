@@ -12,8 +12,6 @@ class ITexture_manager
     : public Manager_base
     , public Manager_deviceDependent {
  public:
-  explicit ITexture_manager(Scene& scene) : Manager_base(scene) {}
-
   virtual std::shared_ptr<Texture> createTextureFromBuffer(
       uint32_t stride,
       uint32_t buffer_size,

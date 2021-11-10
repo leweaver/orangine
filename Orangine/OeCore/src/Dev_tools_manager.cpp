@@ -8,7 +8,6 @@
 #include "OeCore/Primitive_mesh_data_factory.h"
 #include "OeCore/Renderable.h"
 #include "OeCore/Renderer_data.h"
-#include "OeCore/Scene.h"
 #include "OeCore/Skinned_mesh_component.h"
 #include "OeCore/Unlit_material.h"
 #include "OeCore/VectorLog.h"
@@ -32,11 +31,12 @@ const auto g_hashSeed_axisWidget = std::hash<std::string>{}("axisWidget");
 std::string Dev_tools_manager::_name = "Dev_tools_manager";
 
 template<>
-IDev_tools_manager* oe::create_manager(
-        Scene& scene, IScene_graph_manager& sceneGraphManager, IEntity_render_manager& entityRenderManager,
+void oe::create_manager(Manager_instance<IDev_tools_manager>& out,
+        IScene_graph_manager& sceneGraphManager, IEntity_render_manager& entityRenderManager,
         IMaterial_manager& materialManager, IEntity_scripting_manager& entityScriptingManager)
 {
-  return new Dev_tools_manager(scene, sceneGraphManager, entityRenderManager, materialManager, entityScriptingManager);
+  out = Manager_instance<IDev_tools_manager>(std::make_unique<Dev_tools_manager>(
+          sceneGraphManager, entityRenderManager, materialManager, entityScriptingManager));
 }
 
 void Dev_tools_manager::initialize() {

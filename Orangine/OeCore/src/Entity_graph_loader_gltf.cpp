@@ -16,6 +16,7 @@
 #include "OeCore/Unlit_material.h"
 #include "OeCore/ITexture_manager.h"
 #include "OeCore/IMaterial_manager.h"
+#include "OeCore/IScene_graph_manager.h"
 
 #include <functional>
 #include <wincodec.h>
@@ -179,12 +180,14 @@ vertexAccessorFactory(Vertex_attribute_semantic vertexAttribute) {
 
 struct Loader_data {
   Loader_data(
-          Model& model, wstring&& baseDir, IWICImagingFactory* imagingFactory, IEntity_repository& entityRepository,
+          Model& model, wstring&& baseDir, IWICImagingFactory* imagingFactory,
+          IScene_graph_manager& sceneGraphManager, IEntity_repository& entityRepository,
           IMaterial_manager& materialManager, ITexture_manager& textureManager, IComponent_factory& componentFactory,
           bool calculateBounds)
       : model(model)
       , baseDir(std::move(baseDir))
       , imagingFactory(imagingFactory)
+      , sceneGraphManager(sceneGraphManager)
       , calculateBounds(calculateBounds)
       , entityRepository(entityRepository)
       , materialManager(materialManager)
@@ -195,6 +198,7 @@ struct Loader_data {
   Model& model;
   wstring baseDir;
   IWICImagingFactory* imagingFactory;
+  IScene_graph_manager& sceneGraphManager;
   IEntity_repository& entityRepository;
   IMaterial_manager& materialManager;
   ITexture_manager& textureManager;
@@ -221,7 +225,10 @@ const char* g_pbrPropertyValue_alphaMode_opaque = "OPAQUE";
 const char* g_pbrPropertyValue_alphaMode_mask = "MASK";
 const char* g_pbrPropertyValue_alphaMode_blend = "BLEND";
 
-Entity_graph_loader_gltf::Entity_graph_loader_gltf() {
+Entity_graph_loader_gltf::Entity_graph_loader_gltf(IMaterial_manager& materialManager, ITexture_manager& textureManager)
+    : _materialManager(materialManager)
+    , _textureManager(textureManager)
+{
   // Create the COM imaging factory
   ThrowIfFailed(CoCreateInstance(
       CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&_imagingFactory)));
@@ -426,9 +433,8 @@ std::vector<SSE::Matrix4> createMatrix4ArrayFromAccessor(
 
 vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
     wstring_view filePath,
+    IScene_graph_manager& sceneGraphManager,
     IEntity_repository& entityRepository,
-    IMaterial_manager& materialManager,
-    ITexture_manager& textureManager,
     IComponent_factory& componentFactory,
     bool calculateBounds) const {
   vector<shared_ptr<Entity>> entities;
@@ -477,10 +483,12 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
   const auto& scene = model.scenes[model.defaultScene];
   if (baseDir.empty())
     baseDir = L".";
-  Loader_data loaderData(model, move(baseDir), _imagingFactory.Get(), entityRepository, materialManager, textureManager, componentFactory, calculateBounds);
+  Loader_data loaderData(
+          model, move(baseDir), _imagingFactory.Get(), sceneGraphManager, entityRepository, _materialManager,
+          _textureManager, componentFactory, calculateBounds);
 
   // Load Entities
-  loaderData.rootEntity = entityRepository.instantiate(filenameUtf8, componentFactory);
+  loaderData.rootEntity = entityRepository.instantiate(filenameUtf8, loaderData.sceneGraphManager, componentFactory);
   for (auto nodeIdx : scene.nodes) {
     auto entity = create_entity(nodeIdx, loaderData);
     entity->setParent(*loaderData.rootEntity);
@@ -875,7 +883,7 @@ shared_ptr<Entity> create_entity(
     vector<Node>::size_type nodeIdx,
     Loader_data& loaderData) {
   const auto& node = loaderData.model.nodes.at(nodeIdx);
-  auto rootEntity = loaderData.entityRepository.instantiate(node.name, loaderData.componentFactory);
+  auto rootEntity = loaderData.entityRepository.instantiate(node.name, loaderData.sceneGraphManager, loaderData.componentFactory);
   if (loaderData.nodeIdxToEntity.size() <= nodeIdx) {
     loaderData.nodeIdxToEntity.resize(nodeIdx + 1);
   }
@@ -894,7 +902,7 @@ shared_ptr<Entity> create_entity(
       const auto& prim = mesh.primitives.at(primIdx);
       const auto primitiveName = mesh.name + " primitive " + to_string(primIdx);
       LOG(G3LOG_DEBUG) << "Creating entity for glTF mesh " << primitiveName;
-      auto primitiveEntity = loaderData.entityRepository.instantiate(primitiveName, loaderData.componentFactory);
+      auto primitiveEntity = loaderData.entityRepository.instantiate(primitiveName, loaderData.sceneGraphManager, loaderData.componentFactory);
 
       primitiveEntity->setParent(*rootEntity.get());
       auto& meshDataComponent = primitiveEntity->addComponent<Mesh_data_component>();

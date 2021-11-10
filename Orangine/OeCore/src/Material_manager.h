@@ -11,9 +11,12 @@ class Texture;
 class Scene;
 struct Renderer_animation_data;
 
-class Material_manager : public IMaterial_manager {
+class Material_manager : public IMaterial_manager
+    , public Manager_base
+    , public Manager_tickable
+    , public Manager_deviceDependent {
  public:
-  Material_manager(Scene& scene, IAsset_manager& assetManager);
+  explicit Material_manager(IAsset_manager& assetManager);
   ~Material_manager() = default;
 
   Material_manager(const Material_manager& other) = delete;

@@ -2,8 +2,6 @@
 
 #include "D3D_user_interface_manager.h"
 
-#include "OeCore/Scene.h"
-
 #include <OeThirdParty/imgui.h>
 #include <OeThirdParty/imgui_impl_dx11.h>
 #include <OeThirdParty/imgui_impl_win32.h>

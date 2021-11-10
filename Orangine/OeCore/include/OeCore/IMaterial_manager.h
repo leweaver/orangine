@@ -15,13 +15,8 @@ class Material;
 class Mesh_vertex_layout;
 struct Renderer_animation_data;
 
-class IMaterial_manager
-    : public Manager_base
-    , public Manager_tickable
-    , public Manager_deviceDependent {
+class IMaterial_manager {
  public:
-  explicit IMaterial_manager(Scene& scene) : Manager_base(scene) {}
-
   // Gets the path that contains hlsl files. Does not end in a trailing slash.
   virtual const std::wstring& shaderPath() const = 0;
 

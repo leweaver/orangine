@@ -1,10 +1,10 @@
 ﻿#include "pch.h"
 
-#include "OeCore/Scene.h"
 #include "Scene_graph_manager.h"
 
 #include <imgui.h>
 
+#include <OeCore/EngineUtils.h>
 #include <algorithm>
 #include <deque>
 
@@ -13,17 +13,19 @@ using namespace internal;
 
 std::string Scene_graph_manager::_name = "Scene_graph_manager";
 
-template <>
-IScene_graph_manager* oe::create_manager(
-    Scene& scene,
-    std::shared_ptr<IEntity_repository>& entityRepository) {
-  return new Scene_graph_manager(scene, entityRepository);
+template<>
+void oe::create_manager(
+        Manager_instance<IScene_graph_manager>& out, std::shared_ptr<IEntity_repository>& entityRepository)
+{
+  out = Manager_instance<IScene_graph_manager>(std::make_unique<Scene_graph_manager>(entityRepository));
 }
 
-Scene_graph_manager::Scene_graph_manager(
-    Scene& scene,
-    std::shared_ptr<IEntity_repository> entityRepository)
-    : IScene_graph_manager(scene), _entityRepository(std::move(entityRepository)) {}
+Scene_graph_manager::Scene_graph_manager(std::shared_ptr<IEntity_repository> entityRepository)
+    : IScene_graph_manager()
+    , Manager_base()
+    , Manager_tickable()
+    , _entityRepository(std::move(entityRepository))
+{}
 
 void Scene_graph_manager::initialize() { assert(_rootEntities.empty()); }
 
@@ -118,7 +120,7 @@ void Scene_graph_manager::renderImGui() {
 std::shared_ptr<Entity> Scene_graph_manager::instantiate(
     const std::string& name,
     Entity* parentEntity) {
-  const auto entityPtr = _entityRepository->instantiate(name, *this);
+  const auto entityPtr = _entityRepository->instantiate(name, *this, *this);
   _rootEntities.push_back(entityPtr);
 
   if (_initialized) {
@@ -132,6 +134,50 @@ std::shared_ptr<Entity> Scene_graph_manager::instantiate(
   addEntityToScene(entityPtr);
 
   return entityPtr;
+}
+
+void Scene_graph_manager::addLoader(std::unique_ptr<Entity_graph_loader> loader)
+{
+  std::vector<std::string> extensions;
+  loader->getSupportedFileExtensions(extensions);
+  for (const auto& extension : extensions) {
+    if (_extensionToEntityGraphLoader.find(extension) != _extensionToEntityGraphLoader.end()) {
+      OE_THROW(std::runtime_error(
+              "Failed to register entity graph loader, file extension is already registered: " +
+              extension));
+    }
+    _extensionToEntityGraphLoader[extension] = loader.get();
+  }
+  _entityGraphLoaders.push_back(std::move(loader));
+}
+
+void Scene_graph_manager::loadFile(const std::wstring& filename) {
+  loadFile(filename, nullptr);
+}
+
+void Scene_graph_manager::loadFile(const std::wstring& filename, Entity* parentEntity) {
+  // Get the file extension
+  const auto dotPos = filename.find_last_of('.');
+  if (dotPos == std::string::npos) {
+    OE_THROW(std::runtime_error("Cannot load mesh; given file doesn't have an extension."));
+  }
+
+  const std::string extension = utf8_encode(filename.substr(dotPos + 1));
+  const auto extPos = _extensionToEntityGraphLoader.find(extension);
+  if (extPos == _extensionToEntityGraphLoader.end()) {
+    OE_THROW(std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension));
+  }
+
+  std::vector<std::shared_ptr<Entity>> newRootEntities = extPos->second->loadFile(
+          filename, *this, *_entityRepository, *this, true);
+
+  if (parentEntity) {
+    for (const auto& entity : newRootEntities) {
+      entity->setParent(*parentEntity);
+    }
+  }
+
+  handleEntitiesLoaded(newRootEntities);
 }
 
 void Scene_graph_manager::initializeEntity(std::shared_ptr<Entity> entityPtr) const {

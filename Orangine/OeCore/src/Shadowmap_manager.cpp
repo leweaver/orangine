@@ -1,16 +1,15 @@
 ﻿#include "pch.h"
+#include <OeCore/EngineUtils.h>
 
 #include "Shadowmap_manager.h"
-
-#include "OeCore/Scene.h"
 
 using namespace oe;
 
 std::string Shadowmap_manager::_name = "Shadowmap_manager";
 
-template <>
-IShadowmap_manager* oe::create_manager(Scene& scene, ITexture_manager& textureManager) {
-  return new Shadowmap_manager(scene, textureManager);
+template<> void oe::create_manager(Manager_instance<IShadowmap_manager>& out, ITexture_manager& textureManager)
+{
+  out = Manager_instance<IShadowmap_manager>(std::make_unique<Shadowmap_manager>(textureManager));
 }
 
 const std::string& Shadowmap_manager::name() const { return _name; }

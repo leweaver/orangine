@@ -4,7 +4,6 @@
 
 #include "OeCore/Material_context.h"
 #include "OeCore/Mesh_utils.h"
-#include "OeCore/Scene.h"
 
 #include <locale>
 
@@ -17,8 +16,13 @@ const std::string g_flag_disable_optimisation = "disableOptimizations";
 
 std::string Material_manager::_name = "Material_manager";
 
-Material_manager::Material_manager(Scene& scene, IAsset_manager& assetManager)
-    : IMaterial_manager(scene), _boundBlendMode(Render_pass_blend_mode::Opaque), _assetManager(assetManager) {}
+Material_manager::Material_manager(IAsset_manager& assetManager)
+    : Manager_base()
+      , Manager_tickable()
+      , Manager_deviceDependent()
+      ,_boundBlendMode(Render_pass_blend_mode::Opaque)
+    , _assetManager(assetManager)
+{}
 
 void Material_manager::setShaderPath(const std::wstring& path) { _shaderPath = path; }
 

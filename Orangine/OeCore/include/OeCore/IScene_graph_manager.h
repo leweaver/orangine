@@ -7,6 +7,8 @@
 #include "Entity_filter_mode.h"
 #include "Manager_base.h"
 
+#include <OeCore/Entity_graph_loader.h>
+
 #include <unordered_set>
 #include <vector>
 
@@ -15,18 +17,19 @@ struct Ray;
 struct Ray_intersection;
 
 class IScene_graph_manager
-    : public Manager_base
-    , public Manager_tickable
 {
  public:
   using Component_type_set = std::unordered_set<Component::Component_type>;
 
-  explicit IScene_graph_manager(Scene& scene) : Manager_base(scene) {}
   virtual ~IScene_graph_manager() = default;
 
   virtual std::shared_ptr<Entity> instantiate(const std::string& name) = 0;
   virtual std::shared_ptr<Entity> instantiate(const std::string& name, Entity& parentEntity) = 0;
   virtual void renderImGui() = 0;
+
+  virtual void addLoader(std::unique_ptr<Entity_graph_loader> loader) = 0;
+  virtual void loadFile(const std::wstring& filename) = 0;
+  virtual void loadFile(const std::wstring& filename, Entity* parentEntity) = 0;
 
   /**
    * Will do nothing if no entity exists with the given ID.

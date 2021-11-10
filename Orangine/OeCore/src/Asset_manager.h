@@ -6,9 +6,9 @@
 #include <string>
 
 namespace oe::internal {
-class Asset_manager : public IAsset_manager {
+class Asset_manager : public IAsset_manager, public Manager_base {
  public:
-  explicit Asset_manager(Scene& scene);
+  Asset_manager();
 
   void preInit_setDataPath(const std::wstring& dataPath) override;
   const std::wstring& getDataPath() const override { return _dataPath; }

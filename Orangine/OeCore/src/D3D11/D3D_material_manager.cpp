@@ -4,7 +4,6 @@
 #include "OeCore/ITexture_manager.h"
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Render_light_data.h"
-#include "OeCore/Scene.h"
 
 #include "D3D_material_manager.h"
 #include "D3D_renderer_data.h"

@@ -10,7 +10,7 @@ namespace oe {
 
 	class IEntity_repository {
 	public:
-		virtual std::shared_ptr<Entity> instantiate(std::string_view name, IComponent_factory& componentFactory) = 0;
+		virtual std::shared_ptr<Entity> instantiate(std::string_view name, IScene_graph_manager& sceneGraph, IComponent_factory& componentFactory) = 0;
 
 		/**
 		* Will do nothing if an entity with given ID doesn't exist.
@@ -32,13 +32,12 @@ namespace oe {
 	{
 		Entity::Entity_ptr_map _entities;
 		int _lastEntityId;
-		Scene& _scene;
 
 	public:
-		explicit Entity_repository(Scene& scene);
+		Entity_repository();
 
 		// IEntity_repository implementation
-		std::shared_ptr<Entity> instantiate(std::string_view name, IComponent_factory& componentFactory) override;
+		std::shared_ptr<Entity> instantiate(std::string_view name, IScene_graph_manager& sceneGraph, IComponent_factory& componentFactory) override;
 		void remove(Entity::Id_type id) override;
 		std::shared_ptr<Entity> getEntityPtrById(Entity::Id_type id) override;
 		Entity& getEntityById(Entity::Id_type id) override;

@@ -55,7 +55,6 @@ add_library(${PROJECT_NAME} STATIC
         src/Fps_counter.cpp
         src/Input_manager.cpp
         src/JsonConfigReader.cpp
-        src/JsonConfigReader.h
         src/Light_component.cpp
         src/Light_provider.cpp
         src/Material.cpp
@@ -76,7 +75,6 @@ add_library(${PROJECT_NAME} STATIC
         src/Renderable_component.cpp
         src/Renderer_data.cpp
         src/Renderer_enums.cpp
-        src/Scene.cpp
         src/Scene_graph_manager.cpp
         src/Scene_graph_manager.h
         src/Shadowmap_manager.cpp

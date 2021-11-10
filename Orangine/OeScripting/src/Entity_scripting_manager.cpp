@@ -3,18 +3,8 @@
 #include "Entity_scripting_manager.h"
 
 #include "Engine_bindings.h"
-#include "Script_runtime_data.h"
 
-#include "OeCore/Camera_component.h"
-#include "OeCore/Entity.h"
-#include "OeCore/Entity_filter.h"
-#include "OeCore/IInput_manager.h"
-#include "OeCore/IScene_graph_manager.h"
 #include "OeCore/Light_component.h"
-#include "OeCore/Math_constants.h"
-#include "OeCore/Renderer_types.h"
-#include "OeCore/Scene.h"
-#include "OeCore/Shadow_map_texture.h"
 #include "OeCore/Test_component.h"
 
 #include <imgui.h>
@@ -46,26 +36,24 @@ PYBIND11_EMBEDDED_MODULE(oe, m)
 }
 
 template<>
-IEntity_scripting_manager* oe::create_manager(
-        Scene& scene, ITime_step_manager& timeStepManager, IScene_graph_manager& sceneGraphManager,
-        IInput_manager& inputManager, IAsset_manager& assetManager, IEntity_render_manager& entityRenderManager,
-        IDev_tools_manager& devToolsManager)
+void oe::create_manager(Manager_instance<IEntity_scripting_manager>& out,
+        ITime_step_manager& timeStepManager, IScene_graph_manager& sceneGraphManager,
+        IInput_manager& inputManager, IAsset_manager& assetManager, IEntity_render_manager& entityRenderManager)
 {
-  return new Entity_scripting_manager(
-          scene, timeStepManager, sceneGraphManager, inputManager, assetManager, entityRenderManager, devToolsManager);
+  out = Manager_instance<IEntity_scripting_manager>(std::make_unique<Entity_scripting_manager>(
+          timeStepManager, sceneGraphManager, inputManager, assetManager, entityRenderManager));
 }
 
 Entity_scripting_manager::Entity_scripting_manager(
-        Scene& scene, ITime_step_manager& timeStepManager, IScene_graph_manager& sceneGraphManager,
-        IInput_manager& inputManager, IAsset_manager& assetManager, IEntity_render_manager& entityRenderManager,
-        IDev_tools_manager& devToolsManager)
-    : IEntity_scripting_manager(scene)
+        ITime_step_manager& timeStepManager, IScene_graph_manager& sceneGraphManager, IInput_manager& inputManager,
+        IAsset_manager& assetManager, IEntity_render_manager& entityRenderManager)
+    : Manager_base()
+    , Manager_tickable()
     , _timeStepManager(timeStepManager)
     , _sceneGraphManager(sceneGraphManager)
     , _inputManager(inputManager)
     , _assetManager(assetManager)
     , _entityRenderManager(entityRenderManager)
-    , _devToolsManager(devToolsManager)
 {}
 
 void Entity_scripting_manager::preInit_addAbsoluteScriptsPath(const std::wstring& path)
@@ -398,40 +386,4 @@ bool Entity_scripting_manager::commandSuggestions(const std::string& command, st
 {
   // TODO: provide some suggestions!
   return false;
-}
-
-void Entity_scripting_manager::renderDebugSpheres() const
-{
-  _devToolsManager.clearDebugShapes();
-
-  if (_renderableEntityFilter != nullptr) {
-    for (const auto& entity : *_renderableEntityFilter) {
-      const auto& boundSphere = entity->boundSphere();
-      const auto transform = entity->worldTransform() * SSE::Matrix4::translation(boundSphere.center);
-      _devToolsManager.addDebugSphere(transform, boundSphere.radius, Colors::Gray);
-    }
-  }
-
-  //TODO:
-  /*
-  const auto mainCameraEntity = _scene.getMainCamera();
-  if (mainCameraEntity != nullptr) {
-    const auto cameraComponent = mainCameraEntity->getFirstComponentOfType<Camera_component>();
-    if (cameraComponent) {
-      auto frustum = _entityRenderManager.createFrustum(*cameraComponent);
-      frustum.farPlane *= 0.5;
-      _devToolsManager.addDebugFrustum(frustum, Colors::Red);
-    }
-  }
-   */
-
-  for (const auto& entity : *_lightEntityFilter) {
-    const auto directionalLight = entity->getFirstComponentOfType<Directional_light_component>();
-    if (directionalLight && directionalLight->shadowsEnabled()) {
-      const auto& shadowData = directionalLight->shadowData();
-      if (shadowData) {
-        _devToolsManager.addDebugBoundingBox(shadowData->boundingOrientedBox, directionalLight->color());
-      }
-    }
-  }
 }

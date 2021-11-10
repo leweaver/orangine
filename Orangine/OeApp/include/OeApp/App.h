@@ -7,17 +7,27 @@
 #include <memory>
 #include <string>
 
-namespace oe {
-class Scene;
-class Manager_base;
+#include <OeCore/Entity_repository.h>
+#include <OeCore/IAnimation_manager.h>
+#include <OeCore/IAsset_manager.h>
+#include <OeCore/IBehavior_manager.h>
+#include <OeCore/IDev_tools_manager.h>
+#include <OeCore/IEntity_render_manager.h>
+#include <OeCore/IEntity_scripting_manager.h>
+#include <OeCore/IInput_manager.h>
+#include <OeCore/ILighting_manager.h>
+#include <OeCore/IMaterial_manager.h>
+#include <OeCore/IRender_step_manager.h>
+#include <OeCore/IScene_graph_manager.h>
+#include <OeCore/IShadowmap_manager.h>
+#include <OeCore/ITexture_manager.h>
+#include <OeCore/ITime_step_manager.h>
+#include <OeCore/IUser_interface_manager.h>
 
+namespace oe::app {
 struct App_start_settings {
   bool fullScreen = false;
   std::wstring title = L"";
-};
-
-struct Scene_initializer {
-  void addManager(std::unique_ptr<Manager_base> manager);
 };
 
 class App_impl;
@@ -41,31 +51,50 @@ class App {
 
   int getScreenDpi() const;
 
+  Entity_repository& getEntityRepository();
+  ITime_step_manager& getTimeStepManager();
+  IScene_graph_manager& getSceneGraphManager();
+  IAsset_manager& getAssetManager();
+  IUser_interface_manager& getUserInterfaceManager();
+  ITexture_manager& getTextureManager();
+  IBehavior_manager& getBehaviorManager();
+  IMaterial_manager& getMaterialManager();
+  ILighting_manager& getLightingManager();
+  IShadowmap_manager& getShadowmapManager();
+  IInput_manager& getInputManager();
+  IAnimation_manager& getAnimationManager();
+  IEntity_render_manager& getEntityRenderManager();
+  IDev_tools_manager& getDevToolsManager();
+  IRender_step_manager& getRenderStepManager();
+  IEntity_scripting_manager& getEntityScriptingManager();
+
   // Internal only getter.
-  App_impl* getAppImpl() const { return _impl; }
+  App_impl* getAppImpl() const
+  {
+    return _impl;
+  }
 
  protected:
   // Called after the scene & managers are created & configured, but have not yet been initialized.
   // You can implement this function in your application to call any pre-init functions on
   // scene manager classes.
-  virtual void onSceneConfigured(Scene& scene) {}
+  virtual void onSceneConfigured() {}
 
   // Called after the managers have been initialized.
   // You can implement this function in your application to load assets, etc.
-  virtual void onSceneInitialized(Scene& scene) {}
+  virtual void onSceneInitialized() {}
 
   // Called just before the engine ticks all of the inbuilt manager classes
-  virtual void onScenePreTick(Scene& scene) {}
+  virtual void onScenePreTick() {}
 
   // Called after the managers are ticked, and just before the engine renders the next scene
-  virtual void onScenePreRender(Scene& scene) {}
+  virtual void onScenePreRender() {}
 
   // Called when the application is about to shut down, before managers are destroyed.
-  virtual void onSceneShutdown(Scene& scene) {}
+  virtual void onSceneShutdown() {}
 
-private:
-
+ private:
   // Platform specific internal implementation
   App_impl* _impl = nullptr;
 };
-} // namespace oe
+}// namespace oe::app

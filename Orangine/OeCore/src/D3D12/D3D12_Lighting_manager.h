@@ -9,10 +9,12 @@
 namespace oe {
 class ITexture_manager;
 
-class D3D12_lighting_manager : public ILighting_manager {
+class D3D12_lighting_manager : public ILighting_manager
+    , public Manager_base {
  public:
-  D3D12_lighting_manager(Scene& scene, ITexture_manager& textureManager)
-      : ILighting_manager(scene)
+  explicit D3D12_lighting_manager(ITexture_manager& textureManager)
+      : ILighting_manager()
+      , Manager_base()
       , _textureManager(textureManager)
   {}
 

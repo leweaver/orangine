@@ -9,9 +9,8 @@
 #include "OeCore/Math_constants.h"
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Renderable_component.h"
-#include "OeCore/Scene.h"
 
-#include "D3D12_device_resources.h"
+#include "D3D_device_resources.h"
 #include "D3D_texture_manager.h"
 
 using namespace DirectX;

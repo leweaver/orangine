@@ -1,19 +1,28 @@
 #pragma once
 
-#include "OeCore/Scene.h"
+#include <OeCore/Entity_graph_loader.h>
+#include <OeCore/IAsset_manager.h>
+#include <OeCore/IEntity_scripting_manager.h>
+#include <OeCore/IInput_manager.h>
+#include <OeCore/IRender_step_manager.h>
+#include <OeCore/IScene_graph_manager.h>
+
+#include <OeCore/Color.h>
 
 namespace oe {
 class Sample_scene {
  public:
-  explicit Sample_scene(Scene& scene, const std::vector<std::wstring>& extraAssetPaths);
+  Sample_scene(
+          IRender_step_manager& renderStepManager, IScene_graph_manager& sceneGraphManager,
+          IInput_manager& inputManager, IEntity_scripting_manager& entityScriptingManager,
+          IAsset_manager& assetManager, std::vector<std::wstring> extraAssetPaths);
 
   void tick();
 
-  Scene& getScene() const { return _scene; }
   std::shared_ptr<Entity> getRoot() const { return _root; }
 
   // Basics
-  void addCamera();
+  std::shared_ptr<Entity> addDefaultCamera();
 
   // Geometry
   std::shared_ptr<Entity> addFloor();
@@ -37,7 +46,7 @@ class Sample_scene {
   std::shared_ptr<Entity>
   addAmbientLight(const Color& color, float intensity, const std::string& name = "");
 
- protected:
+ private:
   std::string createLightEntityName(const char* lightType, const std::string& userName);
 
   void tickCamera();
@@ -47,9 +56,11 @@ class Sample_scene {
 
   std::vector<std::wstring> _extraAssetPaths;
 
-  Scene& _scene;
+  IRender_step_manager& _renderStepManager;
   IScene_graph_manager& _entityManager;
   IInput_manager& _inputManager;
+  IEntity_scripting_manager& _entityScriptingManager;
+  IAsset_manager& _assetManager;
 
   std::shared_ptr<Entity> _root;
 };

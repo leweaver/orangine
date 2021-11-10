@@ -7,7 +7,6 @@
 #include <OeCore/Light_component.h>
 #include <OeCore/Render_pass_generic.h>
 #include <OeCore/Render_pass_skybox.h>
-#include <OeCore/Scene.h>
 
 using namespace oe;
 
@@ -21,10 +20,13 @@ Render_step_manager::Render_step::Render_step(
 }
 
 Render_step_manager::Render_step_manager(
-        Scene& scene, IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
-        ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
-        IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager)
-    : IRender_step_manager(scene)
+        IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager, ITexture_manager& textureManager,
+        IShadowmap_manager& shadowmapManager, IEntity_render_manager& entityRenderManager,
+        ILighting_manager& lightingManager)
+    : IRender_step_manager()
+    , Manager_base()
+    , Manager_deviceDependent()
+    , Manager_windowDependent()
     , _fatalError(false)
     , _enableDeferredRendering(true)
     , _sceneGraphManager(sceneGraphManager)
@@ -34,15 +36,14 @@ Render_step_manager::Render_step_manager(
     , _entityRenderManager(entityRenderManager)
     , _lightingManager(lightingManager)
 {
-  _simpleLightProvider =
-      [this](const BoundingSphere& target, std::vector<Entity*>& lights, uint32_t maxLights) {
-        for (auto iter = _lightEntities->begin(); iter != _lightEntities->end(); ++iter) {
-          if (lights.size() >= maxLights) {
-            break;
-          }
-          lights.push_back(iter->get());
-        }
-      };
+  _simpleLightProvider = [this](const BoundingSphere& target, std::vector<Entity*>& lights, uint32_t maxLights) {
+    for (auto iter = _lightEntities->begin(); iter != _lightEntities->end(); ++iter) {
+      if (lights.size() >= maxLights) {
+        break;
+      }
+      lights.push_back(iter->get());
+    }
+  };
 }
 
 void Render_step_manager::initialize() {
@@ -301,12 +302,17 @@ void Render_step_manager::destroyWindowSizeDependentResources() {
   }
 }
 
-void Render_step_manager::render(std::shared_ptr<Entity> cameraEntity) {
+void Render_step_manager::setCameraEntity(std::shared_ptr<Entity> cameraEntity)
+{
+  _cameraEntity = cameraEntity;
+}
+
+void Render_step_manager::render() {
   // Create a camera matrix
   Camera_data cameraData;
   SSE::Vector3 cameraPos = {};
-  if (cameraEntity) {
-    const auto cameraComponent = cameraEntity->getFirstComponentOfType<Camera_component>();
+  if (_cameraEntity) {
+    const auto cameraComponent = _cameraEntity->getFirstComponentOfType<Camera_component>();
     if (!cameraComponent) {
       OE_THROW(std::logic_error("Camera entity must have a Camera_component"));
     }
@@ -316,7 +322,7 @@ void Render_step_manager::render(std::shared_ptr<Entity> cameraEntity) {
     }
 
     cameraData = createCameraData(*cameraComponent);
-    cameraPos = cameraEntity->worldPosition();
+    cameraPos = _cameraEntity->worldPosition();
   } else {
     cameraData = createCameraData(
         SSE::Matrix4::identity(),

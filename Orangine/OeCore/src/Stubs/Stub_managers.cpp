@@ -28,8 +28,8 @@ class Stub_shadow_map_texture_pool final : public Shadow_map_texture_pool {
 
 class Stub_texture_manager final : public ITexture_manager {
  public:
-  explicit Stub_texture_manager(Scene& scene)
-      : ITexture_manager(scene), _name("Stub_texture_manager") {}
+  explicit Stub_texture_manager()
+      : ITexture_manager(), _name("Stub_texture_manager") {}
 
   // Manager_base implementation
   void initialize() override {}
@@ -80,11 +80,10 @@ class Stub_texture_manager final : public ITexture_manager {
 class Stub_render_step_manager final : public Render_step_manager {
  public:
   Stub_render_step_manager(
-          Scene& scene, IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
+          IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
           ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
           IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager)
-      : Render_step_manager(
-                scene, sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager, lightingManager)
+      : Render_step_manager(sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager, lightingManager)
   {}
 
   // Base class overrides
@@ -111,7 +110,7 @@ class Stub_material_context final : public Material_context {
 
 class Stub_material_manager : public Material_manager {
  public:
-  Stub_material_manager(Scene& scene, IAsset_manager& assetManager) : Material_manager(scene, assetManager) {}
+  Stub_material_manager(IAsset_manager& assetManager) : Material_manager(assetManager) {}
   ~Stub_material_manager() override = default;
 
   Stub_material_manager(const Stub_material_manager& other) = delete;
@@ -165,8 +164,8 @@ struct Renderer_data {};
 
 class Stub_entity_render_manager : public oe::internal::Entity_render_manager {
  public:
-  Stub_entity_render_manager(Scene& scene, ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager)
-      : Entity_render_manager(scene, textureManager, materialManager, lightingManager) {}
+  Stub_entity_render_manager(ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager)
+      : Entity_render_manager(textureManager, materialManager, lightingManager) {}
 
   void loadRendererDataToDeviceContext(
       const Renderer_data& rendererData,
@@ -202,8 +201,8 @@ class Stub_entity_render_manager : public oe::internal::Entity_render_manager {
 
 class Stub_user_interface_manager final : public IUser_interface_manager {
  public:
-  explicit Stub_user_interface_manager(Scene& scene)
-      : IUser_interface_manager(scene), _name("Stub_user_interface_manager") {}
+  explicit Stub_user_interface_manager()
+      : IUser_interface_manager(), _name("Stub_user_interface_manager") {}
 
   // Manager_base implementation
   void initialize() override {}
@@ -228,30 +227,30 @@ class Stub_user_interface_manager final : public IUser_interface_manager {
 };
 
 template <>
-IEntity_render_manager* create_manager(Scene& scene, ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager) {
-  return new Stub_entity_render_manager(scene, textureManager, materialManager, lightingManager);
+void create_manager(Manager_instance<IEntity_render_manager>& out, ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager) {
+  out = Manager_instance<IEntity_render_manager>(std::make_unique<Stub_entity_render_manager>(textureManager, materialManager, lightingManager));
 }
 
 template<>
-IRender_step_manager* create_manager(
-        Scene& scene, IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
-        ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
+void create_manager(
+        Manager_instance<IRender_step_manager>& out, IScene_graph_manager& sceneGraphManager,
+        IDev_tools_manager& devToolsManager, ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
         IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager)
 {
-  return new Stub_render_step_manager(
-          scene, sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager, lightingManager);
+  out = Manager_instance<IRender_step_manager>(std::make_unique<Stub_render_step_manager>(
+          sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager, lightingManager));
 }
 
-template <> IUser_interface_manager* create_manager(Scene& scene, IDevice_resources& dr) {
-  return new Stub_user_interface_manager(scene);
+template <> void create_manager(Manager_instance<IUser_interface_manager>& out, IDevice_resources& dr) {
+  out = Manager_instance<IUser_interface_manager>(std::make_unique<Stub_user_interface_manager>());
 }
 
-template <> IMaterial_manager* create_manager(Scene& scene, IAsset_manager& assetManager) {
-  return new Stub_material_manager(scene, assetManager);
+template <> void create_manager(Manager_instance<IMaterial_manager>& out, IAsset_manager& assetManager) {
+  out = Manager_instance<IMaterial_manager>(std::make_unique<Stub_material_manager>(assetManager));
 }
 
-template <> ITexture_manager* create_manager(Scene& scene, IDevice_resources& dr) {
-  return new Stub_texture_manager(scene);
+template <> void create_manager(Manager_instance<ITexture_manager>& out, IDevice_resources& dr) {
+  out = Manager_instance<ITexture_manager>(std::make_unique<Stub_texture_manager>());
 }
 
 } // namespace oe

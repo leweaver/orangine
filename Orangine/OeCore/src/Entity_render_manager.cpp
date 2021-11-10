@@ -10,7 +10,6 @@
 #include "OeCore/Light_component.h"
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Morph_weights_component.h"
-#include "OeCore/Scene.h"
 #include "OeCore/Skinned_mesh_component.h"
 
 #include <cinttypes>
@@ -32,10 +31,9 @@ Renderer_animation_data g_emptyRenderableAnimationData = []() {
 }();
 
 Entity_render_manager::Entity_render_manager(
-        Scene& scene, ITexture_manager& textureManager,
-        IMaterial_manager& materialManager,
-        ILighting_manager& lightingManager)
-    : IEntity_render_manager(scene)
+        ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager)
+    : Manager_base()
+    , Manager_deviceDependent()
     , _textureManager(textureManager)
     , _materialManager(materialManager)
     , _lightingManager(lightingManager)

@@ -3,7 +3,6 @@
 #include "../Entity_render_manager.h"
 
 #include "OeCore/DeviceResources.h"
-#include "OeCore/Scene.h"
 
 #include "D3D_device_repository.h"
 #include "D3D_renderer_data.h"

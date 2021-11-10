@@ -2,6 +2,11 @@
 
 namespace oe {
 class Entity;
+/**
+ * Ticked once for each entity that meets a component filter (ie, has one or more
+ * specified component types. Useful for controlling properties of entity components, eg a
+ * player movement controller.
+ */
 class Entity_behavior {
  public:
   explicit Entity_behavior(std::string&& name) : _name(std::move(name)) {}

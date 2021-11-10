@@ -17,7 +17,7 @@
 namespace oe {
 class Color;
 
-class Render_step_manager : public IRender_step_manager {
+class Render_step_manager : public IRender_step_manager, public Manager_base, public Manager_deviceDependent, public Manager_windowDependent {
  public:
   // Manager_base implementations
   void initialize() override;
@@ -35,14 +35,15 @@ class Render_step_manager : public IRender_step_manager {
   // IRender_step_manager implementation
   void createRenderSteps() override;
   Camera_data createCameraData(Camera_component& component) const override;
-  void render(std::shared_ptr<Entity> cameraEntity) override;
+  void render() override;
   BoundingFrustumRH createFrustum(const Camera_component& cameraComponent) override;
+  void setCameraEntity(std::shared_ptr<Entity> cameraEntity) override;
 
   static constexpr size_t maxRenderTargetViews() { return 3; }
 
  protected:
   Render_step_manager(
-          Scene& scene, IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
+          IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
           ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
           IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager);
 
@@ -56,7 +57,6 @@ class Render_step_manager : public IRender_step_manager {
   virtual void destroyRenderStepResources() = 0;
   virtual void renderSteps(const Camera_data& cameraData) = 0;
 
- protected:
   Camera_data createCameraData(
       const SSE::Matrix4& worldTransform,
       float fov,
@@ -100,6 +100,7 @@ class Render_step_manager : public IRender_step_manager {
   // Entities
   std::shared_ptr<Entity_filter> _renderableEntities;
   std::shared_ptr<Entity_filter> _lightEntities;
+  std::shared_ptr<Entity> _cameraEntity;
 
   Light_provider::Callback_type _simpleLightProvider;
 

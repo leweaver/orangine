@@ -7,11 +7,9 @@ namespace oe {
 /**
  * Provides a read-only view into the applications time-step
  */
-class ITime_step_manager
-    : public Manager_base
-    , public Manager_tickable {
+class ITime_step_manager {
  public:
-  explicit ITime_step_manager(Scene& scene) : Manager_base(scene) {}
+  ITime_step_manager() = default;
   virtual ~ITime_step_manager() = default;
 
   /** Total time since game start, in seconds. */

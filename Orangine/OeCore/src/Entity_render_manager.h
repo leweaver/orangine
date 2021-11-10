@@ -19,10 +19,10 @@ class ILighting_manager;
 }
 
 namespace oe::internal {
-class Entity_render_manager : public IEntity_render_manager {
+class Entity_render_manager : public IEntity_render_manager, public Manager_base, public Manager_deviceDependent {
  public:
-  Entity_render_manager(Scene& scene, ITexture_manager& textureManager,
-                        IMaterial_manager& materialManager, ILighting_manager& lightingManager);
+  Entity_render_manager(
+          ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager);
 
   // Manager_base implementation
   void initialize() override;

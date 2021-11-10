@@ -17,18 +17,14 @@ class Entity_cull_sorter;
 class Entity_filter;
 class Entity;
 
-class IRender_step_manager
-    : public Manager_base
-    , public Manager_deviceDependent
-    , public Manager_windowDependent {
+class IRender_step_manager {
  public:
-  explicit IRender_step_manager(Scene& scene) : Manager_base(scene) {}
-
   // IRender_step_manager
   virtual void createRenderSteps() = 0;
   virtual Camera_data createCameraData(Camera_component& component) const = 0;
   virtual Viewport getScreenViewport() const = 0;
-  virtual void render(std::shared_ptr<Entity> cameraEntity) = 0;
+  virtual void render() = 0;
   virtual BoundingFrustumRH createFrustum(const Camera_component& cameraComponent) = 0;
+  virtual void setCameraEntity(std::shared_ptr<Entity> cameraEntity) = 0;
 };
-} // namespace oe
+}// namespace oe

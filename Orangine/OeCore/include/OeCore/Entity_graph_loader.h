@@ -15,6 +15,7 @@ class IEntity_repository;
 class ITexture_manager;
 class IMaterial_manager;
 class IComponent_factory;
+class IScene_graph_manager;
 
 class Entity_graph_loader {
  public:
@@ -28,7 +29,7 @@ class Entity_graph_loader {
    * yet.
    */
   virtual std::vector<std::shared_ptr<Entity>> loadFile(
-          std::wstring_view filename, IEntity_repository& entityRepository, IMaterial_manager& materialRepository,
-          ITexture_manager& textureManager, IComponent_factory& componentFactory, bool calculateBounds) const = 0;
+          std::wstring_view filename, IScene_graph_manager& sceneGraphManager, IEntity_repository& entityRepository,
+          IComponent_factory& componentFactory, bool calculateBounds) const = 0;
 };
 }// namespace oe

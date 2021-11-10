@@ -4,9 +4,17 @@
 
 namespace oe {
 class Entity_filter;
-class Behavior_manager : public IBehavior_manager {
+class IScene_graph_manager;
+
+class Behavior_manager : public IBehavior_manager, public Manager_base
+    , public Manager_tickable {
  public:
-  explicit Behavior_manager(Scene& scene) : IBehavior_manager(scene) {}
+  explicit Behavior_manager(IScene_graph_manager& sceneGraphManager)
+      : IBehavior_manager()
+      , Manager_base()
+      , Manager_tickable()
+      , _sceneGraphManager(sceneGraphManager)
+  {}
 
   // Manager_base implementation
   void initialize() override {}
@@ -38,5 +46,7 @@ class Behavior_manager : public IBehavior_manager {
   std::vector<std::unique_ptr<Scene_behavior>> _newSceneBehaviors;
   std::vector<std::unique_ptr<Scene_behavior>> _initializedSceneBehaviors;
   std::unordered_map<std::string, Scene_behavior*> _nameToSceneBehaviorMap = {};
+
+  IScene_graph_manager& _sceneGraphManager;
 };
 } // namespace oe

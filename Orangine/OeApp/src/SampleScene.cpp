@@ -7,6 +7,8 @@
 #include "OeCore/Renderable_component.h"
 #include "OeCore/Test_component.h"
 
+#include <OeCore/Entity_graph_loader_gltf.h>
+#include <OeCore/Primitive_mesh_data_factory.h>
 #include <filesystem>
 
 using oe::Camera_component;
@@ -14,11 +16,16 @@ using oe::Directional_light_component;
 using oe::Entity;
 using oe::Sample_scene;
 
-Sample_scene::Sample_scene(Scene& scene, const std::vector<std::wstring>& extraAssetPaths)
-    : _extraAssetPaths(extraAssetPaths)
-    , _scene(scene)
-    , _entityManager(scene.manager<IScene_graph_manager>())
-    , _inputManager(scene.manager<IInput_manager>()) {
+Sample_scene::Sample_scene(
+        IRender_step_manager& renderStepManager, IScene_graph_manager& sceneGraphManager, IInput_manager& inputManager,
+        IEntity_scripting_manager& entityScriptingManager, IAsset_manager& assetManager, std::vector<std::wstring> extraAssetPaths)
+    : _extraAssetPaths(std::move(extraAssetPaths))
+    , _renderStepManager(renderStepManager)
+    , _entityManager(sceneGraphManager)
+    , _inputManager(inputManager)
+    , _entityScriptingManager(entityScriptingManager)
+    , _assetManager(assetManager)
+{
   _root = _entityManager.instantiate("Sample Scene Root");
 }
 
@@ -34,7 +41,6 @@ void Sample_scene::tickCamera() {
     
   }
 }
-
 
 std::shared_ptr<Entity> Sample_scene::addFloor() {
   const auto& floor = _entityManager.instantiate("Floor", *_root);
@@ -108,7 +114,7 @@ std::shared_ptr<Entity> Sample_scene::addSphere(
   return sphere;
 }
 
-void Sample_scene::addCamera() {
+std::shared_ptr<Entity> Sample_scene::addDefaultCamera() {
   auto cameraDollyAnchor = _entityManager.instantiate("CameraDollyAnchor");
 
   auto camera = _entityManager.instantiate("Camera", *cameraDollyAnchor);
@@ -123,9 +129,10 @@ void Sample_scene::addCamera() {
 
   camera->lookAt({0, 0, 0}, math::up);
 
-  _scene.setMainCamera(camera);
+  _renderStepManager.setCameraEntity(camera);
+  _entityScriptingManager.loadSceneScript("camera.FirstPersonCamera");
 
-  _scene.manager<IEntity_scripting_manager>().loadSceneScript("camera.FirstPersonCamera");
+  return camera;
 }
 
 std::shared_ptr<Entity> Sample_scene::addDirectionalLight(
@@ -194,7 +201,7 @@ std::string Sample_scene::createLightEntityName(
 
 std::shared_ptr<Entity> Sample_scene::addGltf(std::string gltfName) {
   const auto gltfPathSubfolder = "/" + gltfName + "/glTF/" + gltfName + ".gltf";
-  auto gltfPath = _scene.manager<IAsset_manager>().makeAbsoluteAssetPath(
+  auto gltfPath = _assetManager.makeAbsoluteAssetPath(
       utf8_decode("ViewerApp/data/meshes" + gltfPathSubfolder));
   LOG(DEBUG) << "Looking for gltf at: " << utf8_encode(gltfPath);
 
@@ -213,7 +220,7 @@ std::shared_ptr<Entity> Sample_scene::addGltf(std::string gltfName) {
     OE_THROW(std::runtime_error("Could not find gltf file with name: " + gltfName));
   }
 
-  _scene.loadEntities(gltfPath, *_root);
+  _entityManager.loadFile(gltfPath, _root.get());
 
   return _root;
 }

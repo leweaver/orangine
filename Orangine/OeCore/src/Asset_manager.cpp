@@ -10,9 +10,12 @@ using namespace internal;
 
 std::string Asset_manager::_name = "Asset_manager";
 
-template <> IAsset_manager* oe::create_manager(Scene& scene) { return new Asset_manager(scene); }
+template<> void oe::create_manager(Manager_instance<IAsset_manager>& out)
+{
+  out = Manager_instance<IAsset_manager>(std::make_unique<Asset_manager>());
+}
 
-Asset_manager::Asset_manager(Scene& scene) : IAsset_manager(scene) {}
+Asset_manager::Asset_manager() : IAsset_manager(), Manager_base() {}
 
 void Asset_manager::initialize() { _initialized = true; }
 

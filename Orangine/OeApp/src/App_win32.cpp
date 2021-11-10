@@ -8,15 +8,21 @@
 #include "VectorLogSink.h"
 #include "VisualStudioLogSink.h"
 
-#include "OeCore/Scene.h"
+#include <OeCore/Perf_timer.h>
+#include <OeCore/Entity_repository.h>
+#include <OeCore/JsonConfigReader.h>
+#include <OeCore/Entity_graph_loader_gltf.h>
+
 #include <OeApp/App.h>
-#include <OeCore/EngineUtils.h>
-#include <OeCore/WindowsDefines.h>
+#include <OeApp/Manager_collection.h>
 
 #include <g3log/logworker.hpp>
 
 #include <filesystem>
 #include <wrl/wrappers/corewrappers.h>
+
+#include <OeCore/StepTimer.h>
+#include <json.hpp>
 
 const std::string path_to_log_file = "./";
 
@@ -31,40 +37,206 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 extern std::unique_ptr<oe::IDevice_resources> createWin32DeviceResources(HWND hwnd);
 
-namespace oe {
+const auto CONFIG_FILE_NAME = L"config.json";
+
+using oe::app::App;
+
+namespace oe::app {
 class App_impl {
  public:
   App_impl(
-      App* app,
       HWND hwnd,
-      IDevice_resources* deviceResources,
-      Scene_device_resource_aware* scene)
-      : _app(app)
-      , _deviceResources(deviceResources)
-      , _scene(scene)
+      IDevice_resources* deviceResources)
+      : _deviceResources(deviceResources)
       , _hwnd(hwnd)
-      , _fatalError(false) {}
+      , _fatalError(false) {
+    createManagers();
+  }
+
+ private:
+  void createManagers() {
+    _entityRepository = std::make_shared<Entity_repository>();
+    auto entityRepository = std::static_pointer_cast<IEntity_repository>(_entityRepository);
+
+    auto timeStepManager = create_manager_instance<ITime_step_manager>(static_cast<const StepTimer&>(_stepTimer));
+    auto sceneGraphManager = create_manager_instance<IScene_graph_manager>(entityRepository);
+    auto assetManager = create_manager_instance<IAsset_manager>();
+
+    // Only device dependencies
+    auto& deviceResources = *_deviceResources;
+    auto userInterfaceManager = create_manager_instance<IUser_interface_manager>(deviceResources);
+    auto textureManager = create_manager_instance<ITexture_manager>(deviceResources);
+
+    auto behaviorManager = create_manager_instance<IBehavior_manager>(*sceneGraphManager.instance);
+    auto materialManager = create_manager_instance<IMaterial_manager>(*assetManager.instance);
+    auto lightingManager = create_manager_instance<ILighting_manager>(*textureManager.instance);
+    auto shadowmapManager = create_manager_instance<IShadowmap_manager>(*textureManager.instance);
+    auto inputManager = create_manager_instance<IInput_manager>(*userInterfaceManager.instance);
+
+    auto animationManager = create_manager_instance<IAnimation_manager>(*sceneGraphManager.instance, *timeStepManager.instance);
+    auto entityRenderManager = create_manager_instance<IEntity_render_manager>(
+            *textureManager.instance, *materialManager.instance, *lightingManager.instance);
+
+    // Provides access to the engine via python
+    auto entityScriptingManager = create_manager_instance<IEntity_scripting_manager>(
+            *timeStepManager.instance, *sceneGraphManager.instance, *inputManager.instance, *assetManager.instance, *entityRenderManager.instance);
+
+    auto devToolsManager = create_manager_instance<IDev_tools_manager>(
+            *sceneGraphManager.instance, *entityRenderManager.instance, *materialManager.instance,
+            *entityScriptingManager.instance);
+
+    // Pulls everything together and draws pixels
+    auto renderStepManager = create_manager_instance<IRender_step_manager>(*sceneGraphManager.instance, *devToolsManager.instance,
+                                        *textureManager.instance, *shadowmapManager.instance,
+                                        *entityRenderManager.instance, *lightingManager.instance);
+
+    // Don't assign these above just to check that dependencies are created in the right order at compile time.
+    _timeStepManager = std::move(timeStepManager), _managers.addManager(_timeStepManager.interfaces);
+    _sceneGraphManager = std::move(sceneGraphManager), _managers.addManager(_sceneGraphManager.interfaces);
+    _assetManager = std::move(assetManager), _managers.addManager(_assetManager.interfaces);
+    _userInterfaceManager = std::move(userInterfaceManager), _managers.addManager(_userInterfaceManager.interfaces);
+    _textureManager = std::move(textureManager), _managers.addManager(_textureManager.interfaces);
+    _behaviorManager = std::move(behaviorManager), _managers.addManager(_behaviorManager.interfaces);
+    _materialManager = std::move(materialManager), _managers.addManager(_materialManager.interfaces);
+    _lightingManager = std::move(lightingManager), _managers.addManager(_lightingManager.interfaces);
+    _shadowmapManager = std::move(shadowmapManager), _managers.addManager(_shadowmapManager.interfaces);
+    _inputManager = std::move(inputManager), _managers.addManager(_inputManager.interfaces);
+    _animationManager = std::move(animationManager), _managers.addManager(_animationManager.interfaces);
+    _entityRenderManager = std::move(entityRenderManager), _managers.addManager(_entityRenderManager.interfaces);
+    _devToolsManager = std::move(devToolsManager), _managers.addManager(_devToolsManager.interfaces);
+    _renderStepManager = std::move(renderStepManager), _managers.addManager(_renderStepManager.interfaces);
+    _entityScriptingManager = std::move(entityScriptingManager), _managers.addManager(_entityScriptingManager.interfaces);
+
+    _managerTickTimes.resize(_managers.getTickableManagers().size());
+
+    auto gltfLoader = std::make_unique<Entity_graph_loader_gltf>(*_materialManager.instance, *_textureManager.instance);
+    _sceneGraphManager.instance->addLoader(std::move(gltfLoader));
+  }
+ public:
+
+  void configureManagers() {
+    std::unique_ptr<JsonConfigReader> configReader;
+    try {
+      configReader = std::make_unique<JsonConfigReader>(CONFIG_FILE_NAME);
+    }
+    catch (std::exception& ex) {
+      LOG(WARNING) << "Failed to read config file: " << utf8_encode(CONFIG_FILE_NAME) << "(" << ex.what() << ")";
+      OE_THROW(std::runtime_error(std::string("Scene init failed reading config. ") + ex.what()));
+    }
+
+    try {
+      for (auto& managerInterfaces : _managers.getAllManagers()) {
+        auto manager = managerInterfaces->asBase;
+        if (manager == nullptr) {return;}
+
+        try {
+          manager->loadConfig(*configReader);
+        }
+        catch (std::exception& ex) {
+          OE_THROW(std::runtime_error("Failed to configure " + manager->name() + ": " + ex.what()));
+        }
+      };
+    }
+    catch (std::exception& ex) {
+      LOG(WARNING) << "Failed to configure managers: " << ex.what();
+      OE_THROW(std::runtime_error(std::string("Scene configure failed. ") + ex.what()));
+    }
+  }
+
+  void initializeManagers() {
+
+    try {
+      for (auto& managerInterfaces : _managers.getAllManagers()) {
+        auto manager = managerInterfaces->asBase;
+        if (manager == nullptr) {
+          continue;
+        }
+
+        try {
+          manager->initialize();
+        }
+        catch (std::exception& ex) {
+          OE_THROW(std::runtime_error("Failed to initialize " + manager->name() + ": " + ex.what()));
+        }
+
+        _initializedManagers.push_back(managerInterfaces.get());
+        managerInterfaces->asBase->initialize();
+      }
+    }
+    catch (std::exception& ex) {
+      LOG(WARNING) << "Failed to initialize managers: " << ex.what();
+      OE_THROW(std::runtime_error(std::string("Scene init failed. ") + ex.what()));
+    }
+  }
+
+  void shutdownManagers() {
+
+    std::stringstream ss;
+    const double tickCount = _stepTimer.GetFrameCount();
+
+    if (tickCount > 0) {
+      const auto& tickableManagers = _managers.getTickableManagers();
+      for (auto i = 0U; i < tickableManagers.size(); ++i) {
+        const auto& mgrConfig = tickableManagers.at(i);
+
+        for (int idx = 0; idx < tickableManagers.size(); idx++) {
+          auto manager = tickableManagers.at(idx);
+          if (_managerTickTimes.at(idx) > 0.0) {
+            ss << "  " << manager.config->asBase->name() << ": " << (1000.0 * _managerTickTimes.at(idx) / tickCount)
+               << std::endl;
+          }
+        }
+        LOG(INFO) << "Manager average tick times (ms): " << std::endl << ss.str();
+      }
+    }
+
+    std::for_each(_initializedManagers.rbegin(), _initializedManagers.rend(), [](const auto& managerInterfaces) {
+      managerInterfaces->asBase->shutdown();
+    });
+  }
 
   // Game Loop
   HWND getWindow() const { return _hwnd; }
   void onTick() {
-    _scene->tick();
-  }
-  void onRender() {
+    auto perfTimer = Perf_timer();
+    const auto& tickableManagers = _managers.getTickableManagers();
+    for (auto i = 0U; i < tickableManagers.size(); ++i) {
+      const auto& mgrConfig = tickableManagers.at(i);
+      perfTimer.restart();
+      mgrConfig()->tick();
+      perfTimer.stop();
+      _managerTickTimes.at(i) += perfTimer.elapsedSeconds();
+    }
 
+    // Hack to reset timers after first frame which is typically quite heavy.
+    if (_stepTimer.GetFrameCount() == 1) {
+      std::fill(_managerTickTimes.begin(), _managerTickTimes.end(), 0.0);
+    }
+  }
+
+  void onRender() {
     // Don't try to render anything before the first Update.
-    if (_scene->getFrameCount() == 0) {
+    if (_stepTimer.GetFrameCount() == 0) {
       return;
     }
 
-    _scene->manager<IRender_step_manager>().render(_scene->getMainCamera());
-    _scene->manager<IUser_interface_manager>().render();
+    _renderStepManager.instance->render();
+    _userInterfaceManager.instance->render();
   }
 
   // Messages
   bool processMessage(UINT message, WPARAM wParam, LPARAM lParam) const {
-    return _scene->processMessage(message, wParam, lParam);
+    bool handled = false;
+    for (auto& manager : _managers.getWindowsMessageProcessorManagers()) {
+      handled = manager()->processMessage(message, wParam, lParam);
+      if (handled) {
+        break;
+      }
+    }
+
+    return handled;
   }
+
   void onActivated() {
     // TODO: Game is becoming active window.
   }
@@ -73,15 +245,14 @@ class App_impl {
   }
   void onSuspending() {
     // Game is being power-suspended (or minimized).
-    _scene->suspendPlay();
   }
   void onResuming() {
     // Game is being power-resumed (or returning from minimize).
-    _scene->resumePlay();
+    _stepTimer.ResetElapsedTime();
 
   }
   void onWindowMoved() {
-    int width, height;
+    int width = 0, height = 0;
     if (!_deviceResources->getWindowSize(width, height)) {
       LOG(WARNING) << "onWindowMoved: Failed to get last window size.";
       return;
@@ -89,7 +260,7 @@ class App_impl {
     _deviceResources->setWindowSize(width, height);
   }
   void onWindowSizeChanged(int width, int height) {
-    int oldWidth, oldHeight;
+    int oldWidth = width, oldHeight = height;
     if (!_deviceResources->getWindowSize(oldWidth, oldHeight)) {
       LOG(WARNING) << "onWindowSizeChanged: Failed to get last window size.";
       return;
@@ -101,7 +272,7 @@ class App_impl {
     }
 
     LOG(INFO) << "Window size changed: " << width << ", " << height;
-    _scene->destroyWindowSizeDependentResources();
+    destroyWindowSizeDependentResources();
 
     if (!_deviceResources->setWindowSize(width, height)) {
       LOG(WARNING) << "Device resources failed to handle WindowSizeChanged event.";
@@ -114,7 +285,11 @@ class App_impl {
   void createDeviceDependentResources() {
     try {
       _deviceResources->createDeviceDependentResources();
-      _scene->createDeviceDependentResources();
+
+      for (auto& manager : _managers.getDeviceDependentManagers()) {
+        LOG(DEBUG) << "Creating device dependent resources for manager " << manager.config->asBase->name();
+        manager()->createDeviceDependentResources();
+      };
     } catch (std::exception& e) {
       LOG(FATAL) << "Failed to create device dependent resources: " << e.what();
       _fatalError = true;
@@ -123,22 +298,38 @@ class App_impl {
 
   void createWindowSizeDependentResources() {
     try {
-      int width, height;
+      int width = 0, height = 0;
       if (!_deviceResources->getWindowSize(width, height)) {
         LOG(WARNING) << "createWindowSizeDependentResources: Failed to get last window size.";
         return;
       }
 
-      _scene->createWindowSizeDependentResources(
-          _hwnd, std::max<UINT>(width, 1), std::max<UINT>(height, 1));
+      width = std::max(width, 1);
+      height = std::max(height, 1);
+      for (auto& manager : _managers.getWindowDependentManagers()) {
+        LOG(DEBUG) << "Creating device dependent resources for manager " << manager.config->asBase->name()
+                   << " (width=" << width << " height=" << height << ")";
+        manager()->createWindowSizeDependentResources(_hwnd, width, height);
+      };
     } catch (std::exception& e) {
       LOG(FATAL) << "Failed to create window size dependent resources: " << e.what();
       _fatalError = true;
     }
   }
 
+  void destroyWindowSizeDependentResources() {
+    LOG(INFO) << "Destroying window size dependent resources";
+    for (auto& manager : _managers.getWindowDependentManagers()) {
+      manager()->destroyWindowSizeDependentResources();
+    };
+  }
+
   void destroyDeviceDependentResources() {
-    _scene->destroyDeviceDependentResources();
+
+    LOG(INFO) << "Destroying device dependent resources";
+    for (auto& manager : _managers.getDeviceDependentManagers()) {
+      manager()->destroyDeviceDependentResources();
+    };
     _deviceResources->destroyDeviceDependentResources();
   }
 
@@ -217,12 +408,34 @@ class App_impl {
     h = std::max(200l, (rc.bottom * 3) / 4);
   }
 
- protected:
-  App* const _app;
+ private:
+  friend App;
+
+  Manager_collection _managers;
   IDevice_resources* const _deviceResources;
-  Scene_device_resource_aware* const _scene;
+  StepTimer _stepTimer;
   HWND const _hwnd;
   bool _fatalError;
+  std::vector<double> _managerTickTimes;
+
+  std::shared_ptr<Entity_repository> _entityRepository;
+  Manager_instance<ITime_step_manager> _timeStepManager;
+  Manager_instance<IScene_graph_manager> _sceneGraphManager;
+  Manager_instance<IAsset_manager> _assetManager;
+  Manager_instance<IUser_interface_manager> _userInterfaceManager;
+  Manager_instance<ITexture_manager> _textureManager;
+  Manager_instance<IBehavior_manager> _behaviorManager;
+  Manager_instance<IMaterial_manager> _materialManager;
+  Manager_instance<ILighting_manager> _lightingManager;
+  Manager_instance<IShadowmap_manager> _shadowmapManager;
+  Manager_instance<IInput_manager> _inputManager;
+  Manager_instance<IAnimation_manager> _animationManager;
+  Manager_instance<IEntity_render_manager> _entityRenderManager;
+  Manager_instance<IDev_tools_manager> _devToolsManager;
+  Manager_instance<IRender_step_manager> _renderStepManager;
+  Manager_instance<IEntity_scripting_manager> _entityScriptingManager;
+
+  std::vector<Manager_interfaces*> _initializedManagers;
 };
 } // namespace oe
 
@@ -231,7 +444,7 @@ class App_impl {
 //#define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
 
 // Entry point
-int oe::App::run(const oe::App_start_settings& settings) {
+int App::run(const App_start_settings& settings) {
   // Initialize logger
   std::string logFileName;
   auto logWorker = g3::LogWorker::createLogWorker();
@@ -286,11 +499,9 @@ int oe::App::run(const oe::App_start_settings& settings) {
     return 1;
   }
 
-  // Create the scene
-  auto scene = Scene_device_resource_aware(*deviceResources);
-
+  // Create the app context
   int progReturnVal = 1;
-  auto appDeviceContext = App_impl(this, hwnd, deviceResources.get(), &scene);
+  auto appDeviceContext = app::App_impl(hwnd, deviceResources.get());
   _impl = &appDeviceContext;
 
   bool sceneConfigured = false;
@@ -298,11 +509,11 @@ int oe::App::run(const oe::App_start_settings& settings) {
     SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     try {
 
-      scene.configure();
+      appDeviceContext.configureManagers();
       sceneConfigured = true;
 
-      scene.manager<oe::IDev_tools_manager>().setVectorLog(vectorLog.get());
-      onSceneConfigured(scene);
+      getDevToolsManager().setVectorLog(vectorLog.get());
+      onSceneConfigured();
     } catch (const std::exception& e) {
       LOG(WARNING) << "Failed to configure scene: " << e.what();
       progReturnVal = 1;
@@ -311,12 +522,11 @@ int oe::App::run(const oe::App_start_settings& settings) {
 
     try {
       // Some things need setting before initialization.
-      scene.manager<IUser_interface_manager>().preInit_setUIScale(
-          static_cast<float>(getScreenDpi()) / 96.0f);
+      getUserInterfaceManager().preInit_setUIScale(static_cast<float>(getScreenDpi()) / 96.0f);
 
-      scene.initialize();
+      appDeviceContext.initializeManagers();
 
-      onSceneInitialized(scene);
+      onSceneInitialized();
     } catch (std::exception& e) {
       LOG(WARNING) << "Failed to init scene: " << e.what();
       progReturnVal = 1;
@@ -342,10 +552,10 @@ int oe::App::run(const oe::App_start_settings& settings) {
         progReturnVal = (int)msg.wParam;
       } else {
         try {
-          onScenePreTick(scene);
+          onScenePreTick();
           appDeviceContext.onTick();
 
-          onScenePreRender(scene);
+          onScenePreRender();
           appDeviceContext.onRender();
         } catch (const std::exception& ex) {
           LOG(WARNING) << "Terminating on uncaught exception: " << ex.what();
@@ -365,13 +575,13 @@ int oe::App::run(const oe::App_start_settings& settings) {
 
   if (sceneConfigured) {
     try {
-      scene.destroyWindowSizeDependentResources();
-      scene.destroyDeviceDependentResources();
+      appDeviceContext.destroyWindowSizeDependentResources();
+      appDeviceContext.destroyDeviceDependentResources();
 
-      scene.manager<oe::IDev_tools_manager>().setVectorLog(nullptr);
+      getDevToolsManager().setVectorLog(nullptr);
 
-      onSceneShutdown(scene);
-      scene.shutdown();
+      onSceneShutdown();
+      appDeviceContext.shutdownManagers();
     } catch (const std::exception& ex) {
       LOG(WARNING) << "Terminating on uncaught exception while shutting down: " << ex.what();
       progReturnVal = 1;
@@ -387,10 +597,10 @@ int oe::App::run(const oe::App_start_settings& settings) {
   return progReturnVal;
 }
 
-void oe::App::getDefaultWindowSize(int& w, int& h) const { _impl->getDefaultWindowSize(w, h); }
+void App::getDefaultWindowSize(int& w, int& h) const { _impl->getDefaultWindowSize(w, h); }
 
 // Get DPI of the screen that the current window is on
-int oe::App::getScreenDpi() const {
+int App::getScreenDpi() const {
   if (_impl == nullptr) {
     OE_THROW(std::runtime_error("App is not initialized"));
   }
@@ -413,8 +623,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
   static bool s_fullscreen = false;
   // TODO: Set s_fullscreen to true if defaulting to fullscreen.
 
-  auto* app = reinterpret_cast<oe::App*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-  oe::App_impl* appImpl = nullptr;
+  auto* app = reinterpret_cast<App*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+  oe::app::App_impl* appImpl = nullptr;
   if (app != nullptr) {
     appImpl = app->getAppImpl();
   }
@@ -553,4 +763,72 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 }
 
 // Exit helper
-void ExitGame() { PostQuitMessage(0); }
+void ExitGame()
+{
+  PostQuitMessage(0);
+}
+
+oe::Entity_repository& App::getEntityRepository()
+{
+  return *_impl->_entityRepository;
+}
+oe::ITime_step_manager& App::getTimeStepManager()
+{
+  return *_impl->_timeStepManager.instance;
+}
+oe::IScene_graph_manager& App::getSceneGraphManager()
+{
+  return *_impl->_sceneGraphManager.instance;
+}
+oe::IAsset_manager& App::getAssetManager()
+{
+  return *_impl->_assetManager.instance;
+}
+oe::IUser_interface_manager& App::getUserInterfaceManager()
+{
+  return *_impl->_userInterfaceManager.instance;
+}
+oe::ITexture_manager& App::getTextureManager()
+{
+  return *_impl->_textureManager.instance;
+}
+oe::IBehavior_manager& App::getBehaviorManager()
+{
+  return *_impl->_behaviorManager.instance;
+}
+oe::IMaterial_manager& App::getMaterialManager()
+{
+  return *_impl->_materialManager.instance;
+}
+oe::ILighting_manager& App::getLightingManager()
+{
+  return *_impl->_lightingManager.instance;
+}
+oe::IShadowmap_manager& App::getShadowmapManager()
+{
+  return *_impl->_shadowmapManager.instance;
+}
+oe::IInput_manager& App::getInputManager()
+{
+  return *_impl->_inputManager.instance;
+}
+oe::IAnimation_manager& App::getAnimationManager()
+{
+  return *_impl->_animationManager.instance;
+}
+oe::IEntity_render_manager& App::getEntityRenderManager()
+{
+  return *_impl->_entityRenderManager.instance;
+}
+oe::IDev_tools_manager& App::getDevToolsManager()
+{
+  return *_impl->_devToolsManager.instance;
+}
+oe::IRender_step_manager& App::getRenderStepManager()
+{
+  return *_impl->_renderStepManager.instance;
+}
+oe::IEntity_scripting_manager& App::getEntityScriptingManager()
+{
+  return *_impl->_entityScriptingManager.instance;
+}

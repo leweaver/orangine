@@ -1,21 +1,21 @@
 #include "pch.h"
 
 #include "Behavior_manager.h"
-#include "OeCore/Scene.h"
+#include <OeCore/EngineUtils.h>
+#include <OeCore/IScene_graph_manager.h>
 
 using namespace oe;
 
-template <> IBehavior_manager* oe::create_manager(Scene& scene) {
-  return new Behavior_manager(scene);
+template <> void oe::create_manager(Manager_instance<IBehavior_manager>& out, IScene_graph_manager& sceneGraphManager) {
+  out = Manager_instance<IBehavior_manager>(std::make_unique<Behavior_manager>(sceneGraphManager));
 }
 
 void Behavior_manager::shutdown() {
-
   _entityFilterBehaviors.clear();
   _nameToEntityBehaviorMap.clear();
 
   for (const auto& entry : _initializedSceneBehaviors) {
-    entry->shutdown(_scene);
+    entry->shutdown();
   }
 
   _newSceneBehaviors.clear();
@@ -26,7 +26,7 @@ void Behavior_manager::shutdown() {
 void Behavior_manager::tick() {
 
   for (auto& behavior : _newSceneBehaviors) {
-    behavior->initialize(_scene);
+    behavior->initialize();
 
     _nameToSceneBehaviorMap[behavior->name()] = behavior.get();
     _initializedSceneBehaviors.push_back(std::move(behavior));
@@ -34,7 +34,7 @@ void Behavior_manager::tick() {
   _newSceneBehaviors.clear();
 
   for (const auto& behavior : _initializedSceneBehaviors) {
-    behavior->handleScene(_scene);
+    behavior->handleScene();
   }
 
   for (auto& efb : _entityFilterBehaviors) {
@@ -63,7 +63,7 @@ void Behavior_manager::addForComponentTypes(
   }
   _nameToEntityBehaviorMap[behavior->name()] = behavior.get();
 
-  const auto filter = _scene.manager<IScene_graph_manager>().getEntityFilter(componentTypes, mode);
+  const auto filter = _sceneGraphManager.getEntityFilter(componentTypes, mode);
   _entityFilterBehaviors.push_back({filter, std::move(behavior)});
 }
 

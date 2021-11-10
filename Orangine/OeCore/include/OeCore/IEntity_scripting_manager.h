@@ -3,10 +3,8 @@
 #include "Manager_base.h"
 
 namespace oe {
-class IEntity_scripting_manager : public Manager_base, public Manager_tickable {
+class IEntity_scripting_manager {
  public:
-  explicit IEntity_scripting_manager(Scene& scene) : Manager_base(scene) {}
-
   // Only has an effect if called before the manager is initialized.
   // Appends the given absolute path to sys.path
   virtual void preInit_addAbsoluteScriptsPath(const std::wstring& path) = 0;

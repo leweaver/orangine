@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "JsonConfigReader.h"
+#include <OeCore/JsonConfigReader.h>
 #include <OeCore/FileUtils.h>
 
 using namespace oe;

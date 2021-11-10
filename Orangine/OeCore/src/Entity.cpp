@@ -1,17 +1,17 @@
 ﻿#include "pch.h"
+#include <OeCore/EngineUtils.h>
 
 #include "OeCore/Entity.h"
 #include "OeCore/Math_constants.h"
-#include "OeCore/Scene.h"
 #include "Scene_graph_manager.h"
 
 using namespace oe;
 using namespace DirectX;
 
-Entity::Entity(Scene& scene, IComponent_factory& componentFactory, std::string name, Id_type id)
+Entity::Entity(IScene_graph_manager& sceneGraph, IComponent_factory& componentFactory, std::string name, Id_type id)
     : _localRotation(SSE::Quat::identity())
-    , _localPosition({0, 0, 0})
-    , _localScale({1.0f, 1.0f, 1.0f})
+    , _localPosition(Vector3(0, 0, 0))
+    , _localScale(Vector3(1.0f, 1.0f, 1.0f))
     , _calculateWorldTransform(true)
     , _calculateBoundSphereFromChildren(true)
     , _id(id)
@@ -19,10 +19,10 @@ Entity::Entity(Scene& scene, IComponent_factory& componentFactory, std::string n
     , _state(Entity_state::Uninitialized)
     , _active(true)
     , _parent(nullptr)
-    , _scene(scene)
+    , _sceneGraph(sceneGraph)
     , _worldTransform(SSE::Matrix4::identity())
     , _worldRotation(SSE::Quat::identity())
-    , _worldScale({1.0f, 1.0f, 1.0f})
+    , _worldScale(Vector3(1.0f, 1.0f, 1.0f))
     , _componentFactory(componentFactory)
 {}
 
@@ -93,11 +93,10 @@ void Entity::setParent(Entity& newParent) {
     removeParent();
   }
 
-  auto& entityManager = _scene.manager<IScene_graph_manager>();
-  const auto thisPtr = entityManager.getEntityPtrById(getId());
-  entityManager.removeFromRoot(thisPtr);
+  const auto thisPtr = _sceneGraph.getEntityPtrById(getId());
+  _sceneGraph.removeFromRoot(thisPtr);
 
-  auto newParentPtr = entityManager.getEntityPtrById(newParent.getId());
+  auto newParentPtr = _sceneGraph.getEntityPtrById(newParent.getId());
   newParentPtr->_children.push_back(thisPtr);
 
   _parent = newParentPtr.get();
@@ -117,9 +116,8 @@ void Entity::removeParent() {
     }
   }
 
-  auto& entityManager = _scene.manager<IScene_graph_manager>();
-  const auto thisPtr = entityManager.getEntityPtrById(getId());
-  entityManager.addToRoot(thisPtr);
+  const auto thisPtr = _sceneGraph.getEntityPtrById(getId());
+  _sceneGraph.addToRoot(thisPtr);
   _parent = nullptr;
 }
 
@@ -133,7 +131,7 @@ void Entity::setTransform(const SSE::Matrix4& transform) {
 }
 
 std::shared_ptr<Entity> Entity::verifyEntityPtr() const {
-  const auto thisPtr = _scene.manager<IScene_graph_manager>().getEntityPtrById(getId());
+  const auto thisPtr = _sceneGraph.getEntityPtrById(getId());
   if (!thisPtr) {
     OE_THROW(std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(getId()) + ")"));
   }
@@ -142,7 +140,7 @@ std::shared_ptr<Entity> Entity::verifyEntityPtr() const {
 }
 
 Entity& EntityRef::get() const {
-  const auto ptr = scene.manager<IScene_graph_manager>().getEntityPtrById(id);
+  const auto ptr = sceneGraph.getEntityPtrById(id);
   if (!ptr)
     OE_THROW(
         std::runtime_error("Attempting to access deleted Entity (id=" + std::to_string(id) + ")"));

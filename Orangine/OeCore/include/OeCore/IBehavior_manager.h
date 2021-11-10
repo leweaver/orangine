@@ -20,11 +20,9 @@ namespace oe {
  *   specified component types. Useful for controlling properties of entity components, eg a
  *   player movement controller.
  */
-class IBehavior_manager
-    : public Manager_base
-    , public Manager_tickable {
+class IBehavior_manager {
  public:
-  explicit IBehavior_manager(Scene& scene) : Manager_base(scene) {}
+  virtual ~IBehavior_manager() = default;
 
   // Adds a new behavior that will be called once per tick, for any entity with the given component.
   virtual void addForComponentType(std::unique_ptr<Entity_behavior>, Component::Component_type) = 0;

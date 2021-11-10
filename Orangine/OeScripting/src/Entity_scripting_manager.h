@@ -13,12 +13,11 @@
 #include "Engine_internal_module.h"
 
 namespace oe::internal {
-class Entity_scripting_manager : public IEntity_scripting_manager {
+class Entity_scripting_manager : public IEntity_scripting_manager, public Manager_base, public Manager_tickable {
  public:
   Entity_scripting_manager(
-          Scene& scene, ITime_step_manager& timeStepManager, IScene_graph_manager& sceneGraphManager,
-          IInput_manager& inputManager, IAsset_manager& assetManager, IEntity_render_manager& entityRenderManager,
-          IDev_tools_manager& devToolsManager);
+          ITime_step_manager& timeStepManager, IScene_graph_manager& sceneGraphManager,
+          IInput_manager& inputManager, IAsset_manager& assetManager, IEntity_render_manager& entityRenderManager);
 
   // Manager_base implementation
   void initialize() override;
@@ -73,6 +72,5 @@ class Entity_scripting_manager : public IEntity_scripting_manager {
   IInput_manager& _inputManager;
   IAsset_manager& _assetManager;
   IEntity_render_manager& _entityRenderManager;
-  IDev_tools_manager& _devToolsManager;
 };
 } // namespace oe::internal

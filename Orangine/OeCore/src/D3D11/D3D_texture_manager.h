@@ -75,9 +75,8 @@ class D3D_shadow_map_texture : public D3D_texture {
 class D3D_texture_manager : public ITexture_manager {
  public:
   explicit D3D_texture_manager(
-      Scene& scene,
       std::shared_ptr<D3D_device_repository> deviceRepository)
-      : ITexture_manager(scene), _deviceRepository(deviceRepository) {}
+      : ITexture_manager(), _deviceRepository(deviceRepository) {}
 
   // Manager_base implementation
   void initialize() override {}

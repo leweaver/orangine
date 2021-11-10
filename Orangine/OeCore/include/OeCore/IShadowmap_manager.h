@@ -7,11 +7,8 @@
 namespace oe {
 class Texture;
 
-class IShadowmap_manager
-    : public Manager_base
-    , public Manager_deviceDependent {
+class IShadowmap_manager {
  public:
-  IShadowmap_manager(Scene& scene) : Manager_base(scene) {}
   virtual ~IShadowmap_manager() = default;
 
   virtual std::shared_ptr<Texture> borrowTexture() = 0;

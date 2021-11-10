@@ -143,7 +143,7 @@ void Entity_scripting_manager::tick()
     logPythonError(err, "Native::tick() - Flushing stdout and stderr");
   }
 
-  const auto elapsedTime = _timeStepManager.elapsedTime();
+  const auto elapsedTime = _timeStepManager.getElapsedTime();
   for (auto iter = _testEntityFilter->begin(); iter != _testEntityFilter->end(); ++iter) {
     auto& entity = **iter;
     auto* component = entity.getFirstComponentOfType<Test_component>();

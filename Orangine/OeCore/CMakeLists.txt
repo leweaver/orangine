@@ -99,7 +99,7 @@ add_library(${PROJECT_NAME} STATIC
         "ThirdParty/MikktSpace/mikktspace.h"
         "ThirdParty/MikktSpace/mikktspace.c"
         "ThirdParty/imgui/misc/cpp/imgui_stdlib.h"
-        "ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp")
+        "ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp" src/OeCore.cpp)
 file(GLOB OeCore_HEADERS "include/OeCore/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 

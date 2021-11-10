@@ -4,7 +4,7 @@
 
 #include <OeCore/Component.h>
 #include <OeCore/Entity.h>
-#include <OeCore/Entity_repository.h>
+#include <OeCore/IEntity_repository.h>
 #include <OeCore/IScene_graph_manager.h>
 
 #include <vector>
@@ -99,7 +99,7 @@ class Scene_graph_manager : public IScene_graph_manager,
 
   bool _initialized = false;
 
-  InvokableDispatcher<Entity&> _entityAddedDispatcher;
+  Invokable_dispatcher<Entity&> _entityAddedDispatcher;
 
 
   std::vector<std::unique_ptr<Entity_graph_loader>> _entityGraphLoaders = {};

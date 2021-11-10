@@ -1,13 +1,14 @@
 #pragma once
 
 #include <OeCore/Entity_filter.h>
-#include <OeCore/IEntity_scripting_manager.h>
 #include <OeCore/ITime_step_manager.h>
 #include <OeCore/IScene_graph_manager.h>
 #include <OeCore/IInput_manager.h>
 #include <OeCore/IAsset_manager.h>
 #include <OeCore/IEntity_render_manager.h>
 #include <OeCore/IDev_tools_manager.h>
+
+#include <OeScripting/IEntity_scripting_manager.h>
 
 #include "Script_runtime_data.h"
 #include "Engine_internal_module.h"

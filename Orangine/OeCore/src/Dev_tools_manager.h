@@ -5,8 +5,8 @@
 #include "OeCore/IScene_graph_manager.h"
 #include <OeCore/IEntity_render_manager.h>
 #include <OeCore/IMaterial_manager.h>
-#include <OeCore/IEntity_scripting_manager.h>
 #include "OeCore/Mesh_data.h"
+#include <OeCore/Dispatcher.h>
 
 namespace oe {
 class Perf_timer;
@@ -17,12 +17,11 @@ class Dev_tools_manager : public IDev_tools_manager, public Manager_base, public
  public:
   Dev_tools_manager(
           IScene_graph_manager& sceneGraphManager, IEntity_render_manager& entityRenderManager,
-          IMaterial_manager& materialManager, IEntity_scripting_manager& entityScriptingManager)
+          IMaterial_manager& materialManager)
       : IDev_tools_manager(), Manager_base(), Manager_tickable(), Manager_deviceDependent(), _unlitMaterial(nullptr)
       , _sceneGraphManager(sceneGraphManager)
       , _entityRenderManager(entityRenderManager)
       , _materialManager(materialManager)
-      , _entityScriptingManager(entityScriptingManager)
   {}
 
   // Manager_base implementation
@@ -55,6 +54,23 @@ class Dev_tools_manager : public IDev_tools_manager, public Manager_base, public
   void renderImGui() override;
   void setVectorLog(VectorLog* vectorLog) override { _vectorLog = vectorLog; }
 
+  const std::vector<std::string>& getCommandSuggestions() const override
+  {
+    return _commandSuggestions;
+  }
+  void setCommandSuggestions(const std::vector<std::string>& commandSuggestions) override
+  {
+    _commandSuggestions = commandSuggestions;
+  }
+  Dispatcher<std::string>& getCommandAutocompleteRequestedDispatcher() override
+  {
+    return _commandAutocompleteRequestedDispatcher;
+  }
+  Dispatcher<std::string>& getCommandExecutedDispatcher()
+  {
+    return _commandExecutedDispatcher;
+  }
+
  private:
   using LightProvider = std::function<void(const oe::BoundingSphere& target,
                                            std::vector<Entity*>& lights, uint8_t maxLights)>;
@@ -78,6 +94,8 @@ class Dev_tools_manager : public IDev_tools_manager, public Manager_base, public
   bool _scrollLogToBottom = false;
   bool _renderSkeletons = false;
   std::vector<std::string> _commandSuggestions;
+
+ private:
   std::shared_ptr<Entity_filter> _animationControllers;
   std::shared_ptr<Entity_filter> _skinnedMeshEntities;
 
@@ -87,6 +105,10 @@ class Dev_tools_manager : public IDev_tools_manager, public Manager_base, public
   IScene_graph_manager& _sceneGraphManager;
   IEntity_render_manager& _entityRenderManager;
   IMaterial_manager& _materialManager;
-  IEntity_scripting_manager& _entityScriptingManager;
+
+  Invokable_dispatcher<std::string> _commandAutocompleteRequestedDispatcher;
+
+ private:
+  Invokable_dispatcher<std::string> _commandExecutedDispatcher;
 };
 } // namespace oe::internal

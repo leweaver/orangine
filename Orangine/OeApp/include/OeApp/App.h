@@ -7,22 +7,8 @@
 #include <memory>
 #include <string>
 
-#include <OeCore/Entity_repository.h>
-#include <OeCore/IAnimation_manager.h>
-#include <OeCore/IAsset_manager.h>
-#include <OeCore/IBehavior_manager.h>
-#include <OeCore/IDev_tools_manager.h>
-#include <OeCore/IEntity_render_manager.h>
-#include <OeCore/IEntity_scripting_manager.h>
-#include <OeCore/IInput_manager.h>
-#include <OeCore/ILighting_manager.h>
-#include <OeCore/IMaterial_manager.h>
-#include <OeCore/IRender_step_manager.h>
-#include <OeCore/IScene_graph_manager.h>
-#include <OeCore/IShadowmap_manager.h>
-#include <OeCore/ITexture_manager.h>
-#include <OeCore/ITime_step_manager.h>
-#include <OeCore/IUser_interface_manager.h>
+#include <OeCore/OeCore.h>
+#include <OeScripting/OeScripting.h>
 
 namespace oe::app {
 struct App_start_settings {
@@ -51,7 +37,7 @@ class App {
 
   int getScreenDpi() const;
 
-  Entity_repository& getEntityRepository();
+  IEntity_repository& getEntityRepository();
   ITime_step_manager& getTimeStepManager();
   IScene_graph_manager& getSceneGraphManager();
   IAsset_manager& getAssetManager();

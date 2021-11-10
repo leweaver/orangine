@@ -2,12 +2,12 @@
 
 #include <OeCore/Entity_graph_loader.h>
 #include <OeCore/IAsset_manager.h>
-#include <OeCore/IEntity_scripting_manager.h>
 #include <OeCore/IInput_manager.h>
 #include <OeCore/IRender_step_manager.h>
 #include <OeCore/IScene_graph_manager.h>
-
 #include <OeCore/Color.h>
+
+#include <OeScripting/IEntity_scripting_manager.h>
 
 namespace oe {
 class Sample_scene {

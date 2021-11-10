@@ -3,7 +3,7 @@
 #include "OeCore/Animation_controller_component.h"
 #include "OeCore/Collision.h"
 #include "OeCore/Entity_graph_loader_gltf.h"
-#include "OeCore/Entity_repository.h"
+#include "OeCore/IEntity_repository.h"
 #include "OeCore/FileUtils.h"
 #include "OeCore/Material.h"
 #include "OeCore/Mesh_data.h"

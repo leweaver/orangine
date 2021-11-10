@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Manager_base.h"
+#include <OeCore/Manager_base.h>
 
 namespace oe {
 class IEntity_scripting_manager {

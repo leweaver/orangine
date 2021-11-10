@@ -8,8 +8,9 @@
 #include "VectorLogSink.h"
 #include "VisualStudioLogSink.h"
 
+#include <OeCore/OeCore.h>
+#include <OeScripting/OeScripting.h>
 #include <OeCore/Perf_timer.h>
-#include <OeCore/Entity_repository.h>
 #include <OeCore/JsonConfigReader.h>
 #include <OeCore/Entity_graph_loader_gltf.h>
 
@@ -55,62 +56,24 @@ class App_impl {
 
  private:
   void createManagers() {
-    _entityRepository = std::make_shared<Entity_repository>();
-    auto entityRepository = std::static_pointer_cast<IEntity_repository>(_entityRepository);
 
-    auto timeStepManager = create_manager_instance<ITime_step_manager>(static_cast<const StepTimer&>(_stepTimer));
-    auto sceneGraphManager = create_manager_instance<IScene_graph_manager>(entityRepository);
-    auto assetManager = create_manager_instance<IAsset_manager>();
-
-    // Only device dependencies
-    auto& deviceResources = *_deviceResources;
-    auto userInterfaceManager = create_manager_instance<IUser_interface_manager>(deviceResources);
-    auto textureManager = create_manager_instance<ITexture_manager>(deviceResources);
-
-    auto behaviorManager = create_manager_instance<IBehavior_manager>(*sceneGraphManager.instance);
-    auto materialManager = create_manager_instance<IMaterial_manager>(*assetManager.instance);
-    auto lightingManager = create_manager_instance<ILighting_manager>(*textureManager.instance);
-    auto shadowmapManager = create_manager_instance<IShadowmap_manager>(*textureManager.instance);
-    auto inputManager = create_manager_instance<IInput_manager>(*userInterfaceManager.instance);
-
-    auto animationManager = create_manager_instance<IAnimation_manager>(*sceneGraphManager.instance, *timeStepManager.instance);
-    auto entityRenderManager = create_manager_instance<IEntity_render_manager>(
-            *textureManager.instance, *materialManager.instance, *lightingManager.instance);
+    _coreManagers = std::make_unique<oe::core::Manager_instances>(*_deviceResources);
+    oe::core::for_each_manager_instance(_coreManagers->managers, [&](const Manager_interfaces& interfaces) {
+      _managers.addManager(interfaces);
+    });
 
     // Provides access to the engine via python
-    auto entityScriptingManager = create_manager_instance<IEntity_scripting_manager>(
-            *timeStepManager.instance, *sceneGraphManager.instance, *inputManager.instance, *assetManager.instance, *entityRenderManager.instance);
-
-    auto devToolsManager = create_manager_instance<IDev_tools_manager>(
-            *sceneGraphManager.instance, *entityRenderManager.instance, *materialManager.instance,
-            *entityScriptingManager.instance);
-
-    // Pulls everything together and draws pixels
-    auto renderStepManager = create_manager_instance<IRender_step_manager>(*sceneGraphManager.instance, *devToolsManager.instance,
-                                        *textureManager.instance, *shadowmapManager.instance,
-                                        *entityRenderManager.instance, *lightingManager.instance);
-
-    // Don't assign these above just to check that dependencies are created in the right order at compile time.
-    _timeStepManager = std::move(timeStepManager), _managers.addManager(_timeStepManager.interfaces);
-    _sceneGraphManager = std::move(sceneGraphManager), _managers.addManager(_sceneGraphManager.interfaces);
-    _assetManager = std::move(assetManager), _managers.addManager(_assetManager.interfaces);
-    _userInterfaceManager = std::move(userInterfaceManager), _managers.addManager(_userInterfaceManager.interfaces);
-    _textureManager = std::move(textureManager), _managers.addManager(_textureManager.interfaces);
-    _behaviorManager = std::move(behaviorManager), _managers.addManager(_behaviorManager.interfaces);
-    _materialManager = std::move(materialManager), _managers.addManager(_materialManager.interfaces);
-    _lightingManager = std::move(lightingManager), _managers.addManager(_lightingManager.interfaces);
-    _shadowmapManager = std::move(shadowmapManager), _managers.addManager(_shadowmapManager.interfaces);
-    _inputManager = std::move(inputManager), _managers.addManager(_inputManager.interfaces);
-    _animationManager = std::move(animationManager), _managers.addManager(_animationManager.interfaces);
-    _entityRenderManager = std::move(entityRenderManager), _managers.addManager(_entityRenderManager.interfaces);
-    _devToolsManager = std::move(devToolsManager), _managers.addManager(_devToolsManager.interfaces);
-    _renderStepManager = std::move(renderStepManager), _managers.addManager(_renderStepManager.interfaces);
-    _entityScriptingManager = std::move(entityScriptingManager), _managers.addManager(_entityScriptingManager.interfaces);
+    _scriptingManagers = std::make_unique<oe::scripting::Manager_instances>(*_coreManagers);
+    oe::core::for_each_manager_instance(_scriptingManagers->managers, [&](const Manager_interfaces& interfaces) {
+      _managers.addManager(interfaces);
+    });
 
     _managerTickTimes.resize(_managers.getTickableManagers().size());
 
-    auto gltfLoader = std::make_unique<Entity_graph_loader_gltf>(*_materialManager.instance, *_textureManager.instance);
-    _sceneGraphManager.instance->addLoader(std::move(gltfLoader));
+    auto gltfLoader = std::make_unique<Entity_graph_loader_gltf>(
+            _coreManagers->getInstance<IMaterial_manager>(),
+            _coreManagers->getInstance<ITexture_manager>());
+    _coreManagers->getInstance<IScene_graph_manager>().addLoader(std::move(gltfLoader));
   }
  public:
 
@@ -196,8 +159,9 @@ class App_impl {
   }
 
   // Game Loop
-  HWND getWindow() const { return _hwnd; }
   void onTick() {
+    _coreManagers->getInstance<ITime_step_manager>().progressTime(_stepTimer.GetElapsedSeconds());
+
     auto perfTimer = Perf_timer();
     const auto& tickableManagers = _managers.getTickableManagers();
     for (auto i = 0U; i < tickableManagers.size(); ++i) {
@@ -220,8 +184,8 @@ class App_impl {
       return;
     }
 
-    _renderStepManager.instance->render();
-    _userInterfaceManager.instance->render();
+    _coreManagers->getInstance<IRender_step_manager>().render();
+    _coreManagers->getInstance<IUser_interface_manager>().render();
   }
 
   // Messages
@@ -236,6 +200,8 @@ class App_impl {
 
     return handled;
   }
+
+  HWND getWindow() const { return _hwnd; }
 
   void onActivated() {
     // TODO: Game is becoming active window.
@@ -417,24 +383,8 @@ class App_impl {
   HWND const _hwnd;
   bool _fatalError;
   std::vector<double> _managerTickTimes;
-
-  std::shared_ptr<Entity_repository> _entityRepository;
-  Manager_instance<ITime_step_manager> _timeStepManager;
-  Manager_instance<IScene_graph_manager> _sceneGraphManager;
-  Manager_instance<IAsset_manager> _assetManager;
-  Manager_instance<IUser_interface_manager> _userInterfaceManager;
-  Manager_instance<ITexture_manager> _textureManager;
-  Manager_instance<IBehavior_manager> _behaviorManager;
-  Manager_instance<IMaterial_manager> _materialManager;
-  Manager_instance<ILighting_manager> _lightingManager;
-  Manager_instance<IShadowmap_manager> _shadowmapManager;
-  Manager_instance<IInput_manager> _inputManager;
-  Manager_instance<IAnimation_manager> _animationManager;
-  Manager_instance<IEntity_render_manager> _entityRenderManager;
-  Manager_instance<IDev_tools_manager> _devToolsManager;
-  Manager_instance<IRender_step_manager> _renderStepManager;
-  Manager_instance<IEntity_scripting_manager> _entityScriptingManager;
-
+  std::unique_ptr<core::Manager_instances> _coreManagers;
+  std::unique_ptr<scripting::Manager_instances> _scriptingManagers;
   std::vector<Manager_interfaces*> _initializedManagers;
 };
 } // namespace oe
@@ -768,67 +718,67 @@ void ExitGame()
   PostQuitMessage(0);
 }
 
-oe::Entity_repository& App::getEntityRepository()
+oe::IEntity_repository& App::getEntityRepository()
 {
-  return *_impl->_entityRepository;
+  return _impl->_coreManagers->getInstance<IEntity_repository>();
 }
 oe::ITime_step_manager& App::getTimeStepManager()
 {
-  return *_impl->_timeStepManager.instance;
+  return _impl->_coreManagers->getInstance<oe::ITime_step_manager>();
 }
 oe::IScene_graph_manager& App::getSceneGraphManager()
 {
-  return *_impl->_sceneGraphManager.instance;
+  return _impl->_coreManagers->getInstance<oe::IScene_graph_manager>();
 }
 oe::IAsset_manager& App::getAssetManager()
 {
-  return *_impl->_assetManager.instance;
+  return _impl->_coreManagers->getInstance<oe::IAsset_manager>();
 }
 oe::IUser_interface_manager& App::getUserInterfaceManager()
 {
-  return *_impl->_userInterfaceManager.instance;
+  return _impl->_coreManagers->getInstance<oe::IUser_interface_manager>();
 }
 oe::ITexture_manager& App::getTextureManager()
 {
-  return *_impl->_textureManager.instance;
+  return _impl->_coreManagers->getInstance<oe::ITexture_manager>();
 }
 oe::IBehavior_manager& App::getBehaviorManager()
 {
-  return *_impl->_behaviorManager.instance;
+  return _impl->_coreManagers->getInstance<oe::IBehavior_manager>();
 }
 oe::IMaterial_manager& App::getMaterialManager()
 {
-  return *_impl->_materialManager.instance;
+  return _impl->_coreManagers->getInstance<oe::IMaterial_manager>();
 }
 oe::ILighting_manager& App::getLightingManager()
 {
-  return *_impl->_lightingManager.instance;
+  return _impl->_coreManagers->getInstance<oe::ILighting_manager>();
 }
 oe::IShadowmap_manager& App::getShadowmapManager()
 {
-  return *_impl->_shadowmapManager.instance;
+  return _impl->_coreManagers->getInstance<oe::IShadowmap_manager>();
 }
 oe::IInput_manager& App::getInputManager()
 {
-  return *_impl->_inputManager.instance;
+  return _impl->_coreManagers->getInstance<oe::IInput_manager>();
 }
 oe::IAnimation_manager& App::getAnimationManager()
 {
-  return *_impl->_animationManager.instance;
+  return _impl->_coreManagers->getInstance<oe::IAnimation_manager>();
 }
 oe::IEntity_render_manager& App::getEntityRenderManager()
 {
-  return *_impl->_entityRenderManager.instance;
+  return _impl->_coreManagers->getInstance<oe::IEntity_render_manager>();
 }
 oe::IDev_tools_manager& App::getDevToolsManager()
 {
-  return *_impl->_devToolsManager.instance;
+  return _impl->_coreManagers->getInstance<oe::IDev_tools_manager>();
 }
 oe::IRender_step_manager& App::getRenderStepManager()
 {
-  return *_impl->_renderStepManager.instance;
+  return _impl->_coreManagers->getInstance<oe::IRender_step_manager>();
 }
 oe::IEntity_scripting_manager& App::getEntityScriptingManager()
 {
-  return *_impl->_entityScriptingManager.instance;
+  return _impl->_scriptingManagers->getInstance<oe::IEntity_scripting_manager>();
 }

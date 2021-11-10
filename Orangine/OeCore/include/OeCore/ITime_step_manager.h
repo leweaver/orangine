@@ -12,10 +12,12 @@ class ITime_step_manager {
   ITime_step_manager() = default;
   virtual ~ITime_step_manager() = default;
 
+  virtual void progressTime(double deltaTime) = 0;
+
   /** Total time since game start, in seconds. */
-  virtual double elapsedTime() const = 0;
+  virtual double getElapsedTime() const = 0;
 
   /** Time since last frame, in seconds. */
-  virtual double deltaTime() const = 0;
+  virtual double getDeltaTime() const = 0;
 };
 } // namespace oe

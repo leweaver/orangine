@@ -48,7 +48,7 @@ template<typename... TEventArgs> class Dispatcher {
   std::list<Listener> _listeners;
 };
 
-template<typename... TEventArgs> class InvokableDispatcher : public Dispatcher<TEventArgs...> {
+template<typename... TEventArgs> class Invokable_dispatcher : public Dispatcher<TEventArgs...> {
  public:
   void invoke(TEventArgs... args)
   {
@@ -69,7 +69,8 @@ template<typename... TEventArgs> class ScopedListener {
       : _dispatcher(dispatcher)
       , _listenerId(dispatcher.addListener(listener))
   {}
-  ~ScopedListener() {
+  ~ScopedListener()
+  {
     _dispatcher.removeListener(_listenerId);
   }
 

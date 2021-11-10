@@ -7,14 +7,11 @@
 
 namespace oe {
 class Time_step_manager : public ITime_step_manager
-    , public Manager_base
-    , public Manager_tickable {
+    , public Manager_base {
  public:
-  Time_step_manager(const StepTimer& stepTimer)
+  Time_step_manager()
       : ITime_step_manager()
       , Manager_base()
-      , Manager_tickable()
-      , _timer(stepTimer)
   {}
 
   // Manager_base implementation
@@ -22,19 +19,17 @@ class Time_step_manager : public ITime_step_manager
   void shutdown() override {}
   const std::string& name() const override { return _name; }
 
-  // Manager_tickable implementation
-  void tick() override;
-
   // ITime_step_manager implementation
-  double elapsedTime() const override { return _elapsedTime; }
-  double deltaTime() const override { return _deltaTime; }
+  void progressTime(double deltaTime) override;
+  double getElapsedTime() const override { return _elapsedTime; }
+  double getDeltaTime() const override { return _deltaTime; }
 
  private:
   // Values as of the last call to Tick.
   double _deltaTime = 0;
   double _elapsedTime = 0;
 
-  const StepTimer& _timer;
+  StepTimer _timer;
 
   static std::string _name;
 };

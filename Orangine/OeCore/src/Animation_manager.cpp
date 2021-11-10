@@ -73,7 +73,7 @@ const std::string& Animation_manager::name() const { return _name; }
 
 void Animation_manager::tick()
 {
-  const auto deltaTime = _timeStepManager.deltaTime();
+  const auto deltaTime = _timeStepManager.getDeltaTime();
   for (const auto entity : *_animationControllers) {
     const auto animComponent = entity->getFirstComponentOfType<Animation_controller_component>();
     assert(animComponent);

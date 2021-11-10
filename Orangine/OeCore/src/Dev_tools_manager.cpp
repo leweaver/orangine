@@ -3,16 +3,10 @@
 #include "Dev_tools_manager.h"
 
 #include "OeCore/Animation_controller_component.h"
-#include "OeCore/Fps_counter.h"
-#include "OeCore/Math_constants.h"
-#include "OeCore/Primitive_mesh_data_factory.h"
 #include "OeCore/Renderable.h"
-#include "OeCore/Renderer_data.h"
 #include "OeCore/Skinned_mesh_component.h"
 #include "OeCore/Unlit_material.h"
 #include "OeCore/VectorLog.h"
-#include "OeCore/IEntity_render_manager.h"
-#include "OeCore/IMaterial_manager.h"
 
 #include <imgui.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
@@ -33,10 +27,10 @@ std::string Dev_tools_manager::_name = "Dev_tools_manager";
 template<>
 void oe::create_manager(Manager_instance<IDev_tools_manager>& out,
         IScene_graph_manager& sceneGraphManager, IEntity_render_manager& entityRenderManager,
-        IMaterial_manager& materialManager, IEntity_scripting_manager& entityScriptingManager)
+        IMaterial_manager& materialManager)
 {
   out = Manager_instance<IDev_tools_manager>(std::make_unique<Dev_tools_manager>(
-          sceneGraphManager, entityRenderManager, materialManager, entityScriptingManager));
+          sceneGraphManager, entityRenderManager, materialManager));
 }
 
 void Dev_tools_manager::initialize() {
@@ -394,8 +388,9 @@ void Dev_tools_manager::renderImGui() {
           ImGui::TextColored(logColors[level], cStr);
         }
       }
-      if (_scrollLogToBottom)
+      if (_scrollLogToBottom) {
         ImGui::SetScrollHereY(1.0f);
+      }
 
       ImGui::PopStyleVar();
     }
@@ -403,16 +398,16 @@ void Dev_tools_manager::renderImGui() {
 
     if (ImGui::BeginChild("commands", ImVec2(0, 20.0f * uiScale), false)) {
       if (ImGui::InputText(">", &_consoleInput)) {
-        if (_consoleInput.size()) {
-          if (_entityScriptingManager.commandSuggestions(
-                  _consoleInput, _commandSuggestions)) {
+        if (!_consoleInput.empty()) {
+          _commandAutocompleteRequestedDispatcher.invoke(_consoleInput);
+          if (!_commandSuggestions.empty()) {
             // TODO: Show suggestions
           }
         }
       }
       ImGui::SameLine();
       if (ImGui::Button("Make some log!")) {
-        _entityScriptingManager.execute(_consoleInput);
+        _commandExecutedDispatcher.invoke(_consoleInput);
       }
       ImGui::SameLine(ImGui::GetWindowWidth() - 30 * uiScale);
       ImGui::Checkbox("Auto Scroll", &_scrollLogToBottom);

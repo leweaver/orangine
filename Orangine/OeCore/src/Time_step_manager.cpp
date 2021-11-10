@@ -6,14 +6,15 @@
 
 using namespace oe;
 
-std::string Time_step_manager::_name = "Animation_manager";
+std::string Time_step_manager::_name = "Time_step_manager";
 
-template <> void oe::create_manager(Manager_instance<ITime_step_manager>& out, const StepTimer& stepTimer)
+template <> void oe::create_manager(Manager_instance<ITime_step_manager>& out)
 {
-  out = Manager_instance<ITime_step_manager>(std::make_unique<Time_step_manager>(stepTimer));
+  out = Manager_instance<ITime_step_manager>(std::make_unique<Time_step_manager>());
 }
 
-void Time_step_manager::tick() {
-  _deltaTime = _timer.GetElapsedSeconds();
+void Time_step_manager::progressTime(double deltaTime)
+{
+  _deltaTime = deltaTime;
   _elapsedTime += _deltaTime;
 }

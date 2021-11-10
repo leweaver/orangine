@@ -1,6 +1,6 @@
 ﻿#include "pch.h"
-#include "OeCore/Entity_repository.h"
-#include "OeCore/Entity.h"
+
+#include "Entity_repository.h"
 
 using namespace oe;
 

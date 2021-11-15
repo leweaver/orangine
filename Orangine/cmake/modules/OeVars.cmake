@@ -24,7 +24,7 @@ if (NOT "${CMAKE_SYSTEM_VERSION}" MATCHES "${OE_EXPECTED_WINSDK_VER}")
      message(FATAL_ERROR "CMAKE_SYSTEM_VERSION is '${CMAKE_SYSTEM_VERSION}', but must be '${OE_EXPECTED_WINSDK_VER}'")
 endif()
 
-set (OE_WINSDK_DIR "$ENV{ProgramFiles\(x86\)}\\Windows Kits\\10\\Include\\10.0.19041.0")
+set (OE_WINSDK_DIR "$ENV{ProgramFiles\(x86\)}\\Windows Kits\\10\\Include\\${OE_EXPECTED_WINSDK_VER}")
 if (NOT EXISTS "${OE_WINSDK_DIR}")
      MESSAGE(FATAL_ERROR "Windows SDK '${OE_EXPECTED_WINSDK_VER}' not installed. Expected location: ${OE_WINSDK_DIR}")
 endif()

@@ -1,4 +1,5 @@
 ﻿# Software Pre-requisites
+To get started, you need to make sure the following software is installed on your system.
 
 ## Windows 10
 You must be running Windows 10 build version 2004 (20H1) or higher. Run the `winver` program to view which build version you have. If you are running an earlier version of Windows, run Windows Update or [Download Windows 10 Disk Image](https://go.microsoft.com/fwlink/p/?LinkId=821363)
@@ -8,27 +9,22 @@ Visual Studio must be installed in order to satisfy library dependencies and get
 
 An up to date Visual Studio 2019 
 
-Visual Studio 2017 15.7.5 is the minimum required (DirectX11 builds only). 2017 is not supported for DirectX12 builds.
-
-When installing, ensure you select the following options (in addition to whatever defaults are selected):
+Visual Studio 2019 must be installed. When installing, ensure you select the following options (in addition to whatever defaults are selected):
 
 - Desktop Development with Visual C++
   - C++ CMake tools for Windows (see https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-160)
 - Game Development with C++
-  - Windows 10 SDK (10.0.19041.0) - 
+  - Windows 10 SDK (10.0.19041.0). Why?:
     - 18362 is min version required to fix this bug: https://bugs.chromium.org/p/chromium/issues/detail?id=969698
-    - 19041 is min version supported by DirectX Helper Library (d3dx12.h)
-    
+    - 19041 is min version supported by DirectX Helper Library (d3dx12.h)    
   - Test Adapter for Google Test (If you want to use the visual studio gtest UI)
 - Python Development (if you want to use mixed mode python debugging in the editor, which you should want! See: https://docs.microsoft.com/en-us/visualstudio/python/debugging-mixed-mode-c-cpp-python-in-visual-studio?view=vs-2019)
   - Python native development tools
-
 
 ## Visual studio find module
 (This is a microsoft module, see here: https://github.com/microsoft/vssetup.powershell)
 
 In a regular powershell window, run the following command (and agree to the prompts to install PowerShellGet, and untrusted PSGallery warning):
-
 
 ```
 Install-Module VSSetup -Scope CurrentUser
@@ -41,9 +37,9 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ## Python 3.7
-READ ALL THE STEPS!
+Orangine uses python for both helper scripts in the build process, and also to link against for purposes of embedding python scripting functionality to the engine.
 
-(Note that Python 3.7.3 doesn't work if you install debug binaries, as there is a bug preventing creation of venv's with debug symbols installed.)
+Python 3 (both 32 and 64 bit) must be installed and on the system path.
 
 Download 64bit [Python 3.7.6 installer](https://www.python.org/ftp/python/3.7.6/python-3.7.6-amd64.exe) from Python website. 
 
@@ -51,59 +47,61 @@ Download 64bit [Python 3.7.6 installer](https://www.python.org/ftp/python/3.7.6/
 
 Download 32bit [Python 3.7.6 installer](https://www.python.org/ftp/python/3.7.6/python-3.7.6.exe) from Python website.
 
-### Using Python Debug Binaries
+(Note on python version: Python 3.7.3 doesn't work if you install debug binaries, as there is a bug preventing creation of venv's with debug symbols installed.)
 
-This isn't required, unless you want to debug the actual Python source code. Even then, I'd suggest
-making a small unit test and debugging the outside of Orangine, using python_d.exe.
+## Conan
+[Conan](https://conan.io/) is a widely used package manager for C++. This project has embedded conan calls into its CMakeLists files to pull open source dependencies.
 
-Linking against debug python libraries in Orangine makes some things really hard...
-you must also build the pip dependencies with debug python. Most support this; but not all.
-
-If you want to forge ahead, it DOES WORK. All, with the exception of remote debugging python code.
-
-1. When installing Python, both 32 and 64 bit, choose _advanced options_ and enable:
-
-- Download debug binaries
-
-> Make sure it is installed to: `%LOCALAPPDATA%\Programs\Python\Python37[_32]\`
-
-2. When generating the Orangine CMake project, set the following CMake Cache variable:
+Install Conan from the comman line using Python.
 
 ```
--DOeScripting_PYTHON_DEBUG=ON
+pip install conan
 ```
 
+# Getting the source code
 ## Git SSH Keys
-Some of the third party dependencies are hosted on github.com. The orangine repository itself is on bitbucket.com.
-
 Test GIT connectivity using git bash:
 
 ```
 ssh git@github.com
-ssh git@bitbucket.com
 ```
 
-If either of those fail, add your ssh keys to the website using by [following these instructions](https://confluence.atlassian.com/get-started-with-bitbucket/install-and-set-up-git-860009658.html).
+If either of those fail, add your ssh keys to the website using by [following these instructions](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
 
 ## Clone the Orangine Repo
 clone the repository to somewhere convenient on your hard drive:
 
 ```
-git clone git@bitbucket.org:orangine/orangine.git c:\repos\orangine
+git clone git@github.com:leweaver/orangine.git c:\repos\orangine
 ```
 
-## Build dependencies
-Our third party dependencies have a number of build and integration methods. To make things easier, a helper script in the root directory will configure, build and install these:
-
-`<git-repo>\install-thirdparty-projects.bat`:
-
-This only needs to be run once.
-
 # Build Orangine
+The project is defined using CMake. The main project file is `<git-repo>\Orangine\CMakeLists.txt`, which can be opened by your favourite CMake compatible IDE (CLion, Visual Studio, VS Code, etc.)
 
-The project is defined using CMake. If you've not used CMake before, it is a tool that takes an input file list (`CMakeLists.txt`) and produces a project file that Visual Studio, ninja, etc can open & build. CMake itself is not a compiler.
+This project makes use of [CMakePresets](https://www.jetbrains.com/help/clion/2021.2/cmake-presets.html) to do the heavy lifting of configuration. It is set to use Ninja for builds by default, though you can of course use whatever you like.
 
-## Option 1: In Visual Studio
+## CLion
+(Instructions written against CLion 2021.2.3)
+
+When you launch CLion, open an existing project:`<git-repo>\Orangine\CMakeLists.txt`
+
+You will need to create 2 visual studio 2019 toolchains within CLion, which are used for building. The name of these toolchains is **very important**; they are referenced by name from the CMakePresets files.
+
+In File -> Settings -> Build, Execution, Deployment -> Toolchains,
+
+* 64bit Toolchain
+  * Picture: (docs/clion-toolchain.png)
+  * Name: Visual Studio 2019 AMD64
+  * Environment: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community
+  * Architecture: AMD64 (*Note: x86_AMD64 will NOT work*)
+
+* 32bit Toolchain
+  * Picture: (docs/clion-toolchain-x86.png)
+  * Name: Visual Studio 2019 x86
+  * Environment: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community
+  * Architecture: x86
+
+## Visual Studio
 
 1. Launch Visual Studio
 1. On the startup page, click the tiny blue link to 'Continue without Code'
@@ -138,49 +136,6 @@ If you want to use ninja to build, `<git-repo>\Orangine\oe-built.bat` wraps CMak
 - `oe-built.bat Install Debug` _Uses ninja to build and place the engine libraries to the root `bin` directory, for consumption by other repositories_
 
 You can manually run any other ninja command: list all of the available ninja commands:`cd cmake-ninjabuild-x64-Debug`
-
-# (Outdated) Overall Architecture
-Here is an quick non-exhaustive overview of how the main object instances are instantiated. Each item creates and owns the items below it in the tree. Each item below is the name of a class, which is located in a CPP/H file of the same name.
-
-- oe::Main
-  - DX::DeviceResources
-  - oe::Game
-    - oe::Scene
-      - oe::Entity_graph_loader_gltf
-      - oe::IManager_base derived classes:
-        - oe::Entity_render_manager
-        - oe::Scene_graph_manager
-            - oe::Entity
-            - oe::Entity_filter
-        - oe::Render_step_manager
-            - oe::Render_step
-        - ...
-
-# (Outdated) Running unit tests
-> Unit tests haven't yet been updated to use CMake; so the following may be an OK guide but probably won't work
-
-First, make sure tests are set to run in x64.
-
-1. Test -> Test Settings -> Select Test Settings File
-1. Choose `<git-repo>\Engine-Test\x64.runsettings`
-
-Try one of these two methods... stick to the one that works for you!
-
-## Unit Test Sessions
-1. Build the solution
-1. Right click on the `Engine-Test` project, and select `Run Tests`
-
-## Test Explorer
-> Note - running the tests in visual studio can be a real pain. The test explorer sometimes just refuses to find them.
-
-Tests are executed via the `Test Explorer` window in visual studio. Projects that contain tests are suffixed with `-Test` and compile to an x64 executable. To run them;
-
-1. Click the Run All button in the test explorer window.
-    - If not visible, Test -> Windows -> Test Explorer
-
-> NOTE: Don't try to run individual tests; this seems to break the Test Explorer window. If in doubt, `Run All` makes things work again :)
-
-> Tip: Optionally you can unload the `Prototype` solution to make runs faster, since it doesn't contain any tests.
 
 # Maths Conventions
 Matrix conventions are as in SimpleMath: Right Handed, Row Major.
@@ -230,3 +185,55 @@ template parameters: TMy_class_name
 private field members: _lowerCamelCase
 public field members: lowerCamelCase
 ```
+
+
+# Apendices
+
+## Optional: Linking against python's debug binaries
+Prefix: I really don't recommend doing this. But it is possible.
+
+This isn't required, unless you want to debug the actual Python source code. Even then, I'd suggest
+making a small unit test and debugging the outside of Orangine, using python_d.exe.
+
+Linking against debug python libraries in Orangine makes some things really hard...
+you must also build the pip dependencies with debug python. Most support this; but not all.
+
+If you want to forge ahead, it DOES WORK. All, with the exception of remote debugging python code.
+
+1. When installing Python, both 32 and 64 bit, choose _advanced options_ and enable:
+
+- Download debug binaries
+
+> Make sure it is installed to: `%LOCALAPPDATA%\Programs\Python\Python37[_32]\`
+
+2. When generating the Orangine CMake project, set the following CMake Cache variable:
+
+```
+-DOeScripting_PYTHON_DEBUG=ON
+```
+
+## (Outdated) Running unit tests
+> Unit tests haven't yet been updated to use CMake; so the following may be an OK guide but probably won't work
+
+First, make sure tests are set to run in x64.
+
+1. Test -> Test Settings -> Select Test Settings File
+1. Choose `<git-repo>\Engine-Test\x64.runsettings`
+
+Try one of these two methods... stick to the one that works for you!
+
+## Unit Test Sessions
+1. Build the solution
+1. Right click on the `Engine-Test` project, and select `Run Tests`
+
+## Test Explorer
+> Note - running the tests in visual studio can be a real pain. The test explorer sometimes just refuses to find them.
+
+Tests are executed via the `Test Explorer` window in visual studio. Projects that contain tests are suffixed with `-Test` and compile to an x64 executable. To run them;
+
+1. Click the Run All button in the test explorer window.
+    - If not visible, Test -> Windows -> Test Explorer
+
+> NOTE: Don't try to run individual tests; this seems to break the Test Explorer window. If in doubt, `Run All` makes things work again :)
+
+> Tip: Optionally you can unload the `Prototype` solution to make runs faster, since it doesn't contain any tests.

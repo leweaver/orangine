@@ -44,11 +44,16 @@ target_include_directories(${PROJECT_NAME}
 # Python Env
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
+# It is critical that the version of python we compile against matches the scripts loaded into the virtualenv
+if (NOT "${Python3_VERSION}" VERSION_GREATER_EQUAL "3.7.6")
+    message(FATAL_ERROR "Found python ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}, but must be compiled against minimum of 3.7.6")
+endif()
+
 # Python search paths
 if ("${Orangine_ARCHITECTURE}" MATCHES "x86")
-    set(ENV{VIRTUAL_ENV} "${PROJECT_BINARY_DIR}/pyenv_37")
+    set(ENV{VIRTUAL_ENV} "${PROJECT_BINARY_DIR}/pyenv")
 elseif ("${Orangine_ARCHITECTURE}" MATCHES "x64")
-    set(ENV{VIRTUAL_ENV} "${PROJECT_BINARY_DIR}/pyenv_37")
+    set(ENV{VIRTUAL_ENV} "${PROJECT_BINARY_DIR}/pyenv")
 else ()
     MESSAGE(ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif ()
@@ -77,11 +82,6 @@ endif()
 # PyBind
 find_package(pybind11 REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC pybind11::embed pybind11::python_link_helper)
-
-# It is critical that the version of python we compile against matches the scripts loaded into the virtualenv
-if (NOT "${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}" MATCHES "3.7")
-    message(FATAL_ERROR "Found python ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}, but must be compiled against 3.7")
-endif()
 
 
 # --------------------------------

@@ -22,7 +22,6 @@ add_library(${PROJECT_NAME} STATIC
 file(GLOB OeScripting_HEADERS "include/OeScripting/*")
 list(APPEND OeScripting_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
-set_target_properties(OeScripting PROPERTIES PUBLIC_HEADER "${OeScripting_HEADERS}")
 add_library(Oe::Scripting ALIAS OeScripting)
 
 # Precompiled Headers
@@ -101,6 +100,12 @@ install(DIRECTORY data
 message(NOTICE "Python_LIBRARY_DIRS=${Python_LIBRARY_DIRS}")
 message(NOTICE "Python_INCLUDE_DIRS=${Python_INCLUDE_DIRS}")
 message(NOTICE "Python_RUNTIME_LIBRARY_DIRS=${Python_RUNTIME_LIBRARY_DIRS}")
+
+# public header files
+install(
+        FILES ${OeScripting_HEADERS}
+        DESTINATION include/${PROJECT_NAME}
+)
 
 # Install Python binaries
 if (${OeScripting_PYTHON_DEBUG})

@@ -100,10 +100,9 @@ add_library(${PROJECT_NAME} STATIC
         "ThirdParty/MikktSpace/mikktspace.c"
         "ThirdParty/imgui/misc/cpp/imgui_stdlib.h"
         "ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp" src/OeCore.cpp)
-file(GLOB OeCore_HEADERS "include/OeCore/*")
+file(GLOB OeCore_HEADERS "include/**/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
-set_target_properties(OeCore PROPERTIES PUBLIC_HEADER "${OeCore_HEADERS}")
 target_compile_features(OeCore PUBLIC cxx_std_17)
 add_library(Oe::Core ALIAS OeCore)
 
@@ -168,6 +167,12 @@ target_link_libraries(${PROJECT_NAME} PUBLIC DirectXTK12)
 
 include(OeUtils)
 install_target_pdb(OeCore)
+
+# public header files
+install(
+        FILES ${OeCore_HEADERS}
+        DESTINATION include/${PROJECT_NAME}
+)
 
 # Data and Assets
 set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data")

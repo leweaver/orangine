@@ -101,6 +101,12 @@ In File -> Settings -> Build, Execution, Deployment -> Toolchains,
   * Environment: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community
   * Architecture: x86
 
+Then; in File -> Settings -> Build, Execution, Deployment -> CMake
+
+* Enable the "dev preset" profile by clicking on it, and checking the "Enable Profile" checkbox.
+
+You should now be able to build the "ViewerApp" target. (Select it from the dropdown next to the play icon at the top right of the IDE)
+
 ## Visual Studio
 
 1. Launch Visual Studio
@@ -116,9 +122,7 @@ From here, you can select one of two startup projects in the "Select Startup Ite
 
 The game files will be built/installed to the following location:
 
-```
-%USERPROFILE%\CMakeBuilds\<some-build-hash>\build\x64-Debug\ViewerApp
-```
+`%LOCALAPPDATA%/Orangine`
 
 Some tips on Visual Studio with CMake: https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=vs-2019
 

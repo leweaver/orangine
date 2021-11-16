@@ -28,7 +28,6 @@ add_library(${PROJECT_NAME} STATIC
 file(GLOB OeApp_HEADERS "include/OeApp/*")
 list(APPEND OeApp_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
-set_target_properties(OeApp PROPERTIES PUBLIC_HEADER "${OeApp_HEADERS}")
 add_library(Oe::App ALIAS OeApp)
 
 # Precompiled Headers
@@ -59,6 +58,12 @@ set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${${PROJECT_NAME}_DATA_SOURCE_DIRS}" PAREN
 install(DIRECTORY data
         DESTINATION bin
         )
+
+# public headers
+install(
+        FILES ${OeApp_HEADERS}
+        DESTINATION include/${PROJECT_NAME}
+)
 
 # Config.cmake files
 configure_file(OeAppConfig.cmake.in OeAppConfig.cmake @ONLY)

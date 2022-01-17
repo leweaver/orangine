@@ -3,3 +3,4 @@ ptvsd==4.3.2
 vectormath==0.2.2
 jsonschema==3.0.2
 argparse==1.4.0
+mypy==0.910

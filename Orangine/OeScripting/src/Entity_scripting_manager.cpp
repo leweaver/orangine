@@ -2,10 +2,8 @@
 
 #include "Entity_scripting_manager.h"
 
-#include "Engine_bindings.h"
-
-#include "OeCore/Light_component.h"
-#include "OeCore/Test_component.h"
+#include <OeCore/Light_component.h>
+#include <OeCore/Test_component.h>
 
 #include <imgui.h>
 
@@ -27,14 +25,6 @@ using namespace oe::internal;
 #endif
 #endif
 
-// I don't know why this needs to be in this file, but it does.
-// If I put it inside Engine_bindings.cpp it (sometimes) doesn't get called.
-PYBIND11_EMBEDDED_MODULE(oe, m)
-{
-  m.doc() = "Orangine scripting API";
-  Engine_bindings::create(m);
-}
-
 template<>
 void oe::create_manager(Manager_instance<IEntity_scripting_manager>& out,
         ITime_step_manager& timeStepManager, IScene_graph_manager& sceneGraphManager,
@@ -42,6 +32,13 @@ void oe::create_manager(Manager_instance<IEntity_scripting_manager>& out,
 {
   out = Manager_instance<IEntity_scripting_manager>(std::make_unique<Entity_scripting_manager>(
           timeStepManager, sceneGraphManager, inputManager, assetManager, entityRenderManager));
+}
+
+Entity_scripting_manager::Engine_internal_module::Engine_internal_module()
+    : instance(py::module::import("engine_internal"))
+    , reset_output_streams(instance.attr("reset_output_streams"))
+    , enable_remote_debugging(instance.attr("enable_remote_debugging"))
+{
 }
 
 Entity_scripting_manager::Entity_scripting_manager(
@@ -315,10 +312,6 @@ void Entity_scripting_manager::initializePythonInterpreter()
     }
   }
 
-  // Add OeScripting scripts
-  const auto& dataScriptsPath = _assetManager.makeAbsoluteAssetPath(L"OeScripting/scripts");
-  sysPathVec.push_back(dataScriptsPath);
-
   // Add additional user script paths
   std::copy(_preInit_additionalPaths.begin(), _preInit_additionalPaths.end(), std::back_inserter(sysPathVec));
 
@@ -339,7 +332,7 @@ void Entity_scripting_manager::initializePythonInterpreter()
   _pythonContext._sysModule = py::module::import("sys");
   _pythonContext._sysModule.attr("path") = sysPathList;
 
-  _pythonContext._oeModule = std::make_unique<Engine_bindings>(py::module::import("oe"));
+  _pythonContext._oeModule = std::make_unique<OeScripting_bindings>(py::module::import("oe"));
   _pythonContext._oeModule->initializeSingletons(_inputManager);
 
   _pythonContext._engineInternalModule = std::make_unique<Engine_internal_module>();

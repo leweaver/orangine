@@ -46,6 +46,9 @@ class Sample_scene {
   std::shared_ptr<Entity>
   addAmbientLight(const Color& color, float intensity, const std::string& name = "");
 
+  IScene_graph_manager& getSceneGraphManager() const { return _entityManager; }
+  IInput_manager& getInputManager() const { return _inputManager; }
+
  private:
   std::string createLightEntityName(const char* lightType, const std::string& userName);
 

@@ -90,16 +90,28 @@ add_library(${PROJECT_NAME} STATIC
         "src/Stubs/pch.h" 
         "src/D3D12/pch.h"
         "src/D3D12/D3D12_collision.cpp"
-        src/D3D12/D3D12_lighting_manager.cpp
-        src/D3D12/D3D12_lighting_manager.h
-        src/D3D12/D3D12_renderer_data.h
+        "src/D3D12/D3D12_lighting_manager.cpp"
+        "src/D3D12/D3D12_lighting_manager.h"
+        "src/D3D12/D3D12_renderer_data.h"
         "src/Collision.cpp"
         "src/Statics.cpp"
+        "src/OeCore.cpp"
         "ThirdParty/d3dx12/d3dx12.h"
         "ThirdParty/MikktSpace/mikktspace.h"
         "ThirdParty/MikktSpace/mikktspace.c"
         "ThirdParty/imgui/misc/cpp/imgui_stdlib.h"
-        "ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp" src/OeCore.cpp)
+        "ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp"
+        "ThirdParty/nv_helpers_dx12/BottomLevelASGenerator.cpp"
+        "ThirdParty/nv_helpers_dx12/BottomLevelASGenerator.h"
+        "ThirdParty/nv_helpers_dx12/RaytracingPipelineGenerator.cpp"
+        "ThirdParty/nv_helpers_dx12/RaytracingPipelineGenerator.h"
+        "ThirdParty/nv_helpers_dx12/RootSignatureGenerator.cpp"
+        "ThirdParty/nv_helpers_dx12/RootSignatureGenerator.h"
+        "ThirdParty/nv_helpers_dx12/ShaderBindingTableGenerator.cpp"
+        "ThirdParty/nv_helpers_dx12/ShaderBindingTableGenerator.h"
+        "ThirdParty/nv_helpers_dx12/TopLevelASGenerator.cpp"
+        "ThirdParty/nv_helpers_dx12/TopLevelASGenerator.h"
+        src/D3D12/D3D12_render_step_manager.cpp src/D3D12/D3D12_render_step_manager.h)
 file(GLOB OeCore_HEADERS "include/**/*")
 list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
@@ -114,6 +126,11 @@ add_precompiled_header(${PROJECT_NAME} pch.h
         IGNORE_FILES
                 ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp
                 ThirdParty/MikktSpace/mikktspace.c
+                ThirdParty/nv_helpers_dx12/BottomLevelASGenerator.cpp
+                ThirdParty/nv_helpers_dx12/RaytracingPipelineGenerator.cpp
+                ThirdParty/nv_helpers_dx12/RootSignatureGenerator.cpp
+                ThirdParty/nv_helpers_dx12/ShaderBindingTableGenerator.cpp
+                ThirdParty/nv_helpers_dx12/TopLevelASGenerator.cpp
         )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
@@ -124,7 +141,7 @@ add_custom_target(
  ${PROJECT_NAME}_codegen ALL
  COMMAND "${Python3_EXECUTABLE}" "${Orangine_SOURCE_DIR}/cmake/scripts/codegen-enum.py" --json "${PROJECT_SOURCE_DIR}/codegen/Renderer_enums.json"
  BYPRODUCTS include/OeCore/Renderer_enums.h
- COMMENT "Generating enums"
+ COMMENT "Generating ${PROJECT_NAME} enums"
 )
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_codegen)
 

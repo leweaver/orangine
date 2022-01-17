@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 # Hide the 'Up-to-date' install messages
 set(CMAKE_INSTALL_MESSAGE LAZY)
 
-MESSAGE("CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}")
-
 project(Orangine VERSION 1.0
                  DESCRIPTION "Orangine - realtime glTF rendering engine"
                  LANGUAGES CXX)

@@ -9,9 +9,8 @@
 #include <OeCore/IDev_tools_manager.h>
 
 #include <OeScripting/IEntity_scripting_manager.h>
+#include <OeScripting/OeScripting_bindings.h>
 
-#include "Engine_bindings.h"
-#include "Engine_internal_module.h"
 #include "Script_runtime_data.h"
 
 namespace oe::internal {
@@ -51,10 +50,22 @@ class Entity_scripting_manager : public IEntity_scripting_manager, public Manage
   std::wstring _pythonProgramName;
   std::vector<std::wstring> _preInit_additionalPaths;
 
+  /**
+   * Helper accessors for the code defined in lib/engine_internal.py
+   */
+  class Engine_internal_module {
+   public:
+    Engine_internal_module();
+
+    pybind11::module instance;
+    pybind11::detail::str_attr_accessor reset_output_streams;
+    pybind11::detail::str_attr_accessor enable_remote_debugging;
+  };
+
   struct PythonContext {
     pybind11::module _sysModule;
     std::unique_ptr<Engine_internal_module> _engineInternalModule;
-    std::unique_ptr<Engine_bindings> _oeModule;
+    std::unique_ptr<OeScripting_bindings> _oeModule;
   };
 
   PythonContext _pythonContext;

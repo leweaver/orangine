@@ -7,7 +7,7 @@
 
 namespace oe::scripting {
 struct Manager_instances {
-  explicit Manager_instances(oe::core::Manager_instances& coreManagerInstances);
+  OeScripting_EXPORT explicit Manager_instances(oe::core::Manager_instances& coreManagerInstances);
 
     // Items that derive from Manager_base
   using Managers_tuple = std::tuple<Manager_instance<IEntity_scripting_manager>>;

@@ -2,12 +2,12 @@ import sys
 import oe
 import logging
 
-from io import StringIO
 
 def enable_remote_debugging():
     import ptvsd
     ptvsd.enable_attach(address=('0.0.0.0', 3000), redirect_output=False)
     pass
+
 
 class NativeHandler(logging.StreamHandler):
     def __init(self):
@@ -35,8 +35,9 @@ class NativeHandler(logging.StreamHandler):
                 oe.log_debug(msg)
         except RecursionError:  # See issue logger 36272
             raise
-        except Exception:
+        except RuntimeError:
             self.handleError(record)
+
 
 def _init_logger():
     logger = logging.getLogger()
@@ -52,8 +53,10 @@ def _init_logger():
     native_handler.setLevel(logger.level)
     logger.addHandler(native_handler)
 
+
 def init():
-  _init_logger()
+    _init_logger()
+
 
 # Captures stdout and stderr. This is just a bucket for any output not using logger
 # (which is handled by init_logger, above)

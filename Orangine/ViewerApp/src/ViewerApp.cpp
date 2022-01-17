@@ -4,18 +4,15 @@
 
 #include <OeApp/App.h>
 #include <OeApp/SampleScene.h>
+#include <OeApp/Statics.h>
+#include <OeApp/OeApp_bindings.h>
 #include <OeCore/Color.h>
-#include <OeCore/IEntity_render_manager.h>
-#include <OeCore/IScene_graph_manager.h>
 #include <OeCore/ILighting_manager.h>
 #include <OeCore/Light_component.h>
 #include <OeCore/PBR_material.h>
 #include <OeCore/WindowsDefines.h>
 #include <OeCore/Statics.h>
 #include <OeScripting/Statics.h>
-#include <OeApp/Statics.h>
-
-#include <g3log/g3log.hpp>
 
 #include <filesystem>
 
@@ -29,13 +26,20 @@ class ViewerApp : public App {
   void onSceneConfigured() override {
     // Tell the scripting engine about our data directory.
     const auto appScriptsPath = getAssetManager().makeAbsoluteAssetPath(L"ViewerApp/scripts");
-    getEntityScriptingManager().preInit_addAbsoluteScriptsPath(appScriptsPath);
+    getEntityScriptingManager().preInit_addAbsoluteScriptsPath(L"ViewerApp/scripts");
   }
 
   void onSceneInitialized() override {
     _sampleScene = std::make_unique<Sample_scene>(
             getRenderStepManager(), getSceneGraphManager(), getInputManager(), getEntityScriptingManager(),
             getAssetManager(), std::vector<std::wstring>{utf8_decode(VIEWERAPP_THIRDPARTY_PATH)});
+
+    // Load a scene
+    //auto appModule = pybind11::module::import(OeApp_bindings::getModuleName().c_str());
+    pybind11::object pySampleScene = pybind11::cast(std::make_unique<PyClass_sampleScene>(*_sampleScene));
+    //auto scenesModule =
+
+
 
     // CreateSceneCubeSatellite();
     // CreateSceneLeverArm();
@@ -175,8 +179,6 @@ int WINAPI wWinMain(
   UNREFERENCED_PARAMETER(hInstance);
   UNREFERENCED_PARAMETER(hPrevInstance);
   UNREFERENCED_PARAMETER(lpCmdLine);
-
-  nlohmann::json::value_type configJson;
 
   auto startSettings = App_start_settings();
   startSettings.fullScreen = nCmdShow == SW_SHOWMAXIMIZED;

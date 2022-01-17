@@ -10,7 +10,7 @@ class IAsset_manager {
  public:
   virtual ~IAsset_manager() = default;
 
-  // Sets the default data path, that contains scripts/assets/shaders.
+  // Sets the default path that contains models/textures/shaders etc.
   // Must be called before initialize(), otherwise an exception will be thrown.
   virtual void preInit_setDataPath(const std::wstring&) = 0;
   virtual const std::wstring& getDataPath() const = 0;

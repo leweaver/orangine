@@ -23,21 +23,31 @@ add_library(${PROJECT_NAME} STATIC
         src/VisualStudioLogSink.h
         src/filesinkhelper.ipp
         src/SampleScene.cpp
-        src/Statics.cpp include/OeApp/Manager_collection.h)
+        src/Statics.cpp
+        src/OeApp_bindings.cpp
+        src/OeApp_embedded_module.cpp)
 
 file(GLOB OeApp_HEADERS "include/OeApp/*")
 list(APPEND OeApp_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
 add_library(Oe::App ALIAS OeApp)
 
+# Python Scripts Dir
+include (OePython)
+oe_add_scripts_dir(OeApp oe_app_bindings
+        LINK_LIBRARIES Oe::Core Oe::Scripting)
+
 # Precompiled Headers
 include(PrecompiledHeader)
 add_precompiled_header(${PROJECT_NAME} pch.h 
-        SOURCE_CXX src/pch.cpp)
+        SOURCE_CXX src/pch.cpp
+        IGNORE_FILES src/OeApp_bindings.cpp
+        )
 
 target_link_libraries(${PROJECT_NAME} 
         PUBLIC OeCompilerFlags WindowsApp.lib
-        PUBLIC Oe::Core Oe::Scripting)
+        PUBLIC Oe::Core
+        OeScripting)
 
 # Public headers
 target_include_directories(${PROJECT_NAME}

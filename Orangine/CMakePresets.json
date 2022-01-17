@@ -33,14 +33,24 @@
       "name": "VS_2019_AMD64_Debug",
       "inherits": "VS_2019",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OE_BUILD_ASAN": "FALSE"
+      }
+    },
+    {
+      "name": "VS_2019_AMD64_Debug_Asan",
+      "inherits": "VS_2019",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OE_BUILD_ASAN": "TRUE"
       }
     },
     {
       "name": "VS_2019_AMD64_Release",
       "inherits": "VS_2019",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "OE_BUILD_ASAN": "FALSE"
       }
     }
   ],
@@ -49,6 +59,11 @@
       "name": "dev",
       "displayName": "VS 2019 AMD64 debug",
       "configurePreset": "VS_2019_AMD64_Debug"
+    },
+    {
+      "name": "dev-asan",
+      "displayName": "VS 2019 AMD64 debug ASAN",
+      "configurePreset": "VS_2019_AMD64_Debug_Asan"
     }
   ]
 }

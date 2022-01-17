@@ -1,12 +1,12 @@
-#include "pch.h"
-
-#include "Engine_bindings.h"
-#include "Engine_internal_module.h"
+// Must be included before any STL files
+#include "OeScripting/OeScripting_bindings.h"
 
 #include <OeCore/Entity.h>
 
+#include <g3log/g3log.hpp>
+
 namespace py = pybind11;
-using oe::Engine_bindings;
+using oe::OeScripting_bindings;
 
 namespace oe {
 
@@ -39,29 +39,6 @@ void engine_log_func(const std::string& message, const LEVELS& level)
   }
 }
 
-class PyClass_mouse_state {
-};
-
-class PyClass_input {
- public:
-  explicit PyClass_input(IInput_manager& inputManager)
-      : _inputManager(inputManager)
-  {}
-
-  IInput_manager& getInputManager()
-  {
-    return _inputManager;
-  }
-
-  IInput_manager::Mouse_state* getMouseState()
-  {
-    return _inputManager.getMouseState().lock().get();
-  }
-
- private:
-  IInput_manager& _inputManager;
-};
-
 class PyClass_managers {
  public:
   explicit PyClass_managers(IInput_manager& inputManager)
@@ -77,12 +54,14 @@ class PyClass_managers {
 };
 }// namespace oe
 
-void Engine_bindings::initializeSingletons(IInput_manager& inputManager) {
-   _module.attr("managers") = std::make_unique<PyClass_managers>(inputManager);
+void OeScripting_bindings::initializeSingletons(IInput_manager& inputManager) {
+   _module.attr("runtime") = std::make_unique<PyClass_managers>(inputManager);
 }
 
-void Engine_bindings::create(pybind11::module& m)
+void OeScripting_bindings::create(pybind11::module& m)
 {
+  m.attr("__name__") = "oe";
+  m.doc() = "Orangine Core scripting API";
   py::class_<PyClass_managers>(m, "NativeContext")
           .def_property_readonly("input", &PyClass_managers::getInput);
 
@@ -152,18 +131,14 @@ void Engine_bindings::create(pybind11::module& m)
           .def_property("scale", &Entity::scale, static_cast<void (Entity::*)(const SSE::Vector3&)>(&Entity::setScale))
           .def_property("scale", &Entity::scale, static_cast<void (Entity::*)(float)>(&Entity::setScale));
 
-  // Scene
-  // TODO:
-  /*
-  py::class_<Scene>(m, "Scene")
-          .def("get_main_camera", &Scene::getMainCamera)
-          .def("set_main_camera", &Scene::setMainCamera);
-          */
-
   // Input Manager
-  const auto clsInput = pybind11::class_<PyClass_input>(m, "Input")
+  const auto clsInput = py::class_<PyClass_input>(m, "Input")
                                 //.def(py::init<>()) Don't allow construction from Python
                                 .def("get_mouse_state", &PyClass_input::getMouseState, py::return_value_policy::copy);
+
+  // SceneGraph Manager
+  const auto clsSceneGraph = py::class_<PyClass_sceneGraph>(m, "SceneGraph")
+          .def("instantiate", &PyClass_sceneGraph::instantiate, py::arg("name") = "", py::arg("parent") = py::none());
 
   py::enum_<IInput_manager::Mouse_state::Button_state>(clsInput, "MouseButtonState")
           .value("Up", IInput_manager::Mouse_state::Button_state::Up)
@@ -172,19 +147,11 @@ void Engine_bindings::create(pybind11::module& m)
           .value("Pressed", IInput_manager::Mouse_state::Button_state::Pressed)
           .export_values();
 
-  pybind11::class_<IInput_manager::Mouse_state>(clsInput, "MouseState")
+  py::class_<IInput_manager::Mouse_state>(clsInput, "MouseState")
           .def(py::init<>())
           .def_readwrite("left", &IInput_manager::Mouse_state::left)
           .def_readwrite("middle", &IInput_manager::Mouse_state::middle)
           .def_readwrite("right", &IInput_manager::Mouse_state::right)
           .def_readwrite("delta_position", &IInput_manager::Mouse_state::deltaPosition)
           .def_readwrite("scroll_wheel_delta", &IInput_manager::Mouse_state::scrollWheelDelta);
-
-  // TODO:
-  /*
-  m.def(
-          "get_scene", []() { return _scene; }, py::return_value_policy::reference);
-          */
-
-  LOG(INFO) << "Created engine bindings";
 }

@@ -38,9 +38,6 @@ add_precompiled_header(${PROJECT_NAME} pch.h
 # --------------------------------
 # Dependencies
 
-# Use this for embedding in the built application, but also for some build scripts in CMake
-find_package(Python COMPONENTS Interpreter)
-
 target_link_libraries(${PROJECT_NAME} PUBLIC Oe::App)
 
 add_custom_command(TARGET ${PROJECT_NAME}
@@ -48,31 +45,12 @@ add_custom_command(TARGET ${PROJECT_NAME}
                    COMMAND "${CMAKE_COMMAND}" -E copy "${OeScripting_PYTHON_RUNTIME_DLL}" "${PROJECT_BINARY_DIR}"
                    )
 
+# configure /data folder
+oe_target_add_data_dir(${PROJECT_NAME} DEPENDENCIES Oe::App Oe::Core Oe::Scripting)
+
 # --------------------------------
 # Configuration file blending
-set(ViewerApp_DATA_DIRECTORIES "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data")
-list(APPEND ViewerApp_DATA_DIRECTORIES "${OeCore_DATA_SOURCE_DIRS}")
-list(APPEND ViewerApp_DATA_DIRECTORIES "${OeApp_DATA_SOURCE_DIRS}")
-list(APPEND ViewerApp_DATA_DIRECTORIES "${OeScripting_DATA_SOURCE_DIRS}")
-set(ViewerApp_SOURCE_CONFIG_FILE "${PROJECT_SOURCE_DIR}/src/config.default.json")
-
-# Write source data paths, for cases where the app is run from the build output folder
-set(ViewerApp_DATA_PATHS_CONFIG_FILE "${PROJECT_BINARY_DIR}/config.data_paths.json")
-set(ViewerApp_BUILD_CONFIG_FILE "${PROJECT_BINARY_DIR}/config.json")
-add_custom_command(OUTPUT "${ViewerApp_DATA_PATHS_CONFIG_FILE}"
-		COMMENT "Creating data_paths configuration file"
-		COMMAND "${Python_EXECUTABLE}" "${Orangine_SOURCE_DIR}/cmake/scripts/make_data_paths_config.py" "${ViewerApp_DATA_DIRECTORIES}" > "${ViewerApp_DATA_PATHS_CONFIG_FILE}"
-		)
-add_custom_command(OUTPUT "${ViewerApp_BUILD_CONFIG_FILE}"
-		COMMENT "Creating build configuration file"
-		COMMAND "${Python_EXECUTABLE}" "${Orangine_SOURCE_DIR}/cmake/scripts/merge_config.py" "${ViewerApp_SOURCE_CONFIG_FILE}" "${ViewerApp_DATA_PATHS_CONFIG_FILE}" > "${ViewerApp_BUILD_CONFIG_FILE}"
-		DEPENDS "${ViewerApp_SOURCE_CONFIG_FILE}" "${ViewerApp_DATA_PATHS_CONFIG_FILE}"
-		)
-add_custom_target(
-		${PROJECT_NAME}_CONFIG
-		DEPENDS "${ViewerApp_BUILD_CONFIG_FILE}"
-)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_CONFIG)
+oe_target_build_config_yaml(${PROJECT_NAME} SOURCE_TARGETS ${PROJECT_NAME} Oe::App Oe::Core Oe::Scripting)
 
 # --------------------------------
 # Installation
@@ -84,11 +62,11 @@ install(DIRECTORY data;${OeCore_DATA_PATH};${OeScripting_DATA_PATH};${OeApp_DATA
 
 # Install PDB
 include(OeUtils)
-install_target_pdb(ViewerApp)
+oe_target_install_pdb(ViewerApp)
 
 # Config.cmake files
-configure_file(ViewerAppConfig.cmake.in ViewerAppConfig.cmake @ONLY)
-configure_file(ViewerAppConfigVersion.cmake.in ViewerAppConfigVersion.cmake @ONLY)
+configure_file(cmake/ViewerAppConfig.cmake.in ViewerAppConfig.cmake @ONLY)
+configure_file(cmake/ViewerAppConfigVersion.cmake.in ViewerAppConfigVersion.cmake @ONLY)
 install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/ViewerAppConfig.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/ViewerAppConfigVersion.cmake"

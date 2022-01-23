@@ -2,26 +2,6 @@ project(OeScripting VERSION 1.0
         DESCRIPTION "Orangine Scripting Library"
         LANGUAGES CXX)
 
-
-######################
-# Load Python Dependencies
-
-# Use python debug binaries (with PyDEBUG defined)?
-# Note - all pip modules must also be built with PyDEBUG.
-SET(OeScripting_PYTHON_DEBUG "OFF" CACHE BOOL "Use python debug binaries (built with PyDEBUG defined)")
-SET(OeScripting_PYTHON_DEBUG ${OeScripting_PYTHON_DEBUG} PARENT_SCOPE)
-
-include (OePython)
-
-MESSAGE(STATUS "Verifying pip Packages: $ENV{VIRTUAL_ENV}")
-execute_process(
-        COMMAND "$ENV{VIRTUAL_ENV}/Scripts/pip3.exe"
-        install -r "${PROJECT_SOURCE_DIR}/pyenv-requirements.txt"
-        RESULT_VARIABLE _retval)
-IF (NOT "${_retval}" MATCHES "0")
-    MESSAGE(FATAL_ERROR "Failed to install virtualenv requirements")
-endif()
-
 ######################
 # Library Definition
 add_library(${PROJECT_NAME} STATIC
@@ -54,7 +34,7 @@ target_link_libraries(${PROJECT_NAME}
         PRIVATE Oe::Core)
 
 # Python Scripts Dir
-oe_add_scripts_dir(OeScripting oe_bindings
+oe_target_add_scripts_dir(OeScripting oe_bindings
         LINK_LIBRARIES Oe::Core)
 
 # Precompiled Headers
@@ -80,11 +60,10 @@ endif()
 
 # --------------------------------
 # Install
-include(OeUtils)
-install_target_pdb(OeScripting)
+oe_target_install_pdb(OeScripting)
 
 # Data and Assets
-set(OeScripting_PYENV_DIR "$ENV{VIRTUAL_ENV}$<$<BOOL:${OeScripting_PYTHON_DEBUG}>:_d>")
+set(OeScripting_PYENV_DIR "$ENV{VIRTUAL_ENV}$<$<BOOL:${OE_PYTHON_DEBUG}>:_d>")
 set(OeScripting_PYENV_DIR $ENV{VIRTUAL_ENV} PARENT_SCOPE)
 set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data;pyenv=${OeScripting_PYENV_DIR}")
 set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${${PROJECT_NAME}_DATA_SOURCE_DIRS}" PARENT_SCOPE)
@@ -95,10 +74,6 @@ install(FILES ${PROJECT_BINARY_DIR}/oe.pyi
         DESTINATION bin/data/${PROJECT_NAME}/lib
         )
 
-message(NOTICE "Python_LIBRARY_DIRS=${Python_LIBRARY_DIRS}")
-message(NOTICE "Python_INCLUDE_DIRS=${Python_INCLUDE_DIRS}")
-message(NOTICE "Python_RUNTIME_LIBRARY_DIRS=${Python_RUNTIME_LIBRARY_DIRS}")
-
 # public header files
 install(
         FILES ${OeScripting_HEADERS}
@@ -106,7 +81,7 @@ install(
 )
 
 # Install Python binaries
-if (${OeScripting_PYTHON_DEBUG})
+if (${OE_PYTHON_DEBUG})
         set(OeScripting_PYTHON_RUNTIME_DLL "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll")
 else ()
         set(OeScripting_PYTHON_RUNTIME_DLL "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll")
@@ -120,8 +95,8 @@ configure_file (
         "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
 )
 
-configure_file(OeScriptingConfig.cmake.in OeScriptingConfig.cmake @ONLY)
-configure_file(OeScriptingConfigVersion.cmake.in OeScriptingConfigVersion.cmake @ONLY)
+configure_file(cmake/OeScriptingConfig.cmake.in OeScriptingConfig.cmake @ONLY)
+configure_file(cmake/OeScriptingConfigVersion.cmake.in OeScriptingConfigVersion.cmake @ONLY)
 install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/OeScriptingConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/OeScriptingConfigVersion.cmake"

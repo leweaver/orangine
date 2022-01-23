@@ -48,7 +48,7 @@ install(TARGETS OeCompilerFlags
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
-    "${CMAKE_CURRENT_LIST_DIR}/OeCompilerFlagsConfig.cmake.in"
+    "${CMAKE_CURRENT_LIST_DIR}/cmake_templates/OeCompilerFlagsConfig.cmake.in"
     "${PROJECT_BINARY_DIR}/OeCompilerFlagsConfig.cmake"
     INSTALL_DESTINATION lib/cmake/OeCompilerFlags
 )

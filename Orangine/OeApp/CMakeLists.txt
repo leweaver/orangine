@@ -2,11 +2,6 @@ project(OeApp VERSION 1.0
         DESCRIPTION "Orangine App Library"
         LANGUAGES CXX)
 
-configure_file (
-        "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
-        "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
-)
-
 # --------------------------------
 # Library Definition
 add_library(${PROJECT_NAME} STATIC
@@ -25,61 +20,43 @@ add_library(${PROJECT_NAME} STATIC
         src/SampleScene.cpp
         src/Statics.cpp
         src/OeApp_bindings.cpp
-        src/OeApp_embedded_module.cpp)
-
-file(GLOB OeApp_HEADERS "include/OeApp/*")
-list(APPEND OeApp_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
-
+        src/OeApp_embedded_module.cpp src/Yaml_config_reader.cpp)
 add_library(Oe::App ALIAS OeApp)
 
-# Python Scripts Dir
-include (OePython)
-oe_add_scripts_dir(OeApp oe_app_bindings
+#####
+# Dependencies
+#####
+target_link_libraries(${PROJECT_NAME}
+        PUBLIC WindowsApp.lib OeCompilerFlags Oe::Core Oe::Scripting)
+
+# yaml
+find_package(yaml-cpp REQUIRED)
+target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp::yaml-cpp)
+
+#####
+# Orangine module configuration
+#####
+
+# configure /cmake folder and src/{PROJECT_NAME}Config.h.in file
+oe_target_configure_cmake_dir(${PROJECT_NAME})
+
+# configure /include folder (public header files) and configure .cmake files
+oe_target_configure_include_dir(${PROJECT_NAME})
+
+# configure /data folder
+oe_target_add_data_dir(${PROJECT_NAME})
+
+# configure /scripts folder
+oe_target_add_scripts_dir(${PROJECT_NAME} oe_app_bindings
         LINK_LIBRARIES Oe::Core Oe::Scripting)
 
 # Precompiled Headers
 include(PrecompiledHeader)
 add_precompiled_header(${PROJECT_NAME} pch.h 
         SOURCE_CXX src/pch.cpp
-        IGNORE_FILES src/OeApp_bindings.cpp
+        IGNORE_FILES src/${PROJECT_NAME}_bindings.cpp
         )
 
-target_link_libraries(${PROJECT_NAME} 
-        PUBLIC OeCompilerFlags WindowsApp.lib
-        PUBLIC Oe::Core
-        OeScripting)
+# Make sure to include PDB files when installing in debug mode
+oe_target_install_pdb(${PROJECT_NAME})
 
-# Public headers
-target_include_directories(${PROJECT_NAME}
-        PUBLIC
-        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-        )
-
-# --------------------------------
-# Install
-include(OeUtils)
-install_target_pdb(OeApp)
-
-# Data and Assets
-set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data")
-set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${${PROJECT_NAME}_DATA_SOURCE_DIRS}" PARENT_SCOPE)
-install(DIRECTORY data
-        DESTINATION bin
-        )
-
-# public headers
-install(
-        FILES ${OeApp_HEADERS}
-        DESTINATION include/${PROJECT_NAME}
-)
-
-# Config.cmake files
-configure_file(OeAppConfig.cmake.in OeAppConfig.cmake @ONLY)
-configure_file(OeAppConfigVersion.cmake.in OeAppConfigVersion.cmake @ONLY)
-install(
-        FILES "${CMAKE_CURRENT_BINARY_DIR}/OeAppConfig.cmake"
-              "${CMAKE_CURRENT_BINARY_DIR}/OeAppConfigVersion.cmake"
-        DESTINATION lib/cmake/OeApp
-)

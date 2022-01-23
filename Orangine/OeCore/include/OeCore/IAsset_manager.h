@@ -2,7 +2,7 @@
 
 #include "Manager_base.h"
 
-#include <map>
+#include <unordered_map>
 #include <string>
 
 namespace oe {
@@ -15,9 +15,9 @@ class IAsset_manager {
   virtual void preInit_setDataPath(const std::wstring&) = 0;
   virtual const std::wstring& getDataPath() const = 0;
 
-  virtual void setDataPathOverrides(std::map<std::wstring, std::wstring>&& paths) = 0;
-  virtual const std::map<std::wstring, std::wstring>& dataPathOverrides(
-      std::map<std::wstring, std::wstring>&& paths) const = 0;
+  virtual void setDataPathOverrides(std::unordered_map<std::wstring, std::wstring>&& paths) = 0;
+  virtual const std::unordered_map<std::wstring, std::wstring>& dataPathOverrides(
+      std::unordered_map<std::wstring, std::wstring>&& paths) const = 0;
 
   // If true, any calls to `makeAbsoluteAssetPath` will fail if they do not match
   // a prefix in the dataPathOverrides map. Default value: false.

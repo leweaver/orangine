@@ -1,10 +1,6 @@
-# Python Env
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
-
-# It is critical that the version of python we compile against matches the scripts loaded into the virtualenv
-if (NOT "${Python3_VERSION}" VERSION_GREATER_EQUAL "3.7.6")
-    message(FATAL_ERROR "Found python ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}, but must be compiled against minimum of 3.7.6")
-endif()
+# Use python debug binaries (with PyDEBUG defined)?
+# Note - all pip modules must also be built with PyDEBUG.
+SET(OE_PYTHON_DEBUG "OFF" CACHE BOOL "Use python debug binaries (built with PyDEBUG defined)")
 
 # Python search paths
 cmake_path(SET PROJECT_PARENT_BINARY_DIR NORMALIZE "${PROJECT_BINARY_DIR}/..")
@@ -15,13 +11,9 @@ elseif ("${Orangine_ARCHITECTURE}" MATCHES "x64")
 else ()
     MESSAGE(ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif ()
+
 if (NOT EXISTS "$ENV{VIRTUAL_ENV}")
-    MESSAGE("Creating python environment: $ENV{VIRTUAL_ENV}")
-    execute_process(COMMAND "${Python3_EXECUTABLE}" -m venv "$ENV{VIRTUAL_ENV}"
-            RESULT_VARIABLE _retval)
-    IF (NOT "${_retval}" MATCHES "0")
-        MESSAGE(FATAL_ERROR "Failed to create venv")
-    endif()
+    oe_create_python_env()
 endif()
 
 set(Python_FIND_VIRTUALENV ONLY)
@@ -31,8 +23,35 @@ find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 # PyBind
 find_package(pybind11 REQUIRED)
 
+# Pip packages
+MESSAGE(STATUS "Verifying pip Packages: $ENV{VIRTUAL_ENV}")
+execute_process(
+        COMMAND "$ENV{VIRTUAL_ENV}/Scripts/pip3.exe"
+        install --disable-pip-version-check -r "${PROJECT_SOURCE_DIR}/pyenv-requirements.txt"
+        RESULT_VARIABLE _retval)
+IF (NOT "${_retval}" MATCHES "0")
+    MESSAGE(FATAL_ERROR "Failed to install virtualenv requirements")
+endif()
+
+function(oe_create_python_env)
+    # Python Env
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+    # It is critical that the version of python we compile against matches the scripts loaded into the virtualenv
+    if (NOT "${Python3_VERSION}" VERSION_GREATER_EQUAL "3.7.6")
+        message(FATAL_ERROR "Found python ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}, but must be compiled against minimum of 3.7.6")
+    endif()
+
+    MESSAGE("Creating python environment: $ENV{VIRTUAL_ENV}")
+    execute_process(COMMAND "${Python3_EXECUTABLE}" -m venv "$ENV{VIRTUAL_ENV}"
+            RESULT_VARIABLE _retval)
+    IF (NOT "${_retval}" MATCHES "0")
+        MESSAGE(FATAL_ERROR "Failed to create venv")
+    endif()
+endfunction()
+
 # Adds python scripting
-function(oe_add_scripts_dir _target _moduleName)
+function(oe_target_add_scripts_dir _target _moduleName)
     cmake_parse_arguments(_TGT "" "" "LINK_LIBRARIES" ${ARGN})
 
     get_target_property(TGT_NAME ${_target} NAME)
@@ -63,4 +82,4 @@ function(oe_add_scripts_dir _target _moduleName)
     add_custom_target(${TGT_NAME}_pyi DEPENDS ${TGT_NAME}_pyi_create)
     add_dependencies(${TGT_NAME}_pyi ${_moduleName})
     add_dependencies(${TGT_NAME} ${TGT_NAME}_pyi)
-endfunction()
+endfunction(oe_target_add_scripts_dir)

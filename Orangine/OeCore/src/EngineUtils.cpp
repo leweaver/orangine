@@ -11,6 +11,16 @@
 using namespace oe;
 using namespace std::string_literals;
 
+std::string oe::oe_check_helper(const char* condition, std::string_view msg) {
+  auto failed_check_msg = std::string("Check failed: ") + condition;
+  if (!msg.empty()) {
+    failed_check_msg += " ";
+    failed_check_msg += msg.data();
+  }
+  __debugbreak();
+  return failed_check_msg;
+}
+
 std::exception&& oe::log_exception_for_throw(
     std::exception&& e,
     const char* filename,

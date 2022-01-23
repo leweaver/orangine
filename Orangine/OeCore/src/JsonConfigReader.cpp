@@ -42,13 +42,14 @@ std::wstring JsonConfigReader::readPath(const std::string& jsonPath) const {
   return utf8_decode(currentElement);
 }
 
-std::map<std::wstring, std::wstring> JsonConfigReader::readPathToPathMap(
+std::unordered_map<std::wstring, std::wstring> JsonConfigReader::readPathToPathMap(
     const std::string& jsonPath) const {
-  std::map<std::wstring, std::wstring> result;
+  std::unordered_map<std::wstring, std::wstring> result;
 
   const auto currentElement = getJsonValue(jsonPath);
-  if (!currentElement.is_object())
+  if (!currentElement.is_object()) {
     OE_THROW(std::runtime_error("Expected configuration " + jsonPath + " to be an object"));
+  }
 
   for (auto it = currentElement.begin(); it != currentElement.end(); ++it) {
     if (!it.value().is_string()) {

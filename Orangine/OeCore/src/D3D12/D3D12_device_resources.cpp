@@ -165,19 +165,20 @@ void D3D12_device_resources::createDeviceDependentResources() {
 }
 
 void D3D12_device_resources::destroyDeviceDependentResources() {
+  _renderPipeline = {};
 
 #ifdef _DEBUG
   if (m_outputDetailedMemoryReport) {
     ComPtr<ID3D12DebugDevice1> d3dDebugDevice;
     if (SUCCEEDED(m_d3dDevice->QueryInterface<ID3D12DebugDevice1>(&d3dDebugDevice))) {
-      d3dDebugDevice->ReportLiveDeviceObjects(D3D12_RLDO_DETAIL);
+      m_d3dDevice.Reset();
+      d3dDebugDevice->ReportLiveDeviceObjects(D3D12_RLDO_IGNORE_INTERNAL);
     } else {
       OutputDebugStringA("Failed to get d3dDebugDevice");
     }
   }
 #endif
 
-  _renderPipeline = Render_pipeline();
   m_d3dDevice.Reset();
 }
 

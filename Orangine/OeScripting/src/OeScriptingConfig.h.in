@@ -5,4 +5,4 @@
 #define OESCRIPTING_VERSION_MINOR "@OeScripting_VERSION_MINOR@"
 #define OESCRIPTING_VERSION_PATCH "@OeScripting_VERSION_PATCH@"
 
-#cmakedefine OeScripting_PYTHON_DEBUG 1
+#cmakedefine OE_PYTHON_DEBUG 1

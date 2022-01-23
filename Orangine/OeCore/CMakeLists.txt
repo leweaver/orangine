@@ -112,45 +112,26 @@ add_library(${PROJECT_NAME} STATIC
         "ThirdParty/nv_helpers_dx12/TopLevelASGenerator.cpp"
         "ThirdParty/nv_helpers_dx12/TopLevelASGenerator.h"
         src/D3D12/D3D12_render_step_manager.cpp src/D3D12/D3D12_render_step_manager.h)
-file(GLOB OeCore_HEADERS "include/**/*")
-list(APPEND OeCore_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
+# CPP17
 target_compile_features(OeCore PUBLIC cxx_std_17)
+if (MSVC)
+    # There is a bug in visual studio that prevents intellisense from realizing
+    # /std:c++17 is on the command line if you only use target_compile_features(cxx_std_17)
+    target_compile_options(${PROJECT_NAME} PUBLIC "/std:c++17")
+endif()
+
 add_library(Oe::Core ALIAS OeCore)
 
-# Precompiled Headers
-include(PrecompiledHeader)
-add_precompiled_header(${PROJECT_NAME} pch.h
-        SOURCE_CXX
-                src/pch.cpp
-        IGNORE_FILES
-                ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp
-                ThirdParty/MikktSpace/mikktspace.c
-                ThirdParty/nv_helpers_dx12/BottomLevelASGenerator.cpp
-                ThirdParty/nv_helpers_dx12/RaytracingPipelineGenerator.cpp
-                ThirdParty/nv_helpers_dx12/RootSignatureGenerator.cpp
-                ThirdParty/nv_helpers_dx12/ShaderBindingTableGenerator.cpp
-                ThirdParty/nv_helpers_dx12/TopLevelASGenerator.cpp
-        )
+#####
+# Dependencies
+#####
 
 target_link_libraries(${PROJECT_NAME} PUBLIC OeCompilerFlags)
-
-# enum codegen
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
-add_custom_target(
- ${PROJECT_NAME}_codegen ALL
- COMMAND "${Python3_EXECUTABLE}" "${Orangine_SOURCE_DIR}/cmake/scripts/codegen-enum.py" --json "${PROJECT_SOURCE_DIR}/codegen/Renderer_enums.json"
- BYPRODUCTS include/OeCore/Renderer_enums.h
- COMMENT "Generating ${PROJECT_NAME} enums"
-)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_codegen)
 
 # Public headers
 target_include_directories(${PROJECT_NAME}
         PUBLIC
-        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
         "${OE_THIRDPARTY_PATH}/filewatch"
         "${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
         PRIVATE
@@ -171,6 +152,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Oe3p::tinygltf)
 # vectormath
 target_link_libraries(${PROJECT_NAME} PUBLIC Oe3p::vectormath)
 
+# utf8
+find_package(utf8cpp)
+target_link_libraries(${PROJECT_NAME} PUBLIC utf8cpp)
+
 # DirectX
 target_link_libraries(${PROJECT_NAME} PUBLIC
         d3d11.lib
@@ -182,27 +167,45 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 # DirectXTK
 target_link_libraries(${PROJECT_NAME} PUBLIC DirectXTK12)
 
-include(OeUtils)
-install_target_pdb(OeCore)
+#####
+# Orangine module configuration
+#####
 
-# public header files
-install(
-        FILES ${OeCore_HEADERS}
-        DESTINATION include/${PROJECT_NAME}
-)
+# configure /data folder
+oe_target_add_data_dir(${PROJECT_NAME})
 
-# Data and Assets
-set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data")
-set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${${PROJECT_NAME}_DATA_SOURCE_DIRS}" PARENT_SCOPE)
-install(DIRECTORY data
-        DESTINATION bin
+# configure /cmake folder and src/{PROJECT_NAME}Config.h.in file
+oe_target_configure_cmake_dir(${PROJECT_NAME})
+
+# configure /include folder (public header files) and configure .cmake files
+oe_target_configure_include_dir(${PROJECT_NAME})
+
+# register the yaml file
+oe_target_add_config_yaml(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/config.default.yaml)
+
+# Precompiled Headers
+include(PrecompiledHeader)
+add_precompiled_header(${PROJECT_NAME} pch.h
+        SOURCE_CXX
+        src/pch.cpp
+        IGNORE_FILES
+        ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp
+        ThirdParty/MikktSpace/mikktspace.c
+        ThirdParty/nv_helpers_dx12/BottomLevelASGenerator.cpp
+        ThirdParty/nv_helpers_dx12/RaytracingPipelineGenerator.cpp
+        ThirdParty/nv_helpers_dx12/RootSignatureGenerator.cpp
+        ThirdParty/nv_helpers_dx12/ShaderBindingTableGenerator.cpp
+        ThirdParty/nv_helpers_dx12/TopLevelASGenerator.cpp
         )
 
-# Config.cmake files
-configure_file(OeCoreConfig.cmake.in OeCoreConfig.cmake @ONLY)
-configure_file(OeCoreConfigVersion.cmake.in OeCoreConfigVersion.cmake @ONLY)
-install(
-        FILES "${CMAKE_CURRENT_BINARY_DIR}/OeCoreConfig.cmake"
-              "${CMAKE_CURRENT_BINARY_DIR}/OeCoreConfigVersion.cmake"
-        DESTINATION lib/cmake/OeCore
+# Make sure to include PDB files when installing in debug mode
+oe_target_install_pdb(${PROJECT_NAME})
+
+#####
+# Enums
+#####
+message("${Python3_EXECUTABLE}")
+oe_target_generate_enum(${PROJECT_NAME}
+        SOURCE "${PROJECT_SOURCE_DIR}/codegen/Renderer_enums.json"
+        BYPRODUCTS include/${PROJECT_NAME}/Renderer_enums.h
 )

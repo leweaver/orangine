@@ -7,7 +7,7 @@
   },
   "configurePresets": [
     {
-      "name": "VS_2019",
+      "name": "VS_2019_AMD64",
       "generator": "Ninja",
       "hidden": true,
       "binaryDir": "${sourceDir}/build/${presetName}",
@@ -25,13 +25,14 @@
           "toolchain": "Visual Studio 2019 AMD64"
         },
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": "Windows"
+          "hostOS": "Windows",
+          "intelliSenseMode": "windows-msvc-x64"
         }
       }
     },
     {
       "name": "VS_2019_AMD64_Debug",
-      "inherits": "VS_2019",
+      "inherits": "VS_2019_AMD64",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "OE_BUILD_ASAN": "FALSE"
@@ -47,7 +48,7 @@
     },
     {
       "name": "VS_2019_AMD64_Release",
-      "inherits": "VS_2019",
+      "inherits": "VS_2019_AMD64",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "OE_BUILD_ASAN": "FALSE"

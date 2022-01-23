@@ -1,7 +1,3 @@
-//
-// Main.cpp
-//
-
 #include "pch.h"
 
 #include "LogFileSink.h"
@@ -9,21 +5,20 @@
 #include "VisualStudioLogSink.h"
 
 #include <OeCore/OeCore.h>
-#include <OeScripting/OeScripting.h>
+#include <OeCore/StepTimer.h>
 #include <OeCore/Perf_timer.h>
-#include <OeCore/JsonConfigReader.h>
 #include <OeCore/Entity_graph_loader_gltf.h>
+
+#include <OeScripting/OeScripting.h>
 
 #include <OeApp/App.h>
 #include <OeApp/Manager_collection.h>
+#include <OeApp/Yaml_config_reader.h>
 
 #include <g3log/logworker.hpp>
 
 #include <filesystem>
 #include <wrl/wrappers/corewrappers.h>
-
-#include <OeCore/StepTimer.h>
-#include <json.hpp>
 
 const std::string path_to_log_file = "./";
 
@@ -38,7 +33,7 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 extern std::unique_ptr<oe::IDevice_resources> createWin32DeviceResources(HWND hwnd);
 
-const auto CONFIG_FILE_NAME = L"config.json";
+const auto CONFIG_FILE_NAME = L"config.yaml";
 
 using oe::app::App;
 
@@ -72,9 +67,9 @@ class App_impl {
  public:
 
   void configureManagers() {
-    std::unique_ptr<JsonConfigReader> configReader;
+    std::unique_ptr<Yaml_config_reader> configReader;
     try {
-      configReader = std::make_unique<JsonConfigReader>(CONFIG_FILE_NAME);
+      configReader = std::make_unique<Yaml_config_reader>(CONFIG_FILE_NAME);
     }
     catch (std::exception& ex) {
       LOG(WARNING) << "Failed to read config file: " << utf8_encode(CONFIG_FILE_NAME) << "(" << ex.what() << ")";
@@ -246,7 +241,7 @@ class App_impl {
       _deviceResources->createDeviceDependentResources();
 
       for (auto& manager : _managers.getDeviceDependentManagers()) {
-        LOG(DEBUG) << "Creating device dependent resources for manager " << manager.config->asBase->name();
+        LOG(DEBUG) << "Creating device dependent resources for " << manager.config->asBase->name();
         manager()->createDeviceDependentResources();
       };
     } catch (std::exception& e) {
@@ -266,7 +261,7 @@ class App_impl {
       width = std::max(width, 1);
       height = std::max(height, 1);
       for (auto& manager : _managers.getWindowDependentManagers()) {
-        LOG(DEBUG) << "Creating device dependent resources for manager " << manager.config->asBase->name()
+        LOG(DEBUG) << "Creating window size dependent resources for " << manager.config->asBase->name()
                    << " (width=" << width << " height=" << height << ")";
         manager()->createWindowSizeDependentResources(_hwnd, width, height);
       };
@@ -513,6 +508,8 @@ int App::run(const App_start_settings& settings) {
       }
     }
   } while (false);
+
+  LOG(INFO) << "Exited main loop";
 
   SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(nullptr));
 

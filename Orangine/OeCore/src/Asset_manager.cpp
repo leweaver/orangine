@@ -30,12 +30,12 @@ void Asset_manager::preInit_setDataPath(const std::wstring& dataPath) {
   _dataPath = dataPath;
 }
 
-void Asset_manager::setDataPathOverrides(std::map<std::wstring, std::wstring>&& paths) {
+void Asset_manager::setDataPathOverrides(std::unordered_map<std::wstring, std::wstring>&& paths) {
   _dataPathOverrides = move(paths);
 }
 
-const std::map<std::wstring, std::wstring>& Asset_manager::dataPathOverrides(
-    std::map<std::wstring, std::wstring>&& paths) const {
+const std::unordered_map<std::wstring, std::wstring>& Asset_manager::dataPathOverrides(
+    std::unordered_map<std::wstring, std::wstring>&& paths) const {
   return _dataPathOverrides;
 }
 

@@ -11,13 +11,23 @@
 using namespace oe;
 using namespace std::string_literals;
 
+namespace oe {
+  bool g_enableCheckDebugBreak = true;
+  void oe::oe_set_enable_check_debugbreak(bool enabled)
+  {
+    g_enableCheckDebugBreak = enabled;
+  }
+}
+
 std::string oe::oe_check_helper(const char* condition, std::string_view msg) {
   auto failed_check_msg = std::string("Check failed: ") + condition;
   if (!msg.empty()) {
     failed_check_msg += " ";
     failed_check_msg += msg.data();
   }
-  __debugbreak();
+  if (g_enableCheckDebugBreak) {
+    __debugbreak();
+  }
   return failed_check_msg;
 }
 

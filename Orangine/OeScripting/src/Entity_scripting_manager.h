@@ -29,7 +29,7 @@ class Entity_scripting_manager : public IEntity_scripting_manager, public Manage
   void tick() override;
 
   // IEntity_scripting_manager implementation
-  void preInit_addAbsoluteScriptsPath(const std::wstring& path) override;
+  void preInit_addAbsoluteScriptsPath(const std::string& path) override;
   void renderImGui() override;
   void execute(const std::string& command) override;
   bool commandSuggestions(const std::string& command,
@@ -46,9 +46,9 @@ class Entity_scripting_manager : public IEntity_scripting_manager, public Manage
   std::shared_ptr<Entity_filter> _lightEntityFilter;
   bool _showImGui = false;
 
-  std::wstring _pythonHome;
-  std::wstring _pythonProgramName;
-  std::vector<std::wstring> _preInit_additionalPaths;
+  std::string _pythonHome;
+  std::string _pythonProgramName;
+  std::vector<std::string> _preInit_additionalPaths;
 
   /**
    * Helper accessors for the code defined in lib/engine_internal.py

@@ -373,13 +373,13 @@ void Primitive_mesh_data_factory::generateNormals(
 
 			auto normalBufferPos = normalBufferStart + i0 * normalBufferAccessor.stride;
 			assert(normalBufferPos >= normalBufferStart && normalBufferPos < normalBufferEnd);
-			auto& n0 = LoadVector3(*reinterpret_cast<XMFLOAT3*>(normalBufferPos));
+			auto n0 = LoadVector3(*reinterpret_cast<XMFLOAT3*>(normalBufferPos));
 			normalBufferPos = normalBufferStart + i1 * normalBufferAccessor.stride;
 			assert(normalBufferPos >= normalBufferStart && normalBufferPos < normalBufferEnd);
-			auto& n1 = LoadVector3(*reinterpret_cast<XMFLOAT3*>(normalBufferPos));
+			auto n1 = LoadVector3(*reinterpret_cast<XMFLOAT3*>(normalBufferPos));
 			normalBufferPos = normalBufferStart + i2 * normalBufferAccessor.stride;
 			assert(normalBufferPos >= normalBufferStart && normalBufferPos < normalBufferEnd);
-			auto& n2 = LoadVector3(*reinterpret_cast<XMFLOAT3*>(normalBufferPos));
+			auto n2 = LoadVector3(*reinterpret_cast<XMFLOAT3*>(normalBufferPos));
 			
 			// Create two vectors from which we calculate the normal
 			const auto v0 = p1 - p0;

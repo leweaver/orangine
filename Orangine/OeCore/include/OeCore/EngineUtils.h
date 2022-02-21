@@ -42,6 +42,7 @@ template <typename... TArgs> std::string string_format(const std::string& format
 
 namespace oe {
 std::string oe_check_helper(const char* condition, std::string_view msg = "");
+void oe_set_enable_check_debugbreak(bool enabled);
 
 template <typename T, size_t TN> constexpr size_t array_size(const T (&)[TN]) { return TN; }
 

@@ -23,7 +23,7 @@ if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
 endif()
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 
-conan_cmake_configure(REQUIRES g3log/1.3.3 pybind11/2.7.1 imgui/1.85 yaml-cpp/0.7.0 utfcpp/3.2.1
+conan_cmake_configure(REQUIRES g3log/1.3.3 pybind11/2.7.1 imgui/1.85 yaml-cpp/0.7.0 utfcpp/3.2.1 gtest/1.11.0 ms-gsl/3.1.0 range-v3/0.11.0
         GENERATORS cmake_find_package
         BUILD_REQUIRES cmake/3.20.5
         OPTIONS g3log:shared=False)

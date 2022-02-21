@@ -72,3 +72,7 @@ install(
               "${CMAKE_CURRENT_BINARY_DIR}/ViewerAppConfigVersion.cmake"
         DESTINATION lib/cmake/ViewerApp
 )
+
+if(OE_BUILD_TESTING)
+    enable_testing()
+end()

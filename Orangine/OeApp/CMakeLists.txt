@@ -34,6 +34,13 @@ find_package(yaml-cpp REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp::yaml-cpp)
 
 #####
+# Testing
+#####
+if(OE_BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
+
+#####
 # Orangine module configuration
 #####
 

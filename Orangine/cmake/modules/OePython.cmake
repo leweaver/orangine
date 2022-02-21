@@ -1,3 +1,20 @@
+function(oe_create_python_env)
+    # Python Env
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+    # It is critical that the version of python we compile against matches the scripts loaded into the virtualenv
+    if (NOT "${Python3_VERSION}" VERSION_GREATER_EQUAL "3.7.6")
+        message(FATAL_ERROR "Found python ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}, but must be compiled against minimum of 3.7.6")
+    endif()
+
+    MESSAGE("Creating python environment: $ENV{VIRTUAL_ENV}")
+    execute_process(COMMAND "${Python3_EXECUTABLE}" -m venv "$ENV{VIRTUAL_ENV}"
+            RESULT_VARIABLE _retval)
+    IF (NOT "${_retval}" MATCHES "0")
+        MESSAGE(FATAL_ERROR "Failed to create venv")
+    endif()
+endfunction()
+
 # Use python debug binaries (with PyDEBUG defined)?
 # Note - all pip modules must also be built with PyDEBUG.
 SET(OE_PYTHON_DEBUG "OFF" CACHE BOOL "Use python debug binaries (built with PyDEBUG defined)")
@@ -32,23 +49,6 @@ execute_process(
 IF (NOT "${_retval}" MATCHES "0")
     MESSAGE(FATAL_ERROR "Failed to install virtualenv requirements")
 endif()
-
-function(oe_create_python_env)
-    # Python Env
-    find_package(Python3 COMPONENTS Interpreter REQUIRED)
-
-    # It is critical that the version of python we compile against matches the scripts loaded into the virtualenv
-    if (NOT "${Python3_VERSION}" VERSION_GREATER_EQUAL "3.7.6")
-        message(FATAL_ERROR "Found python ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}, but must be compiled against minimum of 3.7.6")
-    endif()
-
-    MESSAGE("Creating python environment: $ENV{VIRTUAL_ENV}")
-    execute_process(COMMAND "${Python3_EXECUTABLE}" -m venv "$ENV{VIRTUAL_ENV}"
-            RESULT_VARIABLE _retval)
-    IF (NOT "${_retval}" MATCHES "0")
-        MESSAGE(FATAL_ERROR "Failed to create venv")
-    endif()
-endfunction()
 
 # Adds python scripting
 function(oe_target_add_scripts_dir _target _moduleName)

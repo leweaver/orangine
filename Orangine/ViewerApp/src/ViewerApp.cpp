@@ -25,14 +25,14 @@ class ViewerApp : public App {
 
   void onSceneConfigured() override {
     // Tell the scripting engine about our data directory.
-    const auto appScriptsPath = getAssetManager().makeAbsoluteAssetPath(L"ViewerApp/scripts");
-    getEntityScriptingManager().preInit_addAbsoluteScriptsPath(L"ViewerApp/scripts");
+    const auto appScriptsPath = getAssetManager().makeAbsoluteAssetPath("ViewerApp/scripts");
+    getEntityScriptingManager().preInit_addAbsoluteScriptsPath("ViewerApp/scripts");
   }
 
   void onSceneInitialized() override {
     _sampleScene = std::make_unique<Sample_scene>(
             getRenderStepManager(), getSceneGraphManager(), getInputManager(), getEntityScriptingManager(),
-            getAssetManager(), std::vector<std::wstring>{utf8_decode(VIEWERAPP_THIRDPARTY_PATH)});
+            getAssetManager(), std::vector<std::string>{VIEWERAPP_THIRDPARTY_PATH});
 
     // Load a scene
     //auto appModule = pybind11::module::import(OeApp_bindings::getModuleName().c_str());
@@ -76,13 +76,13 @@ class ViewerApp : public App {
 
     Environment_volume ev;
     ev.environmentIbl.skyboxTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemap.dds"));
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemap.dds"));
     ev.environmentIbl.iblBrdfTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemapBrdf.dds"));
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapBrdf.dds"));
     ev.environmentIbl.iblDiffuseTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemapDiffuseHDR.dds"));
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapDiffuseHDR.dds"));
     ev.environmentIbl.iblSpecularTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemapSpecularHDR.dds"));
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapSpecularHDR.dds"));
 
     getLightingManager().addEnvironmentVolume(ev);
   }

@@ -53,14 +53,14 @@ Entity_scripting_manager::Entity_scripting_manager(
     , _entityRenderManager(entityRenderManager)
 {}
 
-void Entity_scripting_manager::preInit_addAbsoluteScriptsPath(const std::wstring& path)
+void Entity_scripting_manager::preInit_addAbsoluteScriptsPath(const std::string& path)
 {
   if (_pythonInitialized) {
     OE_THROW(std::logic_error("preInit_addAbsoluteScriptsPath can only be called prior to manager initialization."));
   }
   if (!std::filesystem::exists(path)) {
     OE_THROW(std::runtime_error(
-            "Attempting to add python script path that does not exist, or is inaccessible: " + utf8_encode(path)));
+            "Attempting to add python script path that does not exist, or is inaccessible: " + path));
   }
   _preInit_additionalPaths.push_back(path);
 }
@@ -269,26 +269,26 @@ void Entity_scripting_manager::initializePythonInterpreter()
 
   _pythonInitialized = true;
 
-  std::vector<std::wstring> sysPathVec;
+  std::vector<std::string> sysPathVec;
 
-  const auto& dataLibPath = _assetManager.makeAbsoluteAssetPath(L"OeScripting/lib");
+  const auto& dataLibPath = _assetManager.makeAbsoluteAssetPath("OeScripting/lib");
   sysPathVec.push_back(dataLibPath);
 
-  const auto& pyEnvPath = _assetManager.makeAbsoluteAssetPath(L"pyenv") + L"/..";
+  const auto& pyEnvPath = _assetManager.makeAbsoluteAssetPath("pyenv") + "/..";
 
   // Add pyenv scripts
-  sysPathVec.push_back(pyEnvPath + L"/lib");
-  sysPathVec.push_back(pyEnvPath + L"/lib/site-packages");
+  sysPathVec.push_back(pyEnvPath + "/lib");
+  sysPathVec.push_back(pyEnvPath + "/lib/site-packages");
 
   // Add system installed python (for non-installed, dev machine builds only). Must come after pyenv
-  auto pyenvCfgPath = pyEnvPath + L"/pyvenv.cfg";
+  auto pyenvCfgPath = pyEnvPath + "/pyvenv.cfg";
   if (std::filesystem::exists(pyenvCfgPath)) {
     std::string line;
     std::ifstream infile(pyenvCfgPath, std::ios::in);
     while (std::getline(infile, line)) {
       auto equalPos = line.find_first_of('=');
       if (std::string::npos == equalPos) {
-        LOG(DEBUG) << "Failed to parse line in " << utf8_encode(pyenvCfgPath) << ": " << line;
+        LOG(DEBUG) << "Failed to parse line in " << pyenvCfgPath << ": " << line;
         continue;
       }
 
@@ -301,13 +301,13 @@ void Entity_scripting_manager::initializePythonInterpreter()
       std::string value = str_trim(line.substr(equalPos + 1));
 
       if (propName == "home") {
-        LOG(DEBUG) << "Detected python home from " << utf8_encode(pyenvCfgPath) << ": " << value;
-        sysPathVec.push_back(utf8_decode(value) + L"/Lib");
-        sysPathVec.push_back(utf8_decode(value) + L"/DLLs");
+        LOG(DEBUG) << "Detected python home from " << pyenvCfgPath << ": " << value;
+        sysPathVec.push_back(value + "/Lib");
+        sysPathVec.push_back(value + "/DLLs");
       }
       if (propName == "include-system-site-packages" && value == "true") {
-        LOG(DEBUG) << "Detected include-system-site-packages from " << utf8_encode(pyenvCfgPath);
-        sysPathVec.push_back(utf8_decode(value) + L"/Lib/site-packages");
+        LOG(DEBUG) << "Detected include-system-site-packages from " << pyenvCfgPath;
+        sysPathVec.push_back(value + "/Lib/site-packages");
       }
     }
   }
@@ -319,7 +319,7 @@ void Entity_scripting_manager::initializePythonInterpreter()
   auto sysPathList = py::list();
   std::stringstream sysPathListSs;
   for (int i = 0, e = static_cast<int>(sysPathVec.size()); i < e; ++i) {
-    const auto path = std::filesystem::absolute(utf8_encode(sysPathVec[i])).u8string();
+    const auto path = std::filesystem::absolute(sysPathVec[i]).u8string();
     sysPathList.append(path);
     if (i) {
       sysPathListSs << ";";

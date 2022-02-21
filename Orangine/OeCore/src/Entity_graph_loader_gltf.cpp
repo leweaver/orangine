@@ -180,7 +180,7 @@ vertexAccessorFactory(Vertex_attribute_semantic vertexAttribute) {
 
 struct Loader_data {
   Loader_data(
-          Model& model, wstring&& baseDir, IWICImagingFactory* imagingFactory,
+          Model& model, string&& baseDir, IWICImagingFactory* imagingFactory,
           IScene_graph_manager& sceneGraphManager, IEntity_repository& entityRepository,
           IMaterial_manager& materialManager, ITexture_manager& textureManager, IComponent_factory& componentFactory,
           bool calculateBounds)
@@ -196,7 +196,7 @@ struct Loader_data {
   {}
 
   Model& model;
-  wstring baseDir;
+  string baseDir;
   IWICImagingFactory* imagingFactory;
   IScene_graph_manager& sceneGraphManager;
   IEntity_repository& entityRepository;
@@ -432,7 +432,7 @@ std::vector<SSE::Matrix4> createMatrix4ArrayFromAccessor(
 }
 
 vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
-    wstring_view filePath,
+    string_view filePath,
     IScene_graph_manager& sceneGraphManager,
     IEntity_repository& entityRepository,
     IComponent_factory& componentFactory,
@@ -443,34 +443,32 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
   string err;
   string warn;
 
-  const auto filePathStr = wstring(filePath);
-  LOG(INFO) << "Loading entity graph (glTF): " << utf8_encode(filePathStr);
+  const auto filePathStr = string(filePath);
+  LOG(INFO) << "Loading entity graph (glTF): " << filePathStr;
 
   auto gltfAscii = get_file_contents(filePathStr.c_str());
 
-  std::wstring baseDir;
+  std::string baseDir;
   {
-    const auto lastSlashPos = filePathStr.find_last_of(L"/\\");
+    const auto lastSlashPos = filePathStr.find_last_of("/\\");
     if (lastSlashPos != std::string::npos) {
       baseDir = filePathStr.substr(0, lastSlashPos);
     }
   }
 
   const auto filename = filePathStr.substr(baseDir.size());
-  const auto filenameUtf8 = utf8_encode(filename);
-
   const auto ret = loader.LoadASCIIFromString(
       &model,
       &err,
       &warn,
       gltfAscii.c_str(),
       static_cast<unsigned>(gltfAscii.length()),
-      utf8_encode(baseDir));
+      baseDir);
   if (!err.empty()) {
     OE_THROW(domain_error(err));
   }
   if (!warn.empty()) {
-    LOG(WARNING) << filenameUtf8 << ": " << warn;
+    LOG(WARNING) << filename << ": " << warn;
   }
 
   if (!ret) {
@@ -482,13 +480,13 @@ vector<shared_ptr<Entity>> Entity_graph_loader_gltf::loadFile(
 
   const auto& scene = model.scenes[model.defaultScene];
   if (baseDir.empty())
-    baseDir = L".";
+    baseDir = ".";
   Loader_data loaderData(
           model, move(baseDir), _imagingFactory.Get(), sceneGraphManager, entityRepository, _materialManager,
           _textureManager, componentFactory, calculateBounds);
 
   // Load Entities
-  loaderData.rootEntity = entityRepository.instantiate(filenameUtf8, loaderData.sceneGraphManager, componentFactory);
+  loaderData.rootEntity = entityRepository.instantiate(filename, loaderData.sceneGraphManager, componentFactory);
   for (auto nodeIdx : scene.nodes) {
     auto entity = create_entity(nodeIdx, loaderData);
     entity->setParent(*loaderData.rootEntity);
@@ -669,8 +667,8 @@ shared_ptr<oe::Texture> try_create_texture(
   const auto& gltfImage = loaderData.model.images.at(gltfTexture.source);
 
   if (!gltfImage.uri.empty()) {
-    const auto filename = loaderData.baseDir + L"\\" + utf8_decode(gltfImage.uri);
-    return loaderData.textureManager.createTextureFromFile(wstring(filename), samplerDescriptor);
+    const auto filename = loaderData.baseDir + "\\" + gltfImage.uri;
+    return loaderData.textureManager.createTextureFromFile(filename, samplerDescriptor);
   }
   if (!gltfImage.mimeType.empty()) {
     OE_THROW(runtime_error("not implemented"));

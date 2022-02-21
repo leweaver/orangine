@@ -24,12 +24,12 @@ Material_manager::Material_manager(IAsset_manager& assetManager)
     , _assetManager(assetManager)
 {}
 
-void Material_manager::setShaderPath(const std::wstring& path) { _shaderPath = path; }
+void Material_manager::setShaderPath(const std::string& path) { _shaderPath = path; }
 
-const std::wstring& Material_manager::shaderPath() const { return _shaderPath; }
+const std::string& Material_manager::shaderPath() const { return _shaderPath; }
 
 void Material_manager::initialize() {
-  _shaderPath = _assetManager.makeAbsoluteAssetPath(L"OeCore/shaders");
+  _shaderPath = _assetManager.makeAbsoluteAssetPath("OeCore/shaders");
   setRendererFeaturesEnabled(Renderer_features_enabled());
 }
 

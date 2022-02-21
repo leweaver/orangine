@@ -7,8 +7,9 @@
 
 // from: http://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
 namespace oe {
-inline std::string get_file_contents(const wchar_t* filename) {
-  std::ifstream in(filename, std::ios::in | std::ios::binary);
+inline std::string get_file_contents(const char* fileName) {
+  auto filename_w = utf8_decode(fileName);
+  std::ifstream in(filename_w, std::ios::in | std::ios::binary);
   if (in) {
     std::string contents;
     in.seekg(0, std::ios::end);

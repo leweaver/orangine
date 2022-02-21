@@ -39,6 +39,15 @@
       }
     },
     {
+      "name": "VS_2019_AMD64_Tests",
+      "inherits": "VS_2019_AMD64",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OE_BUILD_ASAN": "FALSE",
+        "OE_BUILD_TESTING": "TRUE"
+      }
+    },
+    {
       "name": "VS_2019_AMD64_Debug_Asan",
       "inherits": "VS_2019",
       "cacheVariables": {
@@ -65,6 +74,11 @@
       "name": "dev-asan",
       "displayName": "VS 2019 AMD64 debug ASAN",
       "configurePreset": "VS_2019_AMD64_Debug_Asan"
+    },
+    {
+      "name": "tests",
+      "displayName": "VS 2019 AMD64 unit tests",
+      "configurePreset": "VS_2019_AMD64_Tests"
     }
   ]
 }

@@ -54,7 +54,6 @@ add_library(${PROJECT_NAME} STATIC
         src/Entity_sorter.cpp
         src/Fps_counter.cpp
         src/Input_manager.cpp
-        src/JsonConfigReader.cpp
         src/Light_component.cpp
         src/Light_provider.cpp
         src/Material.cpp
@@ -166,6 +165,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 
 # DirectXTK
 target_link_libraries(${PROJECT_NAME} PUBLIC DirectXTK12)
+
+# Guidelines Support Library (gsl::)
+find_package(Microsoft.GSL)
+target_link_libraries(${PROJECT_NAME} PUBLIC Microsoft.GSL::Microsoft.GSL)
+
+# C++20 Ranges
+find_package(range-v3)
+target_link_libraries(${PROJECT_NAME} PUBLIC range-v3::range-v3)
 
 #####
 # Orangine module configuration

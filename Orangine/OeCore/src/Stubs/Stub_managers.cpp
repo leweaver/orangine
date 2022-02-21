@@ -47,11 +47,11 @@ class Stub_texture_manager final : public ITexture_manager {
       std::unique_ptr<uint8_t>& buffer) override {
     return std::make_shared<Stub_texture>();
   }
-  std::shared_ptr<Texture> createTextureFromFile(const std::wstring& fileName) override {
+  std::shared_ptr<Texture> createTextureFromFile(const std::string& fileName) override {
     return std::make_shared<Stub_texture>();
   }
   std::shared_ptr<Texture> createTextureFromFile(
-      const std::wstring& fileName,
+      const std::string& fileName,
       const Sampler_descriptor& samplerDescriptor) override {
     return std::make_shared<Stub_texture>();
   }

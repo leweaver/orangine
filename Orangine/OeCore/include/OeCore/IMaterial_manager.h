@@ -18,7 +18,7 @@ struct Renderer_animation_data;
 class IMaterial_manager {
  public:
   // Gets the path that contains hlsl files. Does not end in a trailing slash.
-  virtual const std::wstring& shaderPath() const = 0;
+  virtual const std::string& shaderPath() const = 0;
 
   // Creates a material context that may be destroyed when the device is reset or shutdown.
   virtual std::weak_ptr<Material_context> createMaterialContext() = 0;

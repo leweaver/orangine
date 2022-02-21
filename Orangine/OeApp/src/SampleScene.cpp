@@ -18,7 +18,7 @@ using oe::Sample_scene;
 
 Sample_scene::Sample_scene(
         IRender_step_manager& renderStepManager, IScene_graph_manager& sceneGraphManager, IInput_manager& inputManager,
-        IEntity_scripting_manager& entityScriptingManager, IAsset_manager& assetManager, std::vector<std::wstring> extraAssetPaths)
+        IEntity_scripting_manager& entityScriptingManager, IAsset_manager& assetManager, std::vector<std::string> extraAssetPaths)
     : _extraAssetPaths(std::move(extraAssetPaths))
     , _renderStepManager(renderStepManager)
     , _entityManager(sceneGraphManager)
@@ -202,18 +202,18 @@ std::string Sample_scene::createLightEntityName(
 std::shared_ptr<Entity> Sample_scene::addGltf(std::string gltfName) {
   const auto gltfPathSubfolder = "/" + gltfName + "/glTF/" + gltfName + ".gltf";
   auto gltfPath = _assetManager.makeAbsoluteAssetPath(
-      utf8_decode("ViewerApp/data/meshes" + gltfPathSubfolder));
-  LOG(DEBUG) << "Looking for gltf at: " << utf8_encode(gltfPath);
+      "ViewerApp/data/meshes" + gltfPathSubfolder);
+  LOG(DEBUG) << "Looking for gltf at: " << gltfPath;
 
   for (const auto& extraPath : _extraAssetPaths) {
     if (std::filesystem::exists(gltfPath)) {
       break;
     }
-    std::wstringstream ss;
-    ss << extraPath << utf8_decode(gltfPathSubfolder);
+    std::stringstream ss;
+    ss << extraPath << gltfPathSubfolder;
 
     gltfPath = ss.str();
-    LOG(DEBUG) << "Looking for gltf at: " << utf8_encode(gltfPath);
+    LOG(DEBUG) << "Looking for gltf at: " << gltfPath;
   }
 
   if (!std::filesystem::exists(gltfPath)) {

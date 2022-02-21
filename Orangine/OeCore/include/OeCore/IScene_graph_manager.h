@@ -28,8 +28,8 @@ class IScene_graph_manager
   virtual void renderImGui() = 0;
 
   virtual void addLoader(std::unique_ptr<Entity_graph_loader> loader) = 0;
-  virtual void loadFile(const std::wstring& filename) = 0;
-  virtual void loadFile(const std::wstring& filename, Entity* parentEntity) = 0;
+  virtual void loadFile(const std::string& filename) = 0;
+  virtual void loadFile(const std::string& filename, Entity* parentEntity) = 0;
 
   /**
    * Will do nothing if no entity exists with the given ID.

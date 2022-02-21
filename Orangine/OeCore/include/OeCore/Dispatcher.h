@@ -52,7 +52,7 @@ template<typename... TEventArgs> class Invokable_dispatcher : public Dispatcher<
  public:
   void invoke(TEventArgs... args)
   {
-    invokeListeners(args...);
+    this->invokeListeners(args...);
   }
 };
 

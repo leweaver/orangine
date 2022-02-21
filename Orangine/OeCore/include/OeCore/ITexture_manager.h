@@ -17,8 +17,8 @@ class ITexture_manager
       uint32_t buffer_size,
       std::unique_ptr<uint8_t>& buffer) = 0;
 
-  virtual std::shared_ptr<Texture> createTextureFromFile(const std::wstring& fileName) = 0;
-  virtual std::shared_ptr<Texture> createTextureFromFile(const std::wstring& fileName, const Sampler_descriptor& samplerDescriptor) = 0;
+  virtual std::shared_ptr<Texture> createTextureFromFile(const std::string& fileName) = 0;
+  virtual std::shared_ptr<Texture> createTextureFromFile(const std::string& fileName, const Sampler_descriptor& samplerDescriptor) = 0;
 
   // The 32 bit depth/stencil texture, in R24 UNORM / X8 TYPELESS format.
   virtual std::shared_ptr<Texture> createDepthTexture() = 0;

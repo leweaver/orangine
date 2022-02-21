@@ -23,40 +23,40 @@ void Asset_manager::shutdown() {}
 
 const std::string& Asset_manager::name() const { return _name; }
 
-void Asset_manager::preInit_setDataPath(const std::wstring& dataPath) {
+void Asset_manager::preInit_setDataPath(const std::string& dataPath) {
   if (_initialized) {
     OE_THROW(std::logic_error("Cannot change data path after Asset_manager is initialized."));
   }
   _dataPath = dataPath;
 }
 
-void Asset_manager::setDataPathOverrides(std::unordered_map<std::wstring, std::wstring>&& paths) {
+void Asset_manager::setDataPathOverrides(std::unordered_map<std::string, std::string>&& paths) {
   _dataPathOverrides = move(paths);
 }
 
-const std::unordered_map<std::wstring, std::wstring>& Asset_manager::dataPathOverrides(
-    std::unordered_map<std::wstring, std::wstring>&& paths) const {
+const std::unordered_map<std::string, std::string>& Asset_manager::dataPathOverrides(
+    std::unordered_map<std::string, std::string>&& paths) const {
   return _dataPathOverrides;
 }
 
-std::wstring Asset_manager::makeAbsoluteAssetPath(const std::wstring& path) const {
+std::string Asset_manager::makeAbsoluteAssetPath(const std::string& path) const {
   for (const auto& pair : _dataPathOverrides) {
     if (str_starts(path, pair.first)) {
-      return pair.second + L"/" + path;
+      return pair.second + "/" + path;
     }
   }
   if (_fallbackDataPathAllowed && !_dataPathOverrides.empty()) {
-    return _dataPath + L"/" + path;
+    return _dataPath + "/" + path;
   }
   OE_THROW(std::invalid_argument(
       "Given data path does not match any data path overrides, and fallback data path is "
       "forbidden: " +
-      utf8_encode(path)));
+      path));
 }
 
 void Asset_manager::loadConfig(const IConfigReader& configReader) {
   Manager_base::loadConfig(configReader);
 
-  this->preInit_setDataPath(configReader.readPath("data_path"));
-  this->setDataPathOverrides(configReader.readPathToPathMap("data_path_overrides"));
+  this->preInit_setDataPath(configReader.readString("data_path"));
+  this->setDataPathOverrides(configReader.readStringDict("data_path_overrides"));
 }

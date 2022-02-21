@@ -40,8 +40,8 @@ class Scene_graph_manager : public IScene_graph_manager,
 
   void renderImGui() override;
   void addLoader(std::unique_ptr<Entity_graph_loader> loader) override;
-  void loadFile(const std::wstring& filename) override;
-  void loadFile(const std::wstring& filename, Entity* parentEntity) override;
+  void loadFile(const std::string& filename) override;
+  void loadFile(const std::string& filename, Entity* parentEntity) override;
 
   /**
    * Will do nothing if no entity exists with the given ID.

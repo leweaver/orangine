@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/JsonUtils.h"
+﻿#include "OeCore/JsonUtils.h"
 #include "OeCore/Unlit_material.h"
 
 using namespace std::string_literals;

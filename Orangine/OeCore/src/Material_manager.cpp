@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "Material_manager.h"
+﻿#include "Material_manager.h"
 
 #include "OeCore/Material_context.h"
 #include "OeCore/Mesh_utils.h"

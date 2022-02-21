@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "LogFileSink.h"
 #include "VectorLogSink.h"
 #include "VisualStudioLogSink.h"

@@ -1,5 +1,4 @@
-﻿#include "pch.h"
-#include "OeCore/VectorLog.h"
+﻿#include "OeCore/VectorLog.h"
 
 using namespace oe;
 

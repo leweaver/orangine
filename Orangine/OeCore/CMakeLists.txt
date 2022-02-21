@@ -9,8 +9,6 @@ configure_file (
 
 # Library Definition
 add_library(${PROJECT_NAME} STATIC
-        src/pch.h
-        src/pch.cpp
         src/Animation_controller_component.cpp
         src/Animation_manager.cpp
         src/Animation_manager.h
@@ -86,8 +84,6 @@ add_library(${PROJECT_NAME} STATIC
         src/Time_step_manager.h
         src/Unlit_material.cpp
         src/VectorLog.cpp
-        "src/Stubs/pch.h" 
-        "src/D3D12/pch.h"
         "src/D3D12/D3D12_collision.cpp"
         "src/D3D12/D3D12_lighting_manager.cpp"
         "src/D3D12/D3D12_lighting_manager.h"
@@ -190,20 +186,32 @@ oe_target_configure_include_dir(${PROJECT_NAME})
 # register the yaml file
 oe_target_add_config_yaml(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/config.default.yaml)
 
-# Precompiled Headers
-include(PrecompiledHeader)
-add_precompiled_header(${PROJECT_NAME} pch.h
-        SOURCE_CXX
-        src/pch.cpp
-        IGNORE_FILES
+# Precompiled Headers - Only for C++ as WRL cannot be included into C.
+target_precompile_headers(${PROJECT_NAME}
+        PUBLIC
+        $<$<COMPILE_LANGUAGE:CXX>:<OeCore/OeCore.h$<ANGLE-R>>
+        PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:
+        <OeCore/OeCore.h$<ANGLE-R>
+        include/OeCore/WindowsDefines.h
+        <vectormath.hpp$<ANGLE-R>
+        <g3log/g3log.hpp$<ANGLE-R>
+        <algorithm$<ANGLE-R>
+        <exception$<ANGLE-R>
+        <memory$<ANGLE-R>
+        <stdexcept$<ANGLE-R>
+        <cstdio$<ANGLE-R>
+        <json.hpp$<ANGLE-R>>
+        )
+set_target_properties(${PROJECT_NAME} PROPERTIES
+        SKIP_PRECOMPILE_HEADERS
         ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp
         ThirdParty/MikktSpace/mikktspace.c
         ThirdParty/nv_helpers_dx12/BottomLevelASGenerator.cpp
         ThirdParty/nv_helpers_dx12/RaytracingPipelineGenerator.cpp
         ThirdParty/nv_helpers_dx12/RootSignatureGenerator.cpp
         ThirdParty/nv_helpers_dx12/ShaderBindingTableGenerator.cpp
-        ThirdParty/nv_helpers_dx12/TopLevelASGenerator.cpp
-        )
+        ThirdParty/nv_helpers_dx12/TopLevelASGenerator.cpp)
 
 # Make sure to include PDB files when installing in debug mode
 oe_target_install_pdb(${PROJECT_NAME})
@@ -211,7 +219,6 @@ oe_target_install_pdb(${PROJECT_NAME})
 #####
 # Enums
 #####
-message("${Python3_EXECUTABLE}")
 oe_target_generate_enum(${PROJECT_NAME}
         SOURCE "${PROJECT_SOURCE_DIR}/codegen/Renderer_enums.json"
         BYPRODUCTS include/${PROJECT_NAME}/Renderer_enums.h

@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include <OeApp/Statics.h>
 #include <OeApp/OeApp_bindings.h>
 

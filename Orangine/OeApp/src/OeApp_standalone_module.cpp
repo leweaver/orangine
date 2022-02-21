@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include <pybind11/pybind11.h>
 
 #include <OeApp/OeApp_bindings.h>

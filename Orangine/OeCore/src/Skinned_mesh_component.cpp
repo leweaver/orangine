@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Skinned_mesh_component.h"
+﻿#include "OeCore/Skinned_mesh_component.h"
 
 using namespace oe;
 

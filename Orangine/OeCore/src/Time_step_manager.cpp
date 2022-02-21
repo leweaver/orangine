@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include <OeCore/Manager_base.h>
 
 #include "Time_step_manager.h"

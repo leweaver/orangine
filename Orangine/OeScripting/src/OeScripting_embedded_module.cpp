@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include <pybind11/embed.h>
 
 #include <OeScripting/OeScripting_bindings.h>

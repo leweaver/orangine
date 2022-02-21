@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "OeCore/Mesh_data_component.h"
 
 using namespace oe;

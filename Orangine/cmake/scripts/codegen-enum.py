@@ -1,6 +1,7 @@
 import json
 import argparse
-import io, os
+import os
+
 
 def camel(words):
     if isinstance(words, str):
@@ -8,19 +9,23 @@ def camel(words):
     
     return ''.join(w[0].upper() + w[1:] for w in words)
 
+
 def camel_first_lower(words):
     camelStr = camel(words)
     return camelStr[0].lower() + camelStr[1:]
+
 
 def underscores(words):
     if isinstance(words, str):
         words = words.split(' ')
     return '_'.join(words)
 
+
 def underscores_first_upper(words):
     underscoresStr = underscores(words)
     underscoresStr = underscoresStr[0].upper() + underscoresStr[1:]
     return underscoresStr
+
 
 def generate(filepath_json):
     enums_json = json.load(open(filepath_json))
@@ -85,7 +90,6 @@ enum class {cpp_enum_name} {{
             output_header += f"  {enum_val_name}{print_number},\n"
             current_index += 1
 
-        
         output_header += f"\n  {cpp_count_value_name} = {current_index},\n"
         output_header += "};"
 
@@ -115,19 +119,27 @@ const std::string& {cpp_tostr_fn_name}({cpp_enum_name} enumValue)
 
     output_header += "\n} // namespace oe"
     output_cpp += "\n} // namespace oe"
+
+    current_h_content = ""
+    current_cpp_content = ""
     
-    with open(filepath_h, "r") as header_file:        
-        if (output_header == header_file.read()):
-            print (f"enums up to date.")
-            return
+    with open(filepath_h, "r") as header_file:
+        current_h_content = header_file.read()
+    with open(filepath_cpp, "r") as cpp_file:
+        current_cpp_content = cpp_file.read()
+
+    if output_header == current_h_content and output_cpp == current_cpp_content:
+        print(f"enums up to date.")
+        return
 
     with open(filepath_h, "w") as header_file:
         header_file.write(output_header)
-        print (f"wrote {enum_count} enums to {filepath_h}")
+        print(f"wrote {enum_count} enums to {filepath_h}")
 
     with open(filepath_cpp, "w") as cpp_file:
         cpp_file.write(output_cpp)
-        print (f"wrote {enum_count} enums to {filepath_cpp}")
+        print(f"wrote {enum_count} enums to {filepath_cpp}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

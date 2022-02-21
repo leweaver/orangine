@@ -2,7 +2,7 @@
 
 #include <OeCore/Statics.h>
 
-#include "IDevice_resources.h"
+#include <OeCore/IDevice_resources.h>
 #include <OeCore/IAnimation_manager.h>
 #include <OeCore/IAsset_manager.h>
 #include <OeCore/IBehavior_manager.h>

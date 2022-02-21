@@ -1,5 +1,4 @@
-﻿#include "pch.h"
-#include <OeCore/EngineUtils.h>
+﻿#include <OeCore/EngineUtils.h>
 
 #include "Shadowmap_manager.h"
 

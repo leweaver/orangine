@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/EngineUtils.h"
+﻿#include "OeCore/EngineUtils.h"
 #include <DirectXMath.h>
 
 #include <Stringapiset.h>

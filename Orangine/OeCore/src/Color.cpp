@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Color.h"
+﻿#include "OeCore/Color.h"
 
 using namespace oe;
 

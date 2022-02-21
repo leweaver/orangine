@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "OeCore/Primitive_mesh_data_factory.h"
 #include "OeCore/Mesh_data.h"
 #include "OeCore/Mikk_tspace_triangle_mesh_interface.h"

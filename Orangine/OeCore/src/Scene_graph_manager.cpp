@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "Scene_graph_manager.h"
+﻿#include "Scene_graph_manager.h"
 
 #include <imgui.h>
 

@@ -10,8 +10,6 @@ add_library(${PROJECT_NAME} STATIC
         resources/Win32/resource.aps
         resources/Win32/settings.manifest
         src/App_win32.cpp
-        src/pch.h
-        src/pch.cpp
         src/LogFileSink.h
         src/LogFileSink.cpp
         src/VectorLogSink.h
@@ -53,16 +51,18 @@ oe_target_configure_include_dir(${PROJECT_NAME})
 # configure /data folder
 oe_target_add_data_dir(${PROJECT_NAME})
 
-# configure /scripts folder
+# Precompiled Headers
+target_precompile_headers(${PROJECT_NAME}
+        PRIVATE
+        <OeCore/WindowsDefines.h>
+        )
+set_target_properties(${PROJECT_NAME} PROPERTIES
+        SKIP_PRECOMPILE_HEADERS
+        src/${PROJECT_NAME}_bindings.cpp)
+
+# configure /scripts folder (must happen after target_precompile_headers)
 oe_target_add_scripts_dir(${PROJECT_NAME} oe_app_bindings
         LINK_LIBRARIES Oe::Core Oe::Scripting)
-
-# Precompiled Headers
-include(PrecompiledHeader)
-add_precompiled_header(${PROJECT_NAME} pch.h 
-        SOURCE_CXX src/pch.cpp
-        IGNORE_FILES src/${PROJECT_NAME}_bindings.cpp
-        )
 
 # Make sure to include PDB files when installing in debug mode
 oe_target_install_pdb(${PROJECT_NAME})

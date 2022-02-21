@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "D3D_user_interface_manager.h"
+﻿#include "D3D_user_interface_manager.h"
 
 #include <OeThirdParty/imgui.h>
 #include <OeThirdParty/imgui_impl_dx11.h>

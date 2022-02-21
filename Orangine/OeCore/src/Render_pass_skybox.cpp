@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include <OeCore/Light_provider.h>
+﻿#include <OeCore/Light_provider.h>
 #include <OeCore/Primitive_mesh_data_factory.h>
 #include <OeCore/Render_pass_skybox.h>
 #include <OeCore/Renderable.h>

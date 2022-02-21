@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Mesh_utils.h"
+﻿#include "OeCore/Mesh_utils.h"
 #include "OeCore/Mikk_tspace_triangle_mesh_interface.h"
 
 using namespace oe;

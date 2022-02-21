@@ -20,15 +20,7 @@ endfunction()
 SET(OE_PYTHON_DEBUG "OFF" CACHE BOOL "Use python debug binaries (built with PyDEBUG defined)")
 
 # Python search paths
-cmake_path(SET PROJECT_PARENT_BINARY_DIR NORMALIZE "${PROJECT_BINARY_DIR}/..")
-if ("${Orangine_ARCHITECTURE}" MATCHES "x86")
-    set(ENV{VIRTUAL_ENV} "${PROJECT_PARENT_BINARY_DIR}/pyenv")
-elseif ("${Orangine_ARCHITECTURE}" MATCHES "x64")
-    set(ENV{VIRTUAL_ENV} "${PROJECT_PARENT_BINARY_DIR}/pyenv")
-else ()
-    MESSAGE(ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-endif ()
-
+set(ENV{VIRTUAL_ENV} "${CMAKE_BINARY_DIR}/pyenv")
 if (NOT EXISTS "$ENV{VIRTUAL_ENV}")
     oe_create_python_env()
 endif()
@@ -78,6 +70,9 @@ function(oe_target_add_scripts_dir _target _moduleName)
             #COMMAND echo F|xcopy ${TGT_NAME}\\${_moduleName}.pyi ..\\..\\${TGT_NAME}\\bindings.pyi /y /q
             COMMAND python -c "import shutil; shutil.move('${TGT_NAME}/${_moduleName}.pyi', '${TGT_SOURCE_DIR}/bindings.pyi')"
             COMMENT "Generating ${TGT_NAME}/bindings.pyi")
+    IF (NOT "${_retval}" MATCHES "0")
+        MESSAGE(FATAL_ERROR "Failed to create pyi")
+    endif()
 
     add_custom_target(${TGT_NAME}_pyi DEPENDS ${TGT_NAME}_pyi_create)
     add_dependencies(${TGT_NAME}_pyi ${_moduleName})

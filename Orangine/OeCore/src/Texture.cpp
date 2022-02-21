@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Texture.h"
+﻿#include "OeCore/Texture.h"
 #include "OeCore/EngineUtils.h"
 
 

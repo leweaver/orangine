@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include <OeCore/Statics.h>
 #include <OeCore/Component.h>
 

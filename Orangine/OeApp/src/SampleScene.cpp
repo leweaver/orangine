@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "OeApp/SampleScene.h"
 #include "OeCore/Camera_component.h"
 #include "OeCore/Light_component.h"

@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "D3D12_device_resources.h"
 #include "D3D_render_pass_shadow.h"
 #include "D3D_render_step_manager.h"

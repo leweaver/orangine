@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "D3D12_render_step_manager.h"
 
 #include <OeCore/Render_pass_generic.h>

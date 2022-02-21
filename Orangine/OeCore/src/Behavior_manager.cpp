@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "Behavior_manager.h"
 #include <OeCore/EngineUtils.h>
 #include <OeCore/IScene_graph_manager.h>

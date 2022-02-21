@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Deferred_light_material.h"
+﻿#include "OeCore/Deferred_light_material.h"
 #include "OeCore/Render_light_data.h"
 
 using namespace oe;

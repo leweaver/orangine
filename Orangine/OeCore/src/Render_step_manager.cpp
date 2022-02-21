@@ -1,14 +1,10 @@
-﻿#include "pch.h"
-
-#include <OeCore/Render_step_manager.h>
+﻿#include <OeCore/Render_step_manager.h>
 
 #include <OeCore/Camera_component.h>
 #include <OeCore/Clear_gbuffer_material.h>
 #include <OeCore/Light_component.h>
 #include <OeCore/Render_pass_generic.h>
 #include <OeCore/Render_pass_skybox.h>
-#include "pch.h"
-
 #include <OeCore/Render_step_manager.h>
 
 #include <OeCore/Camera_component.h>

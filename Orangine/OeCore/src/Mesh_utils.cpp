@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "OeCore/Mesh_utils.h"
 #include "OeCore/Mesh_data.h"
 #include "OeCore/Entity_filter.h"

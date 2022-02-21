@@ -3,8 +3,6 @@
 //                       (requires DirectX 11.1 Runtime)
 //
 
-#include "pch.h"
-
 #include "D3D12_device_resources.h"
 #include "OeCore/EngineUtils.h"
 

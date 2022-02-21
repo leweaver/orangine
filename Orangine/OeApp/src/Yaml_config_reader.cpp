@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include <OeApp/Yaml_config_reader.h>
 #include <OeCore/FileUtils.h>
 

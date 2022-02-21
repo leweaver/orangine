@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Mesh_data.h"
+﻿#include "OeCore/Mesh_data.h"
 #include "OeCore/EngineUtils.h"
 
 #include <utility>

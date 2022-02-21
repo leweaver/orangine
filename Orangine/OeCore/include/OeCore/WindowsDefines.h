@@ -25,5 +25,9 @@
 #include <Windows.h>
 //#include <atlcomcli.h> // for CComPtr
 
+// Workaround for CLION; it will try to compile a temporary file to determine compiler version. but, the temp file does
+// not have a .cpp extension, which throws an error:
+//#error:  WRL requires C++ compilation (use a .cpp suffix)
+#ifdef __cplusplus
 #include <wrl/client.h>
-
+#endif

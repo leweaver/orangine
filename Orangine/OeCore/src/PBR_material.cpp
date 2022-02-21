@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/JsonUtils.h"
+﻿#include "OeCore/JsonUtils.h"
 #include "OeCore/Mesh_vertex_layout.h"
 #include "OeCore/PBR_material.h"
 

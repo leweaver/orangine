@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "../Entity_render_manager.h"
 #include "../Material_manager.h"
 #include "OeCore/IDevice_resources.h"

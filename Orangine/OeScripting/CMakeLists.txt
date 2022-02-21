@@ -5,8 +5,6 @@ project(OeScripting VERSION 1.0
 ######################
 # Library Definition
 add_library(${PROJECT_NAME} STATIC
-        src/pch.h
-        src/pch.cpp
         src/OeScripting_bindings.cpp
         src/Entity_scripting_manager.cpp        
         src/Entity_scripting_manager.h
@@ -33,15 +31,9 @@ target_link_libraries(${PROJECT_NAME}
         PUBLIC OeCompilerFlags
         PRIVATE Oe::Core)
 
-# Python Scripts Dir
-oe_target_add_scripts_dir(OeScripting oe_bindings
-        LINK_LIBRARIES Oe::Core)
-
-# Precompiled Headers
-include(PrecompiledHeader)
-add_precompiled_header(${PROJECT_NAME} pch.h
-        SOURCE_CXX src/pch.cpp
-        IGNORE_FILES src/OeScripting_bindings.cpp)
+# Disable precompiled headers, as python must be included prior to any STL files. Don't want to consume the PUBLIC
+# PCH of OeCore.
+set_target_properties(${PROJECT_NAME} PROPERTIES DISABLE_PRECOMPILE_HEADERS ON)
 
 # Public headers
 target_include_directories(${PROJECT_NAME}
@@ -53,10 +45,10 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} PUBLIC pybind11::embed pybind11::python_link_helper)
 
-IF (NOT "${_retval}" MATCHES "0")
-    MESSAGE(FATAL_ERROR "Failed to create pyi")
-endif()
-#python "stubgen --search-path, C:\\repos\\orangine\\Orangine\\build\\VS_2019_AMD64_Debug, -m, OeScripting.oe"
+
+# configure /scripts folder (must happen after target_precompile_headers)
+oe_target_add_scripts_dir(OeScripting oe_bindings
+        LINK_LIBRARIES Oe::Core)
 
 # --------------------------------
 # Install

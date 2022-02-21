@@ -14,8 +14,6 @@ configure_file (
 # Library Definition
 add_executable(${PROJECT_NAME} WIN32
         ${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h
-        src/pch.h
-        src/pch.cpp
         src/ViewerApp.cpp
         )
 
@@ -31,9 +29,7 @@ set_property(TARGET ViewerApp PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SO
 
 # --------------------------------
 # Precompiled Headers
-include(PrecompiledHeader)
-add_precompiled_header(${PROJECT_NAME} pch.h
-        SOURCE_CXX src/pch.cpp)
+target_precompile_headers(${PROJECT_NAME} REUSE_FROM OeApp)
 
 # --------------------------------
 # Dependencies
@@ -75,4 +71,4 @@ install(
 
 if(OE_BUILD_TESTING)
     enable_testing()
-end()
+endif()

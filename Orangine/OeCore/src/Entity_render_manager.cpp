@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "Entity_render_manager.h"
 #include "Scene_graph_manager.h"
 

@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "Asset_manager.h"
+﻿#include "Asset_manager.h"
 
 #include <OeCore/EngineUtils.h>
 #include <OeCore/IConfigReader.h>

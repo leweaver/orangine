@@ -1,5 +1,4 @@
-﻿#include "pch.h"
-#include "OeCore/Fps_counter.h"
+﻿#include "OeCore/Fps_counter.h"
 #include "OeCore/Perf_timer.h"
 
 using namespace oe;

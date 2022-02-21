@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "Dev_tools_manager.h"
+﻿#include "Dev_tools_manager.h"
 
 #include "OeCore/Animation_controller_component.h"
 #include "OeCore/Renderable.h"

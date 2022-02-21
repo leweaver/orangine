@@ -1,4 +1,6 @@
-#include "pch.h"
+
+
+#include "Python_headers.h"
 
 #include "Entity_scripting_manager.h"
 

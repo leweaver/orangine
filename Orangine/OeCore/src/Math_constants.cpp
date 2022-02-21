@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "OeCore/Math_constants.h"
 
 const SSE::Vector3 oe::math::left = Vector3::xAxis() * -1.0f;

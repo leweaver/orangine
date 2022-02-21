@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Animation_controller_component.h"
+﻿#include "OeCore/Animation_controller_component.h"
 #include "OeCore/Collision.h"
 #include "OeCore/Entity_graph_loader_gltf.h"
 #include "OeCore/IEntity_repository.h"

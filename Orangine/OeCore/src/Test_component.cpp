@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Test_component.h"
+﻿#include "OeCore/Test_component.h"
 
 using namespace oe;
 

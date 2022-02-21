@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "D3D_render_pass_shadow.h"
+﻿#include "D3D_render_pass_shadow.h"
 
 #include "OeCore/Entity.h"
 #include "OeCore/Entity_filter.h"

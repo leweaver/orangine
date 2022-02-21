@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "OeCore/EngineUtils.h"
 #include "OeCore/ITexture_manager.h"
 #include "OeCore/Mesh_utils.h"

@@ -5,11 +5,23 @@
 
 #include <gsl/span>
 
-using namespace oe;
+namespace oe::app {
 
-namespace oe::internal {
+namespace internal {
 class Yaml_file_processor {
  public:
+  static constexpr std::array<const char*, 5> kNodeTypeNames = {{
+          "Undefined", "Null", "Scalar", "Sequence", "Map"
+  }};
+
+  static void checkElementType(const std::string& configPath, const YAML::Node& currentElement, YAML::NodeType::value expectedType)
+  {
+    OE_CHECK_FMT(
+            currentElement.Type() == expectedType, "%s must be a %s, but is a %s", configPath.c_str(),
+            kNodeTypeNames.at(size_t(expectedType)),
+            kNodeTypeNames.at(size_t(currentElement.Type())));
+  }
+
   explicit Yaml_file_processor(const std::wstring& configFileName)
   {
     auto fileName_utf8 = utf8_encode(configFileName);
@@ -91,7 +103,7 @@ class Yaml_file_processor {
     if (!getNode(path, node)) {
       auto pos = _defaults.find(path);
       bool hasDefault = pos != _defaults.end();
-      OE_CHECK_FMT(hasDefault, "%s must be a registered default", path.c_str());
+      OE_CHECK_FMT(hasDefault, "Attempt to read undefined config path '%s' that does not have a default value.", path.c_str());
       if (hasDefault) {
         node.reset(pos->second);
       }
@@ -103,18 +115,21 @@ class Yaml_file_processor {
     YAML::Node currentElement;
     getNodeOrDefault(configPath, currentElement);
     if (currentElement.IsScalar()) {
-      return currentElement.as<TValue>();
+      try {
+        return currentElement.as<TValue>();
+      } catch (const YAML::RepresentationException& ex) {
+        LOG(FATAL) << "Failed to read config value '" << configPath << "': " << ex.what();
+      }
     }
-    else {
-      return {};
-    }
+    return {};
   }
 
   template<typename TValue> std::vector<TValue> readValueList(const std::string& configPath)
   {
     YAML::Node currentElement;
     getNodeOrDefault(configPath, currentElement);
-    OE_CHECK_FMT(currentElement.IsSequence(), "%s must be a sequence", configPath.c_str());
+
+    checkElementType(configPath, currentElement, YAML::NodeType::Sequence);
 
     std::vector<TValue> values;
     for (uint32_t i = 0; i < currentElement.size(); ++i) {
@@ -123,7 +138,11 @@ class Yaml_file_processor {
         LOG(WARNING) << configPath << "[" << i << "] is not a scalar, skipping.";
         continue;
       }
-      values.push_back(node.as<TValue>());
+      try {
+        values.push_back(node.as<TValue>());
+      } catch (const YAML::RepresentationException& ex) {
+        LOG(FATAL) << "Failed to read config value '" << configPath << "[" << i << "]': " << ex.what();
+      }
     }
     return values;
   }
@@ -132,11 +151,23 @@ class Yaml_file_processor {
   {
     YAML::Node currentElement;
     getNodeOrDefault(configPath, currentElement);
-    OE_CHECK_FMT(currentElement.IsMap(), "%s must be a map", configPath.c_str());
+
+    checkElementType(configPath, currentElement, YAML::NodeType::Map);
 
     std::unordered_map<std::string, TValue> result;
     for (const auto& iter : currentElement) {
-      result.insert({iter.first.as<std::string>(), iter.second.as<TValue>()});
+      std::string key;
+      try {
+        key = iter.first.as<std::string>();
+      } catch (const YAML::RepresentationException& ex) {
+        LOG(FATAL) << "Failed to read config value '" << configPath << "' dictionary key: " << ex.what();
+      }
+
+      try {
+        result.insert({key, iter.second.as<TValue>()});
+      } catch (const YAML::RepresentationException& ex) {
+        LOG(FATAL) << "Failed to read config value '" << configPath << "[" << key << "]': " << ex.what();
+      }
     }
     return result;
   }
@@ -146,8 +177,7 @@ class Yaml_file_processor {
 
   std::unordered_map<std::string, YAML::Node> _defaults;
 };
-}// namespace oe::internal
-
+}
 Yaml_config_reader::Yaml_config_reader(const std::wstring& configFileName)
     : _fileProcessor(new internal::Yaml_file_processor(configFileName))
 {}
@@ -175,6 +205,11 @@ void Yaml_config_reader::setDefault(const std::string& configPath, double value)
   _fileProcessor->setDefault(configPath, value);
 }
 
+void Yaml_config_reader::setDefault(const std::string& configPath, bool value) const
+{
+  _fileProcessor->setDefault(configPath, value);
+}
+
 void Yaml_config_reader::setDefault(const std::string& configPath, const std::vector<std::string>& value) const
 {
   _fileProcessor->setDefault(configPath, value);
@@ -189,7 +224,10 @@ void Yaml_config_reader::setDefault(const std::string& configPath, const std::ve
 {
   _fileProcessor->setDefault(configPath, value);
 }
-
+void Yaml_config_reader::setDefault(const std::string& configPath, const std::vector<bool>& value) const
+{
+  _fileProcessor->setDefault(configPath, value);
+}
 
 std::string Yaml_config_reader::readString(const std::string& configPath) const
 {
@@ -204,6 +242,11 @@ int64_t Yaml_config_reader::readInt(const std::string& configPath) const
 double Yaml_config_reader::readDouble(const std::string& configPath) const
 {
   return _fileProcessor->readValue<double>(configPath);
+}
+
+bool Yaml_config_reader::readBool(const std::string& configPath) const
+{
+  return _fileProcessor->readValue<bool>(configPath);
 }
 
 std::vector<std::string> Yaml_config_reader::readStringList(const std::string& configPath) const
@@ -221,6 +264,11 @@ std::vector<double> Yaml_config_reader::readDoubleList(const std::string& config
   return _fileProcessor->readValueList<double>(configPath);
 }
 
+std::vector<bool> Yaml_config_reader::readBoolList(const std::string& configPath) const
+{
+  return _fileProcessor->readValueList<bool>(configPath);
+}
+
 std::unordered_map<std::string, std::string> Yaml_config_reader::readStringDict(const std::string& configPath) const
 {
   return _fileProcessor->readValueDict<std::string>(configPath);
@@ -236,16 +284,35 @@ std::unordered_map<std::string, double> Yaml_config_reader::readDoubleDict(const
   return _fileProcessor->readValueDict<double>(configPath);
 }
 
-std::vector<std::string> Yaml_config_reader::readDictKeys(const std::string& configPath) const
+std::unordered_map<std::string, bool> Yaml_config_reader::readBoolDict(const std::string& configPath) const
+{
+  return _fileProcessor->readValueDict<bool>(configPath);
+}
+
+size_t Yaml_config_reader::getListSize(const std::string& configPath) const
+{
+  YAML::Node currentElement;
+  _fileProcessor->getNodeOrDefault(configPath, currentElement);
+  internal::Yaml_file_processor::checkElementType(configPath, currentElement, YAML::NodeType::Sequence);
+
+  return currentElement.size();
+}
+std::string Yaml_config_reader::getListElementPath(const std::string& configPath, size_t elementIdx) const
+{
+  return configPath + "." + std::to_string(elementIdx);
+}
+
+std::vector<std::string> Yaml_config_reader::getDictKeys(const std::string& configPath) const
 {
   std::vector<std::string> result;
 
   YAML::Node currentElement;
   _fileProcessor->getNodeOrDefault(configPath, currentElement);
-  OE_CHECK_FMT(currentElement.IsMap(), "%s is not a map", configPath.c_str());
+  internal::Yaml_file_processor::checkElementType(configPath, currentElement, YAML::NodeType::Map);
 
   for (const auto& iter : currentElement) {
     result.push_back(iter.first.as<std::string>());
   }
   return result;
+}
 }

@@ -1,4 +1,5 @@
 %YAML 1.2
 ---
 OeCore:
-  some_setting: hello world
+  devtools_show_skeletons: false
+  devtools_scroll_log_to_bottom: false

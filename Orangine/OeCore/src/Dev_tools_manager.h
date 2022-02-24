@@ -25,6 +25,7 @@ class Dev_tools_manager : public IDev_tools_manager, public Manager_base, public
   {}
 
   // Manager_base implementation
+  void loadConfig(const IConfigReader&) override;
   void initialize() override;
   void shutdown() override;
   const std::string& name() const override;

@@ -31,6 +31,12 @@ void oe::create_manager(Manager_instance<IDev_tools_manager>& out,
           sceneGraphManager, entityRenderManager, materialManager));
 }
 
+void Dev_tools_manager::loadConfig(const IConfigReader& configReader)
+{
+  _renderSkeletons = configReader.readBool("OeCore.devtools_show_skeletons");
+  _scrollLogToBottom = configReader.readBool("OeCore.devtools_scroll_log_to_bottom");
+}
+
 void Dev_tools_manager::initialize() {
   _noLightProvider = [](const BoundingSphere&, std::vector<Entity*>&, uint32_t) {};
   _fpsCounter = std::make_unique<Fps_counter>();

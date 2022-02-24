@@ -13,31 +13,44 @@ template<> void oe::create_manager(Manager_instance<IAsset_manager>& out)
   out = Manager_instance<IAsset_manager>(std::make_unique<Asset_manager>());
 }
 
-Asset_manager::Asset_manager() : IAsset_manager(), Manager_base() {}
+Asset_manager::Asset_manager()
+    : IAsset_manager()
+    , Manager_base()
+{}
 
-void Asset_manager::initialize() { _initialized = true; }
+void Asset_manager::initialize()
+{
+  _initialized = true;
+}
 
 void Asset_manager::shutdown() {}
 
-const std::string& Asset_manager::name() const { return _name; }
+const std::string& Asset_manager::name() const
+{
+  return _name;
+}
 
-void Asset_manager::preInit_setDataPath(const std::string& dataPath) {
+void Asset_manager::preInit_setDataPath(const std::string& dataPath)
+{
   if (_initialized) {
     OE_THROW(std::logic_error("Cannot change data path after Asset_manager is initialized."));
   }
   _dataPath = dataPath;
 }
 
-void Asset_manager::setDataPathOverrides(std::unordered_map<std::string, std::string>&& paths) {
+void Asset_manager::setDataPathOverrides(std::unordered_map<std::string, std::string> paths)
+{
   _dataPathOverrides = move(paths);
 }
 
-const std::unordered_map<std::string, std::string>& Asset_manager::dataPathOverrides(
-    std::unordered_map<std::string, std::string>&& paths) const {
+const std::unordered_map<std::string, std::string>&
+Asset_manager::dataPathOverrides(std::unordered_map<std::string, std::string>&& paths) const
+{
   return _dataPathOverrides;
 }
 
-std::string Asset_manager::makeAbsoluteAssetPath(const std::string& path) const {
+std::string Asset_manager::makeAbsoluteAssetPath(const std::string& path) const
+{
   for (const auto& pair : _dataPathOverrides) {
     if (str_starts(path, pair.first)) {
       return pair.second + "/" + path;
@@ -47,14 +60,25 @@ std::string Asset_manager::makeAbsoluteAssetPath(const std::string& path) const 
     return _dataPath + "/" + path;
   }
   OE_THROW(std::invalid_argument(
-      "Given data path does not match any data path overrides, and fallback data path is "
-      "forbidden: " +
-      path));
+          "Given data path does not match any data path overrides, and fallback data path is "
+          "forbidden: " +
+          path));
 }
 
-void Asset_manager::loadConfig(const IConfigReader& configReader) {
+void Asset_manager::loadConfig(const IConfigReader& configReader)
+{
   Manager_base::loadConfig(configReader);
 
-  this->preInit_setDataPath(configReader.readString("data_path"));
-  this->setDataPathOverrides(configReader.readStringDict("data_path_overrides"));
+  std::unordered_map<std::string, std::string> overrides;
+  const std::string assetRootsConfigPath = "OeCore.asset_roots";
+
+  size_t numPaths = configReader.getListSize(assetRootsConfigPath);
+  for (size_t i = 0; i < numPaths; i++) {
+    std::string assetRootConfigPath = configReader.getListElementPath(assetRootsConfigPath, i);
+    std::string assetRootPrefix = configReader.readString(assetRootConfigPath + ".prefix");
+    std::string assetRootPath = configReader.readString(assetRootConfigPath + ".path");
+
+    overrides[assetRootPrefix] = assetRootPrefix;
+  }
+  setDataPathOverrides(std::move(overrides));
 }

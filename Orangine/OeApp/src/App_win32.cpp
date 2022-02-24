@@ -65,9 +65,8 @@ class App_impl {
  public:
 
   void configureManagers() {
-    std::unique_ptr<Yaml_config_reader> configReader;
     try {
-      configReader = std::make_unique<Yaml_config_reader>(CONFIG_FILE_NAME);
+      _configReader = std::make_unique<Yaml_config_reader>(CONFIG_FILE_NAME);
     }
     catch (std::exception& ex) {
       LOG(WARNING) << "Failed to read config file: " << utf8_encode(CONFIG_FILE_NAME) << "(" << ex.what() << ")";
@@ -80,7 +79,7 @@ class App_impl {
         if (manager == nullptr) {return;}
 
         try {
-          manager->loadConfig(*configReader);
+          manager->loadConfig(*_configReader);
         }
         catch (std::exception& ex) {
           OE_THROW(std::runtime_error("Failed to configure " + manager->name() + ": " + ex.what()));
@@ -372,6 +371,7 @@ class App_impl {
   std::unique_ptr<core::Manager_instances> _coreManagers;
   std::unique_ptr<scripting::Manager_instances> _scriptingManagers;
   std::vector<Manager_interfaces*> _initializedManagers;
+  std::unique_ptr<Yaml_config_reader> _configReader;
 };
 } // namespace oe
 
@@ -771,4 +771,7 @@ oe::IRender_step_manager& App::getRenderStepManager()
 oe::IEntity_scripting_manager& App::getEntityScriptingManager()
 {
   return _impl->_scriptingManagers->getInstance<oe::IEntity_scripting_manager>();
+}
+oe::IConfigReader& App::getConfigReader() {
+  return *_impl->_configReader;
 }

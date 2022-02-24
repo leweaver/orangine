@@ -15,7 +15,7 @@ class IAsset_manager {
   virtual void preInit_setDataPath(const std::string&) = 0;
   virtual const std::string& getDataPath() const = 0;
 
-  virtual void setDataPathOverrides(std::unordered_map<std::string, std::string>&& paths) = 0;
+  virtual void setDataPathOverrides(std::unordered_map<std::string, std::string> paths) = 0;
   virtual const std::unordered_map<std::string, std::string>& dataPathOverrides(
       std::unordered_map<std::string, std::string>&& paths) const = 0;
 

@@ -16,6 +16,7 @@ struct App_start_settings {
   std::wstring title = L"";
 };
 
+class Yaml_config_reader;
 class App_impl;
 
 class App {
@@ -53,6 +54,7 @@ class App {
   IDev_tools_manager& getDevToolsManager();
   IRender_step_manager& getRenderStepManager();
   IEntity_scripting_manager& getEntityScriptingManager();
+  IConfigReader& getConfigReader();
 
   // Internal only getter.
   App_impl* getAppImpl() const

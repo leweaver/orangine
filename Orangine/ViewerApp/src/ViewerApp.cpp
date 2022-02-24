@@ -1,5 +1,3 @@
-#include <ViewerAppConfig.h>
-
 #include <OeApp/App.h>
 #include <OeApp/SampleScene.h>
 #include <OeApp/Statics.h>
@@ -20,17 +18,18 @@ using oe::app::App;
 
 class ViewerApp : public App {
  public:
-
-  void onSceneConfigured() override {
+  void onSceneConfigured() override
+  {
     // Tell the scripting engine about our data directory.
-    const auto appScriptsPath = getAssetManager().makeAbsoluteAssetPath("ViewerApp/scripts");
-    getEntityScriptingManager().preInit_addAbsoluteScriptsPath("ViewerApp/scripts");
+    getEntityScriptingManager().preInit_addAbsoluteScriptsPath(getConfigReader().readString("ViewerApp.scripts_path"));
+    getAssetManager().preInit_setDataPath(getConfigReader().readString("ViewerApp.default_asset_path"));
   }
 
   void onSceneInitialized() override {
+    const std::string extraAssetPath = getConfigReader().readString("ViewerApp.thirdparty_path");
     _sampleScene = std::make_unique<Sample_scene>(
             getRenderStepManager(), getSceneGraphManager(), getInputManager(), getEntityScriptingManager(),
-            getAssetManager(), std::vector<std::string>{VIEWERAPP_THIRDPARTY_PATH});
+            getAssetManager(), std::vector<std::string>{extraAssetPath});
 
     // Load a scene
     //auto appModule = pybind11::module::import(OeApp_bindings::getModuleName().c_str());

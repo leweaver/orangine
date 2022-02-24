@@ -2,11 +2,12 @@
 
 #include <OeCore/Statics.h>
 
-#include <OeCore/IDevice_resources.h>
 #include <OeCore/IAnimation_manager.h>
 #include <OeCore/IAsset_manager.h>
 #include <OeCore/IBehavior_manager.h>
+#include <OeCore/IConfigReader.h>
 #include <OeCore/IDev_tools_manager.h>
+#include <OeCore/IDevice_resources.h>
 #include <OeCore/IEntity_render_manager.h>
 #include <OeCore/IEntity_repository.h>
 #include <OeCore/IInput_manager.h>

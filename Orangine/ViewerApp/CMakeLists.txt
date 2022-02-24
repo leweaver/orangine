@@ -3,17 +3,8 @@ project(ViewerApp VERSION 1.0
         LANGUAGES CXX)
 
 # --------------------------------
-# Configure File
-set(ViewerApp_THIRDPARTY_PATH ${CMAKE_SOURCE_DIR}/../thirdparty)
-configure_file (
-        "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
-        "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
-)
-
-# --------------------------------
 # Library Definition
 add_executable(${PROJECT_NAME} WIN32
-        ${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h
         src/ViewerApp.cpp
         )
 
@@ -46,6 +37,13 @@ oe_target_add_data_dir(${PROJECT_NAME} DEPENDENCIES Oe::App Oe::Core Oe::Scripti
 
 # --------------------------------
 # Configuration file blending
+set(ViewerApp_THIRDPARTY_PATH ${CMAKE_SOURCE_DIR}/../thirdparty)
+set(ViewerApp_SCRIPTS_PATH ${PROJECT_SOURCE_DIR}/scripts)
+set(ViewerApp_DEFAULT_ASSET_PATH ${PROJECT_SOURCE_DIR}/data)
+set(_ADD_CONFIG_YAML_PARTIAL_FILE "${PROJECT_BINARY_DIR}/config_yaml/viewer_app_config.yaml.partial")
+configure_file("cmake/viewer_app_config.yaml.in" "${_ADD_CONFIG_YAML_PARTIAL_FILE}")
+oe_target_add_config_yaml(${PROJECT_NAME} "${_ADD_CONFIG_YAML_PARTIAL_FILE}")
+
 oe_target_build_config_yaml(${PROJECT_NAME} SOURCE_TARGETS ${PROJECT_NAME} Oe::App Oe::Core Oe::Scripting)
 
 # --------------------------------

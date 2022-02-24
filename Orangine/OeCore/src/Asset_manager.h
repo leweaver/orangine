@@ -13,7 +13,7 @@ class Asset_manager : public IAsset_manager, public Manager_base {
   void preInit_setDataPath(const std::string& dataPath) override;
   const std::string& getDataPath() const override { return _dataPath; }
 
-  void setDataPathOverrides(std::unordered_map<std::string, std::string>&& paths) override;
+  void setDataPathOverrides(std::unordered_map<std::string, std::string> paths) override;
   const std::unordered_map<std::string, std::string>&
   dataPathOverrides(std::unordered_map<std::string, std::string>&& paths) const override;
 

@@ -1,0 +1,4 @@
+%YAML 1.2
+---
+OeScripting:
+  pyenv_path: @OeScripting_PYENV_DIR@

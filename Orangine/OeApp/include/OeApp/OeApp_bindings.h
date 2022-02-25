@@ -11,10 +11,9 @@ class OeApp_bindings {
   explicit OeApp_bindings(pybind11::module module) : _module(module) {}
 
   static void create(pybind11::module& m);
-  static const std::string& getModuleName();
 
-  static void initStatics();
-  static void destroyStatics();
+  static void setModuleName(const char* moduleName);
+  static const std::string& getModuleName();
 
  private:
   pybind11::module _module;

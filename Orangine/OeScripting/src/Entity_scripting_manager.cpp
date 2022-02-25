@@ -6,6 +6,7 @@
 
 #include <OeCore/Light_component.h>
 #include <OeCore/Test_component.h>
+#include <OeCore/IConfigReader.h>
 
 #include <imgui.h>
 
@@ -55,16 +56,28 @@ Entity_scripting_manager::Entity_scripting_manager(
     , _entityRenderManager(entityRenderManager)
 {}
 
-void Entity_scripting_manager::preInit_addAbsoluteScriptsPath(const std::string& path)
+void Entity_scripting_manager::loadConfig(const IConfigReader& configReader)
 {
-  if (_pythonInitialized) {
-    OE_THROW(std::logic_error("preInit_addAbsoluteScriptsPath can only be called prior to manager initialization."));
+  Manager_base::loadConfig(configReader);
+
+  std::unordered_map<std::string, std::string> overrides;
+  const std::string assetRootsConfigPath = "OeScripting.script_roots";
+
+  _pyenvPath = configReader.readString("OeScripting.pyenv_path");
+
+  size_t numPaths = configReader.getListSize(assetRootsConfigPath);
+  for (size_t i = 0; i < numPaths; i++) {
+    std::string assetRootConfigPath = configReader.getListElementPath(assetRootsConfigPath, i);
+    std::string assetRootPrefix = configReader.readString(assetRootConfigPath + ".prefix");
+    std::string assetRootPath = configReader.readString(assetRootConfigPath + ".path");
+
+    if (!std::filesystem::exists(assetRootPath)) {
+      OE_THROW(std::runtime_error(
+              "Attempting to add python script path that does not exist, or is inaccessible: " + assetRootPath));
+    }
+    _scriptRoots.push_back(assetRootPath);
+    overrides[assetRootPrefix] = assetRootPrefix;
   }
-  if (!std::filesystem::exists(path)) {
-    OE_THROW(std::runtime_error(
-            "Attempting to add python script path that does not exist, or is inaccessible: " + path));
-  }
-  _preInit_additionalPaths.push_back(path);
 }
 
 void Entity_scripting_manager::initialize()
@@ -273,17 +286,13 @@ void Entity_scripting_manager::initializePythonInterpreter()
 
   std::vector<std::string> sysPathVec;
 
-  const auto& dataLibPath = _assetManager.makeAbsoluteAssetPath("OeScripting/lib");
-  sysPathVec.push_back(dataLibPath);
-
-  const auto& pyEnvPath = _assetManager.makeAbsoluteAssetPath("pyenv") + "/..";
-
   // Add pyenv scripts
-  sysPathVec.push_back(pyEnvPath + "/lib");
-  sysPathVec.push_back(pyEnvPath + "/lib/site-packages");
+  LOG(INFO) << "Using python environment: " << _pyenvPath;
+  sysPathVec.push_back(_pyenvPath + "/lib");
+  sysPathVec.push_back(_pyenvPath + "/lib/site-packages");
 
   // Add system installed python (for non-installed, dev machine builds only). Must come after pyenv
-  auto pyenvCfgPath = pyEnvPath + "/pyvenv.cfg";
+  auto pyenvCfgPath = _pyenvPath + "/pyvenv.cfg";
   if (std::filesystem::exists(pyenvCfgPath)) {
     std::string line;
     std::ifstream infile(pyenvCfgPath, std::ios::in);
@@ -293,11 +302,6 @@ void Entity_scripting_manager::initializePythonInterpreter()
         LOG(DEBUG) << "Failed to parse line in " << pyenvCfgPath << ": " << line;
         continue;
       }
-
-      std::string test1 = str_trim("   hello");
-      std::string test2 = str_trim("   hello   ");
-      std::string test3 = str_trim("hello   ");
-      std::string test4 = str_trim("");
 
       std::string propName = str_trim(line.substr(0, equalPos - 1));
       std::string value = str_trim(line.substr(equalPos + 1));
@@ -315,7 +319,7 @@ void Entity_scripting_manager::initializePythonInterpreter()
   }
 
   // Add additional user script paths
-  std::copy(_preInit_additionalPaths.begin(), _preInit_additionalPaths.end(), std::back_inserter(sysPathVec));
+  std::copy(_scriptRoots.begin(), _scriptRoots.end(), std::back_inserter(sysPathVec));
 
   // Convert to a python list, and overwrite the existing value of sys.path
   auto sysPathList = py::list();
@@ -334,8 +338,8 @@ void Entity_scripting_manager::initializePythonInterpreter()
   _pythonContext._sysModule = py::module::import("sys");
   _pythonContext._sysModule.attr("path") = sysPathList;
 
-  _pythonContext._oeModule = std::make_unique<OeScripting_bindings>(py::module::import("oe"));
-  _pythonContext._oeModule->initializeSingletons(_inputManager);
+  _pythonContext._oeModule = std::make_unique<OeScripting_bindings>();
+  _pythonContext._oeModule->initializeSingletons(_inputManager, _sceneGraphManager);
 
   _pythonContext._engineInternalModule = std::make_unique<Engine_internal_module>();
 

@@ -128,7 +128,7 @@ std::shared_ptr<Entity> Sample_scene::addDefaultCamera() {
   camera->lookAt({0, 0, 0}, math::up);
 
   _renderStepManager.setCameraEntity(camera);
-  _entityScriptingManager.loadSceneScript("camera.FirstPersonCamera");
+  _entityScriptingManager.loadSceneScript("camera_controller.FirstPersonController");
 
   return camera;
 }

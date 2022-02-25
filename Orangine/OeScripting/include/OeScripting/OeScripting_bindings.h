@@ -8,13 +8,17 @@
 namespace oe {
 class OeScripting_bindings {
  public:
-  explicit OeScripting_bindings(pybind11::module module) : _module(module) {}
-  void initializeSingletons(IInput_manager& inputManager);
+  OeScripting_bindings();
+  void initializeSingletons(IInput_manager& inputManager, IScene_graph_manager& sceneGraphManager);
 
   static void create(pybind11::module& m);
 
+  static void setModuleName(const char* string);
+  static const std::string& getModuleName();
+
  private:
   pybind11::module _module;
+  static std::string _moduleName;
 };
 
 class PyClass_input {

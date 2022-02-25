@@ -83,7 +83,7 @@ function(oe_target_configure_include_dir _target)
 endfunction()
 
 function(oe_target_add_data_dir _target)
-        cmake_parse_arguments(_ADD_DATA "NO_INSTALL" "" "DEPENDENCIES" ${ARGN})
+        cmake_parse_arguments(_ADD_DATA "NO_INSTALL" "" "" ${ARGN})
 
         get_target_property(TGT_NAME ${_target} NAME)
         get_target_property(TGT_SOURCE_DIR ${_target} SOURCE_DIR)
@@ -93,11 +93,25 @@ function(oe_target_add_data_dir _target)
         set(DATA_SOURCE_DIRS "${TGT_NAME}=${TGT_SOURCE_DIR}/data")
         set_target_properties(${TGT_NAME} PROPERTIES OE_DATA_SOURCE_DIRS_NO_DEPENDENCIES "${DATA_SOURCE_DIRS}")
 
+        get_property(_TGT_LINK_LIBRARIES TARGET ${TGT_NAME} PROPERTY LINK_LIBRARIES SET)
+        if (_TGT_LINK_LIBRARIES)
+                get_target_property(_TGT_LINK_LIBRARIES ${TGT_NAME} LINK_LIBRARIES)
+        else()
+                set(_TGT_LINK_LIBRARIES "")
+        endif()
+
         # Dependencies data and Assets
-        foreach(_dependency ${_ADD_DATA_DEPENDENCIES})
-                get_target_property(DEP_TGT_DATA_SOURCE_DIR ${_dependency} OE_DATA_SOURCE_DIRS)
-                list(APPEND DATA_SOURCE_DIRS "${DEP_TGT_DATA_SOURCE_DIR}")
-        endforeach()
+        if (_TGT_LINK_LIBRARIES)
+                foreach(_dependency ${_TGT_LINK_LIBRARIES})
+                        if (NOT TARGET ${_dependency})
+                                continue()
+                        endif()
+                        get_property(_TGT_DEP_DATA_SOURCE_DIR TARGET ${_dependency} PROPERTY OE_SCRIPT_SOURCE_DIRS SET)
+                        if (_TGT_DEP_DATA_SOURCE_DIR)
+                                list(APPEND DATA_SOURCE_DIRS "${_TGT_DEP_DATA_SOURCE_DIR}")
+                        endif()
+                endforeach()
+        endif()
 
         # This targets data and Assets
         set(${TGT_NAME}_DATA_SOURCE_DIRS "${DATA_SOURCE_DIRS}" PARENT_SCOPE)

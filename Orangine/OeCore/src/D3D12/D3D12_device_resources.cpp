@@ -168,7 +168,7 @@ void D3D12_device_resources::destroyDeviceDependentResources() {
 #ifdef _DEBUG
   if (m_outputDetailedMemoryReport) {
     ComPtr<ID3D12DebugDevice1> d3dDebugDevice;
-    if (SUCCEEDED(m_d3dDevice->QueryInterface<ID3D12DebugDevice1>(&d3dDebugDevice))) {
+    if (m_d3dDevice && SUCCEEDED(m_d3dDevice->QueryInterface<ID3D12DebugDevice1>(&d3dDebugDevice))) {
       m_d3dDevice.Reset();
       d3dDebugDevice->ReportLiveDeviceObjects(D3D12_RLDO_IGNORE_INTERNAL);
     } else {

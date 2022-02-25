@@ -10,7 +10,7 @@
 #include <OeCore/Skinned_mesh_component.h>
 #include <OeCore/Test_component.h>
 
-#include "D3D12/D3D12_lighting_manager.h"
+#include "D3D12/D3D12_Lighting_manager.h"
 #include "D3D12/D3D12_render_step_manager.h"
 
 using namespace oe;

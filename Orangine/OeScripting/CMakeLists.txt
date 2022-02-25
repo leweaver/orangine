@@ -13,12 +13,13 @@ add_library(${PROJECT_NAME} STATIC
         src/OeScripting_embedded_module.cpp
         src/OeScripting.cpp
         # TODO: Probably don't need this any more?
-        include/OeScripting/OeScripting_Export.h)
+        include/OeScripting/OeScripting_Export.h src/OeScripting_embedded_module.h)
 
 file(GLOB OeScripting_HEADERS "include/OeScripting/*")
 list(APPEND OeScripting_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
 add_library(Oe::Scripting ALIAS OeScripting)
+
 include (GenerateExportHeader)
 GENERATE_EXPORT_HEADER(OeScripting
         BASE_NAME OeScripting
@@ -27,50 +28,45 @@ GENERATE_EXPORT_HEADER(OeScripting
         STATIC_DEFINE OeScripting_BUILT_AS_STATIC
         )
 
+#####
+# Dependencies
+#####
 target_link_libraries(${PROJECT_NAME}
-        PUBLIC OeCompilerFlags
+        PUBLIC OeCompilerFlags pybind11::embed pybind11::python_link_helper
         PRIVATE Oe::Core)
 
-# Disable precompiled headers, as python must be included prior to any STL files. Don't want to consume the PUBLIC
+#####
+# Orangine module configuration
+#####
+
+# configure /cmake folder and src/{PROJECT_NAME}Config.h.in file
+oe_target_configure_cmake_dir(${PROJECT_NAME})
+
+# configure /include folder (public header files) and configure .cmake files
+oe_target_configure_include_dir(${PROJECT_NAME})
+
+# configure /scripts folder
+oe_target_add_scripts_dir(${PROJECT_NAME} HAS_SCRIPTS MODULES oe_bindings)
+
+# Precompiled Headers: disabled as python must be included prior to any STL files. Don't want to consume the PUBLIC
 # PCH of OeCore.
 set_target_properties(${PROJECT_NAME} PROPERTIES DISABLE_PRECOMPILE_HEADERS ON)
 
-# Public headers
-target_include_directories(${PROJECT_NAME}
-        PUBLIC
-        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-        )
+# Make sure to include PDB files when installing in debug mode
+oe_target_install_pdb(${PROJECT_NAME})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC pybind11::embed pybind11::python_link_helper)
-
-
-# configure /scripts folder (must happen after target_precompile_headers)
-oe_target_add_scripts_dir(OeScripting oe_bindings
-        LINK_LIBRARIES Oe::Core)
-
-# --------------------------------
-# Install
-oe_target_install_pdb(OeScripting)
-
-# Data and Assets
-set(OeScripting_PYENV_DIR "$ENV{VIRTUAL_ENV}$<$<BOOL:${OE_PYTHON_DEBUG}>:_d>")
+#####
+# Configuration file blending
+#####
+set(OeScripting_PYENV_DIR "$ENV{VIRTUAL_ENV}")
 set(OeScripting_PYENV_DIR $ENV{VIRTUAL_ENV} PARENT_SCOPE)
-set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data;pyenv=${OeScripting_PYENV_DIR}")
-set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${${PROJECT_NAME}_DATA_SOURCE_DIRS}" PARENT_SCOPE)
-install(DIRECTORY data
-        DESTINATION bin
-        )
-install(FILES ${PROJECT_BINARY_DIR}/oe.pyi
-        DESTINATION bin/data/${PROJECT_NAME}/lib
-        )
+set(_ADD_CONFIG_YAML_PARTIAL_FILE "${PROJECT_BINARY_DIR}/config_yaml/oe_scripting.yaml.partial")
+configure_file("cmake/oe_scripting.yaml.in" "${_ADD_CONFIG_YAML_PARTIAL_FILE}")
+oe_target_add_config_yaml(${PROJECT_NAME} "${_ADD_CONFIG_YAML_PARTIAL_FILE}")
 
-# public header files
-install(
-        FILES ${OeScripting_HEADERS}
-        DESTINATION include/${PROJECT_NAME}
-)
+#####
+# Custom Install Steps
+#####
 
 # Install Python binaries
 if (${OE_PYTHON_DEBUG})
@@ -80,17 +76,3 @@ else ()
 endif()
 install(FILES "${OeScripting_PYTHON_RUNTIME_DLL}" DESTINATION bin)
 set(OeScripting_PYTHON_RUNTIME_DLL ${OeScripting_PYTHON_RUNTIME_DLL} PARENT_SCOPE)
-
-# Config.cmake files
-configure_file (
-        "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
-        "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
-)
-
-configure_file(cmake/OeScriptingConfig.cmake.in OeScriptingConfig.cmake @ONLY)
-configure_file(cmake/OeScriptingConfigVersion.cmake.in OeScriptingConfigVersion.cmake @ONLY)
-install(
-        FILES "${CMAKE_CURRENT_BINARY_DIR}/OeScriptingConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/OeScriptingConfigVersion.cmake"
-        DESTINATION lib/cmake/OeScripting
-)

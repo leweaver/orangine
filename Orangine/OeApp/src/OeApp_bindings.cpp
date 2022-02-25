@@ -12,7 +12,6 @@ std::string OeApp_bindings::_moduleName;
 
 void OeApp_bindings::create(pybind11::module& m)
 {
-  _moduleName = m.attr("__name__").cast<std::string>();
   m.doc() = "Orangine App Bindings";
 
   py::class_<PyClass_sampleScene>(m, "SampleScene")
@@ -24,9 +23,6 @@ const std::string& OeApp_bindings::getModuleName() {
   return _moduleName;
 }
 
-void OeApp_bindings::initStatics(){
-  _moduleName = "oe_app";
-}
-void OeApp_bindings::destroyStatics(){
-
+void oe::OeApp_bindings::setModuleName(const char* moduleName) {
+  _moduleName = moduleName;
 }

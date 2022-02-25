@@ -34,6 +34,7 @@ extern std::unique_ptr<oe::IDevice_resources> createWin32DeviceResources(HWND hw
 const auto CONFIG_FILE_NAME = L"config.yaml";
 
 using oe::app::App;
+namespace fs = std::filesystem;
 
 namespace oe::app {
 class App_impl {
@@ -394,9 +395,15 @@ int App::run(const App_start_settings& settings) {
     execName = oe::str_replace_all(execName, "\\", "/");
   }
 
+  // Turn path into absolute
+  fs::path absLogFilePath(path_to_log_file);
+  if (absLogFilePath.is_relative()) {
+    absLogFilePath = fs::current_path() / absLogFilePath;
+  }
+
   // Create a sink with a non-timebased filename
   auto fileLogSink =
-      std::make_unique<oe::LogFileSink>(logFileName, path_to_log_file, "game", false);
+      std::make_unique<oe::LogFileSink>(logFileName, absLogFilePath.lexically_normal().string(), "game", false);
   fileLogSink->fileInit();
   auto fileLogSinkHandle = logWorker->addSink(move(fileLogSink), &oe::LogFileSink::fileWrite);
 

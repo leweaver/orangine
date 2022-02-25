@@ -41,29 +41,43 @@ void engine_log_func(const std::string& message, const LEVELS& level)
 
 class PyClass_managers {
  public:
-  explicit PyClass_managers(IInput_manager& inputManager)
-      : _input({inputManager}) {}
+  explicit PyClass_managers(IInput_manager& inputManager, IScene_graph_manager& sceneGraphManager)
+      : _input({inputManager}), _sceneGraph({sceneGraphManager}) {}
 
   PyClass_input& getInput()
   {
     return _input;
   }
+  PyClass_sceneGraph& getSceneGraph() { return _sceneGraph; }
 
  private:
   PyClass_input _input;
+  PyClass_sceneGraph _sceneGraph;
 };
 }// namespace oe
 
-void OeScripting_bindings::initializeSingletons(IInput_manager& inputManager) {
-   _module.attr("runtime") = std::make_unique<PyClass_managers>(inputManager);
+
+std::string OeScripting_bindings::_moduleName;
+
+oe::OeScripting_bindings::OeScripting_bindings() : _module(py::module::import(_moduleName.c_str())) {}
+
+void OeScripting_bindings::initializeSingletons(IInput_manager& inputManager, IScene_graph_manager& sceneGraphManager) {
+   _module.attr("_runtime") = std::make_unique<PyClass_managers>(inputManager, sceneGraphManager);
+}
+
+void oe::OeScripting_bindings::setModuleName(const char* moduleName)
+{
+  _moduleName = moduleName;
+}
+
+const std::string& oe::OeScripting_bindings::getModuleName()
+{
+  return _moduleName;
 }
 
 void OeScripting_bindings::create(pybind11::module& m)
 {
-  m.attr("__name__") = "oe";
   m.doc() = "Orangine Core scripting API";
-  py::class_<PyClass_managers>(m, "NativeContext")
-          .def_property_readonly("input", &PyClass_managers::getInput);
 
   // Logging
   m.def("log_debug_enabled", []() { return g3::logLevel(G3LOG_DEBUG); });
@@ -90,7 +104,7 @@ void OeScripting_bindings::create(pybind11::module& m)
           // Default constructor; does no initialization
           .def(py::init<>())
           // Constructor with values
-          .def(py::init<float, float, float>())
+          .def(py::init<float, float, float>(), py::arg("x"), py::arg("y"), py::arg("z"))
           .def_property(
                   "x", [](const SSE::Vector3& v) { return static_cast<float>(v.getX()); },
                   [](SSE::Vector3& v, float val) { v.setX(val); })
@@ -101,14 +115,14 @@ void OeScripting_bindings::create(pybind11::module& m)
                   "z", [](const SSE::Vector3& v) { return static_cast<float>(v.getZ()); },
                   [](SSE::Vector3& v, float val) { v.setZ(val); });
 
-  py::class_<SSE::Quat>(m, "Quat")
+  auto clsQuat = py::class_<SSE::Quat>(m, "Quat")
           // Default constructor; does no initialization
           .def(py::init<>())
           // Constructor with values
-          .def(py::init<float, float, float, float>())
-          .def_property(
-                  "x", [](const SSE::Quat& v) { return static_cast<float>(v.getX()); },
-                  [](SSE::Quat& v, float val) { v.setX(val); })
+          .def(py::init<float, float, float, float>(), py::arg("x"), py::arg("y"), py::arg("z"), py::arg("w"));
+  clsQuat.def_property(
+                 "x", [](const SSE::Quat& v) { return static_cast<float>(v.getX()); },
+                 [](SSE::Quat& v, float val) { v.setX(val); })
           .def_property(
                   "y", [](const SSE::Quat& v) { return static_cast<float>(v.getY()); },
                   [](SSE::Quat& v, float val) { v.setY(val); })
@@ -117,12 +131,11 @@ void OeScripting_bindings::create(pybind11::module& m)
                   [](SSE::Quat& v, float val) { v.setZ(val); })
           .def_property(
                   "w", [](const SSE::Quat& v) { return static_cast<float>(v.getW()); },
-                  [](SSE::Quat& v, float val) { v.setW(val); })
-          .def_static("rotation_x", static_cast<const Quat (*)(float)>(&Quat::rotationX))
-          .def_static("rotation_y", static_cast<const Quat (*)(float)>(&Quat::rotationY))
-          .def_static("rotation_z", static_cast<const Quat (*)(float)>(&Quat::rotationZ))
-          .def("__mul__", [](const Quat& lhs, const Quat& rhs) { return lhs * rhs; });
-
+                  [](SSE::Quat& v, float val) { v.setW(val); })          //.def_static("rotation_x", static_cast<const SSE::Quat (*)(float)>(&SSE::Quat::rotationX), py::arg("radians"))
+          .def("from_rotation_x", [](SSE::Quat& self, float radians) { return Quat::rotationX(radians); }, py::arg("radians"))
+          .def("from_rotation_y", [](SSE::Quat& self, float radians) { return Quat::rotationY(radians); }, py::arg("radians"))
+          .def("from_rotation_z", [](SSE::Quat& self, float radians) { return Quat::rotationZ(radians); }, py::arg("radians"))
+          .def("__mul__", [](const SSE::Quat& lhs, const SSE::Quat& rhs) { return lhs * rhs; });
   // Entity
   py::class_<Entity, std::shared_ptr<Entity>>(m, "Entity")
           .def("get_name", &Entity::getName)
@@ -132,14 +145,7 @@ void OeScripting_bindings::create(pybind11::module& m)
           .def_property("scale", &Entity::scale, static_cast<void (Entity::*)(float)>(&Entity::setScale));
 
   // Input Manager
-  const auto clsInput = py::class_<PyClass_input>(m, "Input")
-                                //.def(py::init<>()) Don't allow construction from Python
-                                .def("get_mouse_state", &PyClass_input::getMouseState, py::return_value_policy::copy);
-
-  // SceneGraph Manager
-  const auto clsSceneGraph = py::class_<PyClass_sceneGraph>(m, "SceneGraph")
-          .def("instantiate", &PyClass_sceneGraph::instantiate, py::arg("name") = "", py::arg("parent") = py::none());
-
+  auto clsInput = py::class_<PyClass_input>(m, "Input");
   py::enum_<IInput_manager::Mouse_state::Button_state>(clsInput, "MouseButtonState")
           .value("Up", IInput_manager::Mouse_state::Button_state::Up)
           .value("Held", IInput_manager::Mouse_state::Button_state::Held)
@@ -154,4 +160,18 @@ void OeScripting_bindings::create(pybind11::module& m)
           .def_readwrite("right", &IInput_manager::Mouse_state::right)
           .def_readwrite("delta_position", &IInput_manager::Mouse_state::deltaPosition)
           .def_readwrite("scroll_wheel_delta", &IInput_manager::Mouse_state::scrollWheelDelta);
+
+  //.def(py::init<>()) Don't allow construction from Python
+  clsInput.def("get_mouse_state", &PyClass_input::getMouseState, py::return_value_policy::copy);
+
+  // SceneGraph Manager
+  const auto clsSceneGraph = py::class_<PyClass_sceneGraph>(m, "SceneGraph")
+          .def("instantiate", &PyClass_sceneGraph::instantiate, py::arg("name") = "", py::arg("parent") = py::none());
+
+  py::class_<PyClass_managers>(m, "NativeContext")
+          .def_property_readonly("input", &PyClass_managers::getInput)
+          .def_property_readonly("scene_graph", &PyClass_managers::getSceneGraph);
+
+  // This contains a PyClass_managers instance
+  m.def("runtime", [m] { return m.attr("_runtime").cast<PyClass_managers>(); });
 }

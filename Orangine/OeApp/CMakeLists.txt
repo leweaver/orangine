@@ -2,8 +2,9 @@ project(OeApp VERSION 1.0
         DESCRIPTION "Orangine App Library"
         LANGUAGES CXX)
 
-# --------------------------------
+#####
 # Library Definition
+#####
 add_library(${PROJECT_NAME} STATIC
         ${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h
         resources/Win32/resource.rc
@@ -18,7 +19,7 @@ add_library(${PROJECT_NAME} STATIC
         src/SampleScene.cpp
         src/Statics.cpp
         src/OeApp_bindings.cpp
-        src/OeApp_embedded_module.cpp src/Yaml_config_reader.cpp)
+        src/OeApp_embedded_module.cpp src/Yaml_config_reader.cpp src/OeApp_embedded_module.h)
 add_library(Oe::App ALIAS OeApp)
 
 #####
@@ -60,9 +61,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
         SKIP_PRECOMPILE_HEADERS
         src/${PROJECT_NAME}_bindings.cpp)
 
-# configure /scripts folder (must happen after target_precompile_headers)
-oe_target_add_scripts_dir(${PROJECT_NAME} oe_app_bindings
-        LINK_LIBRARIES Oe::Core Oe::Scripting)
+# configure /scripts folder
+oe_target_add_scripts_dir(${PROJECT_NAME}
+        HAS_SCRIPTS
+        MODULES oe_app_bindings)
 
 # Make sure to include PDB files when installing in debug mode
 oe_target_install_pdb(${PROJECT_NAME})

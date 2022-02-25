@@ -2,5 +2,4 @@
 ---
 ViewerApp:
   default_asset_path: @ViewerApp_DEFAULT_ASSET_PATH@
-  scripts_path: @ViewerApp_SCRIPTS_PATH@
   thirdparty_path: @ViewerApp_THIRDPARTY_PATH@

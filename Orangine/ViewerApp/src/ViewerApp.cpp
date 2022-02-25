@@ -20,20 +20,23 @@ class ViewerApp : public App {
  public:
   void onSceneConfigured() override
   {
-    // Tell the scripting engine about our data directory.
-    getEntityScriptingManager().preInit_addAbsoluteScriptsPath(getConfigReader().readString("ViewerApp.scripts_path"));
+    // Tell asset manager which asset path to use when none exists.
     getAssetManager().preInit_setDataPath(getConfigReader().readString("ViewerApp.default_asset_path"));
   }
 
   void onSceneInitialized() override {
     const std::string extraAssetPath = getConfigReader().readString("ViewerApp.thirdparty_path");
+
+    // Bootstrap the scene itself
+    pybind11::module::import("viewerapp.samples");
+
     _sampleScene = std::make_unique<Sample_scene>(
             getRenderStepManager(), getSceneGraphManager(), getInputManager(), getEntityScriptingManager(),
             getAssetManager(), std::vector<std::string>{extraAssetPath});
 
     // Load a scene
     //auto appModule = pybind11::module::import(OeApp_bindings::getModuleName().c_str());
-    pybind11::object pySampleScene = pybind11::cast(std::make_unique<PyClass_sampleScene>(*_sampleScene));
+    //pybind11::object pySampleScene = pybind11::cast(std::make_unique<PyClass_sampleScene>(*_sampleScene));
     //auto scenesModule =
 
 
@@ -64,7 +67,7 @@ class ViewerApp : public App {
     // CreateShadowTestScene(*_sampleScene);
     //
     //
-    CreateShadowTestScene(*_sampleScene);
+    //CreateShadowTestScene(*_sampleScene);
     //CreateLightingTestScene(*_sampleScene);
 
     // Load the skybox

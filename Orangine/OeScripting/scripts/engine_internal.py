@@ -1,5 +1,5 @@
 import sys
-import oe
+import oe_bindings
 import logging
 
 
@@ -28,11 +28,11 @@ class NativeHandler(logging.StreamHandler):
         try:
             msg = self.format(record)
             if record.levelno >= logging.WARNING:
-                oe.log_warning(msg)
+                oe_bindings.log_warning(msg)
             elif record.levelno >= logging.INFO:
-                oe.log_info(msg)
+                oe_bindings.log_info(msg)
             elif record.levelno >= logging.DEBUG:
-                oe.log_debug(msg)
+                oe_bindings.log_debug(msg)
         except RecursionError:  # See issue logger 36272
             raise
         except RuntimeError:
@@ -41,9 +41,9 @@ class NativeHandler(logging.StreamHandler):
 
 def _init_logger():
     logger = logging.getLogger()
-    if oe.log_debug_enabled():
+    if oe_bindings.log_debug_enabled():
         logger.setLevel(logging.DEBUG)
-    elif oe.log_info_enabled():
+    elif oe_bindings.log_info_enabled():
         logger.setLevel(logging.INFO)
     else:
         logger.setLevel(logging.WARNING)

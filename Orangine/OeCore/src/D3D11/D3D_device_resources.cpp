@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include <OeCore/DeviceResources.h>
+﻿#include <OeCore/DeviceResources.h>
 #include <OeCore/EngineUtils.h>
 
 #include "D3D12_device_resources.h"

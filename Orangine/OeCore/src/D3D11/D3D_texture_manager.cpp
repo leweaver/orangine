@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "D3D_texture_manager.h"
 
 #include <DDSTextureLoader.h>

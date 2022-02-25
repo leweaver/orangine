@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "OeCore/Material.h"
 
 #include "OeCore/Renderer_data.h"

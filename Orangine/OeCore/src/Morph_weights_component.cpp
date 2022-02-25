@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Morph_weights_component.h"
+﻿#include "OeCore/Morph_weights_component.h"
 
 using namespace oe;
 

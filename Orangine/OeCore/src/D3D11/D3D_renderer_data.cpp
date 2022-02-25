@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "D3D_Renderer_data.h"
 
 using namespace oe;

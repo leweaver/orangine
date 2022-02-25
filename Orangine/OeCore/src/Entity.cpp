@@ -1,5 +1,4 @@
-﻿#include "pch.h"
-#include <OeCore/EngineUtils.h>
+﻿#include <OeCore/EngineUtils.h>
 
 #include "OeCore/Entity.h"
 #include "OeCore/Math_constants.h"

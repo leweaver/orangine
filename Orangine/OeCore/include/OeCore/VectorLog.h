@@ -28,7 +28,8 @@ namespace oe {
             int level);
 
         uint32_t messageCount() const { return _messageCount; }
-        const Log_message& getMessageAt(uint32_t index) { return _messages.at((_firstMessageIndex + index) % _maxMessages); }
+        const Log_message& getMessageAt(uint32_t index) const { return _messages.at((_firstMessageIndex + index) % _maxMessages); }
+        void clear();
 
     private:
         // Oldest message is earliest in the array.

@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Clear_gbuffer_material.h"
+﻿#include "OeCore/Clear_gbuffer_material.h"
 
 using namespace oe;
 using namespace std::literals;

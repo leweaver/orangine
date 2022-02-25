@@ -29,7 +29,7 @@ class Entity_graph_loader {
    * yet.
    */
   virtual std::vector<std::shared_ptr<Entity>> loadFile(
-          std::wstring_view filename, IScene_graph_manager& sceneGraphManager, IEntity_repository& entityRepository,
+          std::string_view filename, IScene_graph_manager& sceneGraphManager, IEntity_repository& entityRepository,
           IComponent_factory& componentFactory, bool calculateBounds) const = 0;
 };
 }// namespace oe

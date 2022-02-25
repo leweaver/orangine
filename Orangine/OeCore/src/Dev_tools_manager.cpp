@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "Dev_tools_manager.h"
+﻿#include "Dev_tools_manager.h"
 
 #include "OeCore/Animation_controller_component.h"
 #include "OeCore/Renderable.h"
@@ -31,6 +29,12 @@ void oe::create_manager(Manager_instance<IDev_tools_manager>& out,
 {
   out = Manager_instance<IDev_tools_manager>(std::make_unique<Dev_tools_manager>(
           sceneGraphManager, entityRenderManager, materialManager));
+}
+
+void Dev_tools_manager::loadConfig(const IConfigReader& configReader)
+{
+  _renderSkeletons = configReader.readBool("OeCore.devtools_show_skeletons");
+  _scrollLogToBottom = configReader.readBool("OeCore.devtools_scroll_log_to_bottom");
 }
 
 void Dev_tools_manager::initialize() {

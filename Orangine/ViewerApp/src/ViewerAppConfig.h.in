@@ -1,4 +1,6 @@
 #pragma once
 
-// The configured settings for the project
-#define VIEWERAPP_THIRDPARTY_PATH "@ViewerApp_THIRDPARTY_PATH@"
+//The configured settings for the project 
+#define VIEWERAPP_VERSION_MAJOR "@ViewerApp_VERSION_MAJOR@"
+#define VIEWERAPP_VERSION_MINOR "@ViewerApp_VERSION_MINOR@"
+#define VIEWERAPP_VERSION_PATCH "@ViewerApp_VERSION_PATCH@"

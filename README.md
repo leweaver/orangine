@@ -107,6 +107,13 @@ Then; in File -> Settings -> Build, Execution, Deployment -> CMake
 
 You should now be able to build the "ViewerApp" target. (Select it from the dropdown next to the play icon at the top right of the IDE)
 
+You can ignore the following error message in the CMake console, it is just Clion freaking out and has no impact on the build: 
+
+```
+Problems were encountered while collecting compiler information:
+	C:\Users\hotma\AppData\Local\Temp\compiler-file13904199550438012870: fatal error C1083: Cannot open include file: 'pch.h': No such file or directory
+```
+
 ## Visual Studio
 
 1. Launch Visual Studio

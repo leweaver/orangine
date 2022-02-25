@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "LogFileSink.h"
+﻿#include "LogFileSink.h"
 
 /** ==========================================================================
  * 2013 by KjellKod.cc. This is PUBLIC DOMAIN to use at your own risk and comes
@@ -15,14 +13,13 @@
 #include "filesinkhelper.ipp"
 #include <cassert>
 #include <chrono>
+#include <utility>
 
 namespace oe {
-using namespace g3;
-using namespace internal;
 
-LogFileSink::LogFileSink(const std::string& log_prefix, const std::string& log_directory,
-                         const std::string& logger_id, bool appendDate)
-    : _log_file_with_path(log_directory), _log_prefix_backup(log_prefix), _logger_id(logger_id),
+LogFileSink::LogFileSink(const std::string& log_prefix, std::string  log_directory,
+                         std::string  logger_id, bool appendDate)
+    : _log_file_with_path(std::move(log_directory)), _log_prefix_backup(log_prefix), _logger_id(std::move(logger_id)),
       _appendDate(appendDate), _outptr(new std::ofstream)
 {
   _log_prefix_backup = prefixSanityFix(log_prefix);
@@ -52,7 +49,7 @@ LogFileSink::~LogFileSink()
 {
   std::string exit_msg{"g3log LogFileSink shutdown at: "};
   auto now = std::chrono::system_clock::now();
-  exit_msg.append(localtime_formatted(now, internal::time_formatted)).append("\n");
+  exit_msg.append(g3::localtime_formatted(now, g3::internal::time_formatted)).append("\n");
   filestream() << exit_msg << std::flush;
 
   exit_msg.append("Log file at: [").append(_log_file_with_path).append("]\n");
@@ -63,7 +60,7 @@ std::string LogFileSink::createLogFileName(const std::string& verified_prefix)
 {
   std::stringstream oss_name;
   oss_name << verified_prefix << ".";
-  if (_logger_id != "") {
+  if (!_logger_id.empty()) {
     oss_name << _logger_id << ".";
   }
 
@@ -79,7 +76,7 @@ std::string LogFileSink::createLogFileName(const std::string& verified_prefix)
 }
 
 // The actual log receiving function
-void LogFileSink::fileWrite(LogMessageMover message)
+void LogFileSink::fileWrite(g3::LogMessageMover message)
 {
   std::ofstream& out(filestream());
   out << message.get().toString() << std::flush;
@@ -90,7 +87,7 @@ std::string LogFileSink::changeLogFile(const std::string& directory, const std::
 
   auto now = std::chrono::system_clock::now();
   auto now_formatted =
-      g3::localtime_formatted(now, {internal::date_formatted + " " + internal::time_formatted});
+      g3::localtime_formatted(now, {g3::internal::date_formatted + " " + g3::internal::time_formatted});
 
   std::string file_name = createLogFileName(_log_prefix_backup);
   std::string prospect_log = directory + file_name;

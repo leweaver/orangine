@@ -13,16 +13,37 @@ namespace oe {
 std::exception&& log_exception_for_throw(
     std::exception&& e,
     const char* filename,
-    const int line,
+    int line,
     const char* function);
 }
 
+template <typename... TArgs> std::string string_format(const std::string& format, TArgs... args);
+
 // For some reason, adding line breaks with \ here fails to compile.
 // clang-format off
+
+// Fast fail; preferred way of checking logic that is not based on user/file based input.
+#define OE_CHECK(condition) if(!(condition)) { \
+  const auto msg2 = oe_check_helper(#condition); \
+  if (g3::internal::isLoggingInitialized()) LOG(FATAL) << msg2; else abort(); \
+}
+#define OE_CHECK_MSG(condition, msg) if(!(condition)) { \
+  const auto msg2 = oe_check_helper(#condition, msg);   \
+  if (g3::internal::isLoggingInitialized()) LOG(FATAL) << msg2; else abort(); \
+}
+#define OE_CHECK_FMT(condition, msg, ...) if(!(condition)) { \
+  std::string msg_str = string_format((msg), __VA_ARGS__);   \
+  OE_CHECK_MSG(condition, msg_str);\
+}
+
+// Throws the given exception, after logging it. Use in place of OE_CHECK if the condition is caused by user input.
 #define OE_THROW(ex) throw oe::log_exception_for_throw(ex, __FILE__, __LINE__, static_cast<const char*>(__PRETTY_FUNCTION__))
 // clang-format on
 
 namespace oe {
+std::string oe_check_helper(const char* condition, std::string_view msg = "");
+void oe_set_enable_check_debugbreak(bool enabled);
+
 template <typename T, size_t TN> constexpr size_t array_size(const T (&)[TN]) { return TN; }
 
 // From boost

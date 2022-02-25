@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "Scene_graph_manager.h"
+﻿#include "Scene_graph_manager.h"
 
 #include <imgui.h>
 
@@ -151,18 +149,18 @@ void Scene_graph_manager::addLoader(std::unique_ptr<Entity_graph_loader> loader)
   _entityGraphLoaders.push_back(std::move(loader));
 }
 
-void Scene_graph_manager::loadFile(const std::wstring& filename) {
+void Scene_graph_manager::loadFile(const std::string& filename) {
   loadFile(filename, nullptr);
 }
 
-void Scene_graph_manager::loadFile(const std::wstring& filename, Entity* parentEntity) {
+void Scene_graph_manager::loadFile(const std::string& filename, Entity* parentEntity) {
   // Get the file extension
   const auto dotPos = filename.find_last_of('.');
   if (dotPos == std::string::npos) {
     OE_THROW(std::runtime_error("Cannot load mesh; given file doesn't have an extension."));
   }
 
-  const std::string extension = utf8_encode(filename.substr(dotPos + 1));
+  const std::string extension = filename.substr(dotPos + 1);
   const auto extPos = _extensionToEntityGraphLoader.find(extension);
   if (extPos == _extensionToEntityGraphLoader.end()) {
     OE_THROW(std::runtime_error("Cannot load mesh; no registered loader for extension: " + extension));

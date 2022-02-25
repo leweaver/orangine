@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include <OeCore/OeCore.h>
 
 #include "Entity_repository.h"

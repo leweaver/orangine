@@ -1,3 +1,4 @@
+set (OE_BUILD_ASAN FALSE CACHE BOOL "Add address sanitization, if compiler supports.")
 
 if ("${CMAKE_SIZEOF_VOID_P}" MATCHES "4")
     set (Orangine_ARCHITECTURE x86)

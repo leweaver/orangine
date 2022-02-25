@@ -1,5 +1,4 @@
-﻿#include "pch.h"
-#include "OeCore/VectorLog.h"
+﻿#include "OeCore/VectorLog.h"
 
 using namespace oe;
 
@@ -16,4 +15,10 @@ void VectorLog::append(high_resolution_time_point timestamp, std::string&& text,
     else {
         ++_messageCount;
     }
+}
+
+void VectorLog::clear() {
+  _messageCount = 0;
+  _firstMessageIndex = 0;
+  std::fill(_messages.begin(), _messages.end(), Log_message());
 }

@@ -16,8 +16,10 @@ namespace oe {
 // Mostly copied from g3::FileSink - modified to allow overwrite of same logfile each run.
 class LogFileSink {
  public:
-  LogFileSink(const std::string& log_prefix, const std::string& log_directory,
-              const std::string& logger_id = "g3log", bool appendDate = false);
+  LogFileSink(const std::string& log_prefix, std::string log_directory,
+              std::string logger_id = "g3log", bool appendDate = false);
+  LogFileSink& operator=(const LogFileSink&) = delete;
+  LogFileSink(const LogFileSink& other) = delete;
   virtual ~LogFileSink();
 
   void fileInit();
@@ -38,8 +40,5 @@ class LogFileSink {
 
   void addLogFileHeader();
   std::ofstream& filestream() { return *(_outptr.get()); }
-
-  LogFileSink& operator=(const LogFileSink&) = delete;
-  LogFileSink(const LogFileSink& other) = delete;
 };
 } // namespace oe

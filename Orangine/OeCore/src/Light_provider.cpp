@@ -1,5 +1,4 @@
-﻿#include "pch.h"
-#include "OeCore/Light_provider.h"
+﻿#include "OeCore/Light_provider.h"
 
 using namespace oe;
 using namespace DirectX;

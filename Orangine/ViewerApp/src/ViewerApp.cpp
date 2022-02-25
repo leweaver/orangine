@@ -1,21 +1,14 @@
-#include "pch.h"
-
-#include <ViewerAppConfig.h>
-
 #include <OeApp/App.h>
 #include <OeApp/SampleScene.h>
+#include <OeApp/Statics.h>
+#include <OeApp/OeApp_bindings.h>
 #include <OeCore/Color.h>
-#include <OeCore/IEntity_render_manager.h>
-#include <OeCore/IScene_graph_manager.h>
 #include <OeCore/ILighting_manager.h>
 #include <OeCore/Light_component.h>
 #include <OeCore/PBR_material.h>
 #include <OeCore/WindowsDefines.h>
 #include <OeCore/Statics.h>
 #include <OeScripting/Statics.h>
-#include <OeApp/Statics.h>
-
-#include <g3log/g3log.hpp>
 
 #include <filesystem>
 
@@ -25,17 +18,28 @@ using oe::app::App;
 
 class ViewerApp : public App {
  public:
-
-  void onSceneConfigured() override {
-    // Tell the scripting engine about our data directory.
-    const auto appScriptsPath = getAssetManager().makeAbsoluteAssetPath(L"ViewerApp/scripts");
-    getEntityScriptingManager().preInit_addAbsoluteScriptsPath(appScriptsPath);
+  void onSceneConfigured() override
+  {
+    // Tell asset manager which asset path to use when none exists.
+    getAssetManager().preInit_setDataPath(getConfigReader().readString("ViewerApp.default_asset_path"));
   }
 
   void onSceneInitialized() override {
+    const std::string extraAssetPath = getConfigReader().readString("ViewerApp.thirdparty_path");
+
+    // Bootstrap the scene itself
+    pybind11::module::import("viewerapp.samples");
+
     _sampleScene = std::make_unique<Sample_scene>(
             getRenderStepManager(), getSceneGraphManager(), getInputManager(), getEntityScriptingManager(),
-            getAssetManager(), std::vector<std::wstring>{utf8_decode(VIEWERAPP_THIRDPARTY_PATH)});
+            getAssetManager(), std::vector<std::string>{extraAssetPath});
+
+    // Load a scene
+    //auto appModule = pybind11::module::import(OeApp_bindings::getModuleName().c_str());
+    //pybind11::object pySampleScene = pybind11::cast(std::make_unique<PyClass_sampleScene>(*_sampleScene));
+    //auto scenesModule =
+
+
 
     // CreateSceneCubeSatellite();
     // CreateSceneLeverArm();
@@ -63,7 +67,7 @@ class ViewerApp : public App {
     // CreateShadowTestScene(*_sampleScene);
     //
     //
-    CreateShadowTestScene(*_sampleScene);
+    //CreateShadowTestScene(*_sampleScene);
     //CreateLightingTestScene(*_sampleScene);
 
     // Load the skybox
@@ -72,13 +76,13 @@ class ViewerApp : public App {
 
     Environment_volume ev;
     ev.environmentIbl.skyboxTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemap.dds"));
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemap.dds"));
     ev.environmentIbl.iblBrdfTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemapBrdf.dds"));
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapBrdf.dds"));
     ev.environmentIbl.iblDiffuseTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemapDiffuseHDR.dds"));
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapDiffuseHDR.dds"));
     ev.environmentIbl.iblSpecularTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath(L"OeApp/textures/park-cubemapSpecularHDR.dds"));
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapSpecularHDR.dds"));
 
     getLightingManager().addEnvironmentVolume(ev);
   }
@@ -175,8 +179,6 @@ int WINAPI wWinMain(
   UNREFERENCED_PARAMETER(hInstance);
   UNREFERENCED_PARAMETER(hPrevInstance);
   UNREFERENCED_PARAMETER(lpCmdLine);
-
-  nlohmann::json::value_type configJson;
 
   auto startSettings = App_start_settings();
   startSettings.fullScreen = nCmdShow == SW_SHOWMAXIMIZED;

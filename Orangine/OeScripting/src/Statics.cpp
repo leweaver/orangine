@@ -1,6 +1,12 @@
-#include "pch.h"
-
 #include <OeScripting/Statics.h>
 
-void oe::scripting::initStatics() {}
-void oe::scripting::destroyStatics() {}
+#include "OeScripting_embedded_module.h"
+
+void oe::scripting::initStatics()
+{
+  OeScripting_embedded_module::initStatics();
+}
+void oe::scripting::destroyStatics()
+{
+  OeScripting_embedded_module::destroyStatics();
+}

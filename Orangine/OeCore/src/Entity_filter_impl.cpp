@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "Entity_filter_impl.h"
 
 #include <OeCore/Entity.h>

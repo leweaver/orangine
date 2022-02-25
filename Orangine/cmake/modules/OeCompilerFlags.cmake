@@ -11,15 +11,22 @@ add_library(OeCompilerFlags INTERFACE)
 if(OE_COMPILER_IS_MSVC)
         add_compile_definitions("_UNICODE;UNICODE;WIN32;_WINDOWS;_LIB;HAVE_SNPRINTF;_ENABLE_EXTENDED_ALIGNED_STORAGE")
 
-        add_compile_options(/EHsc /Gd /GS /FC /diagnostics:column)
+        add_compile_options(/EHsc /Gd /GS /FC)
 
         # ASan support in VS2019 (142) and above
-        #if ("${MSVC_TOOLSET_VERSION}" GREATER "141")
-        #        add_compile_options(/fsanitize=address)
-        #endif()
+        if ("${MSVC_TOOLSET_VERSION}" GREATER "141" AND OE_BUILD_ASAN)
+                add_compile_options(/fsanitize=address)
+        endif()
 
         if(CMAKE_BUILD_TYPE MATCHES Debug)
                 add_compile_definitions("_DEBUG")
+        endif()
+
+        if($ENV{CLION_IDE})
+                # https://youtrack.jetbrains.com/issue/CPP-19699
+                add_compile_options("/diagnostics:classic")
+        else()
+                add_compile_options("/diagnostics:column")
         endif()
 endif()
 
@@ -41,7 +48,7 @@ install(TARGETS OeCompilerFlags
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
-    "${CMAKE_CURRENT_LIST_DIR}/OeCompilerFlagsConfig.cmake.in"
+    "${CMAKE_CURRENT_LIST_DIR}/cmake_templates/OeCompilerFlagsConfig.cmake.in"
     "${PROJECT_BINARY_DIR}/OeCompilerFlagsConfig.cmake"
     INSTALL_DESTINATION lib/cmake/OeCompilerFlags
 )

@@ -1,5 +1,10 @@
-﻿#include "pch.h"
+﻿#include <OeCore/Render_step_manager.h>
 
+#include <OeCore/Camera_component.h>
+#include <OeCore/Clear_gbuffer_material.h>
+#include <OeCore/Light_component.h>
+#include <OeCore/Render_pass_generic.h>
+#include <OeCore/Render_pass_skybox.h>
 #include <OeCore/Render_step_manager.h>
 
 #include <OeCore/Camera_component.h>
@@ -9,8 +14,6 @@
 #include <OeCore/Render_pass_skybox.h>
 
 using namespace oe;
-
-std::string Render_step_manager::_name = "Render_step_manager";
 
 Render_step_manager::Render_step::Render_step(
     std::unique_ptr<Render_pass>&& renderPass,
@@ -79,8 +82,6 @@ void Render_step_manager::shutdown() {
   _renderableEntities.reset();
   _lightEntities.reset();
 }
-
-const std::string& Render_step_manager::name() const { return _name; }
 
 void Render_step_manager::createRenderSteps() {
   // Shadow maps

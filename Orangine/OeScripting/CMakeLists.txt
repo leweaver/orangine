@@ -2,130 +2,77 @@ project(OeScripting VERSION 1.0
         DESCRIPTION "Orangine Scripting Library"
         LANGUAGES CXX)
 
-# Use python debug binaries (with PyDEBUG defined)?
-# Note - all pip modules must also be built with PyDEBUG.
-SET(OeScripting_PYTHON_DEBUG "OFF" CACHE BOOL "Use python debug binaries (built with PyDEBUG defined)")
-SET(OeScripting_PYTHON_DEBUG ${OeScripting_PYTHON_DEBUG} PARENT_SCOPE)
-
+######################
 # Library Definition
 add_library(${PROJECT_NAME} STATIC
-        src/pch.h
-        src/pch.cpp
-        src/Engine_bindings.cpp
-        src/Engine_bindings.h
+        src/OeScripting_bindings.cpp
         src/Entity_scripting_manager.cpp        
         src/Entity_scripting_manager.h
         src/Script_runtime_data.h
         src/Statics.cpp
-        src/Engine_internal_module.cpp src/Engine_internal_module.h src/OeScripting.cpp)
+        src/OeScripting_embedded_module.cpp
+        src/OeScripting.cpp
+        # TODO: Probably don't need this any more?
+        include/OeScripting/OeScripting_Export.h src/OeScripting_embedded_module.h)
 
 file(GLOB OeScripting_HEADERS "include/OeScripting/*")
 list(APPEND OeScripting_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
 add_library(Oe::Scripting ALIAS OeScripting)
 
-# Precompiled Headers
-include(PrecompiledHeader)
-add_precompiled_header(${PROJECT_NAME} pch.h SOURCE_CXX src/pch.cpp)
+include (GenerateExportHeader)
+GENERATE_EXPORT_HEADER(OeScripting
+        BASE_NAME OeScripting
+        EXPORT_MACRO_NAME OeScripting_EXPORT
+        EXPORT_FILE_NAME include/OeScripting/OeScripting_Export.h
+        STATIC_DEFINE OeScripting_BUILT_AS_STATIC
+        )
 
+#####
+# Dependencies
+#####
 target_link_libraries(${PROJECT_NAME}
-        PUBLIC OeCompilerFlags
+        PUBLIC OeCompilerFlags pybind11::embed pybind11::python_link_helper
         PRIVATE Oe::Core)
 
-# Public headers
-target_include_directories(${PROJECT_NAME}
-        PUBLIC
-        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-        )
+#####
+# Orangine module configuration
+#####
 
-# Python Env
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
+# configure /cmake folder and src/{PROJECT_NAME}Config.h.in file
+oe_target_configure_cmake_dir(${PROJECT_NAME})
 
-# It is critical that the version of python we compile against matches the scripts loaded into the virtualenv
-if (NOT "${Python3_VERSION}" VERSION_GREATER_EQUAL "3.7.6")
-    message(FATAL_ERROR "Found python ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}, but must be compiled against minimum of 3.7.6")
-endif()
+# configure /include folder (public header files) and configure .cmake files
+oe_target_configure_include_dir(${PROJECT_NAME})
 
-# Python search paths
-if ("${Orangine_ARCHITECTURE}" MATCHES "x86")
-    set(ENV{VIRTUAL_ENV} "${PROJECT_BINARY_DIR}/pyenv")
-elseif ("${Orangine_ARCHITECTURE}" MATCHES "x64")
-    set(ENV{VIRTUAL_ENV} "${PROJECT_BINARY_DIR}/pyenv")
-else ()
-    MESSAGE(ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-endif ()
-if (NOT EXISTS "$ENV{VIRTUAL_ENV}")
-    MESSAGE("Creating python environment: $ENV{VIRTUAL_ENV}")
-    execute_process(COMMAND "${Python3_EXECUTABLE}" -m venv "$ENV{VIRTUAL_ENV}"
-            RESULT_VARIABLE _retval)
-    IF (NOT "${_retval}" MATCHES "0")
-        MESSAGE(FATAL_ERROR "Failed to create venv")
-    endif()
-endif()
+# configure /scripts folder
+oe_target_add_scripts_dir(${PROJECT_NAME} HAS_SCRIPTS MODULES oe_bindings)
 
-set(Python_FIND_VIRTUALENV ONLY)
-set(Python3_FIND_VIRTUALENV ONLY)
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+# Precompiled Headers: disabled as python must be included prior to any STL files. Don't want to consume the PUBLIC
+# PCH of OeCore.
+set_target_properties(${PROJECT_NAME} PROPERTIES DISABLE_PRECOMPILE_HEADERS ON)
 
-MESSAGE(STATUS "Verifying pip Packages: $ENV{VIRTUAL_ENV}")
-execute_process(
-        COMMAND "$ENV{VIRTUAL_ENV}/Scripts/pip3.exe"
-        install -r "${PROJECT_SOURCE_DIR}/pyenv-requirements.txt"
-        RESULT_VARIABLE _retval)
-IF (NOT "${_retval}" MATCHES "0")
-    MESSAGE(FATAL_ERROR "Failed to install virtualenv requirements")
-endif()
+# Make sure to include PDB files when installing in debug mode
+oe_target_install_pdb(${PROJECT_NAME})
 
-# PyBind
-find_package(pybind11 REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC pybind11::embed pybind11::python_link_helper)
-
-
-# --------------------------------
-# Install
-include(OeUtils)
-install_target_pdb(OeScripting)
-
-# Data and Assets
-set(OeScripting_PYENV_DIR "$ENV{VIRTUAL_ENV}$<$<BOOL:${OeScripting_PYTHON_DEBUG}>:_d>")
+#####
+# Configuration file blending
+#####
+set(OeScripting_PYENV_DIR "$ENV{VIRTUAL_ENV}")
 set(OeScripting_PYENV_DIR $ENV{VIRTUAL_ENV} PARENT_SCOPE)
-set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${PROJECT_NAME}=${PROJECT_SOURCE_DIR}/data;pyenv=${OeScripting_PYENV_DIR}")
-set(${PROJECT_NAME}_DATA_SOURCE_DIRS "${${PROJECT_NAME}_DATA_SOURCE_DIRS}" PARENT_SCOPE)
-install(DIRECTORY data
-        DESTINATION bin
-        )
+set(_ADD_CONFIG_YAML_PARTIAL_FILE "${PROJECT_BINARY_DIR}/config_yaml/oe_scripting.yaml.partial")
+configure_file("cmake/oe_scripting.yaml.in" "${_ADD_CONFIG_YAML_PARTIAL_FILE}")
+oe_target_add_config_yaml(${PROJECT_NAME} "${_ADD_CONFIG_YAML_PARTIAL_FILE}")
 
-message(NOTICE "Python_LIBRARY_DIRS=${Python_LIBRARY_DIRS}")
-message(NOTICE "Python_INCLUDE_DIRS=${Python_INCLUDE_DIRS}")
-message(NOTICE "Python_RUNTIME_LIBRARY_DIRS=${Python_RUNTIME_LIBRARY_DIRS}")
-
-# public header files
-install(
-        FILES ${OeScripting_HEADERS}
-        DESTINATION include/${PROJECT_NAME}
-)
+#####
+# Custom Install Steps
+#####
 
 # Install Python binaries
-if (${OeScripting_PYTHON_DEBUG})
+if (${OE_PYTHON_DEBUG})
         set(OeScripting_PYTHON_RUNTIME_DLL "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_d.dll")
 else ()
         set(OeScripting_PYTHON_RUNTIME_DLL "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll")
 endif()
 install(FILES "${OeScripting_PYTHON_RUNTIME_DLL}" DESTINATION bin)
 set(OeScripting_PYTHON_RUNTIME_DLL ${OeScripting_PYTHON_RUNTIME_DLL} PARENT_SCOPE)
-
-# Config.cmake files
-configure_file (
-        "${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME}Config.h.in"
-        "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h"
-)
-
-configure_file(OeScriptingConfig.cmake.in OeScriptingConfig.cmake @ONLY)
-configure_file(OeScriptingConfigVersion.cmake.in OeScriptingConfigVersion.cmake @ONLY)
-install(
-        FILES "${CMAKE_CURRENT_BINARY_DIR}/OeScriptingConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/OeScriptingConfigVersion.cmake"
-        DESTINATION lib/cmake/OeScripting
-)

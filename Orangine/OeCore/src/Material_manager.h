@@ -33,7 +33,7 @@ class Material_manager : public IMaterial_manager
   void tick() override;
 
   // IMaterial_manager implementation
-  const std::wstring& shaderPath() const;
+  const std::string& shaderPath() const;
 
   void bind(
       Material_context& materialContext,
@@ -50,7 +50,7 @@ class Material_manager : public IMaterial_manager
   const Renderer_features_enabled& rendererFeatureEnabled() const override;
 
  protected:
-  void setShaderPath(const std::wstring& path);
+  void setShaderPath(const std::string& path);
 
   const Material* getBoundMaterial() const { return _boundMaterial.get(); }
 
@@ -77,7 +77,7 @@ class Material_manager : public IMaterial_manager
  private:
   static std::string _name;
 
-  std::wstring _shaderPath = L"data/shaders";
+  std::string _shaderPath = "data/shaders";
 
   Renderer_features_enabled _rendererFeatures;
   size_t _rendererFeaturesHash = 0;

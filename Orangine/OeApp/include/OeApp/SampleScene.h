@@ -15,7 +15,7 @@ class Sample_scene {
   Sample_scene(
           IRender_step_manager& renderStepManager, IScene_graph_manager& sceneGraphManager,
           IInput_manager& inputManager, IEntity_scripting_manager& entityScriptingManager,
-          IAsset_manager& assetManager, std::vector<std::wstring> extraAssetPaths);
+          IAsset_manager& assetManager, std::vector<std::string> extraAssetPaths);
 
   void tick();
 
@@ -46,6 +46,9 @@ class Sample_scene {
   std::shared_ptr<Entity>
   addAmbientLight(const Color& color, float intensity, const std::string& name = "");
 
+  IScene_graph_manager& getSceneGraphManager() const { return _entityManager; }
+  IInput_manager& getInputManager() const { return _inputManager; }
+
  private:
   std::string createLightEntityName(const char* lightType, const std::string& userName);
 
@@ -54,7 +57,7 @@ class Sample_scene {
   int _lightCount = 0;
   int _teapotCount = 0;
 
-  std::vector<std::wstring> _extraAssetPaths;
+  std::vector<std::string> _extraAssetPaths;
 
   IRender_step_manager& _renderStepManager;
   IScene_graph_manager& _entityManager;

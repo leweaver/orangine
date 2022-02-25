@@ -1,0 +1,5 @@
+%YAML 1.2
+---
+ViewerApp:
+  default_asset_path: @ViewerApp_DEFAULT_ASSET_PATH@
+  thirdparty_path: @ViewerApp_THIRDPARTY_PATH@

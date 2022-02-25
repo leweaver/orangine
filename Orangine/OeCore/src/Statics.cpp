@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include <OeCore/Statics.h>
 #include <OeCore/Component.h>
 
@@ -12,7 +10,8 @@
 #include <OeCore/Skinned_mesh_component.h>
 #include <OeCore/Test_component.h>
 
-#include "D3D12/D3D12_lighting_manager.h"
+#include "D3D12/D3D12_Lighting_manager.h"
+#include "D3D12/D3D12_render_step_manager.h"
 
 using namespace oe;
 using namespace oe::core;
@@ -33,11 +32,13 @@ void oe::core::initStatics() {
   Test_component::initStatics();
 
   D3D12_lighting_manager::initStatics();
+  D3D12_render_step_manager::initStatics();
 }
 
 void oe::core::destroyStatics()
 {
   // Inverse order of init
+  D3D12_render_step_manager::destroyStatics();
   D3D12_lighting_manager::destroyStatics();
 
   Test_component::destroyStatics();

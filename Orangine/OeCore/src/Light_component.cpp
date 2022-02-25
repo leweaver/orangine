@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Light_component.h"
+﻿#include "OeCore/Light_component.h"
 #include "OeCore/Shadow_map_texture.h"
 
 using namespace oe;

@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include <OeCore/Camera_component.h>
+﻿#include <OeCore/Camera_component.h>
 #include <OeCore/EngineUtils.h>
 
 using namespace oe;

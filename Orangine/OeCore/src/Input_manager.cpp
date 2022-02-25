@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "Input_manager.h"
+﻿#include "Input_manager.h"
 
 #include <Mouse.h>
 

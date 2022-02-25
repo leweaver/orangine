@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "OeCore/Renderer_data.h"
 #include "OeCore/EngineUtils.h"
 

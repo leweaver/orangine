@@ -3,8 +3,6 @@
 //                       (requires DirectX 11.1 Runtime)
 //
 
-#include "pch.h"
-
 #include "D3D12_device_resources.h"
 #include "OeCore/EngineUtils.h"
 
@@ -165,19 +163,20 @@ void D3D12_device_resources::createDeviceDependentResources() {
 }
 
 void D3D12_device_resources::destroyDeviceDependentResources() {
+  _renderPipeline = {};
 
 #ifdef _DEBUG
   if (m_outputDetailedMemoryReport) {
     ComPtr<ID3D12DebugDevice1> d3dDebugDevice;
-    if (SUCCEEDED(m_d3dDevice->QueryInterface<ID3D12DebugDevice1>(&d3dDebugDevice))) {
-      d3dDebugDevice->ReportLiveDeviceObjects(D3D12_RLDO_DETAIL);
+    if (m_d3dDevice && SUCCEEDED(m_d3dDevice->QueryInterface<ID3D12DebugDevice1>(&d3dDebugDevice))) {
+      m_d3dDevice.Reset();
+      d3dDebugDevice->ReportLiveDeviceObjects(D3D12_RLDO_IGNORE_INTERNAL);
     } else {
       OutputDebugStringA("Failed to get d3dDebugDevice");
     }
   }
 #endif
 
-  _renderPipeline = Render_pipeline();
   m_d3dDevice.Reset();
 }
 
@@ -473,8 +472,7 @@ void D3D12_device_resources::CreateFactory() {
     if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(dxgiInfoQueue.GetAddressOf())))) {
       debugDXGI = true;
 
-      ThrowIfFailed(CreateDXGIFactory2(
-          DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(m_dxgiFactory.ReleaseAndGetAddressOf())));
+      ThrowIfFailed(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&m_dxgiFactory)));
 
       dxgiInfoQueue->SetBreakOnSeverity(
           DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
@@ -486,7 +484,7 @@ void D3D12_device_resources::CreateFactory() {
   if (!debugDXGI)
 #endif
 
-    ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(m_dxgiFactory.ReleaseAndGetAddressOf())));
+    ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&m_dxgiFactory)));
 }
 
 // This method acquires the first available hardware adapter.
@@ -497,7 +495,7 @@ void D3D12_device_resources::GetHardwareAdapter(IDXGIAdapter1** ppAdapter) {
   ComPtr<IDXGIAdapter1> adapter;
   for (UINT adapterIndex = 0;
        DXGI_ERROR_NOT_FOUND !=
-       m_dxgiFactory->EnumAdapters1(adapterIndex, adapter.ReleaseAndGetAddressOf());
+       m_dxgiFactory->EnumAdapters1(adapterIndex, &adapter);
        adapterIndex++) {
     DXGI_ADAPTER_DESC1 desc;
     adapter->GetDesc1(&desc);

@@ -9,9 +9,8 @@
 #include <OeCore/IDev_tools_manager.h>
 
 #include <OeScripting/IEntity_scripting_manager.h>
+#include <OeScripting/OeScripting_bindings.h>
 
-#include "Engine_bindings.h"
-#include "Engine_internal_module.h"
 #include "Script_runtime_data.h"
 
 namespace oe::internal {
@@ -22,6 +21,7 @@ class Entity_scripting_manager : public IEntity_scripting_manager, public Manage
           IInput_manager& inputManager, IAsset_manager& assetManager, IEntity_render_manager& entityRenderManager);
 
   // Manager_base implementation
+  void loadConfig(const IConfigReader& configReader) override;
   void initialize() override;
   void shutdown() override;
   const std::string& name() const override { return _name; }
@@ -30,7 +30,6 @@ class Entity_scripting_manager : public IEntity_scripting_manager, public Manage
   void tick() override;
 
   // IEntity_scripting_manager implementation
-  void preInit_addAbsoluteScriptsPath(const std::wstring& path) override;
   void renderImGui() override;
   void execute(const std::string& command) override;
   bool commandSuggestions(const std::string& command,
@@ -47,14 +46,25 @@ class Entity_scripting_manager : public IEntity_scripting_manager, public Manage
   std::shared_ptr<Entity_filter> _lightEntityFilter;
   bool _showImGui = false;
 
-  std::wstring _pythonHome;
-  std::wstring _pythonProgramName;
-  std::vector<std::wstring> _preInit_additionalPaths;
+  std::string _pyenvPath;
+  std::vector<std::string> _scriptRoots;
+
+  /**
+   * Helper accessors for the code defined in lib/engine_internal.py
+   */
+  class Engine_internal_module {
+   public:
+    Engine_internal_module();
+
+    pybind11::module instance;
+    pybind11::detail::str_attr_accessor reset_output_streams;
+    pybind11::detail::str_attr_accessor enable_remote_debugging;
+  };
 
   struct PythonContext {
     pybind11::module _sysModule;
     std::unique_ptr<Engine_internal_module> _engineInternalModule;
-    std::unique_ptr<Engine_bindings> _oeModule;
+    std::unique_ptr<OeScripting_bindings> _oeModule;
   };
 
   PythonContext _pythonContext;

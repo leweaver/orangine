@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Renderable_component.h"
+﻿#include "OeCore/Renderable_component.h"
 
 using namespace oe;
 

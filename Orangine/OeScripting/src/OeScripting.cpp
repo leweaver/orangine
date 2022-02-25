@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include <OeScripting/OeScripting.h>
 
 #include <memory>

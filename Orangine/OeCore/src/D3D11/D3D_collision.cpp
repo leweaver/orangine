@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "OeCore/Collision.h"
 
 #include "DirectX_utils.h"

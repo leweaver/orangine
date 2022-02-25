@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "OeCore/Animation_controller_component.h"
 
 using namespace oe;

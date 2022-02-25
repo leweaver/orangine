@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "../Entity_render_manager.h"
 #include "../Material_manager.h"
 #include "OeCore/IDevice_resources.h"
@@ -47,11 +45,11 @@ class Stub_texture_manager final : public ITexture_manager {
       std::unique_ptr<uint8_t>& buffer) override {
     return std::make_shared<Stub_texture>();
   }
-  std::shared_ptr<Texture> createTextureFromFile(const std::wstring& fileName) override {
+  std::shared_ptr<Texture> createTextureFromFile(const std::string& fileName) override {
     return std::make_shared<Stub_texture>();
   }
   std::shared_ptr<Texture> createTextureFromFile(
-      const std::wstring& fileName,
+      const std::string& fileName,
       const Sampler_descriptor& samplerDescriptor) override {
     return std::make_shared<Stub_texture>();
   }
@@ -230,16 +228,16 @@ template <>
 void create_manager(Manager_instance<IEntity_render_manager>& out, ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager) {
   out = Manager_instance<IEntity_render_manager>(std::make_unique<Stub_entity_render_manager>(textureManager, materialManager, lightingManager));
 }
-
-template<>
-void create_manager(
-        Manager_instance<IRender_step_manager>& out, IScene_graph_manager& sceneGraphManager,
-        IDev_tools_manager& devToolsManager, ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
-        IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager)
-{
-  out = Manager_instance<IRender_step_manager>(std::make_unique<Stub_render_step_manager>(
-          sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager, lightingManager));
-}
+//
+//template<>
+//void create_manager(
+//        Manager_instance<IRender_step_manager>& out, IScene_graph_manager& sceneGraphManager,
+//        IDev_tools_manager& devToolsManager, ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
+//        IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager)
+//{
+//  out = Manager_instance<IRender_step_manager>(std::make_unique<Stub_render_step_manager>(
+//          sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager, lightingManager));
+//}
 
 template <> void create_manager(Manager_instance<IUser_interface_manager>& out, IDevice_resources& dr) {
   out = Manager_instance<IUser_interface_manager>(std::make_unique<Stub_user_interface_manager>());

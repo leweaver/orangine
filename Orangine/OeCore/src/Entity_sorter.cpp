@@ -1,5 +1,4 @@
-﻿#include "pch.h"
-#include "OeCore/Entity_sorter.h"
+﻿#include "OeCore/Entity_sorter.h"
 
 using namespace oe;
 using namespace DirectX;

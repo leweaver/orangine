@@ -2,7 +2,6 @@
   "output_header": "../include/OeCore/Renderer_enums.h",
   "output_cpp": "../src/Renderer_enums.cpp",
   "includes": [
-    "pch.h",
     "OeCore/EngineUtils.h",
     "OeCore/Renderer_enums.h"
   ],

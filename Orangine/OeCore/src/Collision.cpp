@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "OeCore/Collision.h"
 
 bool oe::intersect_ray_sphere(

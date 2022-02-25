@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Render_pass.h"
+﻿#include "OeCore/Render_pass.h"
 #include "OeCore/Texture.h"
 
 using namespace oe;

@@ -1,5 +1,3 @@
-#include "pch.h"
-
 #include "D3D12_lighting_manager.h"
 
 #include <OeCore/ITexture_manager.h>

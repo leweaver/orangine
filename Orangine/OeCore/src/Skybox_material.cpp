@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "OeCore/Skybox_material.h"
+﻿#include "OeCore/Skybox_material.h"
 #include "OeCore/Texture.h"
 
 using namespace oe;

@@ -22,7 +22,6 @@ class Render_step_manager : public IRender_step_manager, public Manager_base, pu
   // Manager_base implementations
   void initialize() override;
   void shutdown() override;
-  const std::string& name() const override;
 
   // Manager_deviceDependent implementation
   void createDeviceDependentResources() override;
@@ -79,8 +78,6 @@ class Render_step_manager : public IRender_step_manager, public Manager_base, pu
     Renderable pass0ScreenSpaceQuad;
     Renderable pass2ScreenSpaceQuad;
   };
-
-  static std::string _name;
 
   struct Render_step {
     explicit Render_step(std::wstring name) : name(std::move(name)) {}

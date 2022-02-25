@@ -1,0 +1,5 @@
+%YAML 1.2
+---
+OeCore:
+  devtools_show_skeletons: false
+  devtools_scroll_log_to_bottom: false

@@ -1,29 +1,22 @@
-//
-// Main.cpp
-//
-
-#include "pch.h"
-
 #include "LogFileSink.h"
 #include "VectorLogSink.h"
 #include "VisualStudioLogSink.h"
 
 #include <OeCore/OeCore.h>
-#include <OeScripting/OeScripting.h>
+#include <OeCore/StepTimer.h>
 #include <OeCore/Perf_timer.h>
-#include <OeCore/JsonConfigReader.h>
 #include <OeCore/Entity_graph_loader_gltf.h>
+
+#include <OeScripting/OeScripting.h>
 
 #include <OeApp/App.h>
 #include <OeApp/Manager_collection.h>
+#include <OeApp/Yaml_config_reader.h>
 
 #include <g3log/logworker.hpp>
 
 #include <filesystem>
 #include <wrl/wrappers/corewrappers.h>
-
-#include <OeCore/StepTimer.h>
-#include <json.hpp>
 
 const std::string path_to_log_file = "./";
 
@@ -38,9 +31,10 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 extern std::unique_ptr<oe::IDevice_resources> createWin32DeviceResources(HWND hwnd);
 
-const auto CONFIG_FILE_NAME = L"config.json";
+const auto CONFIG_FILE_NAME = L"config.yaml";
 
 using oe::app::App;
+namespace fs = std::filesystem;
 
 namespace oe::app {
 class App_impl {
@@ -72,9 +66,8 @@ class App_impl {
  public:
 
   void configureManagers() {
-    std::unique_ptr<JsonConfigReader> configReader;
     try {
-      configReader = std::make_unique<JsonConfigReader>(CONFIG_FILE_NAME);
+      _configReader = std::make_unique<Yaml_config_reader>(CONFIG_FILE_NAME);
     }
     catch (std::exception& ex) {
       LOG(WARNING) << "Failed to read config file: " << utf8_encode(CONFIG_FILE_NAME) << "(" << ex.what() << ")";
@@ -87,7 +80,7 @@ class App_impl {
         if (manager == nullptr) {return;}
 
         try {
-          manager->loadConfig(*configReader);
+          manager->loadConfig(*_configReader);
         }
         catch (std::exception& ex) {
           OE_THROW(std::runtime_error("Failed to configure " + manager->name() + ": " + ex.what()));
@@ -246,7 +239,7 @@ class App_impl {
       _deviceResources->createDeviceDependentResources();
 
       for (auto& manager : _managers.getDeviceDependentManagers()) {
-        LOG(DEBUG) << "Creating device dependent resources for manager " << manager.config->asBase->name();
+        LOG(DEBUG) << "Creating device dependent resources for " << manager.config->asBase->name();
         manager()->createDeviceDependentResources();
       };
     } catch (std::exception& e) {
@@ -266,7 +259,7 @@ class App_impl {
       width = std::max(width, 1);
       height = std::max(height, 1);
       for (auto& manager : _managers.getWindowDependentManagers()) {
-        LOG(DEBUG) << "Creating device dependent resources for manager " << manager.config->asBase->name()
+        LOG(DEBUG) << "Creating window size dependent resources for " << manager.config->asBase->name()
                    << " (width=" << width << " height=" << height << ")";
         manager()->createWindowSizeDependentResources(_hwnd, width, height);
       };
@@ -379,6 +372,7 @@ class App_impl {
   std::unique_ptr<core::Manager_instances> _coreManagers;
   std::unique_ptr<scripting::Manager_instances> _scriptingManagers;
   std::vector<Manager_interfaces*> _initializedManagers;
+  std::unique_ptr<Yaml_config_reader> _configReader;
 };
 } // namespace oe
 
@@ -401,9 +395,15 @@ int App::run(const App_start_settings& settings) {
     execName = oe::str_replace_all(execName, "\\", "/");
   }
 
+  // Turn path into absolute
+  fs::path absLogFilePath(path_to_log_file);
+  if (absLogFilePath.is_relative()) {
+    absLogFilePath = fs::current_path() / absLogFilePath;
+  }
+
   // Create a sink with a non-timebased filename
   auto fileLogSink =
-      std::make_unique<oe::LogFileSink>(logFileName, path_to_log_file, "game", false);
+      std::make_unique<oe::LogFileSink>(logFileName, absLogFilePath.lexically_normal().string(), "game", false);
   fileLogSink->fileInit();
   auto fileLogSinkHandle = logWorker->addSink(move(fileLogSink), &oe::LogFileSink::fileWrite);
 
@@ -513,6 +513,8 @@ int App::run(const App_start_settings& settings) {
       }
     }
   } while (false);
+
+  LOG(INFO) << "Exited main loop";
 
   SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(nullptr));
 
@@ -776,4 +778,7 @@ oe::IRender_step_manager& App::getRenderStepManager()
 oe::IEntity_scripting_manager& App::getEntityScriptingManager()
 {
   return _impl->_scriptingManagers->getInstance<oe::IEntity_scripting_manager>();
+}
+oe::IConfigReader& App::getConfigReader() {
+  return *_impl->_configReader;
 }

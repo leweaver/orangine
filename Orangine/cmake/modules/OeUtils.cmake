@@ -14,6 +14,16 @@ function(oe_target_install_pdb _target)
         endif()
 endfunction()
 
+function(oe_target_generate_export_header _target)
+        include (GenerateExportHeader)
+        GENERATE_EXPORT_HEADER(${_target}
+                BASE_NAME ${_target}
+                EXPORT_MACRO_NAME ${_target}_EXPORT
+                EXPORT_FILE_NAME include/${_target}/${_target}_Export.h
+                STATIC_DEFINE ${_target}_BUILT_AS_STATIC
+                )
+endfunction()
+
 function(oe_target_configure_cmake_dir _target)
         get_target_property(TGT_NAME ${_target} NAME)
         get_target_property(TGT_BINARY_DIR ${_target} BINARY_DIR)

@@ -19,14 +19,16 @@ add_library(${PROJECT_NAME} STATIC
         src/SampleScene.cpp
         src/Statics.cpp
         src/OeApp_bindings.cpp
-        src/OeApp_embedded_module.cpp src/Yaml_config_reader.cpp src/OeApp_embedded_module.h)
+        src/OeApp_embedded_module.cpp
+        src/Yaml_config_reader.cpp
+        src/OeApp_embedded_module.h)
 add_library(Oe::App ALIAS OeApp)
 
 #####
 # Dependencies
 #####
 target_link_libraries(${PROJECT_NAME}
-        PUBLIC WindowsApp.lib OeCompilerFlags Oe::Core Oe::Scripting)
+        PUBLIC WindowsApp.lib OeCompilerFlags Oe::Core Oe::Scripting Oe::PipelineD3D12)
 
 # yaml
 find_package(yaml-cpp REQUIRED)

@@ -9,7 +9,7 @@ class DeviceResources;
 }
 
 namespace oe {
-class Primitive_mesh_data_factory;
+class IPrimitive_mesh_data_factory;
 class Entity;
 class IEntity_repository;
 class ITexture_manager;

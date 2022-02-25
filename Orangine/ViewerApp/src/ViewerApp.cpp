@@ -32,7 +32,7 @@ class ViewerApp : public App {
 
     _sampleScene = std::make_unique<Sample_scene>(
             getRenderStepManager(), getSceneGraphManager(), getInputManager(), getEntityScriptingManager(),
-            getAssetManager(), std::vector<std::string>{extraAssetPath});
+            getAssetManager(), getPrimitiveMeshDataFactory(), std::vector<std::string>{extraAssetPath});
 
     // Load a scene
     //auto appModule = pybind11::module::import(OeApp_bindings::getModuleName().c_str());

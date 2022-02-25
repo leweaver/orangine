@@ -44,7 +44,7 @@ class Render_step_manager : public IRender_step_manager, public Manager_base, pu
   Render_step_manager(
           IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
           ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
-          IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager);
+          IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory);
 
   // pure virtual method interface
   virtual void clearRenderTargetView(const Color& color) = 0;
@@ -113,5 +113,6 @@ class Render_step_manager : public IRender_step_manager, public Manager_base, pu
   IShadowmap_manager& _shadowmapManager;
   IEntity_render_manager& _entityRenderManager;
   ILighting_manager& _lightingManager;
+  IPrimitive_mesh_data_factory& _primitiveMeshDataFactory;
 };
 } // namespace oe

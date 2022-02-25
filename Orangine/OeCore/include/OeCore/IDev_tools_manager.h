@@ -9,7 +9,7 @@ namespace oe {
 class VectorLog;
 class Entity;
 class Unlit_material;
-class Primitive_mesh_data_factory;
+class IPrimitive_mesh_data_factory;
 struct Renderable;
 struct BoundingFrustumRH;
 

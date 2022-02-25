@@ -6,7 +6,7 @@
 #include "OeCore/Test_component.h"
 
 #include <OeCore/Entity_graph_loader_gltf.h>
-#include <OeCore/Primitive_mesh_data_factory.h>
+#include <OeCore/IPrimitive_mesh_data_factory.h>
 #include <filesystem>
 
 using oe::Camera_component;
@@ -16,31 +16,37 @@ using oe::Sample_scene;
 
 Sample_scene::Sample_scene(
         IRender_step_manager& renderStepManager, IScene_graph_manager& sceneGraphManager, IInput_manager& inputManager,
-        IEntity_scripting_manager& entityScriptingManager, IAsset_manager& assetManager, std::vector<std::string> extraAssetPaths)
+        IEntity_scripting_manager& entityScriptingManager, IAsset_manager& assetManager,
+        IPrimitive_mesh_data_factory& primitiveMeshDataFactory, std::vector<std::string> extraAssetPaths)
     : _extraAssetPaths(std::move(extraAssetPaths))
     , _renderStepManager(renderStepManager)
     , _entityManager(sceneGraphManager)
     , _inputManager(inputManager)
     , _entityScriptingManager(entityScriptingManager)
     , _assetManager(assetManager)
+    , _primitiveMeshDataFactory(primitiveMeshDataFactory)
 {
   _root = _entityManager.instantiate("Sample Scene Root");
 }
 
-void Sample_scene::tick() { tickCamera(); }
+void Sample_scene::tick()
+{
+  tickCamera();
+}
 
-void Sample_scene::tickCamera() {
+void Sample_scene::tickCamera()
+{
   const auto mouseState = _inputManager.getMouseState().lock();
   if (mouseState == nullptr) {
     return;
   }
 
   if (mouseState->left == IInput_manager::Mouse_state::Button_state::Held) {
-    
   }
 }
 
-std::shared_ptr<Entity> Sample_scene::addFloor() {
+std::shared_ptr<Entity> Sample_scene::addFloor()
+{
   const auto& floor = _entityManager.instantiate("Floor", *_root);
   auto material = std::make_unique<PBR_material>();
   material->setBaseColor(Color(0.7f, 0.7f, 0.7f, 1.0f));
@@ -49,7 +55,7 @@ std::shared_ptr<Entity> Sample_scene::addFloor() {
   renderable.setMaterial(std::unique_ptr<Material>(material.release()));
   renderable.setCastShadow(false);
 
-  const auto meshData = Primitive_mesh_data_factory::createQuad(20, 20);
+  const auto meshData = _primitiveMeshDataFactory.createQuad(20, 20);
   floor->addComponent<Mesh_data_component>().setMeshData(meshData);
 
   floor->setRotation(SSE::Quat::rotationX(math::pi * -0.5f));
@@ -59,11 +65,9 @@ std::shared_ptr<Entity> Sample_scene::addFloor() {
   return floor;
 }
 
-std::shared_ptr<Entity> Sample_scene::addTeapot(
-    const SSE::Vector3& center,
-    const Color& color,
-    float metallic,
-    float roughness) {
+std::shared_ptr<Entity>
+Sample_scene::addTeapot(const SSE::Vector3& center, const Color& color, float metallic, float roughness)
+{
   _teapotCount++;
 
   const auto& teapot = _entityManager.instantiate("Teapot " + std::to_string(_teapotCount), *_root);
@@ -79,7 +83,7 @@ std::shared_ptr<Entity> Sample_scene::addTeapot(
   renderable.setWireframe(false);
   renderable.setCastShadow(true);
 
-  const auto meshData = Primitive_mesh_data_factory::createTeapot();
+  const auto meshData = _primitiveMeshDataFactory.createTeapot();
   teapot->addComponent<Mesh_data_component>().setMeshData(meshData);
   teapot->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
   teapot->addComponent<Test_component>().setSpeed({0.0f, 0.1f, 0.0f});
@@ -87,11 +91,9 @@ std::shared_ptr<Entity> Sample_scene::addTeapot(
   return teapot;
 }
 
-std::shared_ptr<Entity> Sample_scene::addSphere(
-    const SSE::Vector3& center,
-    const Color& color,
-    float metallic,
-    float roughness) {
+std::shared_ptr<Entity>
+Sample_scene::addSphere(const SSE::Vector3& center, const Color& color, float metallic, float roughness)
+{
   const auto& sphere = _entityManager.instantiate("Primitive Child 1", *_root);
   sphere->setPosition(center);
 
@@ -105,14 +107,15 @@ std::shared_ptr<Entity> Sample_scene::addSphere(
   renderable.setWireframe(false);
   renderable.setCastShadow(false);
 
-  const auto meshData = Primitive_mesh_data_factory::createSphere();
+  const auto meshData = _primitiveMeshDataFactory.createSphere();
   sphere->addComponent<Mesh_data_component>().setMeshData(meshData);
   sphere->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
 
   return sphere;
 }
 
-std::shared_ptr<Entity> Sample_scene::addDefaultCamera() {
+std::shared_ptr<Entity> Sample_scene::addDefaultCamera()
+{
   auto cameraDollyAnchor = _entityManager.instantiate("CameraDollyAnchor");
 
   auto camera = _entityManager.instantiate("Camera", *cameraDollyAnchor);
@@ -134,10 +137,8 @@ std::shared_ptr<Entity> Sample_scene::addDefaultCamera() {
 }
 
 std::shared_ptr<Entity> Sample_scene::addDirectionalLight(
-    const SSE::Vector3& normal,
-    const Color& color,
-    float intensity,
-    const std::string& name) {
+        const SSE::Vector3& normal, const Color& color, float intensity, const std::string& name)
+{
   auto lightEntity = _entityManager.instantiate(createLightEntityName("Directional", name));
   auto& component = lightEntity->addComponent<Directional_light_component>();
   component.setColor(color);
@@ -147,8 +148,7 @@ std::shared_ptr<Entity> Sample_scene::addDirectionalLight(
   if (SSE::lengthSqr(normal - math::forward) != 0.0f) {
     SSE::Vector3 axis;
     // if normal is backward vector
-    if (SSE::lengthSqr(normal - math::backward) == 0.0f)
-      axis = math::up;
+    if (SSE::lengthSqr(normal - math::backward) == 0.0f) axis = math::up;
     else {
       axis = SSE::cross(math::forward, normal);
       axis = SSE::normalize(axis);
@@ -161,11 +161,9 @@ std::shared_ptr<Entity> Sample_scene::addDirectionalLight(
   return lightEntity;
 }
 
-std::shared_ptr<Entity> Sample_scene::addPointLight(
-    const SSE::Vector3& position,
-    const Color& color,
-    float intensity,
-    const std::string& name) {
+std::shared_ptr<Entity>
+Sample_scene::addPointLight(const SSE::Vector3& position, const Color& color, float intensity, const std::string& name)
+{
   auto lightEntity = _entityManager.instantiate(createLightEntityName("Point", name));
   auto& component = lightEntity->addComponent<Point_light_component>();
   component.setColor(color);
@@ -174,8 +172,8 @@ std::shared_ptr<Entity> Sample_scene::addPointLight(
   return lightEntity;
 }
 
-std::shared_ptr<Entity>
-Sample_scene::addAmbientLight(const Color& color, float intensity, const std::string& name) {
+std::shared_ptr<Entity> Sample_scene::addAmbientLight(const Color& color, float intensity, const std::string& name)
+{
   auto lightEntity = _entityManager.instantiate(createLightEntityName("Ambient", name));
   auto& component = lightEntity->addComponent<Ambient_light_component>();
   component.setColor(color);
@@ -183,9 +181,8 @@ Sample_scene::addAmbientLight(const Color& color, float intensity, const std::st
   return lightEntity;
 }
 
-std::string Sample_scene::createLightEntityName(
-    const char* lightType,
-    const std::string& userName) {
+std::string Sample_scene::createLightEntityName(const char* lightType, const std::string& userName)
+{
   _lightCount++;
 
   std::stringstream ss;
@@ -197,10 +194,10 @@ std::string Sample_scene::createLightEntityName(
   return ss.str();
 }
 
-std::shared_ptr<Entity> Sample_scene::addGltf(std::string gltfName) {
+std::shared_ptr<Entity> Sample_scene::addGltf(std::string gltfName)
+{
   const auto gltfPathSubfolder = "/" + gltfName + "/glTF/" + gltfName + ".gltf";
-  auto gltfPath = _assetManager.makeAbsoluteAssetPath(
-      "ViewerApp/data/meshes" + gltfPathSubfolder);
+  auto gltfPath = _assetManager.makeAbsoluteAssetPath("ViewerApp/data/meshes" + gltfPathSubfolder);
   LOG(DEBUG) << "Looking for gltf at: " << gltfPath;
 
   for (const auto& extraPath : _extraAssetPaths) {

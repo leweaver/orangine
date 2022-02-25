@@ -25,10 +25,10 @@ std::string Dev_tools_manager::_name = "Dev_tools_manager";
 template<>
 void oe::create_manager(Manager_instance<IDev_tools_manager>& out,
         IScene_graph_manager& sceneGraphManager, IEntity_render_manager& entityRenderManager,
-        IMaterial_manager& materialManager)
+        IMaterial_manager& materialManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory)
 {
   out = Manager_instance<IDev_tools_manager>(std::make_unique<Dev_tools_manager>(
-          sceneGraphManager, entityRenderManager, materialManager));
+          sceneGraphManager, entityRenderManager, materialManager, primitiveMeshDataFactory));
 }
 
 void Dev_tools_manager::loadConfig(const IConfigReader& configReader)
@@ -140,8 +140,8 @@ void Dev_tools_manager::addDebugCone(
   hash_combine(hash, diameter);
   hash_combine(hash, height);
 
-  auto renderable = getOrCreateRenderable(hash, [diameter, height]() {
-    return Primitive_mesh_data_factory::createCone(diameter, height, 6);
+  auto renderable = getOrCreateRenderable(hash, [diameter, height, primitiveMeshDataFactory=&_primitiveMeshDataFactory]() {
+    return primitiveMeshDataFactory->createCone(diameter, height, 6);
   });
 
   _debugShapes.push_back({worldTransform, color, renderable});
@@ -156,8 +156,8 @@ void Dev_tools_manager::addDebugSphere(
   hash_combine(hash, radius);
   hash_combine(hash, tessellation);
 
-  auto renderable = getOrCreateRenderable(hash, [radius, tessellation]() {
-    return Primitive_mesh_data_factory::createSphere(radius, tessellation);
+  auto renderable = getOrCreateRenderable(hash, [radius, tessellation, primitiveMeshDataFactory=&_primitiveMeshDataFactory]() {
+    return primitiveMeshDataFactory->createSphere(radius, tessellation);
   });
 
   _debugShapes.push_back({worldTransform, color, renderable});
@@ -174,8 +174,8 @@ void Dev_tools_manager::addDebugBoundingBox(
   hash_combine(hash, static_cast<float>(boundingOrientedBox.extents.getY()));
   hash_combine(hash, static_cast<float>(boundingOrientedBox.extents.getZ()));
 
-  auto renderable = getOrCreateRenderable(hash, [&boundingOrientedBox]() {
-    return Primitive_mesh_data_factory::createBox({boundingOrientedBox.extents.getX() * 2.0f,
+  auto renderable = getOrCreateRenderable(hash, [&boundingOrientedBox, primitiveMeshDataFactory=&_primitiveMeshDataFactory]() {
+    return primitiveMeshDataFactory->createBox({boundingOrientedBox.extents.getX() * 2.0f,
                                                    boundingOrientedBox.extents.getY() * 2.0f,
                                                    boundingOrientedBox.extents.getZ() * 2.0f});
   });
@@ -188,7 +188,7 @@ void Dev_tools_manager::addDebugFrustum(
     const Color& color) {
   // TODO: Cache these meshes? Will require not building the transform into the mesh itself.
   auto renderable = std::make_shared<Renderable>();
-  renderable->meshData = Primitive_mesh_data_factory::createFrustumLines(boundingFrustum);
+  renderable->meshData = _primitiveMeshDataFactory.createFrustumLines(boundingFrustum);
   renderable->material = _unlitMaterial;
 
   _debugShapes.push_back({SSE::Matrix4::identity(), color, renderable});
@@ -196,8 +196,8 @@ void Dev_tools_manager::addDebugFrustum(
 
 void Dev_tools_manager::addDebugAxisWidget(const SSE::Matrix4& worldTransform) {
   auto hash = g_hashSeed_axisWidget;
-  auto renderable = getOrCreateRenderable(hash, []() {
-    return Primitive_mesh_data_factory::createAxisWidgetLines();
+  auto renderable = getOrCreateRenderable(hash, [primitiveMeshDataFactory=&_primitiveMeshDataFactory]() {
+    return primitiveMeshDataFactory->createAxisWidgetLines();
   });
 
   _debugShapes.push_back({SSE::Matrix4(worldTransform), oe::Colors::Red, renderable});

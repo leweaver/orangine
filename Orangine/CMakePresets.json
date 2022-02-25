@@ -12,7 +12,10 @@
       "hidden": true,
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "CMAKE_SYSTEM_VERSION": "10.0.19041.0",
+        "CMAKE_SYSTEM_VERSION": {
+          "type": "STRING",
+          "value": "10.0.19041.0"
+        },
         "CMAKE_DEPENDS_USE_COMPILER": "FALSE",
         "CMAKE_INSTALL_PREFIX": "$env{LOCALAPPDATA}\\Orangine"
       },

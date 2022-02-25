@@ -11,6 +11,13 @@ project(Orangine VERSION 1.0
                  LANGUAGES CXX)
 
 # --------------------------------
+# Build options
+# --------------------------------
+option(OE_BUILD_ASAN "Add address sanitization, if compiler supports." FALSE)
+option(OE_BUILD_TESTING "Enable unit test targets" FALSE)
+option(OE_BUILD_SAMPLES "Enable sample app targets" TRUE)
+
+# --------------------------------
 # Conan Dependencies
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
@@ -45,14 +52,20 @@ include(OeUtils)
 
 # --------------------------------
 # Sub-projects
+
+# Engine
 add_subdirectory(OeCore)
+add_subdirectory(OePipelineD3D12)
 add_subdirectory(OeScripting)
 add_subdirectory(OeApp)
+# Samples
+if (${OE_BUILD_SAMPLES})
 add_subdirectory(ViewerApp)
+endif()
 
 # --------------------------------
 # Install
-install(TARGETS vectormath OeCore OeScripting OeApp ViewerApp
+install(TARGETS vectormath OeCore OeScripting OeApp OePipelineD3D12
         EXPORT OrangineTargets
         INCLUDES DESTINATION include
         PUBLIC_HEADER DESTINATION include

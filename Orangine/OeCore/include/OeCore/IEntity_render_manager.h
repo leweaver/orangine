@@ -3,7 +3,7 @@
 #include "Collision.h"
 #include "Deferred_light_material.h"
 #include "Manager_base.h"
-#include "Primitive_mesh_data_factory.h"
+#include "IPrimitive_mesh_data_factory.h"
 
 #include "Environment_volume.h"
 #include "Light_provider.h"

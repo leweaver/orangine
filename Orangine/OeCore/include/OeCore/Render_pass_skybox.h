@@ -13,7 +13,7 @@ class Skybox_material;
 
 class Render_pass_skybox : public Render_pass {
  public:
-  Render_pass_skybox(IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager);
+  Render_pass_skybox(IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory);
 
   void render(const Camera_data& cameraData) override;
 

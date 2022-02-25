@@ -3,25 +3,34 @@
 #include "OeCore/Fps_counter.h"
 #include "OeCore/IDev_tools_manager.h"
 #include "OeCore/IScene_graph_manager.h"
-#include <OeCore/IEntity_render_manager.h>
-#include <OeCore/IMaterial_manager.h>
 #include "OeCore/Mesh_data.h"
 #include <OeCore/Dispatcher.h>
+#include <OeCore/IEntity_render_manager.h>
+#include <OeCore/IMaterial_manager.h>
+#include <OeCore/IPrimitive_mesh_data_factory.h>
 
 namespace oe {
 class Perf_timer;
 }
 
 namespace oe::internal {
-class Dev_tools_manager : public IDev_tools_manager, public Manager_base, public Manager_tickable, public Manager_deviceDependent {
+class Dev_tools_manager : public IDev_tools_manager,
+                          public Manager_base,
+                          public Manager_tickable,
+                          public Manager_deviceDependent {
  public:
   Dev_tools_manager(
           IScene_graph_manager& sceneGraphManager, IEntity_render_manager& entityRenderManager,
-          IMaterial_manager& materialManager)
-      : IDev_tools_manager(), Manager_base(), Manager_tickable(), Manager_deviceDependent(), _unlitMaterial(nullptr)
+          IMaterial_manager& materialManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory)
+      : IDev_tools_manager()
+      , Manager_base()
+      , Manager_tickable()
+      , Manager_deviceDependent()
+      , _unlitMaterial(nullptr)
       , _sceneGraphManager(sceneGraphManager)
       , _entityRenderManager(entityRenderManager)
       , _materialManager(materialManager)
+      , _primitiveMeshDataFactory(primitiveMeshDataFactory)
   {}
 
   // Manager_base implementation
@@ -41,19 +50,20 @@ class Dev_tools_manager : public IDev_tools_manager, public Manager_base, public
 
   // Creates a cone, whose base sits on the XZ plane, and height goes up the Y plane.
   // The origin of the object is the midpoint, not the base.
-  void addDebugCone(const SSE::Matrix4& worldTransform, float diameter, float height,
-                    const Color& color) override;
-  void addDebugSphere(const SSE::Matrix4& worldTransform, float radius, const Color& color,
-                      size_t tessellation = 6) override;
-  void addDebugBoundingBox(const oe::BoundingOrientedBox& boundingOrientedBox,
-                           const Color& color) override;
+  void addDebugCone(const SSE::Matrix4& worldTransform, float diameter, float height, const Color& color) override;
+  void addDebugSphere(
+          const SSE::Matrix4& worldTransform, float radius, const Color& color, size_t tessellation = 6) override;
+  void addDebugBoundingBox(const oe::BoundingOrientedBox& boundingOrientedBox, const Color& color) override;
   void addDebugFrustum(const BoundingFrustumRH& boundingFrustum, const Color& color) override;
   void addDebugAxisWidget(const SSE::Matrix4& worldTransform) override;
   void setGuiDebugText(const std::string& text) override;
   void clearDebugShapes() override;
   void renderDebugShapes(const Camera_data& cameraData) override;
   void renderImGui() override;
-  void setVectorLog(VectorLog* vectorLog) override { _vectorLog = vectorLog; }
+  void setVectorLog(VectorLog* vectorLog) override
+  {
+    _vectorLog = vectorLog;
+  }
 
   const std::vector<std::string>& getCommandSuggestions() const override
   {
@@ -73,11 +83,10 @@ class Dev_tools_manager : public IDev_tools_manager, public Manager_base, public
   }
 
  private:
-  using LightProvider = std::function<void(const oe::BoundingSphere& target,
-                                           std::vector<Entity*>& lights, uint8_t maxLights)>;
+  using LightProvider =
+          std::function<void(const oe::BoundingSphere& target, std::vector<Entity*>& lights, uint8_t maxLights)>;
 
-  std::shared_ptr<Renderable>
-  getOrCreateRenderable(size_t hash, std::function<std::shared_ptr<Mesh_data>()> factory);
+  std::shared_ptr<Renderable> getOrCreateRenderable(size_t hash, std::function<std::shared_ptr<Mesh_data>()> factory);
   void renderAxisWidgets();
   void renderSkeletons();
 
@@ -106,10 +115,11 @@ class Dev_tools_manager : public IDev_tools_manager, public Manager_base, public
   IScene_graph_manager& _sceneGraphManager;
   IEntity_render_manager& _entityRenderManager;
   IMaterial_manager& _materialManager;
+  IPrimitive_mesh_data_factory& _primitiveMeshDataFactory;
 
   Invokable_dispatcher<std::string> _commandAutocompleteRequestedDispatcher;
 
  private:
   Invokable_dispatcher<std::string> _commandExecutedDispatcher;
 };
-} // namespace oe::internal
+}// namespace oe::internal

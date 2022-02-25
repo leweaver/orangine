@@ -1,17 +1,17 @@
 ﻿#include <OeCore/Light_provider.h>
-#include <OeCore/Primitive_mesh_data_factory.h>
+#include <OeCore/IPrimitive_mesh_data_factory.h>
 #include <OeCore/Render_pass_skybox.h>
 #include <OeCore/Renderable.h>
 #include <OeCore/Skybox_material.h>
 
 using oe::Render_pass_skybox;
 
-Render_pass_skybox::Render_pass_skybox(IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager)
+Render_pass_skybox::Render_pass_skybox(IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory)
     : _entityRenderManager(entityRenderManager)
     , _lightingManager(lightingManager)
 {
   _renderable = std::make_unique<Renderable>();
-  _renderable->meshData = Primitive_mesh_data_factory::createSphere(1.0f, 3);
+  _renderable->meshData = primitiveMeshDataFactory.createSphere(1.0f, 3);
 
   _material = std::make_shared<Skybox_material>();
   _renderable->material = _material;

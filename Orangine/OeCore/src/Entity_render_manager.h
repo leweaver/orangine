@@ -22,7 +22,7 @@ namespace oe::internal {
 class Entity_render_manager : public IEntity_render_manager, public Manager_base, public Manager_deviceDependent {
  public:
   Entity_render_manager(
-          ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager);
+          ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory);
 
   // Manager_base implementation
   void initialize() override;
@@ -53,10 +53,10 @@ class Entity_render_manager : public IEntity_render_manager, public Manager_base
   void clearRenderStats() override;
 
  protected:
-  static void createMissingVertexAttributes(
+  void createMissingVertexAttributes(
       std::shared_ptr<Mesh_data> meshData,
       const std::vector<Vertex_attribute_element>& requiredAttributes,
-      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes);
+      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const;
 
   virtual void drawRendererData(
       const Camera_data& cameraData,
@@ -104,6 +104,7 @@ class Entity_render_manager : public IEntity_render_manager, public Manager_base
   ITexture_manager& _textureManager;
   IMaterial_manager& _materialManager;
   ILighting_manager& _lightingManager;
+  IPrimitive_mesh_data_factory& _primitiveMeshDataFactory;
 
   static std::string _name;
 };

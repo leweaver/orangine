@@ -80,8 +80,8 @@ class Stub_render_step_manager final : public Render_step_manager {
   Stub_render_step_manager(
           IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
           ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
-          IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager)
-      : Render_step_manager(sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager, lightingManager)
+          IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory)
+      : Render_step_manager(sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager, lightingManager, primitiveMeshDataFactory)
   {}
 
   // Base class overrides
@@ -162,8 +162,8 @@ struct Renderer_data {};
 
 class Stub_entity_render_manager : public oe::internal::Entity_render_manager {
  public:
-  Stub_entity_render_manager(ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager)
-      : Entity_render_manager(textureManager, materialManager, lightingManager) {}
+  Stub_entity_render_manager(ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory)
+      : Entity_render_manager(textureManager, materialManager, lightingManager, primitiveMeshDataFactory) {}
 
   void loadRendererDataToDeviceContext(
       const Renderer_data& rendererData,
@@ -225,8 +225,8 @@ class Stub_user_interface_manager final : public IUser_interface_manager {
 };
 
 template <>
-void create_manager(Manager_instance<IEntity_render_manager>& out, ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager) {
-  out = Manager_instance<IEntity_render_manager>(std::make_unique<Stub_entity_render_manager>(textureManager, materialManager, lightingManager));
+void create_manager(Manager_instance<IEntity_render_manager>& out, ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory) {
+  out = Manager_instance<IEntity_render_manager>(std::make_unique<Stub_entity_render_manager>(textureManager, materialManager, lightingManager, primitiveMeshDataFactory));
 }
 //
 //template<>

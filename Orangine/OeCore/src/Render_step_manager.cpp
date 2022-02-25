@@ -25,7 +25,7 @@ Render_step_manager::Render_step::Render_step(
 Render_step_manager::Render_step_manager(
         IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager, ITexture_manager& textureManager,
         IShadowmap_manager& shadowmapManager, IEntity_render_manager& entityRenderManager,
-        ILighting_manager& lightingManager)
+        ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory)
     : IRender_step_manager()
     , Manager_base()
     , Manager_deviceDependent()
@@ -38,6 +38,7 @@ Render_step_manager::Render_step_manager(
     , _shadowmapManager(shadowmapManager)
     , _entityRenderManager(entityRenderManager)
     , _lightingManager(lightingManager)
+    , _primitiveMeshDataFactory(primitiveMeshDataFactory)
 {
   _simpleLightProvider = [this](const BoundingSphere& target, std::vector<Entity*>& lights, uint32_t maxLights) {
     for (auto iter = _lightEntities->begin(); iter != _lightEntities->end(); ++iter) {
@@ -200,7 +201,7 @@ void Render_step_manager::createRenderSteps() {
 
   // Sky box
   {
-    auto drawSkyboxPass = std::make_unique<Render_pass_skybox>(_entityRenderManager, _lightingManager);
+    auto drawSkyboxPass = std::make_unique<Render_pass_skybox>(_entityRenderManager, _lightingManager, _primitiveMeshDataFactory);
     drawSkyboxPass->setDepthStencilConfig(
         Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_only));
     drawSkyboxPass->setDrawDestination(Render_pass_destination::Render_target_view);

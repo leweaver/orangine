@@ -55,6 +55,7 @@ class App {
   IRender_step_manager& getRenderStepManager();
   IEntity_scripting_manager& getEntityScriptingManager();
   IConfigReader& getConfigReader();
+  IPrimitive_mesh_data_factory& getPrimitiveMeshDataFactory();
 
   // Internal only getter.
   App_impl* getAppImpl() const

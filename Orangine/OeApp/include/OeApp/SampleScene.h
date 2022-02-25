@@ -15,7 +15,7 @@ class Sample_scene {
   Sample_scene(
           IRender_step_manager& renderStepManager, IScene_graph_manager& sceneGraphManager,
           IInput_manager& inputManager, IEntity_scripting_manager& entityScriptingManager,
-          IAsset_manager& assetManager, std::vector<std::string> extraAssetPaths);
+          IAsset_manager& assetManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory, std::vector<std::string> extraAssetPaths);
 
   void tick();
 
@@ -64,6 +64,7 @@ class Sample_scene {
   IInput_manager& _inputManager;
   IEntity_scripting_manager& _entityScriptingManager;
   IAsset_manager& _assetManager;
+  IPrimitive_mesh_data_factory& _primitiveMeshDataFactory;
 
   std::shared_ptr<Entity> _root;
 };

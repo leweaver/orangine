@@ -9,6 +9,8 @@
 
 #include <OeScripting/OeScripting.h>
 
+#include <OePipelineD3D12/OePipelineD3D12.h>
+
 #include <OeApp/App.h>
 #include <OeApp/Manager_collection.h>
 #include <OeApp/Yaml_config_reader.h>
@@ -29,38 +31,60 @@ __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
-extern std::unique_ptr<oe::IDevice_resources> createWin32DeviceResources(HWND hwnd);
-
 const auto CONFIG_FILE_NAME = L"config.yaml";
 
 using oe::app::App;
 namespace fs = std::filesystem;
 
+#ifndef NTDDI_WIN10_FE
+#error "Windows SDK 10.0.19041 must be installed and on the include path."
+#else
+static_assert(WDK_NTDDI_VERSION >= NTDDI_WIN10_FE, "Windows SDK must be at least 10.0.19041.");
+#endif
+
 namespace oe::app {
 class App_impl {
  public:
-  App_impl(
-      HWND hwnd,
-      IDevice_resources* deviceResources)
-      : _deviceResources(deviceResources)
-      , _hwnd(hwnd)
-      , _fatalError(false) {
-    _coreManagers = std::make_unique<oe::core::Manager_instances>(*_deviceResources);
+  explicit App_impl(HWND hwnd)
+      : _hwnd(hwnd)
+      , _fatalError(false)
+      , _deviceResources(nullptr)
+  {
+    _coreManagers = std::make_unique<oe::core::Manager_instances>();
     oe::core::for_each_manager_instance(_coreManagers->managers, [&](const Manager_interfaces& interfaces) {
       _managers.addManager(interfaces);
     });
 
+    // Shows stuff in a window
+    _pipelineManagers = std::make_unique<oe::pipeline_d3d12::Manager_instances>(*_coreManagers, hwnd);
+    oe::core::for_each_manager_instance(_pipelineManagers->managers, [&](const Manager_interfaces& interfaces) {
+      _managers.addManager(interfaces);
+    });
+
     // Provides access to the engine via python
-    _scriptingManagers = std::make_unique<oe::scripting::Manager_instances>(*_coreManagers);
+    _scriptingManagers = std::make_unique<oe::scripting::Manager_instances>(
+            *_coreManagers, _pipelineManagers->getInstance<IInput_manager>(),
+            _pipelineManagers->getInstance<IEntity_render_manager>());
     oe::core::for_each_manager_instance(_scriptingManagers->managers, [&](const Manager_interfaces& interfaces) {
       _managers.addManager(interfaces);
     });
 
+    // Some helpful things.
+    {
+      auto devToolsManager = oe::create_manager_instance<IDev_tools_manager>(
+              _coreManagers->getInstance<IScene_graph_manager>(),
+              _pipelineManagers->getInstance<IEntity_render_manager>(),
+              _pipelineManagers->getInstance<IMaterial_manager>(),
+              _pipelineManagers->getInstance<IPrimitive_mesh_data_factory>());
+      _devToolsManager = std::move(devToolsManager.instance);
+    }
+    _deviceResources = &_pipelineManagers->getInstance<IDevice_resources>();
+
     _managerTickTimes.resize(_managers.getTickableManagers().size());
 
     auto gltfLoader = std::make_unique<Entity_graph_loader_gltf>(
-            _coreManagers->getInstance<IMaterial_manager>(),
-            _coreManagers->getInstance<ITexture_manager>());
+            _pipelineManagers->getInstance<IMaterial_manager>(),
+            _pipelineManagers->getInstance<ITexture_manager>());
     _coreManagers->getInstance<IScene_graph_manager>().addLoader(std::move(gltfLoader));
   }
  public:
@@ -170,8 +194,8 @@ class App_impl {
       return;
     }
 
-    _coreManagers->getInstance<IRender_step_manager>().render();
-    _coreManagers->getInstance<IUser_interface_manager>().render();
+    _pipelineManagers->getInstance<IRender_step_manager>().render();
+    _pipelineManagers->getInstance<IUser_interface_manager>().render();
   }
 
   // Messages
@@ -364,15 +388,17 @@ class App_impl {
   friend App;
 
   Manager_collection _managers;
-  IDevice_resources* const _deviceResources;
+  IDevice_resources* _deviceResources;
   StepTimer _stepTimer;
   HWND const _hwnd;
   bool _fatalError;
   std::vector<double> _managerTickTimes;
   std::unique_ptr<core::Manager_instances> _coreManagers;
   std::unique_ptr<scripting::Manager_instances> _scriptingManagers;
+  std::unique_ptr<pipeline_d3d12::Manager_instances> _pipelineManagers;
   std::vector<Manager_interfaces*> _initializedManagers;
   std::unique_ptr<Yaml_config_reader> _configReader;
+  std::unique_ptr<IDev_tools_manager> _devToolsManager;
 };
 } // namespace oe
 
@@ -436,15 +462,9 @@ int App::run(const App_start_settings& settings) {
     return 1;
   }
 
-  // Try to create a rendering device
-  auto deviceResources = createWin32DeviceResources(hwnd);
-  if (!deviceResources || !deviceResources->checkSystemSupport(true)) {
-    return 1;
-  }
-
   // Create the app context
   int progReturnVal = 1;
-  _impl = new app::App_impl(hwnd, deviceResources.get());
+  _impl = new app::App_impl(hwnd);
 
   bool sceneConfigured = false;
   do {
@@ -733,11 +753,11 @@ oe::IAsset_manager& App::getAssetManager()
 }
 oe::IUser_interface_manager& App::getUserInterfaceManager()
 {
-  return _impl->_coreManagers->getInstance<oe::IUser_interface_manager>();
+  return _impl->_pipelineManagers->getInstance<oe::IUser_interface_manager>();
 }
 oe::ITexture_manager& App::getTextureManager()
 {
-  return _impl->_coreManagers->getInstance<oe::ITexture_manager>();
+  return _impl->_pipelineManagers->getInstance<oe::ITexture_manager>();
 }
 oe::IBehavior_manager& App::getBehaviorManager()
 {
@@ -745,19 +765,19 @@ oe::IBehavior_manager& App::getBehaviorManager()
 }
 oe::IMaterial_manager& App::getMaterialManager()
 {
-  return _impl->_coreManagers->getInstance<oe::IMaterial_manager>();
+  return _impl->_pipelineManagers->getInstance<oe::IMaterial_manager>();
 }
 oe::ILighting_manager& App::getLightingManager()
 {
-  return _impl->_coreManagers->getInstance<oe::ILighting_manager>();
+  return _impl->_pipelineManagers->getInstance<oe::ILighting_manager>();
 }
 oe::IShadowmap_manager& App::getShadowmapManager()
 {
-  return _impl->_coreManagers->getInstance<oe::IShadowmap_manager>();
+  return _impl->_pipelineManagers->getInstance<oe::IShadowmap_manager>();
 }
 oe::IInput_manager& App::getInputManager()
 {
-  return _impl->_coreManagers->getInstance<oe::IInput_manager>();
+  return _impl->_pipelineManagers->getInstance<oe::IInput_manager>();
 }
 oe::IAnimation_manager& App::getAnimationManager()
 {
@@ -765,19 +785,23 @@ oe::IAnimation_manager& App::getAnimationManager()
 }
 oe::IEntity_render_manager& App::getEntityRenderManager()
 {
-  return _impl->_coreManagers->getInstance<oe::IEntity_render_manager>();
-}
-oe::IDev_tools_manager& App::getDevToolsManager()
-{
-  return _impl->_coreManagers->getInstance<oe::IDev_tools_manager>();
+  return _impl->_pipelineManagers->getInstance<oe::IEntity_render_manager>();
 }
 oe::IRender_step_manager& App::getRenderStepManager()
 {
-  return _impl->_coreManagers->getInstance<oe::IRender_step_manager>();
+  return _impl->_pipelineManagers->getInstance<oe::IRender_step_manager>();
+}
+oe::IPrimitive_mesh_data_factory& App::getPrimitiveMeshDataFactory()
+{
+  return _impl->_pipelineManagers->getInstance<oe::IPrimitive_mesh_data_factory>();
 }
 oe::IEntity_scripting_manager& App::getEntityScriptingManager()
 {
   return _impl->_scriptingManagers->getInstance<oe::IEntity_scripting_manager>();
+}
+oe::IDev_tools_manager& App::getDevToolsManager()
+{
+  return *_impl->_devToolsManager;
 }
 oe::IConfigReader& App::getConfigReader() {
   return *_impl->_configReader;

@@ -18,15 +18,9 @@ add_library(${PROJECT_NAME} STATIC
 file(GLOB OeScripting_HEADERS "include/OeScripting/*")
 list(APPEND OeScripting_HEADERS "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}Config.h")
 
-add_library(Oe::Scripting ALIAS OeScripting)
+add_library(Oe::Scripting ALIAS ${PROJECT_NAME})
 
-include (GenerateExportHeader)
-GENERATE_EXPORT_HEADER(OeScripting
-        BASE_NAME OeScripting
-        EXPORT_MACRO_NAME OeScripting_EXPORT
-        EXPORT_FILE_NAME include/OeScripting/OeScripting_Export.h
-        STATIC_DEFINE OeScripting_BUILT_AS_STATIC
-        )
+oe_target_generate_export_header(${PROJECT_NAME})
 
 #####
 # Dependencies

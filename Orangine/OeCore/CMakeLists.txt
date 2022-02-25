@@ -19,24 +19,6 @@ add_library(${PROJECT_NAME} STATIC
         src/Clear_gbuffer_material.cpp
         src/Color.cpp
         src/Component.cpp
-        # src/D3D11/D3D_collision.cpp
-        # src/D3D11/D3D_device_repository.cpp
-        # src/D3D11/D3D_device_repository.h
-        # src/D3D11/D3D_entity_render_manager.cpp
-        # src/D3D11/D3D_material_manager.cpp
-        # src/D3D11/D3D_material_manager.h
-        # src/D3D11/D3D_render_pass_shadow.cpp
-        # src/D3D11/D3D_render_step_manager.cpp
-        # src/D3D11/D3D_render_step_manager.h
-        # src/D3D11/D3D_renderer_data.cpp
-        # src/D3D11/D3D_renderer_data.h
-        # src/D3D11/D3D_texture_manager.cpp
-        # src/D3D11/D3D_texture_manager.h
-        # src/D3D11/D3D_directX_utils.h
-        # src/D3D11/D3D_user_interface_manager.cpp
-        # src/D3D11/D3D_user_interface_manager.h
-        "src/D3D12/D3D12_device_resources.cpp"
-        "src/D3D12/D3D12_vendor.h"
         src/Stubs/Stub_managers.cpp
         src/Deferred_light_material.cpp
         src/Dev_tools_manager.cpp
@@ -65,7 +47,6 @@ add_library(${PROJECT_NAME} STATIC
         src/Mikk_tspace_triangle_mesh_interface.cpp
         src/Morph_weights_component.cpp
         src/PBR_material.cpp
-        src/Primitive_mesh_data_factory.cpp
         src/Render_pass.cpp
         src/Render_pass_skybox.cpp
         src/Render_step_manager.cpp
@@ -84,29 +65,11 @@ add_library(${PROJECT_NAME} STATIC
         src/Time_step_manager.h
         src/Unlit_material.cpp
         src/VectorLog.cpp
-        "src/D3D12/D3D12_collision.cpp"
-        "src/D3D12/D3D12_lighting_manager.cpp"
-        "src/D3D12/D3D12_lighting_manager.h"
-        "src/D3D12/D3D12_renderer_data.h"
         "src/Collision.cpp"
         "src/Statics.cpp"
         "src/OeCore.cpp"
-        "ThirdParty/d3dx12/d3dx12.h"
-        "ThirdParty/MikktSpace/mikktspace.h"
         "ThirdParty/MikktSpace/mikktspace.c"
-        "ThirdParty/imgui/misc/cpp/imgui_stdlib.h"
-        "ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp"
-        "ThirdParty/nv_helpers_dx12/BottomLevelASGenerator.cpp"
-        "ThirdParty/nv_helpers_dx12/BottomLevelASGenerator.h"
-        "ThirdParty/nv_helpers_dx12/RaytracingPipelineGenerator.cpp"
-        "ThirdParty/nv_helpers_dx12/RaytracingPipelineGenerator.h"
-        "ThirdParty/nv_helpers_dx12/RootSignatureGenerator.cpp"
-        "ThirdParty/nv_helpers_dx12/RootSignatureGenerator.h"
-        "ThirdParty/nv_helpers_dx12/ShaderBindingTableGenerator.cpp"
-        "ThirdParty/nv_helpers_dx12/ShaderBindingTableGenerator.h"
-        "ThirdParty/nv_helpers_dx12/TopLevelASGenerator.cpp"
-        "ThirdParty/nv_helpers_dx12/TopLevelASGenerator.h"
-        src/D3D12/D3D12_render_step_manager.cpp src/D3D12/D3D12_render_step_manager.h)
+        "ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp")
 
 # CPP17
 target_compile_features(OeCore PUBLIC cxx_std_17)
@@ -116,7 +79,9 @@ if (MSVC)
     target_compile_options(${PROJECT_NAME} PUBLIC "/std:c++17")
 endif()
 
-add_library(Oe::Core ALIAS OeCore)
+add_library(Oe::Core ALIAS ${PROJECT_NAME})
+
+oe_target_generate_export_header(${PROJECT_NAME})
 
 #####
 # Dependencies
@@ -130,7 +95,8 @@ target_include_directories(${PROJECT_NAME}
         "${OE_THIRDPARTY_PATH}/filewatch"
         "${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
         PRIVATE
-        ThirdParty
+        include/MikktSpace
+        include/imgui/misc/cpp
         )
 
 # g3log
@@ -205,13 +171,7 @@ target_precompile_headers(${PROJECT_NAME}
         )
 set_target_properties(${PROJECT_NAME} PROPERTIES
         SKIP_PRECOMPILE_HEADERS
-        ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp
-        ThirdParty/MikktSpace/mikktspace.c
-        ThirdParty/nv_helpers_dx12/BottomLevelASGenerator.cpp
-        ThirdParty/nv_helpers_dx12/RaytracingPipelineGenerator.cpp
-        ThirdParty/nv_helpers_dx12/RootSignatureGenerator.cpp
-        ThirdParty/nv_helpers_dx12/ShaderBindingTableGenerator.cpp
-        ThirdParty/nv_helpers_dx12/TopLevelASGenerator.cpp)
+        "ThirdParty/MikktSpace/mikktspace.c;ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp")
 
 # Make sure to include PDB files when installing in debug mode
 oe_target_install_pdb(${PROJECT_NAME})

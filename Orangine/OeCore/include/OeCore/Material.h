@@ -19,7 +19,7 @@ class Texture;
 class Material {
  public:
   struct Shader_compile_settings {
-    std::wstring filename;
+    std::string filename;
     std::string entryPoint;
     std::map<std::string, std::string> defines;
     std::set<std::string> includes;

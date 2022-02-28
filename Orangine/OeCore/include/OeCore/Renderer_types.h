@@ -137,3 +137,18 @@ struct Depth_stencil_config {
 };
 
 } // namespace oe
+
+namespace std {
+
+template <>
+struct hash<oe::Vertex_attribute_semantic>
+{
+  std::size_t operator()(const oe::Vertex_attribute_semantic& k) const
+  {
+    using std::hash;
+    return ((hash<uint8_t>()(static_cast<uint8_t>(k.attribute))
+             ^ (hash<uint8_t>()(k.semanticIndex) << 1)) >> 1);
+  }
+};
+
+}

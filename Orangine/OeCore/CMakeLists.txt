@@ -29,16 +29,13 @@ add_library(${PROJECT_NAME} STATIC
         src/Entity_filter_impl.h
         src/Entity_graph_loader_gltf.cpp
         src/Entity_render_manager.cpp
-        src/Entity_render_manager.h
         src/Entity_repository.cpp
         src/Entity_sorter.cpp
         src/Fps_counter.cpp
-        src/Input_manager.cpp
         src/Light_component.cpp
         src/Light_provider.cpp
         src/Material.cpp
         src/Material_manager.cpp
-        src/Material_manager.h
         src/Math_constants.cpp
         src/Mesh_data.cpp
         src/Mesh_data_component.cpp
@@ -116,17 +113,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Oe3p::vectormath)
 # utf8
 find_package(utf8cpp)
 target_link_libraries(${PROJECT_NAME} PUBLIC utf8cpp)
-
-# DirectX
-target_link_libraries(${PROJECT_NAME} PUBLIC
-        d3d11.lib
-        D3DCompiler.lib
-        dxgi.lib
-        dxguid.lib
-        )
-
-# DirectXTK
-target_link_libraries(${PROJECT_NAME} PUBLIC DirectXTK12)
 
 # Guidelines Support Library (gsl::)
 find_package(Microsoft.GSL)

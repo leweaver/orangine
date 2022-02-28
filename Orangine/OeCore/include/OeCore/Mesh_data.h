@@ -77,8 +77,8 @@ namespace oe
 
 		std::shared_ptr<Mesh_buffer> buffer;
 		uint32_t count;
-		uint32_t stride;
-		uint32_t offset;
+		uint32_t stride; // in bytes
+		uint32_t offset; // in bytes, from the start of buffer.data
 	};
 
 	struct Mesh_vertex_buffer_accessor : Mesh_buffer_accessor

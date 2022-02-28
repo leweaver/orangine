@@ -90,6 +90,10 @@ class Entity_render_manager : public IEntity_render_manager, public Manager_base
       const std::vector<Vertex_attribute_element>& vertexAttributes,
       const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) = 0;
 
+  Mesh_vertex_buffer_accessor* findAccessorForSemantic(
+          std::shared_ptr<Mesh_data>& meshData, const gsl::span<const Vertex_attribute_semantic>& attributes,
+          const Vertex_attribute_semantic& vertexAttrSemantic) const;
+
   struct Render_stats {
     int opaqueEntityCount = 0;
     int opaqueLightCount = 0;

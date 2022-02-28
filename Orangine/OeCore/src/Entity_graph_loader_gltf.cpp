@@ -947,8 +947,10 @@ shared_ptr<Entity> create_entity(
       if (prim.targets.size() > UINT8_MAX) {
         OE_THROW(std::domain_error("Too many morph targets"));
       }
+
+      // TODO: support line strips as well?
       auto meshData = std::make_shared<Mesh_data>(Mesh_vertex_layout(
-          meshLayoutAttributes, morphTargetLayout, static_cast<uint8_t>(prim.targets.size())));
+          meshLayoutAttributes, morphTargetLayout, static_cast<uint8_t>(prim.targets.size()), Mesh_index_type::Triangles));
       meshDataComponent.setMeshData(meshData);
 
       try {

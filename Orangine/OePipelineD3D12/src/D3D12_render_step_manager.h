@@ -2,20 +2,34 @@
 
 #include <OeCore/Render_step_manager.h>
 
-#include "D3D12_renderer_data.h"
 #include "D3D12_device_resources.h"
+#include "D3D12_renderer_data.h"
 
 #include <vectormath.hpp>
+
 
 namespace oe {
 class ITexture_manager;
 
 class D3D12_render_step_manager final : public Render_step_manager {
  public:
+  struct D3D12_render_pass_data {
+    /*
+    std::vector<ID3D12RenderTargetView*> _renderTargetViews = {};
+    Microsoft::WRL::ComPtr<ID3D12BlendState> _blendState;
+    Microsoft::WRL::ComPtr<ID3D12DepthStencilState> _depthStencilState;
+     */
+  };
+  struct D3D12_render_step_data {
+    std::vector<D3D12_render_pass_data> renderPassData;
+  };
+
   D3D12_render_step_manager(
           IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
           ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
-          IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory, std::unique_ptr<D3D12_device_resources> deviceResources);
+          IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager,
+          IPrimitive_mesh_data_factory& primitiveMeshDataFactory,
+          std::unique_ptr<D3D12_device_resources> deviceResources);
 
   // Base class overrides
   Viewport getScreenViewport() const override;
@@ -42,8 +56,10 @@ class D3D12_render_step_manager final : public Render_step_manager {
   static void destroyStatics();
 
  private:
+  void renderStep(Render_step& step, D3D12_render_pass_data& renderStepData, const Camera_data& cameraData);
+
   static std::string _name;
 
   std::unique_ptr<D3D12_device_resources> _deviceResources;
 };
-}
+}// namespace oe

@@ -22,13 +22,14 @@ class Material_context {
     Render_pass_blend_mode blendMode = Render_pass_blend_mode::Opaque;
     std::vector<Vertex_attribute_element> vsInputs;
     std::set<std::string> flags;
+    Mesh_index_type meshIndexType;
   };
 
   Material_context() = default;
 
   virtual ~Material_context() = default;
 
-  virtual void reset() = 0;
+  virtual void releaseResources() = 0;
 
   bool compilerInputsValid = false;
   Material_compiler_inputs compilerInputs;

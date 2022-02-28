@@ -279,6 +279,7 @@ class App_impl {
         LOG(WARNING) << "createWindowSizeDependentResources: Failed to get last window size.";
         return;
       }
+      _deviceResources->recreateWindowSizeDependentResources();
 
       width = std::max(width, 1);
       height = std::max(height, 1);
@@ -516,8 +517,10 @@ int App::run(const App_start_settings& settings) {
         progReturnVal = (int)msg.wParam;
       } else {
         try {
-          onScenePreTick();
-          appDeviceContext.onTick();
+          appDeviceContext._stepTimer.Tick([this, &appDeviceContext] {
+            onScenePreTick();
+            appDeviceContext.onTick();
+          });
 
           onScenePreRender();
           appDeviceContext.onRender();

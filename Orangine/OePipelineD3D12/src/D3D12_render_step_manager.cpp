@@ -2,6 +2,7 @@
 #include "D3D12_device_resources.h"
 
 #include <OeCore/Render_pass_generic.h>
+#include <OeCore/Perf_timer.h>
 
 using namespace oe;
 
@@ -55,7 +56,112 @@ void D3D12_render_step_manager::beginRenderNamedEvent(const wchar_t* name) {}
 void D3D12_render_step_manager::endRenderNamedEvent() {}
 void D3D12_render_step_manager::createRenderStepResources() {}
 void D3D12_render_step_manager::destroyRenderStepResources() {}
-void D3D12_render_step_manager::renderSteps(const Camera_data& cameraData) {}
+void D3D12_render_step_manager::renderSteps(const Camera_data& cameraData)
+{
+  /*
+  auto timer = Perf_timer::start();
+  for (size_t i = 0; i < _renderSteps.size(); ++i) {
+    timer.restart();
+    auto& step = *_renderSteps[i];
+    beginRenderNamedEvent(step.name.c_str());
+    renderStep(step, _renderStepData[i], cameraData);
+    endRenderNamedEvent();
+    timer.stop();
+    _renderTimes[i] += timer.elapsedSeconds();
+  }
+
+   */
+  _deviceResources->Present();
+}
+
+void D3D12_render_step_manager::renderStep(
+        Render_step& step,
+        D3D12_render_pass_data& renderStepData,
+        const Camera_data& cameraData) {
+  if (!step.enabled)
+    return;
+/*
+  auto* const context = _deviceResources-> d3dDeviceResources.GetD3DDeviceContext();
+  auto& commonStates = _deviceRepository->commonStates();
+
+  constexpr auto opaqueSampleMask = 0xffffffff;
+  constexpr std::array<float, 4> opaqueBlendFactor{0.0f, 0.0f, 0.0f, 0.0f};
+
+  bool groupRenderEvents = step.renderPasses.size() > 1;
+  for (auto passIdx = 0; passIdx < step.renderPasses.size(); ++passIdx) {
+    if (groupRenderEvents) {
+      if (_passNames.size() == passIdx) {
+        std::wstringstream ss;
+        ss << L"Pass " << passIdx;
+        _passNames.push_back(ss.str());
+      }
+      beginRenderNamedEvent(_passNames[passIdx].c_str());
+    }
+
+    auto& pass = *step.renderPasses[passIdx];
+    auto& renderPassData = renderStepData.renderPassData[passIdx];
+    auto numRenderTargets = renderPassData._renderTargetViews.size();
+    const auto& depthStencilConfig = pass.getDepthStencilConfig();
+
+    // Update render target views array if it is out of sync
+    if (pass.popRenderTargetsChanged()) {
+      const auto& renderTargets = pass.getRenderTargets();
+      for (auto& renderTargetView : renderPassData._renderTargetViews) {
+        if (renderTargetView) {
+          renderTargetView->Release();
+          renderTargetView = nullptr;
+        }
+      }
+
+      numRenderTargets = renderTargets.size();
+      renderPassData._renderTargetViews.resize(numRenderTargets, nullptr);
+
+      for (size_t i = 0; i < renderPassData._renderTargetViews.size(); ++i) {
+        if (renderTargets[i]) {
+          auto& rtt = D3D_texture_manager::verifyAsD3dRenderTargetViewTexture(*renderTargets[i]);
+          renderPassData._renderTargetViews[i] = rtt.renderTargetView();
+          renderPassData._renderTargetViews[i]->AddRef();
+        }
+      }
+    }
+    ////beginRenderNamedEvent(L"RSM-OMSetRenderTargets");
+    if (pass.stencilRef() == 0 && renderPassData._renderTargetViews.size() > 0) {
+      ID3D11DepthStencilView* dsv = nullptr;
+      if (Render_pass_depth_mode::Disabled != depthStencilConfig.depthMode) {
+        dsv = d3dDeviceResources.GetDepthStencilView();
+      }
+      context->OMSetRenderTargets(
+              static_cast<UINT>(numRenderTargets), renderPassData._renderTargetViews.data(), dsv);
+    }
+    ////endRenderNamedEvent();
+
+    ////beginRenderNamedEvent(L"RSM-OMSetBlendStateEtc");
+    // Set the blend mode
+    context->OMSetBlendState(
+            renderPassData._blendState.Get(), opaqueBlendFactor.data(), opaqueSampleMask);
+
+    // Depth/Stencil buffer mode
+    context->OMSetDepthStencilState(renderPassData._depthStencilState.Get(), pass.stencilRef());
+
+    // Make sure wire-frame is disabled
+    context->RSSetState(commonStates.CullClockwise());
+
+    // Set the viewport.
+    auto viewport = d3dDeviceResources.GetScreenViewport();
+    d3dDeviceResources.GetD3DDeviceContext()->RSSetViewports(1, &viewport);
+    ////endRenderNamedEvent();
+
+    ////beginRenderNamedEvent(L"RSM-Render");
+    // Call the render method.
+    pass.render(cameraData);
+    ////endRenderNamedEvent();
+
+    if (groupRenderEvents) {
+      endRenderNamedEvent();
+    }
+  }
+  */
+}
 
 void D3D12_render_step_manager::initStatics()
 {

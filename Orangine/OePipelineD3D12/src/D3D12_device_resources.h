@@ -22,7 +22,6 @@ class D3D12_device_resources : public IDevice_resources {
       DXGI_FORMAT backBufferFormat = DXGI_FORMAT_B8G8R8A8_UNORM,
       DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D32_FLOAT,
       UINT backBufferCount = 2,
-      D3D_FEATURE_LEVEL minFeatureLevel = D3D_FEATURE_LEVEL_10_0,
       unsigned int flags = 0);
 
   // IDevice_resources interface
@@ -45,7 +44,7 @@ class D3D12_device_resources : public IDevice_resources {
   RECT GetOutputSize() const { return m_outputSize; }
 
   // Direct3D Accessors.
-  ID3D12Device1* GetD3DDevice() const { return m_d3dDevice.Get(); }
+  ID3D12Device6* GetD3DDevice() const { return m_d3dDevice.Get(); }
   D3D_FEATURE_LEVEL GetDeviceFeatureLevel() const { return m_d3dFeatureLevel; }
   // ID3D11Texture2D*        GetRenderTarget() const                 { return m_renderTarget.Get();
   // } ID3D11Texture2D*        GetDepthStencil() const                 { return
@@ -58,6 +57,10 @@ class D3D12_device_resources : public IDevice_resources {
   UINT GetBackBufferCount() const { return m_backBufferCount; }
   DXGI_COLOR_SPACE_TYPE GetColorSpace() const { return m_colorSpace; }
   unsigned int GetDeviceOptions() const { return m_options; }
+
+  ID3D12CommandQueue* GetCommandQueue() const;
+
+  Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> CreateCommandList(D3D12_COMMAND_LIST_TYPE type);
 
   // Performance events
   void PIXBeginEvent(_In_z_ const wchar_t* name) {
@@ -73,6 +76,17 @@ class D3D12_device_resources : public IDevice_resources {
   }
 
  private:
+
+  struct Command_list_state  {
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList;
+
+    // Synchronization objects.
+    UINT frameIndex;
+    HANDLE fenceEvent;
+    Microsoft::WRL::ComPtr<ID3D12Fence> fence;
+    UINT64 fenceValue;
+  };
+
   struct Render_pipeline {
     static const std::size_t frameCount = 2;
 
@@ -84,24 +98,20 @@ class D3D12_device_resources : public IDevice_resources {
     UINT rtcDescriptorSize;
     std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, frameCount> rtvBackBuffer;
 
-
-    // Synchronization objects.
-    UINT frameIndex;
-    HANDLE fenceEvent;
-    Microsoft::WRL::ComPtr<ID3D12Fence> fence;
-    UINT64 fenceValue;
+    // TODO: will want more than one command list :)
+    Command_list_state commandList;
   };
 
   void HandleDeviceLost();
   void CreateFactory();
   void GetHardwareAdapter(IDXGIAdapter1** ppAdapter);
 
-
   void createRenderPipeline(Render_pipeline& renderPipeline);
   void resizePipelineResources(
       Render_pipeline& renderPipeline,
       UINT backBufferWidth,
       UINT backBufferHeight);
+  void waitForPreviousFrame(Render_pipeline& renderPipeline);
 
   // If a null colour space is passed, just sets the state of m_colorSpace
   void updateColorSpace(const Microsoft::WRL::ComPtr<IDXGISwapChain>& swapChain);
@@ -123,11 +133,10 @@ class D3D12_device_resources : public IDevice_resources {
   DXGI_FORMAT m_backBufferFormat;
   DXGI_FORMAT m_depthBufferFormat;
   UINT m_backBufferCount;
-  D3D_FEATURE_LEVEL m_d3dMinFeatureLevel;
 
   // Cached device properties.
   HWND m_window;
-  D3D_FEATURE_LEVEL m_d3dFeatureLevel;
+  static constexpr D3D_FEATURE_LEVEL m_d3dFeatureLevel = D3D_FEATURE_LEVEL_12_1;
   RECT m_outputSize;
 
   // HDR Support
@@ -143,5 +152,6 @@ class D3D12_device_resources : public IDevice_resources {
 
   // If true, outputs detailed DirectX memory information on shutdown
   bool m_outputDetailedMemoryReport;
+  Command_list_state createCommandListState();
 };
 } // namespace oe

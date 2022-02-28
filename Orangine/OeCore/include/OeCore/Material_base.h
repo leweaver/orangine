@@ -74,16 +74,16 @@ class Material_base : public Material {
 
  protected:
   Shader_compile_settings vertexShaderSettings(const std::set<std::string>& flags) const override {
-    std::wstringstream ss;
-    ss << utf8_decode(materialType()) << L"_VS.hlsl";
+    std::stringstream ss;
+    ss << materialType() << "_VS.hlsl";
     auto settings = Material::vertexShaderSettings(flags);
     settings.filename = ss.str();
     return settings;
   }
 
   Shader_compile_settings pixelShaderSettings(const std::set<std::string>& flags) const override {
-    std::wstringstream ss;
-    ss << utf8_decode(materialType()) << L"_PS.hlsl";
+    std::stringstream ss;
+    ss << materialType() << "_PS.hlsl";
     auto settings = Material::pixelShaderSettings(flags);
     settings.filename = ss.str();
     return settings;

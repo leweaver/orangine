@@ -19,15 +19,12 @@ D3D12_device_resources::D3D12_device_resources(
     DXGI_FORMAT backBufferFormat,
     DXGI_FORMAT depthBufferFormat,
     UINT backBufferCount,
-    D3D_FEATURE_LEVEL minFeatureLevel,
     unsigned int flags)
     : m_screenViewport{}
     , m_backBufferFormat(backBufferFormat)
     , m_depthBufferFormat(depthBufferFormat)
     , m_backBufferCount(backBufferCount)
-    , m_d3dMinFeatureLevel(minFeatureLevel)
     , m_window(hwnd)
-    , m_d3dFeatureLevel(D3D_FEATURE_LEVEL_12_1)
     , m_outputSize{0, 0, 1, 1}
     , m_colorSpace(DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709)
     , m_options(flags)
@@ -35,19 +32,8 @@ D3D12_device_resources::D3D12_device_resources(
     , m_outputDetailedMemoryReport(true) {}
 
 // Configures the Direct3D device, and stores handles to it and the device context.
-void D3D12_device_resources::createDeviceDependentResources() {
-#if defined(_DEBUG)
-  // Enable the D3D12 debug layer.
-  {
-    ComPtr<ID3D12Debug> debugController;
-    if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
-      debugController->EnableDebugLayer();
-    } else {
-      OutputDebugStringA("WARNING: Direct3D Debug Device is not available\n");
-    }
-  }
-#endif
-
+void D3D12_device_resources::createDeviceDependentResources()
+{
   CreateFactory();
 
   // Determines whether tearing support is available for fullscreen borderless windows.
@@ -64,7 +50,7 @@ void D3D12_device_resources::createDeviceDependentResources() {
     if (FAILED(hr) || !allowTearing) {
       m_options &= ~c_AllowTearing;
 #ifdef _DEBUG
-      OutputDebugStringA("WARNING: Variable refresh rate displays not supported");
+      LOG(WARNING) << "Variable refresh rate displays not supported";
 #endif
     }
   }
@@ -75,24 +61,9 @@ void D3D12_device_resources::createDeviceDependentResources() {
     if (FAILED(m_dxgiFactory.As(&factory5))) {
       m_options &= ~c_EnableHDR;
 #ifdef _DEBUG
-      OutputDebugStringA("WARNING: Flip swap effects not supported");
+      LOG(WARNING) << "Flip swap effects not supported";
 #endif
     }
-  }
-
-  // Determine DirectX hardware feature levels this app will support.
-  static const D3D_FEATURE_LEVEL s_featureLevels[] = {
-      D3D_FEATURE_LEVEL_12_1,
-  };
-
-  UINT featLevelCount = 0;
-  for (; featLevelCount < _countof(s_featureLevels); ++featLevelCount) {
-    if (s_featureLevels[featLevelCount] < m_d3dMinFeatureLevel)
-      break;
-  }
-
-  if (!featLevelCount) {
-    OE_THROW(std::out_of_range("minFeatureLevel too high"));
   }
 
   ComPtr<IDXGIAdapter1> adapter;
@@ -100,15 +71,9 @@ void D3D12_device_resources::createDeviceDependentResources() {
 
   // Create the Direct3D 11 API device object and a corresponding context.
   ComPtr<ID3D12Device> device;
-
   HRESULT hr = E_FAIL;
   if (adapter) {
-    for (auto featureLevel : s_featureLevels) {
-      hr = D3D12CreateDevice(adapter.Get(), featureLevel, IID_PPV_ARGS(&device));
-      if (SUCCEEDED(hr)) {
-        break;
-      }
-    }
+    hr = D3D12CreateDevice(adapter.Get(), m_d3dFeatureLevel, IID_PPV_ARGS(&device));
   }
 #if defined(NDEBUG)
   else {
@@ -123,10 +88,10 @@ void D3D12_device_resources::createDeviceDependentResources() {
     ComPtr<IDXGIAdapter> warpAdapter;
     ThrowIfFailed(m_dxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)));
 
-    hr = D3D12CreateDevice(warpAdapter.Get(), s_featureLevels[0], IID_PPV_ARGS(&device));
+    hr = D3D12CreateDevice(warpAdapter.Get(), m_d3dFeatureLevel, IID_PPV_ARGS(&device));
 
     if (SUCCEEDED(hr)) {
-      OutputDebugStringA("Direct3D Adapter - WARP\n");
+      LOG(INFO) << "Created WARP Direct3D Adapter";
     }
   }
 #endif
@@ -211,7 +176,7 @@ void D3D12_device_resources::resizePipelineResources(
 
   // Must destroy existing resources before re-creating the pipeline
   for (auto n = 0; n < Render_pipeline::frameCount; ++n) {
-    renderPipeline.rtvBackBuffer[n].Reset();
+    renderPipeline.rtvBackBuffer.at(n).Reset();
   }
 
   if (renderPipeline.swapChain) {
@@ -244,29 +209,35 @@ void D3D12_device_resources::resizePipelineResources(
     ThrowIfFailed(hr);
   } else {
     // Create a descriptor for the swap chain.
-    DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+    DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapChainDesc.BufferCount = m_backBufferCount;
-    swapChainDesc.BufferDesc.Width = backBufferWidth;
-    swapChainDesc.BufferDesc.Height = backBufferHeight;
-    swapChainDesc.BufferDesc.Format = m_backBufferFormat;
+    swapChainDesc.Width = backBufferWidth;
+    swapChainDesc.Height = backBufferHeight;
+    swapChainDesc.Format = m_backBufferFormat;
     swapChainDesc.SampleDesc.Count = 1;
     swapChainDesc.SampleDesc.Quality = 0;
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapChainDesc.Flags = (m_options & c_AllowTearing) ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-    swapChainDesc.Windowed = TRUE;
-    swapChainDesc.OutputWindow = m_window;
 
+    DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullscreenDesc = {};
+    swapChainFullscreenDesc.Windowed = TRUE;
+
+    ComPtr<IDXGISwapChain1> swapChain;
     // Create a SwapChain from a Win32 window.
-    ComPtr<IDXGISwapChain> swapChain;
-    ThrowIfFailed(m_dxgiFactory->CreateSwapChain(
-        renderPipeline.commandQueue.Get(), &swapChainDesc, &swapChain));
-
-    ThrowIfFailed(swapChain.As(&renderPipeline.swapChain));
+    ThrowIfFailed(m_dxgiFactory->CreateSwapChainForHwnd(
+            renderPipeline.commandQueue.Get(),		// Swap chain needs the queue so that it can force a flush on it.
+            m_window,
+            &swapChainDesc,
+            &swapChainFullscreenDesc,
+            nullptr,
+            &swapChain
+            ));
 
     // This class does not support exclusive full-screen mode and prevents DXGI from responding to
     // the ALT+ENTER shortcut
     ThrowIfFailed(m_dxgiFactory->MakeWindowAssociation(m_window, DXGI_MWA_NO_ALT_ENTER));
+    ThrowIfFailed(swapChain.As(&renderPipeline.swapChain));
   }
 
   // Handle color space settings for HDR
@@ -284,14 +255,14 @@ void D3D12_device_resources::resizePipelineResources(
   CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(
       renderPipeline.rtcDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-  renderPipeline.frameIndex = renderPipeline.swapChain->GetCurrentBackBufferIndex();
+  renderPipeline.commandList.frameIndex = renderPipeline.swapChain->GetCurrentBackBufferIndex();
   renderPipeline.rtcDescriptorSize =
       m_d3dDevice->GetDescriptorHandleIncrementSize(rtvHeapDesc.Type);
 
   for (auto n = 0; n < Render_pipeline::frameCount; ++n) {
     ThrowIfFailed(
-        renderPipeline.swapChain->GetBuffer(n, IID_PPV_ARGS(&renderPipeline.rtvBackBuffer[n])));
-    m_d3dDevice->CreateRenderTargetView(renderPipeline.rtvBackBuffer[n].Get(), nullptr, rtvHandle);
+        renderPipeline.swapChain->GetBuffer(n, IID_PPV_ARGS(&renderPipeline.rtvBackBuffer.at(n))));
+    m_d3dDevice->CreateRenderTargetView(renderPipeline.rtvBackBuffer.at(n).Get(), nullptr, rtvHandle);
     rtvHandle.Offset(1, renderPipeline.rtcDescriptorSize);
   }
 
@@ -326,7 +297,9 @@ void D3D12_device_resources::resizePipelineResources(
 
   // Set the 3D rendering viewport to target the entire window.
   m_screenViewport = CD3DX12_VIEWPORT(
-      0.0f, 0.0f, static_cast<float>(backBufferWidth), static_cast<float>(backBufferHeight));
+      0.0F, 0.0F, static_cast<float>(backBufferWidth), static_cast<float>(backBufferHeight));
+
+  waitForPreviousFrame(_renderPipeline);
 }
 
 void D3D12_device_resources::createRenderPipeline(Render_pipeline& renderPipeline) {
@@ -340,6 +313,8 @@ void D3D12_device_resources::createRenderPipeline(Render_pipeline& renderPipelin
 
   ThrowIfFailed(m_d3dDevice->CreateCommandAllocator(
       D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&renderPipeline.commandAllocator)));
+
+  renderPipeline.commandList = createCommandListState();
 }
 
 bool D3D12_device_resources::checkSystemSupport(bool logFailures) {
@@ -414,6 +389,10 @@ void D3D12_device_resources::HandleDeviceLost() {
 
 // Present the contents of the swap chain to the screen.
 void D3D12_device_resources::Present() {
+  if (!_renderPipeline.swapChain) {
+    return;
+  }
+
   HRESULT hr;
   if (m_options & c_AllowTearing) {
     // Recommended to always use tearing if supported when using a sync interval of 0.
@@ -424,6 +403,8 @@ void D3D12_device_resources::Present() {
     // frames that will never be displayed to the screen.
     hr = _renderPipeline.swapChain->Present(1, 0);
   }
+
+  waitForPreviousFrame(_renderPipeline);
 
   /*LWL
   // Discard the contents of the render target.
@@ -460,27 +441,55 @@ void D3D12_device_resources::Present() {
   }
 }
 
-void D3D12_device_resources::CreateFactory() {
-#if defined(_DEBUG) && (_WIN32_WINNT >= 0x0603 /*_WIN32_WINNT_WINBLUE*/)
-  bool debugDXGI = false;
+void D3D12_device_resources::waitForPreviousFrame(Render_pipeline& renderPipeline)
+{
+  // WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
+  // This is code implemented as such for simplicity. The D3D12HelloFrameBuffering
+  // sample illustrates how to use fences for efficient resource usage and to
+  // maximize GPU utilization.
+
+  auto& state = renderPipeline.commandList;
+
+  // Signal and increment the fence value.
+  const UINT64 fence = state.fenceValue;
+  ThrowIfFailed(renderPipeline.commandQueue->Signal(state.fence.Get(), fence));
+  state.fenceValue++;
+
+  // Wait until the previous frame is finished.
+  if (state.fence->GetCompletedValue() < fence)
   {
-    ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
-    if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(dxgiInfoQueue.GetAddressOf())))) {
-      debugDXGI = true;
-
-      ThrowIfFailed(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&m_dxgiFactory)));
-
-      dxgiInfoQueue->SetBreakOnSeverity(
-          DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
-      dxgiInfoQueue->SetBreakOnSeverity(
-          DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
-    }
+    ThrowIfFailed(state.fence->SetEventOnCompletion(fence, state.fenceEvent));
+    WaitForSingleObject(state.fenceEvent, INFINITE);
   }
 
-  if (!debugDXGI)
+  state.frameIndex = renderPipeline.swapChain->GetCurrentBackBufferIndex();
+}
+
+void D3D12_device_resources::CreateFactory()
+{
+  UINT dxgiFactoryFlags = 0;
+#if defined(_DEBUG) && (_WIN32_WINNT >= 0x0603 /*_WIN32_WINNT_WINBLUE*/)
+  ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
+  if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiInfoQueue)))) {
+    dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+    dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
+    dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
+  }
+  else {
+    LOG(WARNING) << "WARNING: Direct3D Debug Info Queue is not available";
+  }
+
+  ComPtr<ID3D12Debug> debugController;
+  if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+    dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+    debugController->EnableDebugLayer();
+  }
+  else {
+    LOG(WARNING) << "WARNING: Direct3D Debug Controller is not available";
+  }
 #endif
 
-    ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&m_dxgiFactory)));
+  ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_dxgiFactory)));
 }
 
 // This method acquires the first available hardware adapter.
@@ -570,4 +579,35 @@ void D3D12_device_resources::updateColorSpace(const ComPtr<IDXGISwapChain>& swap
       ThrowIfFailed(swapChain3->SetColorSpace1(colorSpace));
     }
   }
+}
+
+ID3D12CommandQueue* D3D12_device_resources::GetCommandQueue() const
+{
+  return _renderPipeline.commandQueue.Get();
+}
+
+Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> D3D12_device_resources::CreateCommandList(D3D12_COMMAND_LIST_TYPE type)
+{
+  return _renderPipeline.commandList.commandList;
+}
+
+D3D12_device_resources::Command_list_state D3D12_device_resources::createCommandListState()
+{
+  Command_list_state state;
+  ThrowIfFailed(m_d3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&state.fence)));
+  state.fenceValue = 1;
+
+  // Create an event handle to use for frame synchronization.
+  state.fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+  if (state.fenceEvent == nullptr)
+  {
+    ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+  }
+
+  // Create the command list.
+  // TODO: once not being hacky, type should be programatically stated.
+  auto type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+  ThrowIfFailed(m_d3dDevice->CreateCommandList(0, type, _renderPipeline.commandAllocator.Get(), nullptr, IID_PPV_ARGS(&state.commandList)));
+
+  return state;
 }

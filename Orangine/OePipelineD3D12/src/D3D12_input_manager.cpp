@@ -1,18 +1,17 @@
-﻿#include "Input_manager.h"
+#include "D3D12_input_manager.h"
 
 #include <Mouse.h>
 
-using namespace oe;
-using namespace internal;
+using namespace oe::pipeline_d3d12;
 
-std::string Input_manager::_name = "Input_manager";
+std::string D3D12_input_manager::_name = "D3D12_input_manager";
 
 template<> void oe::create_manager(Manager_instance<IInput_manager>& out, IUser_interface_manager& userInterfaceManager)
 {
-  out = Manager_instance<IInput_manager>(std::make_unique<Input_manager>(userInterfaceManager));
+  out = Manager_instance<IInput_manager>(std::make_unique<D3D12_input_manager>(userInterfaceManager));
 }
 
-Input_manager::Input_manager(IUser_interface_manager& userInterfaceManager)
+D3D12_input_manager::D3D12_input_manager(IUser_interface_manager& userInterfaceManager)
     : IInput_manager()
     , Manager_base()
     , Manager_windowDependent()
@@ -23,13 +22,13 @@ Input_manager::Input_manager(IUser_interface_manager& userInterfaceManager)
     , _userInterfaceManager(userInterfaceManager)
 {}
 
-void Input_manager::initialize() {}
+void D3D12_input_manager::initialize() {}
 
-void Input_manager::shutdown() { _mouse.reset(); }
+void D3D12_input_manager::shutdown() { _mouse.reset(); }
 
-const std::string& Input_manager::name() const { return _name; }
+const std::string& D3D12_input_manager::name() const { return _name; }
 
-void Input_manager::tick() {
+void D3D12_input_manager::tick() {
   if (_mouse && _mouse->IsConnected()) {
     const auto state = _mouse->GetState();
     _buttonStateTracker.Update(state);
@@ -50,16 +49,16 @@ void Input_manager::tick() {
   }
 }
 
-void Input_manager::createWindowSizeDependentResources(HWND window, int /*width*/, int /*height*/) {
+void D3D12_input_manager::createWindowSizeDependentResources(HWND window, int /*width*/, int /*height*/) {
   _mouse = std::make_unique<DirectX::Mouse>();
   _mouse->SetWindow(window);
 }
 
-void Input_manager::destroyWindowSizeDependentResources() {
+void D3D12_input_manager::destroyWindowSizeDependentResources() {
   _mouse = std::unique_ptr<DirectX::Mouse>();
 }
 
-bool Input_manager::processMessage(UINT message, WPARAM wParam, LPARAM lParam) {
+bool D3D12_input_manager::processMessage(UINT message, WPARAM wParam, LPARAM lParam) {
   if (!_userInterfaceManager.mouseCaptured()) {
     _mouse->ProcessMessage(message, wParam, lParam);
   }
@@ -67,6 +66,6 @@ bool Input_manager::processMessage(UINT message, WPARAM wParam, LPARAM lParam) {
   return false;
 }
 
-std::weak_ptr<Input_manager::Mouse_state> Input_manager::getMouseState() const {
+std::weak_ptr<D3D12_input_manager::Mouse_state> D3D12_input_manager::getMouseState() const {
   return {_mouseState};
 }

@@ -38,7 +38,7 @@ Material::Shader_compile_settings Material::vertexShaderSettings(const std::set<
 {
 	return Shader_compile_settings
 	{
-		L"data/shaders/vertex_colors_VS.hlsl"s,
+		"data/shaders/vertex_colors_VS.hlsl"s,
 		"VSMain"s,
 		std::map<std::string, std::string>(),
 		std::set<std::string>()
@@ -49,7 +49,7 @@ Material::Shader_compile_settings Material::pixelShaderSettings(const std::set<s
 {
 	return Shader_compile_settings
 	{
-		L"data/shaders/vertex_colors_PS.hlsl"s,
+		"data/shaders/vertex_colors_PS.hlsl"s,
 		"PSMain"s,
 		std::map<std::string, std::string>(),
 		std::set<std::string>()

@@ -1,14 +1,15 @@
-#include "Entity_render_manager.h"
+#include <OeCore/Entity_render_manager.h>
+
 #include "Scene_graph_manager.h"
 
-#include "OeCore/Camera_component.h"
-#include "OeCore/Entity_sorter.h"
-#include "OeCore/ILighting_manager.h"
-#include "OeCore/IMaterial_manager.h"
-#include "OeCore/Light_component.h"
-#include "OeCore/Mesh_utils.h"
-#include "OeCore/Morph_weights_component.h"
-#include "OeCore/Skinned_mesh_component.h"
+#include <OeCore/Camera_component.h>
+#include <OeCore/Entity_sorter.h>
+#include <OeCore/ILighting_manager.h>
+#include <OeCore/IMaterial_manager.h>
+#include <OeCore/Light_component.h>
+#include <OeCore/Mesh_utils.h>
+#include <OeCore/Morph_weights_component.h>
+#include <OeCore/Skinned_mesh_component.h>
 
 #include <cinttypes>
 #include <functional>
@@ -391,4 +392,73 @@ Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material
 void Entity_render_manager::clearRenderStats()
 {
   _renderStats = {};
+}
+
+oe::Mesh_vertex_buffer_accessor* Entity_render_manager::findAccessorForSemantic(
+        std::shared_ptr<Mesh_data>& meshData, const gsl::span<const Vertex_attribute_semantic>& attributes,
+        const oe::Vertex_attribute_semantic& vertexAttrSemantic) const
+{
+  Mesh_vertex_buffer_accessor* meshAccessor;
+  auto vbAccessorPos = meshData->vertexBufferAccessors.find(vertexAttrSemantic);
+  if (vbAccessorPos != meshData->vertexBufferAccessors.end()) {
+    meshAccessor = vbAccessorPos->second.get();
+  } else {
+    // Since there is no guarantee that the order is the same in the requested attributes array,
+    // and the mesh data, we need to do a search to find out the morph target index of this
+    // attribute/semantic.
+    auto vertexMorphAttributesIdx = -1;
+    auto morphTargetIdx = -1;
+    for (size_t idx = 0; idx < attributes.size(); ++idx) {
+      const auto& vertexMorphAttribute = attributes[idx];
+      if (vertexMorphAttribute.attribute == vertexAttrSemantic.attribute) {
+        ++morphTargetIdx;
+
+        if (vertexMorphAttribute.semanticIndex == vertexAttrSemantic.semanticIndex) {
+          vertexMorphAttributesIdx = static_cast<int>(idx);
+          break;
+        }
+      }
+    }
+    if (vertexMorphAttributesIdx == -1) {
+      OE_THROW(std::runtime_error("Could not find morph attribute in vertexMorphAttributes"));
+    }
+
+    const size_t morphTargetLayoutSize = meshData->vertexLayout.morphTargetLayout().size();
+    // What position in the mesh morph layout is this type? This will correspond with its
+    // position in the buffer accessors array
+    auto morphLayoutOffset = -1;
+    for (size_t idx = 0; idx < morphTargetLayoutSize; ++idx) {
+      if (meshData->vertexLayout.morphTargetLayout()[idx].attribute == vertexAttrSemantic.attribute) {
+        morphLayoutOffset = static_cast<int>(idx);
+        break;
+      }
+    }
+    if (morphLayoutOffset == -1) {
+      OE_THROW(
+              std::runtime_error("Could not find morph attribute in mesh morph target layout"));
+    }
+
+    if (meshData->attributeMorphBufferAccessors.size() >=
+        static_cast<size_t>(morphLayoutOffset)) {
+      std::string msg = string_format(
+              "CreateRendererData: Failed to read morph target "
+              "%" PRIi32 " for vertex attribute: %s",
+              morphTargetIdx,
+              Vertex_attribute_meta::vsInputName(vertexAttrSemantic).c_str());
+      OE_THROW(std::runtime_error(msg));
+    }
+    if (meshData->attributeMorphBufferAccessors.at(morphTargetIdx).size() >=
+        static_cast<size_t>(morphTargetIdx)) {
+      OE_THROW(std::runtime_error(string_format(
+              "CreateRendererData: Failed to read morph target "
+              "%" PRIi32 " layout offset %" PRIi32 "for vertex attribute: %s",
+              morphTargetIdx,
+              morphLayoutOffset,
+              Vertex_attribute_meta::vsInputName(vertexAttrSemantic).c_str())));
+    }
+
+    meshAccessor =
+            meshData->attributeMorphBufferAccessors[morphTargetIdx][morphLayoutOffset].get();
+  }
+  return meshAccessor;
 }

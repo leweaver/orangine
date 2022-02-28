@@ -9,6 +9,7 @@
 #include <OeCore/WindowsDefines.h>
 #include <OeCore/Statics.h>
 #include <OeScripting/Statics.h>
+#include <OePipelineD3D12/Statics.h>
 
 #include <filesystem>
 
@@ -34,17 +35,9 @@ class ViewerApp : public App {
             getRenderStepManager(), getSceneGraphManager(), getInputManager(), getEntityScriptingManager(),
             getAssetManager(), getPrimitiveMeshDataFactory(), std::vector<std::string>{extraAssetPath});
 
-    // Load a scene
-    //auto appModule = pybind11::module::import(OeApp_bindings::getModuleName().c_str());
-    //pybind11::object pySampleScene = pybind11::cast(std::make_unique<PyClass_sampleScene>(*_sampleScene));
-    //auto scenesModule =
+    CreateHelloWorldScene(*_sampleScene);
 
-
-
-    // CreateSceneCubeSatellite();
-    // CreateSceneLeverArm();
     // LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
-
     // LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
     // LoadGLTF("AlphaBlendModeTest", false)->setScale({3, 3, 3});
     // LoadGLTF("FlightHelmet", false)->setScale({ 7, 7, 7 });
@@ -111,6 +104,12 @@ class ViewerApp : public App {
 
     // sampleScene.addAmbientLight({ 1, 1, 1 }, 0.2f)->setParent(*lightRoot);
   }
+
+  void CreateHelloWorldScene(Sample_scene& sampleScene) {
+    sampleScene.addFloor();
+    sampleScene.addSphere({0,0,0}, {1,1,1,1}, 0.0, 1.0);
+  }
+
 
   void CreatePointPointLights(Sample_scene& sampleScene) {
     const auto& lightRoot = getSceneGraphManager().instantiate("Light Root");
@@ -184,6 +183,7 @@ int WINAPI wWinMain(
   startSettings.fullScreen = nCmdShow == SW_SHOWMAXIMIZED;
 
   oe::core::initStatics();
+  oe::pipeline_d3d12::initStatics();
   oe::scripting::initStatics();
   oe::app::initStatics();
 
@@ -192,6 +192,7 @@ int WINAPI wWinMain(
 
   oe::app::destroyStatics();
   oe::scripting::destroyStatics();
+  oe::pipeline_d3d12::destroyStatics();
   oe::core::destroyStatics();
 
   return retVal;

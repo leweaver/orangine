@@ -1,7 +1,7 @@
-﻿#include "Material_manager.h"
+﻿#include <OeCore/Material_manager.h>
 
-#include "OeCore/Material_context.h"
-#include "OeCore/Mesh_utils.h"
+#include <OeCore/Material_context.h>
+#include <OeCore/Mesh_utils.h>
 
 #include <locale>
 
@@ -57,11 +57,11 @@ void Material_manager::bind(
     rebuildConfig = true;
   } else {
     if (compiledMaterial.blendMode != blendMode) {
-      LOG(WARNING) << "Rendering material with a different blendMode than last time. This will be "
+      LOG(WARNING) << "Rendering material with a different blendMode than last frame. This will be "
                       "a big performance hit.";
       rebuildConfig = true;
     } else if (compiledMaterial.meshHash != meshVertexLayout.propertiesHash()) {
-      LOG(WARNING) << "Rendering material with a different morphTargetCount than last time. This "
+      LOG(WARNING) << "Rendering material with a different mesh vertex layout than last frame. This "
                       "will be a big performance hit.";
       rebuildConfig = true;
     } else if (compiledMaterial.materialHash != materialHash) {
@@ -100,6 +100,7 @@ void Material_manager::bind(
 
       compiledMaterial.materialHash = materialHash;
       compiledMaterial.meshHash = meshVertexLayout.propertiesHash();
+      compiledMaterial.meshIndexType = meshVertexLayout.getMeshIndexType();
 
       try {
         compiledMaterial.blendMode = blendMode;
@@ -113,7 +114,7 @@ void Material_manager::bind(
         createMaterialConstants(*material);
 
         // Make sure that the shader resource views and SamplerStates vectors are empty.
-        materialContext.reset();
+        materialContext.releaseResources();
 
       } catch (std::exception& ex) {
         materialContext.compilerInputsValid = false;
@@ -142,6 +143,17 @@ void Material_manager::setRendererFeaturesEnabled(
     const Renderer_features_enabled& renderer_feature_enabled) {
   _rendererFeatures = renderer_feature_enabled;
   _rendererFeaturesHash = _rendererFeatures.hash();
+}
+
+void Material_manager::debugLogSettings(const char* prefix, const Material::Shader_compile_settings& settings) const {
+  if (g3::logLevel(DEBUG)) {
+    LOG(DEBUG) << prefix << " compile settings: "
+               << nlohmann::json({{"defines", settings.defines},
+                                  {"includes", settings.includes},
+                                  {"filename", settings.filename},
+                                  {"entryPoint", settings.entryPoint}})
+                          .dump(2);
+  }
 }
 
 const Renderer_features_enabled& Material_manager::rendererFeatureEnabled() const {

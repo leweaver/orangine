@@ -22,6 +22,10 @@ void D3D12_lighting_manager::addEnvironmentVolume(Environment_volume& volume) {
 }
 
 void D3D12_lighting_manager::setCurrentVolumeEnvironmentLighting(const Vector3& position) {
+  if (_renderLightData_lit == nullptr) {
+    return;
+  }
+
   if (_environment.environmentIbl.skyboxTexture.get() != _environmentIbl.skyboxTexture.get()) {
     _environmentIbl = _environment.environmentIbl;
 

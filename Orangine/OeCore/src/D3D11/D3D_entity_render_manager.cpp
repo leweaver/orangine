@@ -215,67 +215,8 @@ class D3D_entity_render_manager : public oe::internal::Entity_render_manager {
     rendererData->vertexCount = meshData->getVertexCount();
     for (auto vertexAttrElement : vertexAttributes) {
       const auto& vertexAttr = vertexAttrElement.semantic;
-      Mesh_vertex_buffer_accessor* meshAccessor;
-      auto vbAccessorPos = meshData->vertexBufferAccessors.find(vertexAttr);
-      if (vbAccessorPos != meshData->vertexBufferAccessors.end()) {
-        meshAccessor = vbAccessorPos->second.get();
-      } else {
-        // Since there is no guarantee that the order is the same in the requested attributes array,
-        // and the mesh data, we need to do a search to find out the morph target index of this
-        // attribute/semantic.
-        auto vertexMorphAttributesIdx = -1;
-        auto morphTargetIdx = -1;
-        for (size_t idx = 0; idx < vertexMorphAttributes.size(); ++idx) {
-          const auto& vertexMorphAttribute = vertexMorphAttributes.at(idx);
-          if (vertexMorphAttribute.attribute == vertexAttr.attribute) {
-            ++morphTargetIdx;
 
-            if (vertexMorphAttribute.semanticIndex == vertexAttr.semanticIndex) {
-              vertexMorphAttributesIdx = static_cast<int>(idx);
-              break;
-            }
-          }
-        }
-        if (vertexMorphAttributesIdx == -1) {
-          OE_THROW(std::runtime_error("Could not find morph attribute in vertexMorphAttributes"));
-        }
-
-        const size_t morphTargetLayoutSize = meshData->vertexLayout.morphTargetLayout().size();
-        // What position in the mesh morph layout is this type? This will correspond with its
-        // position in the buffer accessors array
-        auto morphLayoutOffset = -1;
-        for (size_t idx = 0; idx < morphTargetLayoutSize; ++idx) {
-          if (meshData->vertexLayout.morphTargetLayout()[idx].attribute == vertexAttr.attribute) {
-            morphLayoutOffset = static_cast<int>(idx);
-            break;
-          }
-        }
-        if (morphLayoutOffset == -1) {
-          OE_THROW(
-              std::runtime_error("Could not find morph attribute in mesh morph target layout"));
-        }
-
-        if (meshData->attributeMorphBufferAccessors.size() >=
-            static_cast<size_t>(morphLayoutOffset)) {
-          OE_THROW(std::runtime_error(string_format(
-              "CreateRendererData: Failed to read morph target "
-              "%" PRIi32 " for vertex attribute: %s",
-              morphTargetIdx,
-              Vertex_attribute_meta::vsInputName(vertexAttr))));
-        }
-        if (meshData->attributeMorphBufferAccessors.at(morphTargetIdx).size() >=
-            static_cast<size_t>(morphTargetIdx)) {
-          OE_THROW(std::runtime_error(string_format(
-              "CreateRendererData: Failed to read morph target "
-              "%" PRIi32 " layout offset %" PRIi32 "for vertex attribute: %s",
-              morphTargetIdx,
-              morphLayoutOffset,
-              Vertex_attribute_meta::vsInputName(vertexAttr))));
-        }
-
-        meshAccessor =
-            meshData->attributeMorphBufferAccessors[morphTargetIdx][morphLayoutOffset].get();
-      }
+      meshAccessor = findAccessorForSemantic(meshData, vertexMorphAttributes, vertexAttr);
 
       auto d3DAccessor = std::make_unique<D3D_buffer_accessor>(
           createBufferFromData(

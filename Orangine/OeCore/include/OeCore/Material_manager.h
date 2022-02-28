@@ -74,6 +74,12 @@ class Material_manager : public IMaterial_manager
       const Material_context& materialContext,
       bool enablePixelShader) = 0;
 
+  /**
+   * Helper that logs dumps a JSON representation of the given settings object to the debug log. Does nothing if the
+   * debug log level is not enabled.
+   */
+  void debugLogSettings(const char* prefix, const Material::Shader_compile_settings& settings) const;
+
  private:
   static std::string _name;
 

@@ -119,7 +119,7 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPosition>&&
 {
 	auto meshData = std::make_shared<Mesh_data>(Mesh_vertex_layout({
         {Vertex_attribute::Position, 0}
-        }));
+        }, Mesh_index_type::Triangles));
     addIndicesAccessor(*meshData.get(), move(indices));
 
     using TVertex_type = DirectX::VertexPosition;
@@ -143,7 +143,7 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionCol
     auto meshData = std::make_shared<Mesh_data>(Mesh_vertex_layout({
         {Vertex_attribute::Position, 0},
         {Vertex_attribute::Color, 0}
-        }));
+        }, Mesh_index_type::Triangles));
     addIndicesAccessor(*meshData.get(), move(indices));
 
     using TVertex_type = DirectX::VertexPositionColor;
@@ -171,7 +171,7 @@ std::shared_ptr<Mesh_data> createMeshData(std::vector<DirectX::VertexPositionNor
         {Vertex_attribute::Position, 0},
         {Vertex_attribute::Normal, 0},
         {Vertex_attribute::Tex_coord, 0}
-        }));
+        }, Mesh_index_type::Triangles));
     addIndicesAccessor(*meshData.get(), move(indices));
 
 	using TVertex_type = DirectX::VertexPositionNormalTexture;

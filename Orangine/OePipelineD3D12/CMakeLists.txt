@@ -27,7 +27,15 @@ add_library(${PROJECT_NAME} STATIC
         "ThirdParty/nv_helpers_dx12/RaytracingPipelineGenerator.cpp"
         "ThirdParty/nv_helpers_dx12/RootSignatureGenerator.cpp"
         "ThirdParty/nv_helpers_dx12/ShaderBindingTableGenerator.cpp"
-        "ThirdParty/nv_helpers_dx12/TopLevelASGenerator.cpp")
+        "ThirdParty/nv_helpers_dx12/TopLevelASGenerator.cpp"
+        src/D3D12_input_manager.cpp
+        src/D3D12_input_manager.h
+        src/D3D12_entity_render_manager.cpp
+        src/D3D12_entity_render_manager.h
+        src/Gpu_buffer.cpp
+        src/Gpu_buffer.h
+        src/D3D12_material_manager.cpp
+        src/D3D12_material_manager.h)
 
 # CPP17
 target_compile_features(OeCore PUBLIC cxx_std_17)
@@ -57,6 +65,9 @@ target_include_directories(${PROJECT_NAME}
 
 # DirectXTK
 target_link_libraries(${PROJECT_NAME} PUBLIC DirectXTK12)
+
+# DirectX Debug Interface
+target_link_libraries(${PROJECT_NAME} PUBLIC dxgi.lib)
 
 #####
 # Orangine module configuration

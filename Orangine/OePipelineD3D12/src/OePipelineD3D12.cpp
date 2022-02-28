@@ -28,13 +28,19 @@ void create(Manager_instances& managerInstances, oe::core::Manager_instances& co
 
   auto primitiveMeshDataFactory = create_manager_instance<IPrimitive_mesh_data_factory>();
 
-  auto materialManager = create_manager_instance<IMaterial_manager>(coreManagerInstances.getInstance<IAsset_manager>());
   auto lightingManager = create_manager_instance<ILighting_manager>(*textureManager.instance);
   auto shadowmapManager = create_manager_instance<IShadowmap_manager>(*textureManager.instance);
   auto inputManager = create_manager_instance<IInput_manager>(*userInterfaceManager.instance);
 
+  auto materialManager = create_manager_instance<IMaterial_manager>(
+          coreManagerInstances.getInstance<IAsset_manager>(),
+          *textureManager.instance,
+          *lightingManager.instance,
+          *primitiveMeshDataFactory.instance,
+          *deviceResources);
+
   auto entityRenderManager = create_manager_instance<IEntity_render_manager>(
-          *textureManager.instance, *materialManager.instance, *lightingManager.instance, *primitiveMeshDataFactory.instance);
+          *textureManager.instance, *materialManager.instance, *lightingManager.instance, *primitiveMeshDataFactory.instance, *deviceResources);
 
   auto& sceneGraphManager = coreManagerInstances.getInstance<IScene_graph_manager>();
   auto devToolsManager = create_manager_instance<IDev_tools_manager>(

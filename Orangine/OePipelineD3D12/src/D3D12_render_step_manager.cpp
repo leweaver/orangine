@@ -5,6 +5,7 @@
 #include <OeCore/Perf_timer.h>
 
 using namespace oe;
+using namespace oe::pipeline_d3d12;
 
 std::string D3D12_render_step_manager::_name;// NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
@@ -36,10 +37,12 @@ void D3D12_render_step_manager::initialize()
 {
   Render_step_manager::initialize();
 }
+
 void D3D12_render_step_manager::shutdown()
 {
   Render_step_manager::shutdown();
 }
+
 Viewport D3D12_render_step_manager::getScreenViewport() const
 {
   return {0, 0, 1, 1, 0, 1};
@@ -112,7 +115,7 @@ void D3D12_render_step_manager::renderStep(
 
     auto& pass = *step.renderPasses[passIdx];
     auto& renderPassData = renderStepData.renderPassData[passIdx];
-    auto numRenderTargets = renderPassData.renderTargets.size();
+    auto numRenderTargets = renderPassData.renderTargets.descriptorCount;
     const auto& depthStencilConfig = pass.getDepthStencilConfig();
 
     // Update render target views array if it is out of sync

@@ -8,8 +8,11 @@
 #include <vectormath.hpp>
 
 
-namespace oe::pipeline_d3d12 {
+namespace oe {
 class ITexture_manager;
+}
+
+namespace oe::pipeline_d3d12 {
 
 class D3D12_render_step_manager final : public Render_step_manager {
  public:

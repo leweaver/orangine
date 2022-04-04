@@ -1,5 +1,7 @@
 #pragma once
 
+#include "D3D12_renderer_types.h"
+
 #include <d3d12.h>
 #include <d3dx12/d3dx12.h>
 
@@ -19,29 +21,30 @@ class Descriptor_heap_pool {
   Descriptor_heap_pool(ID3D12Device6* device, D3D12_DESCRIPTOR_HEAP_DESC heapDesc, std::string name);
 
   /**
-   * Tries to allocate the given number of descriptors in the current heap. If there is not enough room, a new heap is
-   * created.
+   * Tries to allocate the given number of descriptors in the current heap. If the heap doesn't have sufficient room,
+   * a fatal error is thrown.
    * @param numDescriptors number of descriptors to allocate. Must be at most the number of descriptors supported by the
    * heap desc.
    * @return a pair of handles pointing to the beginning of a range.
    */
   Descriptor_range allocateRange(uint32_t numDescriptors);
+  uint32_t getAvailableDescriptorCount() const;
 
   D3D12_CPU_DESCRIPTOR_HANDLE getCpuDescriptorHandleForHeapStart();
   D3D12_GPU_DESCRIPTOR_HANDLE getGpuDescriptorHandleForHeapStart();
 
  private:
 
-  void createNextHeap();
+  void createHeap();
 
   ID3D12Device6* _device;
   D3D12_DESCRIPTOR_HEAP_DESC _heapDesc;
   std::string _name;
-  uint32_t _handleIncrementSize;
-  uint32_t _nextHeapId;
+  uint32_t _handleIncrementSize = 0;
+  uint32_t _nextHeapId = 0;
 
   std::vector<Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>> _heapsAtCapacity;
   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _currentHeap;
-  uint32_t _currentAllocated;
+  uint32_t _currentAllocated = 0;
 };
 }

@@ -5,6 +5,7 @@
 
 #include <string>
 #include <string_view>
+#include <exception>
 #include <vectormath.hpp>
 
 #include <g3log/g3log.hpp>
@@ -23,13 +24,14 @@ template <typename... TArgs> std::string string_format(const std::string& format
 // clang-format off
 
 // Fast fail; preferred way of checking logic that is not based on user/file based input.
+// These will be executed in both release and debug builds. A failed test will abort the program.
 #define OE_CHECK(condition) if(!(condition)) { \
   const auto msg2 = oe_check_helper(#condition); \
-  if (g3::internal::isLoggingInitialized()) LOG(FATAL) << msg2; else abort(); \
+  if (g3::internal::isLoggingInitialized()) LOG(FATAL) << msg2; else std::terminate(); \
 }
 #define OE_CHECK_MSG(condition, msg) if(!(condition)) { \
   const auto msg2 = oe_check_helper(#condition, msg);   \
-  if (g3::internal::isLoggingInitialized()) LOG(FATAL) << msg2; else abort(); \
+  if (g3::internal::isLoggingInitialized()) LOG(FATAL) << msg2; else std::terminate(); \
 }
 #define OE_CHECK_FMT(condition, msg, ...) if(!(condition)) { \
   std::string msg_str = string_format((msg), __VA_ARGS__);   \

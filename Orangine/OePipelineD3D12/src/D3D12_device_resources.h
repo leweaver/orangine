@@ -10,6 +10,7 @@
 
 #include "D3D12_vendor.h"
 #include <wrl/client.h>
+#include <ResourceUploadBatch.h>
 
 namespace oe {
 
@@ -63,6 +64,7 @@ class D3D12_device_resources : public IDevice_resources {
   ID3D12CommandQueue* GetCommandQueue() const;
 
   Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> GetPipelineCommandList();
+  DirectX::ResourceUploadBatch& getResourceUploader();
 
   // Performance events
   void PIXBeginEvent(_In_z_ const wchar_t* name) {

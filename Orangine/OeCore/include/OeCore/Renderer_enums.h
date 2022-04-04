@@ -229,4 +229,26 @@ enum class Sampler_comparison_func {
 const std::string& samplerComparisonFuncToString(Sampler_comparison_func enumValue);
 Sampler_comparison_func stringToSamplerComparisonFunc(const std::string& str);
 
+// Shader_constant_buffer_usage
+enum class Shader_constant_buffer_usage {
+  Per_material = 0,
+  Per_draw,
+  Skeleton,
+
+  Num_shader_constant_buffer_usage = 3,
+};
+const std::string& shaderConstantBufferUsageToString(Shader_constant_buffer_usage enumValue);
+Shader_constant_buffer_usage stringToShaderConstantBufferUsage(const std::string& str);
+
+// Shader_constant_buffer_visibility
+enum class Shader_constant_buffer_visibility {
+  All = 0,
+  Vertex,
+  Pixel,
+
+  Num_shader_constant_buffer_visibility = 3,
+};
+const std::string& shaderConstantBufferVisibilityToString(Shader_constant_buffer_visibility enumValue);
+Shader_constant_buffer_visibility stringToShaderConstantBufferVisibility(const std::string& str);
+
 } // namespace oe

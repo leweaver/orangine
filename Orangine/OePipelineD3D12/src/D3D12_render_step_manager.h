@@ -3,17 +3,18 @@
 #include <OeCore/Render_step_manager.h>
 
 #include "D3D12_device_resources.h"
-#include "D3D12_renderer_data.h"
+#include "D3D12_renderer_types.h"
 
 #include <vectormath.hpp>
 
 
-namespace oe {
+namespace oe::pipeline_d3d12 {
 class ITexture_manager;
 
 class D3D12_render_step_manager final : public Render_step_manager {
  public:
   struct D3D12_render_pass_data {
+    Descriptor_range renderTargets;
     /*
     std::vector<ID3D12RenderTargetView*> _renderTargetViews = {};
     Microsoft::WRL::ComPtr<ID3D12BlendState> _blendState;
@@ -56,10 +57,12 @@ class D3D12_render_step_manager final : public Render_step_manager {
   static void destroyStatics();
 
  private:
-  void renderStep(Render_step& step, D3D12_render_pass_data& renderStepData, const Camera_data& cameraData);
+  void renderStep(Render_step& step, D3D12_render_step_data& renderStepData, const Camera_data& cameraData);
 
   static std::string _name;
 
   std::unique_ptr<D3D12_device_resources> _deviceResources;
+  std::vector<D3D12_render_step_data> _renderStepData;
+  std::vector<std::wstring> _passNames;
 };
 }// namespace oe

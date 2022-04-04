@@ -8,9 +8,7 @@
 namespace oe {
 class Scene;
 
-class ITexture_manager
-    : public Manager_base
-    , public Manager_deviceDependent {
+class ITexture_manager {
  public:
   virtual std::shared_ptr<Texture> createTextureFromBuffer(
       uint32_t stride,

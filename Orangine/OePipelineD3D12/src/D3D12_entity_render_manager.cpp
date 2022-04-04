@@ -6,7 +6,7 @@
 
 #include <OeCore/Mesh_utils.h>
 
-using oe::Renderer_data;
+using oe::Mesh_gpu_data;
 using Microsoft::WRL::ComPtr;
 using namespace oe::pipeline_d3d12;
 
@@ -20,7 +20,7 @@ void oe::create_manager(
           textureManager, materialManager, lightingManager, primitiveMeshDataFactory, deviceResources));
 }
 void D3D12_entity_render_manager::drawRendererData(
-        const oe::Camera_data& cameraData, const Matrix4& worldTransform, oe::Renderer_data& rendererData,
+        const oe::Camera_data& cameraData, const Matrix4& worldTransform, oe::Mesh_gpu_data& rendererData,
         oe::Render_pass_blend_mode blendMode, const oe::Render_light_data& renderLightData,
         std::shared_ptr<Material> ptr, const oe::Mesh_vertex_layout& meshVertexLayout,
         oe::Material_context& materialContext, oe::Renderer_animation_data& rendererAnimationData, bool wireframe)
@@ -31,22 +31,14 @@ void D3D12_entity_render_manager::createDeviceDependentResources()
 {
   auto device = _deviceResources.GetD3DDevice();
 
-  // Create command list
-  {
-    _deviceDependent.commandList = _deviceResources.CreateCommandList(D3D12_COMMAND_LIST_TYPE_DIRECT);
-  }
-
   _deviceDependent.device = device;
 }
 
 void D3D12_entity_render_manager::destroyDeviceDependentResources() {
   _deviceDependent = {};
 }
-void D3D12_entity_render_manager::loadRendererDataToDeviceContext(
-        const oe::Renderer_data& rendererData, const oe::Material_context& context)
-{}
 
-std::shared_ptr<Renderer_data> D3D12_entity_render_manager::createRendererData(
+std::shared_ptr<Mesh_gpu_data> D3D12_entity_render_manager::createRendererData(
         std::shared_ptr<Mesh_data> meshData, const std::vector<Vertex_attribute_element>& vertexAttributes,
         const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes)
 {
@@ -54,7 +46,7 @@ std::shared_ptr<Renderer_data> D3D12_entity_render_manager::createRendererData(
   // create the pipeline state object.
   OE_CHECK(_deviceDependent.device);
 
-  auto rendererData = std::make_shared<Renderer_data>();
+  auto rendererData = std::make_shared<Mesh_gpu_data>();
 
   createMissingVertexAttributes(meshData, vertexAttributes, vertexMorphAttributes);
 
@@ -63,7 +55,7 @@ std::shared_ptr<Renderer_data> D3D12_entity_render_manager::createRendererData(
     rendererData->indexCount = meshData->indexBufferAccessor->count;
 
     const auto name = oe::utf8_decode("Index Buffer (count: " + std::to_string(rendererData->indexCount) + ")");
-    rendererData->indexBuffer.reset(Gpu_buffer::create(_deviceDependent.device, name, *meshData->indexBufferAccessor));
+    rendererData->indexBuffer = Gpu_buffer::create(_deviceDependent.device, name, *meshData->indexBufferAccessor, D3D12_RESOURCE_STATE_INDEX_BUFFER);
     rendererData->indexFormat = mesh_utils::getDxgiFormat(Element_type::Scalar, meshData->indexBufferAccessor->component);
 
   } else {
@@ -87,8 +79,7 @@ std::shared_ptr<Renderer_data> D3D12_entity_render_manager::createRendererData(
     const auto name = oe::utf8_decode(
             "Vertex Buffer " + vertexAttributeToString(vertexAttr.attribute) +
             std::to_string(vertexAttr.semanticIndex) + " (count: " + std::to_string(rendererData->indexCount) + ")");
-    rendererData->vertexBuffers[vertexAttr].reset(
-            Gpu_buffer::create(_deviceDependent.device, name, *meshAccessor));
+    rendererData->vertexBuffers[vertexAttr] = Gpu_buffer::create(_deviceDependent.device, name, *meshAccessor);
   }
 
   _deviceDependent.createdRendererData.push_back(rendererData);

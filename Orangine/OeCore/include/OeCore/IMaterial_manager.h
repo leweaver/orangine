@@ -7,7 +7,7 @@
 #include "Render_light_data.h"
 
 namespace oe {
-struct Renderer_data;
+struct Mesh_gpu_data;
 class Material_context;
 class Render_light_data;
 class Scene;
@@ -23,22 +23,27 @@ class IMaterial_manager {
   // Creates a material context that may be destroyed when the device is reset or shutdown.
   virtual std::weak_ptr<Material_context> createMaterialContext() = 0;
 
-  // Sets the Material that is used for all subsequent calls to render.
-  // Compiles (if needed), binds pixel and vertex shaders, and textures.
+  // Compiles (if needed) pixel and vertex shaders, uploads samplers & textures.
+  virtual void updateMaterialContext(
+          Material_context& materialContext,
+          std::shared_ptr<const Material> material,
+          const Mesh_vertex_layout& meshVertexLayout,
+          const Mesh_gpu_data& meshGpuData,
+          const Render_light_data* renderLightData,
+          Render_pass_blend_mode blendMode,
+          bool enablePixelShader) = 0;
+
+  // Sets the given material context for rendering
   virtual void bind(
-      Material_context& materialContext,
-      std::shared_ptr<const Material> material,
-      const Mesh_vertex_layout& meshVertexLayout,
-      const Render_light_data* renderLightData,
-      Render_pass_blend_mode blendMode,
-      bool enablePixelShader) = 0;
+          Material_context& materialContext,
+          bool enablePixelShader) = 0;
 
   // Uploads shader constants, then renders
   virtual void render(
-      const Renderer_data& rendererData,
-      const SSE::Matrix4& worldMatrix,
-      const Renderer_animation_data& rendererAnimationState,
-      const Camera_data& camera) = 0;
+          const Material_context& materialContext,
+          const SSE::Matrix4& worldMatrix,
+          const Renderer_animation_data& rendererAnimationState,
+          const Camera_data& camera) = 0;
 
   // Unbinds the current material. Must be called when rendering of an object is complete.
   virtual void unbind() = 0;

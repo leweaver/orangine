@@ -2,24 +2,10 @@
 
 #include "D3D12_device_resources.h"
 #include "Gpu_buffer.h"
+#include "D3D12_renderer_types.h"
 
 #include <OeCore/Entity_render_manager.h>
 #include <OeCore/Renderer_data.h>
-
-namespace oe {
-struct Renderer_data {
-  Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
-
-  unsigned int vertexCount;
-  std::unordered_map<Vertex_attribute_semantic, std::unique_ptr<pipeline_d3d12::Gpu_buffer>> vertexBuffers;
-
-  std::unique_ptr<pipeline_d3d12::Gpu_buffer> indexBuffer;
-  DXGI_FORMAT indexFormat;
-  unsigned int indexCount;
-
-  bool failedRendering;
-};
-}
 
 namespace oe::pipeline_d3d12 {
 class D3D12_entity_render_manager : public internal::Entity_render_manager {
@@ -36,14 +22,12 @@ class D3D12_entity_render_manager : public internal::Entity_render_manager {
 
  protected:
   void drawRendererData(
-          const Camera_data& cameraData, const Matrix4& worldTransform, Renderer_data& rendererData,
+          const Camera_data& cameraData, const Matrix4& worldTransform, Mesh_gpu_data& rendererData,
           Render_pass_blend_mode blendMode, const Render_light_data& renderLightData, std::shared_ptr<Material> ptr,
           const Mesh_vertex_layout& meshVertexLayout, Material_context& materialContext,
           Renderer_animation_data& rendererAnimationData, bool wireframe) override;
 
-  void loadRendererDataToDeviceContext(const Renderer_data& rendererData, const Material_context& context) override;
-
-  std::shared_ptr<Renderer_data> createRendererData(
+  std::shared_ptr<Mesh_gpu_data> createRendererData(
           std::shared_ptr<Mesh_data> meshData, const std::vector<Vertex_attribute_element>& vertexAttributes,
           const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) override;
 
@@ -53,10 +37,7 @@ class D3D12_entity_render_manager : public internal::Entity_render_manager {
   D3D12_device_resources& _deviceResources;
 
   struct {
-    // TODO: Perhaps one per step?
-    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList;
-
-    std::vector<std::shared_ptr<Renderer_data>> createdRendererData;
+    std::vector<std::shared_ptr<Mesh_gpu_data>> createdRendererData;
     ID3D12Device6* device;
   } _deviceDependent;
 };

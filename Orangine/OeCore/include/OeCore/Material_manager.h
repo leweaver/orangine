@@ -11,10 +11,10 @@ class Texture;
 class Scene;
 struct Renderer_animation_data;
 
-class Material_manager : public IMaterial_manager
-    , public Manager_base
-    , public Manager_tickable
-    , public Manager_deviceDependent {
+class Material_manager : public IMaterial_manager,
+                         public Manager_base,
+                         public Manager_tickable,
+                         public Manager_deviceDependent {
  public:
   explicit Material_manager(IAsset_manager& assetManager);
   ~Material_manager() = default;
@@ -35,44 +35,42 @@ class Material_manager : public IMaterial_manager
   // IMaterial_manager implementation
   const std::string& shaderPath() const;
 
-  void bind(
-      Material_context& materialContext,
-      std::shared_ptr<const Material> material,
-      const Mesh_vertex_layout& meshVertexLayout,
-      const Render_light_data* renderLightData,
-      Render_pass_blend_mode blendMode,
-      bool enablePixelShader) override;
+  void updateMaterialContext(
+          Material_context& materialContext,
+          std::shared_ptr<const Material> material,
+          const Mesh_vertex_layout& meshVertexLayout,
+          const Mesh_gpu_data& meshGpuData,
+          const Render_light_data* renderLightData,
+          Render_pass_blend_mode blendMode,
+          bool enablePixelShader) override;
+
+  // Sets the given material context for rendering
+  void bind(Material_context& materialContext, bool enablePixelShader) override;
 
   void unbind() override;
 
-  void setRendererFeaturesEnabled(
-      const Renderer_features_enabled& renderer_feature_enabled) override;
+  void setRendererFeaturesEnabled(const Renderer_features_enabled& renderer_feature_enabled) override;
   const Renderer_features_enabled& rendererFeatureEnabled() const override;
 
  protected:
   void setShaderPath(const std::string& path);
 
-  const Material* getBoundMaterial() const { return _boundMaterial.get(); }
+  virtual void
+  createVertexShader(bool enableOptimizations, const Material& material, Material_context& materialContext) const = 0;
 
-  virtual void createVertexShader(
-      bool enableOptimizations,
-      const Material& material,
-      Material_context& materialContext) const = 0;
-  virtual void createPixelShader(
-      bool enableOptimizations,
-      const Material& material,
-      Material_context& materialContext) const = 0;
+  virtual void
+  createPixelShader(bool enableOptimizations, const Material& material, Material_context& materialContext) const = 0;
 
-  virtual void createMaterialConstants(const Material& material) = 0;
+  virtual void createConstantBuffers(const Material& material, Material_context& materialContext) = 0;
 
   virtual void loadShaderResourcesToContext(
-      const Material::Shader_resources& shader_resources,
-      Material_context& material_context) = 0;
+          const Material::Shader_resources& shader_resources, Material_context& material_context) = 0;
 
-  virtual void bindLightDataToDevice(const Render_light_data* renderLightData) = 0;
-  virtual void bindMaterialContextToDevice(
-      const Material_context& materialContext,
-      bool enablePixelShader) = 0;
+  virtual void loadMeshGpuDataToContext(
+          const Mesh_gpu_data& gpuData, const std::vector<Vertex_attribute_element>& vsInputs,
+          Material_context& materialContext) = 0;
+
+  virtual void bindMaterialContextToDevice(const Material_context& materialContext, bool enablePixelShader) = 0;
 
   /**
    * Helper that logs dumps a JSON representation of the given settings object to the debug log. Does nothing if the
@@ -88,8 +86,8 @@ class Material_manager : public IMaterial_manager
   Renderer_features_enabled _rendererFeatures;
   size_t _rendererFeaturesHash = 0;
 
-  std::shared_ptr<const Material> _boundMaterial;
-  Render_pass_blend_mode _boundBlendMode;
+  bool _boundMaterial = false;
+
   IAsset_manager& _assetManager;
 };
-} // namespace oe
+}// namespace oe

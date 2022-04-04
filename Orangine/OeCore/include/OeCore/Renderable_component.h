@@ -26,8 +26,8 @@ class Renderable_component : public Component {
   const std::shared_ptr<Material>& material() const { return _material; }
   void setMaterial(std::shared_ptr<Material> material) { _material = material; }
 
-  const std::weak_ptr<Renderer_data>& rendererData() const { return _rendererData; }
-  void setRendererData(std::weak_ptr<Renderer_data>&& rendererData) {
+  const std::weak_ptr<Mesh_gpu_data>& rendererData() const { return _rendererData; }
+  void setRendererData(std::weak_ptr<Mesh_gpu_data>&& rendererData) {
     _rendererData = std::move(rendererData);
   }
 
@@ -44,7 +44,7 @@ class Renderable_component : public Component {
   END_COMPONENT_PROPERTIES();
 
   // Runtime, non-serializable
-  std::weak_ptr<Renderer_data> _rendererData;
+  std::weak_ptr<Mesh_gpu_data> _rendererData;
   std::weak_ptr<Material_context> _materialContext;
   std::shared_ptr<Material> _material;
 };

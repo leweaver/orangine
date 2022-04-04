@@ -13,6 +13,9 @@ struct Default_values {};
 
 inline const uint32_t g_max_bone_transforms = 96;
 
+// Alignment size of 16 bits. Primarily used for shader constants
+inline static constexpr size_t g_align_16 = 16;
+
 struct Vertex_attribute_semantic {
   Vertex_attribute attribute;
   uint8_t semanticIndex;
@@ -134,6 +137,17 @@ struct Depth_stencil_config {
   Render_pass_stencil_mode stencilMode;
   uint32_t stencilReadMask;
   uint32_t stencilWriteMask;
+};
+
+struct Shader_layout_constant_buffer {
+  uint32_t registerIndex;
+  uint32_t sizeInBytes;
+  Shader_constant_buffer_usage usage;
+  Shader_constant_buffer_visibility visibility;
+};
+
+struct Shader_constant_layout {
+  gsl::span<const Shader_layout_constant_buffer> constantBuffers;
 };
 
 } // namespace oe

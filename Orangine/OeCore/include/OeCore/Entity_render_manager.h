@@ -60,8 +60,7 @@ class Entity_render_manager : public IEntity_render_manager, public Manager_base
 
   virtual void drawRendererData(
       const Camera_data& cameraData,
-      const SSE::Matrix4& worldTransform,
-      Renderer_data& rendererData,
+      const SSE::Matrix4& worldTransform, Mesh_gpu_data& rendererData,
       Render_pass_blend_mode blendMode,
       const Render_light_data& renderLightData,
       std::shared_ptr<Material>,
@@ -69,11 +68,6 @@ class Entity_render_manager : public IEntity_render_manager, public Manager_base
       Material_context& materialContext,
       Renderer_animation_data& rendererAnimationData,
       bool wireframe) = 0;
-
-  // Loads the buffers to the device in the order specified by the material context.
-  virtual void loadRendererDataToDeviceContext(
-      const Renderer_data& rendererData,
-      const Material_context& context) = 0;
 
   /**
    * \brief Creates a new Renderer_data instance from the given mesh data, in a format
@@ -85,7 +79,7 @@ class Entity_render_manager : public IEntity_render_manager, public Manager_base
    *        Normally you should get this from Shader_compile_settings::morphAttributes
    * \return new Renderer_data instance.
    */
-  virtual std::shared_ptr<Renderer_data> createRendererData(
+  virtual std::shared_ptr<Mesh_gpu_data> createRendererData(
       std::shared_ptr<Mesh_data> meshData,
       const std::vector<Vertex_attribute_element>& vertexAttributes,
       const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) = 0;

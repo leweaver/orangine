@@ -3,12 +3,12 @@
 #include "OeCore/Material_base.h"
 
 namespace oe {
-	class Clear_gbuffer_material : public Material_base<Vertex_constant_buffer_empty, Pixel_constant_buffer_base> {
-        using Base_type = Material_base<Vertex_constant_buffer_empty, Pixel_constant_buffer_base>;
-	public:
+class Clear_gbuffer_material : public Material_base<Vertex_constant_buffer_empty, Pixel_constant_buffer_base> {
+  using Base_type = Material_base<Vertex_constant_buffer_empty, Pixel_constant_buffer_base>;
 
-        Clear_gbuffer_material();
+ public:
+  Clear_gbuffer_material();
 
-		const std::string& materialType() const override;
-	};
-}
+  const std::string& materialType() const override;
+};
+}// namespace oe

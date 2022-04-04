@@ -355,4 +355,40 @@ Sampler_comparison_func stringToSamplerComparisonFunc(const std::string & str)
     return stringToEnum<Sampler_comparison_func>(str, g_samplerComparisonFuncNames);
 }
 
+///////////////////////////////////
+// Shader_constant_buffer_usage
+//
+std::string g_shaderConstantBufferUsageNames[] = {
+    "Per_material",
+    "Per_draw",
+    "Skeleton"
+};
+static_assert(static_cast<size_t>(Shader_constant_buffer_usage::Num_shader_constant_buffer_usage) == array_size(g_shaderConstantBufferUsageNames));
+const std::string& shaderConstantBufferUsageToString(Shader_constant_buffer_usage enumValue)
+{
+    return g_shaderConstantBufferUsageNames[static_cast<size_t>(enumValue)];
+}
+Shader_constant_buffer_usage stringToShaderConstantBufferUsage(const std::string & str)
+{
+    return stringToEnum<Shader_constant_buffer_usage>(str, g_shaderConstantBufferUsageNames);
+}
+
+///////////////////////////////////
+// Shader_constant_buffer_visibility
+//
+std::string g_shaderConstantBufferVisibilityNames[] = {
+    "All",
+    "Vertex",
+    "Pixel"
+};
+static_assert(static_cast<size_t>(Shader_constant_buffer_visibility::Num_shader_constant_buffer_visibility) == array_size(g_shaderConstantBufferVisibilityNames));
+const std::string& shaderConstantBufferVisibilityToString(Shader_constant_buffer_visibility enumValue)
+{
+    return g_shaderConstantBufferVisibilityNames[static_cast<size_t>(enumValue)];
+}
+Shader_constant_buffer_visibility stringToShaderConstantBufferVisibility(const std::string & str)
+{
+    return stringToEnum<Shader_constant_buffer_visibility>(str, g_shaderConstantBufferVisibilityNames);
+}
+
 } // namespace oe

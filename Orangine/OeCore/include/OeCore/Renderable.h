@@ -7,7 +7,7 @@
 namespace oe {
 class Mesh_data;
 class Material;
-struct Renderer_data;
+struct Mesh_gpu_data;
 struct Renderer_animation_data;
 
 /**
@@ -21,7 +21,7 @@ struct Renderable {
   std::shared_ptr<Renderer_animation_data> rendererAnimationData;
 
   // The following two properties will be deleted by managers on a device reset.
-  std::weak_ptr<Renderer_data> rendererData;
+  std::weak_ptr<Mesh_gpu_data> rendererData;
   std::weak_ptr<Material_context> materialContext;
 };
 } // namespace oe

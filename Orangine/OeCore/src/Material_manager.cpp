@@ -18,7 +18,6 @@ Material_manager::Material_manager(IAsset_manager& assetManager)
     : Manager_base()
       , Manager_tickable()
       , Manager_deviceDependent()
-      ,_boundBlendMode(Render_pass_blend_mode::Opaque)
     , _assetManager(assetManager)
 {}
 
@@ -41,14 +40,15 @@ void Material_manager::tick() {
   }
 }
 
-void Material_manager::bind(
+void Material_manager::updateMaterialContext(
     Material_context& materialContext,
     std::shared_ptr<const Material> material,
     const Mesh_vertex_layout& meshVertexLayout,
+    const Mesh_gpu_data& meshGpuData,
     const Render_light_data* renderLightData,
     Render_pass_blend_mode blendMode,
     bool enablePixelShader) {
-  assert(!_boundMaterial);
+  OE_CHECK(!_boundMaterial);
 
   const auto materialHash = material->ensureCompilerPropertiesHash();
   auto& compiledMaterial = materialContext.compilerInputs;
@@ -94,6 +94,9 @@ void Material_manager::bind(
     if (requiresRecompile) {
       LOG(INFO) << "Recompiling shaders for material";
 
+      // Make sure that the shader resource views and SamplerStates vectors are empty.
+      materialContext.releaseResources();
+
       // TODO: Look in a cache for a compiled material that matches the hash
       materialContext.compilerInputs = compiledMaterial;
       materialContext.compilerInputsValid = true;
@@ -111,15 +114,12 @@ void Material_manager::bind(
         createVertexShader(_rendererFeatures.enableShaderOptimization, *material, materialContext);
         createPixelShader(_rendererFeatures.enableShaderOptimization, *material, materialContext);
 
-        createMaterialConstants(*material);
-
-        // Make sure that the shader resource views and SamplerStates vectors are empty.
-        materialContext.releaseResources();
+        createConstantBuffers(*material, materialContext);
 
       } catch (std::exception& ex) {
         materialContext.compilerInputsValid = false;
         OE_THROW(std::runtime_error(
-            "Failed to create resources in Material_manager::bind. "s + ex.what()));
+            "Failed to create resources in Material_manager::updateMaterialContext. "s + ex.what()));
       }
     }
 
@@ -127,17 +127,21 @@ void Material_manager::bind(
         material->shaderResources(compiledMaterial.flags, *renderLightData);
 
     loadShaderResourcesToContext(shaderResources, materialContext);
+    loadMeshGpuDataToContext(meshGpuData, meshVertexLayout.vertexLayout(), materialContext);
   }
-
-  // If we get to this point, we have a valid and compiled shader. Now bind it to the device.
-  bindLightDataToDevice(renderLightData);
-  bindMaterialContextToDevice(materialContext, enablePixelShader);
-
-  _boundMaterial = material;
-  _boundBlendMode = blendMode;
 }
 
-void Material_manager::unbind() { _boundMaterial.reset(); }
+void Material_manager::bind(Material_context& materialContext, bool enablePixelShader)
+{
+  OE_CHECK(!_boundMaterial);
+
+  bindMaterialContextToDevice(materialContext, enablePixelShader);
+
+  _boundMaterial = true;
+}
+
+
+void Material_manager::unbind() { _boundMaterial = false; }
 
 void Material_manager::setRendererFeaturesEnabled(
     const Renderer_features_enabled& renderer_feature_enabled) {

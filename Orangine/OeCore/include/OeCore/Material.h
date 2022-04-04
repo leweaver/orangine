@@ -7,6 +7,7 @@
 
 #include <set>
 #include <string>
+#include <gsl/span>
 
 #include <json.hpp>
 #include <vectormath.hpp>
@@ -112,11 +113,7 @@ class Material {
       const std::set<std::string>& flags,
       const Render_light_data& renderLightData) const;
 
-  virtual size_t vertexShaderConstantsSize() const = 0;
-  virtual size_t pixelShaderConstantsSize() const = 0;
-
-  virtual bool isEmptyVertexShaderConstants() const = 0;
-  virtual bool isEmptyPixelShaderConstants() const = 0;
+  virtual Shader_constant_layout getShaderConstantLayout() const = 0;
 
   /*
    * Per Frame

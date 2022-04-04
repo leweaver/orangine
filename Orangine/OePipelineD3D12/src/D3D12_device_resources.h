@@ -6,6 +6,8 @@
 
 #include "OeCore/IDevice_resources.h"
 
+#include "Descriptor_heap_pool.h"
+
 #include "D3D12_vendor.h"
 #include <wrl/client.h>
 
@@ -53,14 +55,14 @@ class D3D12_device_resources : public IDevice_resources {
   // return m_d3dDepthStencilView.Get(); }
   DXGI_FORMAT GetBackBufferFormat() const { return m_backBufferFormat; }
   DXGI_FORMAT GetDepthBufferFormat() const { return m_depthBufferFormat; }
-  // D3D11_VIEWPORT          GetScreenViewport() const               { return m_screenViewport; }
+  const D3D12_VIEWPORT& GetScreenViewport() const { return m_screenViewport; }
   UINT GetBackBufferCount() const { return m_backBufferCount; }
   DXGI_COLOR_SPACE_TYPE GetColorSpace() const { return m_colorSpace; }
   unsigned int GetDeviceOptions() const { return m_options; }
 
   ID3D12CommandQueue* GetCommandQueue() const;
 
-  Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> CreateCommandList(D3D12_COMMAND_LIST_TYPE type);
+  Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> GetPipelineCommandList();
 
   // Performance events
   void PIXBeginEvent(_In_z_ const wchar_t* name) {
@@ -75,6 +77,14 @@ class D3D12_device_resources : public IDevice_resources {
     // m_d3dAnnotation->SetMarker(name);
   }
 
+  struct Committed_gpu_resource {
+    ID3D12Resource* resource;
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle;
+    CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle;
+  };
+  Committed_gpu_resource getCurrentFrameBackBuffer() const;
+  Committed_gpu_resource getDepthStencil() const;
+
  private:
 
   struct Command_list_state  {
@@ -87,16 +97,19 @@ class D3D12_device_resources : public IDevice_resources {
     UINT64 fenceValue;
   };
 
+  // TODO: Some parts of this probably belong in Render_step_manager (command queue/list/allocator)
   struct Render_pipeline {
     static const std::size_t frameCount = 2;
 
     // Pipeline Objects
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue;
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
+
     Microsoft::WRL::ComPtr<IDXGISwapChain3> swapChain;
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtcDescriptorHeap;
-    UINT rtcDescriptorSize;
+    pipeline_d3d12::Descriptor_heap_pool::Descriptor_range rtvDescriptorRange;
     std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, frameCount> rtvBackBuffer;
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilBuffer;
 
     // TODO: will want more than one command list :)
     Command_list_state commandList;
@@ -107,6 +120,7 @@ class D3D12_device_resources : public IDevice_resources {
   void GetHardwareAdapter(IDXGIAdapter1** ppAdapter);
 
   void createRenderPipeline(Render_pipeline& renderPipeline);
+
   void resizePipelineResources(
       Render_pipeline& renderPipeline,
       UINT backBufferWidth,
@@ -115,6 +129,8 @@ class D3D12_device_resources : public IDevice_resources {
 
   // If a null colour space is passed, just sets the state of m_colorSpace
   void updateColorSpace(const Microsoft::WRL::ComPtr<IDXGISwapChain>& swapChain);
+
+
 
   // Direct3D objects.
   Microsoft::WRL::ComPtr<IDXGIFactory4> m_dxgiFactory;
@@ -128,6 +144,8 @@ class D3D12_device_resources : public IDevice_resources {
   // Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_d3dRenderTargetView;
   // Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_d3dDepthStencilView;
   D3D12_VIEWPORT m_screenViewport;
+  std::unique_ptr<pipeline_d3d12::Descriptor_heap_pool> m_rtvDescriptorHeapPool;
+  std::unique_ptr<pipeline_d3d12::Descriptor_heap_pool> m_dsvDescriptorHeapPool;
 
   // Direct3D properties.
   DXGI_FORMAT m_backBufferFormat;

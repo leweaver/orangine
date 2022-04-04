@@ -7,6 +7,7 @@
 #include "OeCore/EngineUtils.h"
 
 #include <wrl/client.h>
+#include "PipelineUtils.h"
 
 using namespace DirectX;
 using namespace oe;
@@ -124,6 +125,7 @@ void D3D12_device_resources::createDeviceDependentResources()
 }
 
 void D3D12_device_resources::destroyDeviceDependentResources() {
+  m_rtvDescriptorHeapPool = {};
   _renderPipeline = {};
 
 #ifdef _DEBUG
@@ -243,57 +245,73 @@ void D3D12_device_resources::resizePipelineResources(
   // Handle color space settings for HDR
   updateColorSpace(renderPipeline.swapChain);
 
-  // Create heap for render target view descriptors
-  D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-  rtvHeapDesc.NumDescriptors = Render_pipeline::frameCount;
-  rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-  rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-  ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(
-      &rtvHeapDesc, IID_PPV_ARGS(&renderPipeline.rtcDescriptorHeap)));
+  // Create descriptor heap for backbuffer render target views
+  {
+    D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+    rtvHeapDesc.NumDescriptors = Render_pipeline::frameCount;
+    rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-  // Create a render target view of the swap chain back buffers.
-  CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(
-      renderPipeline.rtcDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    m_rtvDescriptorHeapPool = std::make_unique<pipeline_d3d12::Descriptor_heap_pool>(
+            m_d3dDevice.Get(), rtvHeapDesc, "rtvDescriptorHeapPool");
 
-  renderPipeline.commandList.frameIndex = renderPipeline.swapChain->GetCurrentBackBufferIndex();
-  renderPipeline.rtcDescriptorSize =
-      m_d3dDevice->GetDescriptorHandleIncrementSize(rtvHeapDesc.Type);
+    // Create a render target view of the swap chain back buffers.
+    renderPipeline.rtvDescriptorRange = m_rtvDescriptorHeapPool->allocateRange(Render_pipeline::frameCount);
 
-  for (auto n = 0; n < Render_pipeline::frameCount; ++n) {
-    ThrowIfFailed(
-        renderPipeline.swapChain->GetBuffer(n, IID_PPV_ARGS(&renderPipeline.rtvBackBuffer.at(n))));
-    m_d3dDevice->CreateRenderTargetView(renderPipeline.rtvBackBuffer.at(n).Get(), nullptr, rtvHandle);
-    rtvHandle.Offset(1, renderPipeline.rtcDescriptorSize);
+    renderPipeline.commandList.frameIndex = renderPipeline.swapChain->GetCurrentBackBufferIndex();
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeapPool->getCpuDescriptorHandleForHeapStart());
+    for (auto n = 0; n < Render_pipeline::frameCount; ++n) {
+      ThrowIfFailed(renderPipeline.swapChain->GetBuffer(n, IID_PPV_ARGS(&renderPipeline.rtvBackBuffer.at(n))));
+      m_d3dDevice->CreateRenderTargetView(renderPipeline.rtvBackBuffer.at(n).Get(), nullptr, rtvHandle);
+      rtvHandle.Offset(1, renderPipeline.rtvDescriptorRange.incrementSize);
+
+      oe::pipeline_d3d12::SetObjectNameIndexed(renderPipeline.rtvBackBuffer.at(n).Get(), L"rtvBackBuffer", n);
+    }
   }
 
-  /*LWL
-  if (m_depthBufferFormat != DXGI_FORMAT_UNKNOWN) {
-    // Create a depth stencil view for use with 3D rendering if needed.
-    CD3D11_TEXTURE2D_DESC depthStencilDesc(
-        m_depthBufferFormat,
-        backBufferWidth,
-        backBufferHeight,
-        1, // This depth stencil view has only one texture.
-        1, // Use a single mipmap level.
-        D3D11_BIND_DEPTH_STENCIL);
-    // BEGIN LEWIS
-    depthStencilDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
-    // END LEWIS
-
-    ThrowIfFailed(m_d3dDevice->CreateTexture2D(
-        &depthStencilDesc, nullptr, m_depthStencil.ReleaseAndGetAddressOf()));
-
-    CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
-    // BEGIN LEWIS
-    depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    // END LEWIS
-
-    ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(
-        m_depthStencil.Get(),
-        &depthStencilViewDesc,
-        m_d3dDepthStencilView.ReleaseAndGetAddressOf()));
+  // Create descriptor heap for render depth stencil view descriptor
+  {
+    D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+    dsvHeapDesc.NumDescriptors = 1;
+    dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+    dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    m_dsvDescriptorHeapPool = std::make_unique<pipeline_d3d12::Descriptor_heap_pool>(
+            m_d3dDevice.Get(), dsvHeapDesc, "dsvDescriptorHeapPool");
   }
-      LWL*/
+
+  // Create the depth stencil view.
+  {
+    D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+    depthOptimizedClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthOptimizedClearValue.DepthStencil.Depth = 1.0F;
+    depthOptimizedClearValue.DepthStencil.Stencil = 0;
+
+    auto resourceState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    auto resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+            DXGI_FORMAT_D24_UNORM_S8_UINT, backBufferWidth, backBufferHeight, 1, 0, 1, 0,
+            D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+
+    // TODO: What is d3d12 equiv of this? Do I need to toggle state between D3D12_RESOURCE_STATE_DEPTH_READ and
+    //       D3D12_RESOURCE_STATE_DEPTH_WRITE between render steps?
+    //       Alternative - do a copy from depth -> another texture that's accessible from shaders. What's the perf difference?
+    // depthStencilDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
+    auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+    ThrowIfFailed(m_d3dDevice->CreateCommittedResource(
+            &heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, resourceState, &depthOptimizedClearValue,
+            IID_PPV_ARGS(&renderPipeline.depthStencilBuffer)));
+
+    oe::pipeline_d3d12::SetObjectName(renderPipeline.depthStencilBuffer.Get(), L"depthStencilBuffer");
+
+    D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
+    depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+    depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
+    m_d3dDevice->CreateDepthStencilView(
+            renderPipeline.depthStencilBuffer.Get(), &depthStencilDesc,
+            m_dsvDescriptorHeapPool->getCpuDescriptorHandleForHeapStart());
+  }
 
   // Set the 3D rendering viewport to target the entire window.
   m_screenViewport = CD3DX12_VIEWPORT(
@@ -315,6 +333,27 @@ void D3D12_device_resources::createRenderPipeline(Render_pipeline& renderPipelin
       D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&renderPipeline.commandAllocator)));
 
   renderPipeline.commandList = createCommandListState();
+}
+
+D3D12_device_resources::Committed_gpu_resource D3D12_device_resources::getCurrentFrameBackBuffer() const
+{
+  Committed_gpu_resource data{
+          _renderPipeline.rtvBackBuffer[_renderPipeline.commandList.frameIndex].Get(),
+          _renderPipeline.rtvDescriptorRange.cpuHandle, _renderPipeline.rtvDescriptorRange.gpuHandle};
+
+  int frameIdx = static_cast<int>(_renderPipeline.commandList.frameIndex);
+  data.cpuHandle.Offset(frameIdx, _renderPipeline.rtvDescriptorRange.incrementSize);
+  data.gpuHandle.Offset(frameIdx, _renderPipeline.rtvDescriptorRange.incrementSize);
+
+  return data;
+}
+
+D3D12_device_resources::Committed_gpu_resource D3D12_device_resources::getDepthStencil() const
+{
+  return Committed_gpu_resource{
+          _renderPipeline.depthStencilBuffer.Get(),
+          CD3DX12_CPU_DESCRIPTOR_HANDLE(m_dsvDescriptorHeapPool->getCpuDescriptorHandleForHeapStart()),
+          CD3DX12_GPU_DESCRIPTOR_HANDLE(m_dsvDescriptorHeapPool->getGpuDescriptorHandleForHeapStart())};
 }
 
 bool D3D12_device_resources::checkSystemSupport(bool logFailures) {
@@ -586,7 +625,7 @@ ID3D12CommandQueue* D3D12_device_resources::GetCommandQueue() const
   return _renderPipeline.commandQueue.Get();
 }
 
-Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> D3D12_device_resources::CreateCommandList(D3D12_COMMAND_LIST_TYPE type)
+Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> D3D12_device_resources::GetPipelineCommandList()
 {
   return _renderPipeline.commandList.commandList;
 }
@@ -603,6 +642,7 @@ D3D12_device_resources::Command_list_state D3D12_device_resources::createCommand
   {
     ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
   }
+
 
   // Create the command list.
   // TODO: once not being hacky, type should be programatically stated.

@@ -3,11 +3,11 @@
 #include "Material.h"
 
 namespace oe {
-struct Vertex_constant_buffer_empty {};
 
-__declspec(align(16)) struct Vertex_constant_buffer_base { SSE::Matrix4 worldViewProjection; };
+__declspec(align(g_align_16)) struct Vertex_constant_buffer_empty {};
+__declspec(align(g_align_16)) struct Vertex_constant_buffer_base { SSE::Matrix4 worldViewProjection; };
 
-struct Pixel_constant_buffer_empty {};
+__declspec(align(g_align_16)) struct Pixel_constant_buffer_empty {};
 using Pixel_constant_buffer_base = Pixel_constant_buffer_empty;
 
 template <class TVertex_shader_constants, class TPixel_shader_constants>
@@ -26,16 +26,6 @@ class Material_base : public Material {
         sizeof(TPixel_shader_constants) % 16 == 0);
   }
 
-  size_t vertexShaderConstantsSize() const override { return sizeof(TVertex_shader_constants); }
-  size_t pixelShaderConstantsSize() const override { return sizeof(TPixel_shader_constants); }
-
-  bool isEmptyVertexShaderConstants() const override {
-    return std::is_same_v<TVertex_shader_constants, Vertex_constant_buffer_empty>;
-  }
-  bool isEmptyPixelShaderConstants() const override {
-    return std::is_same_v<TPixel_shader_constants, Pixel_constant_buffer_empty>;
-  }
-
   void updateVsConstantBuffer(
       const SSE::Matrix4& worldMatrix,
       const SSE::Matrix4& viewMatrix,
@@ -43,7 +33,7 @@ class Material_base : public Material {
       const Renderer_animation_data& rendererAnimationData,
       uint8_t* buffer,
       size_t bufferSize) const override {
-    assert(bufferSize == vertexShaderConstantsSize());
+    assert(bufferSize == sizeof(TVertex_shader_constants));
     auto& constantsVs = *reinterpret_cast<TVertex_shader_constants*>(buffer);
 
     if constexpr (std::is_assignable_v<Vertex_constant_buffer_base, TVertex_shader_constants>) {
@@ -59,7 +49,7 @@ class Material_base : public Material {
       const SSE::Matrix4& projMatrix,
       uint8_t* buffer,
       size_t bufferSize) const override {
-    assert(bufferSize == pixelShaderConstantsSize());
+    assert(bufferSize == sizeof(TPixel_shader_constants));
     auto& constantsPs = *reinterpret_cast<TPixel_shader_constants*>(buffer);
 
     updatePsConstantBufferValues(constantsPs, worldMatrix, viewMatrix, projMatrix);
@@ -70,6 +60,16 @@ class Material_base : public Material {
     std::vector<Vertex_attribute_element> vsInputs{
         {{Vertex_attribute::Position, 0}, Element_type::Vector3, Element_component::Float}};
     return vsInputs;
+  }
+
+  Shader_constant_layout getShaderConstantLayout() const override
+  {
+    static constexpr std::array<Shader_layout_constant_buffer, 2> baseLayout{
+            {{0, sizeof(TVertex_shader_constants), Shader_constant_buffer_usage::Per_draw,
+              Shader_constant_buffer_visibility::Vertex},
+             {0, sizeof(TPixel_shader_constants), Shader_constant_buffer_usage::Per_draw,
+              Shader_constant_buffer_visibility::Pixel}}};
+    return Shader_constant_layout{baseLayout};
   }
 
  protected:

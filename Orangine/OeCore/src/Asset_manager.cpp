@@ -78,7 +78,7 @@ void Asset_manager::loadConfig(const IConfigReader& configReader)
     std::string assetRootPrefix = configReader.readString(assetRootConfigPath + ".prefix");
     std::string assetRootPath = configReader.readString(assetRootConfigPath + ".path");
 
-    overrides[assetRootPrefix] = assetRootPrefix;
+    overrides[assetRootPrefix] = assetRootPath;
   }
   setDataPathOverrides(std::move(overrides));
 }

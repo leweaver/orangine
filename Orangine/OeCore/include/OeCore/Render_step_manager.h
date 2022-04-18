@@ -90,6 +90,7 @@ class Render_step_manager : public IRender_step_manager, public Manager_base, pu
 
   std::vector<std::unique_ptr<Render_step>> _renderSteps;
   Render_step_deferred_data _renderPassDeferredData;
+  std::vector<Render_pass*> _gbufferRenderPasses;
 
   // Broad rendering
   std::unique_ptr<Entity_alpha_sorter> _alphaSorter;

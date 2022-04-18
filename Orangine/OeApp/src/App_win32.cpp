@@ -274,12 +274,12 @@ class App_impl {
 
   void createWindowSizeDependentResources() {
     try {
+      _deviceResources->recreateWindowSizeDependentResources();
       int width = 0, height = 0;
       if (!_deviceResources->getWindowSize(width, height)) {
         LOG(WARNING) << "createWindowSizeDependentResources: Failed to get last window size.";
         return;
       }
-      _deviceResources->recreateWindowSizeDependentResources();
 
       width = std::max(width, 1);
       height = std::max(height, 1);

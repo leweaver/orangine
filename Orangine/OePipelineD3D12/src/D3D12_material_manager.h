@@ -7,12 +7,13 @@
 #include <OeCore/Material_context.h>
 #include <OeCore/Material_manager.h>
 
+#include <vector>
 
 namespace oe::pipeline_d3d12 {
 
 struct Material_gpu_constant_buffer_table {
   std::vector<Gpu_buffer*> buffers;
-  Descriptor_heap_pool::Descriptor_range descriptorRange;
+  Descriptor_range descriptorRange;
 };
 
 using VisibilityGpuConstantBufferTablePair = std::pair<D3D12_SHADER_VISIBILITY, Material_gpu_constant_buffer_table>;
@@ -27,10 +28,17 @@ struct Material_gpu_constant_buffers {
 
 class Material_context_impl : public Material_context {
  public:
+  Material_context_impl() = default;
+  Material_context_impl(const Material_context_impl&) = delete;
+  Material_context_impl(Material_context_impl&&) = default;
+  Material_context_impl& operator = (const Material_context_impl&) = delete;
+  Material_context_impl& operator = (Material_context_impl&&) = default;
+
   ~Material_context_impl()
   {
     releaseResources();
   }
+
   void releaseResources() override
   {
     releasePipelineState();
@@ -46,8 +54,8 @@ class Material_context_impl : public Material_context {
   Microsoft::WRL::ComPtr<ID3DBlob> vertexShader;
   Microsoft::WRL::ComPtr<ID3DBlob> pixelShader;
   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
-  Descriptor_heap_pool::Descriptor_range samplerDescriptorTable;
-  Descriptor_heap_pool::Descriptor_range srvDescriptorTable;
+  Descriptor_range samplerDescriptorTable;
+  Descriptor_range srvDescriptorTable;
 
   std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews;
   D3D12_INDEX_BUFFER_VIEW indexBufferView;
@@ -57,6 +65,8 @@ class Material_context_impl : public Material_context {
   bool perDrawConstantBuffersInitialized = false;
 
   Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
+
+
 };
 
 class D3D12_material_manager : public Material_manager {
@@ -103,7 +113,7 @@ class D3D12_material_manager : public Material_manager {
   void updateLightBuffers() override {}
 
  private:
-  inline Material_context_impl& getMaterialContextImpl(Material_context& context)
+  inline Material_context_impl& getMaterialContextImpl(Material_context& context) const
   {
     return static_cast<Material_context_impl&>(context);
   }

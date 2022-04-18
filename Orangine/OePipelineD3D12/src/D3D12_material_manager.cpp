@@ -1,7 +1,7 @@
 #include "D3D12_material_manager.h"
 
-#include "PipelineUtils.h"
 #include "D3D12_renderer_types.h"
+#include "PipelineUtils.h"
 
 #include <OeCore/Mesh_utils.h>
 
@@ -19,7 +19,7 @@ template<>
 void oe::create_manager(
         Manager_instance<IMaterial_manager>& out, IAsset_manager& assetManager, ITexture_manager& textureManager,
         ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory,
-        D3D12_device_resources& deviceResources)
+        oe::pipeline_d3d12::D3D12_device_resources& deviceResources)
 {
   out = Manager_instance<IMaterial_manager>(std::make_unique<oe::pipeline_d3d12::D3D12_material_manager>(
           assetManager, textureManager, lightingManager, primitiveMeshDataFactory, deviceResources));
@@ -64,7 +64,7 @@ createShaderErrorString(HRESULT hr, ID3D10Blob* errorMessage, const Material::Sh
 
 D3D12_material_manager::D3D12_material_manager(
         oe::IAsset_manager& assetManager, oe::ITexture_manager& textureManager, oe::ILighting_manager& lightingManager,
-        oe::IPrimitive_mesh_data_factory& primitiveMeshDataFactory, oe::D3D12_device_resources& deviceResources)
+        oe::IPrimitive_mesh_data_factory& primitiveMeshDataFactory, D3D12_device_resources& deviceResources)
     : Material_manager(assetManager)
     , _assetManager(assetManager)
     , _textureManager(textureManager)
@@ -118,7 +118,7 @@ void D3D12_material_manager::createVertexShader(
   auto compileSettings = material.vertexShaderSettings(materialContext.compilerInputs.flags);
   debugLogSettings("vertex shader", compileSettings);
 
-  auto impl = getMaterialContextImpl(materialContext);
+  auto& impl = getMaterialContextImpl(materialContext);
   compileShader(compileSettings, impl.vertexShader.ReleaseAndGetAddressOf());
 }
 
@@ -129,7 +129,7 @@ void D3D12_material_manager::createPixelShader(
   auto compileSettings = material.pixelShaderSettings(materialContext.compilerInputs.flags);
   debugLogSettings("pixel shader", compileSettings);
 
-  auto impl = getMaterialContextImpl(materialContext);
+  auto& impl = getMaterialContextImpl(materialContext);
   compileShader(compileSettings, impl.pixelShader.ReleaseAndGetAddressOf());
 }
 
@@ -141,8 +141,7 @@ void D3D12_material_manager::createConstantBuffers(const Material& material, Mat
   // (i.e. shared for all renders using this material)
   {
     auto matPos = _deviceDependent.perMaterialConstantBuffers.find(&material);
-    if (matPos == _deviceDependent.perMaterialConstantBuffers.end())
-    {
+    if (matPos == _deviceDependent.perMaterialConstantBuffers.end()) {
       Shader_constant_buffer_usage usage = Shader_constant_buffer_usage::Per_material;
       auto constantBuffers = std::make_unique<Material_gpu_constant_buffers>();
       createConstantBuffersForUsage(material, usage, *constantBuffers);
@@ -167,7 +166,8 @@ void D3D12_material_manager::createConstantBuffers(const Material& material, Mat
 }
 
 void D3D12_material_manager::createConstantBuffersForUsage(
-        const Material& material, const Shader_constant_buffer_usage& usage, Material_gpu_constant_buffers& constantBuffers)
+        const Material& material, const Shader_constant_buffer_usage& usage,
+        Material_gpu_constant_buffers& constantBuffers)
 {
   {
     std::wstring bufferName{};
@@ -187,16 +187,18 @@ void D3D12_material_manager::createConstantBuffersForUsage(
       auto gpuBuffer = Gpu_buffer::create(_deviceDependent.device, bufferName, bufferInfo.sizeInBytes);
       constantBuffers.gpuBuffers.push_back(std::move(gpuBuffer));
 
-      static constexpr auto numVisibility = static_cast<uint32_t>(Shader_constant_buffer_visibility::Num_shader_constant_buffer_visibility);
-      for (auto visibilityIdx = 0; visibilityIdx < numVisibility; visibilityIdx++)
-      {
+      static constexpr auto numVisibility =
+              static_cast<uint32_t>(Shader_constant_buffer_visibility::Num_shader_constant_buffer_visibility);
+      for (auto visibilityIdx = 0; visibilityIdx < numVisibility; visibilityIdx++) {
         const auto visibility = static_cast<Shader_constant_buffer_visibility>(visibilityIdx);
         if (bufferInfo.visibility != Shader_constant_buffer_visibility::All && bufferInfo.visibility != visibility) {
           continue;
         }
 
-        const auto d3dvisibility = toD3dShaderVisibility(visibility);
-        auto pos = std::find(constantBuffers.tables.begin(), constantBuffers.tables.end(), [d3dvisibility](const auto& tablePair){ return tablePair.first == d3dvisibility; });
+        D3D12_SHADER_VISIBILITY d3dvisibility = toD3dShaderVisibility(visibility);
+        auto pos = std::find_if(
+                constantBuffers.tables.begin(), constantBuffers.tables.end(),
+                [d3dvisibility](const VisibilityGpuConstantBufferTablePair& tablePair) { return tablePair.first == d3dvisibility; });
         if (pos == constantBuffers.tables.end()) {
           constantBuffers.tables.emplace_back(d3dvisibility, Material_gpu_constant_buffer_table{});
           pos = constantBuffers.tables.end() - 1;
@@ -281,21 +283,24 @@ void D3D12_material_manager::loadShaderResourcesToContext(
 
   // TODO: Upload constant buffer data to Gpu_buffer
   {
-    if (impl.srvDescriptorTable.descriptorCount == 0)
-    {
+    if (impl.srvDescriptorTable.descriptorCount == 0) {
       // Ordering is per-material, then per-draw.
 
       OE_CHECK(impl.perMaterialConstantBuffers);
 
       std::vector<CD3DX12_DESCRIPTOR_RANGE1> d3dVsDescriptorRanges;
-      appendDescriptorTablesToRange(impl.perMaterialConstantBuffers->tables, d3dVsDescriptorRanges, kIsVertexVisibleConstantBuffer);
-      appendDescriptorTablesToRange(impl.perDrawConstantBuffers.tables, d3dVsDescriptorRanges, kIsVertexVisibleConstantBuffer);
+      appendDescriptorTablesToRange(
+              impl.perMaterialConstantBuffers->tables, d3dVsDescriptorRanges, kIsVertexVisibleConstantBuffer);
+      appendDescriptorTablesToRange(
+              impl.perDrawConstantBuffers.tables, d3dVsDescriptorRanges, kIsVertexVisibleConstantBuffer);
       rootParameters[kRootSignatureIdx_SrvVertex].InitAsDescriptorTable(
               d3dVsDescriptorRanges.size(), d3dVsDescriptorRanges.data(), D3D12_SHADER_VISIBILITY_VERTEX);
 
       std::vector<CD3DX12_DESCRIPTOR_RANGE1> d3dPsDescriptorRanges;
-      appendDescriptorTablesToRange(impl.perMaterialConstantBuffers->tables, d3dPsDescriptorRanges, kIsPixelVisibleConstantBuffer);
-      appendDescriptorTablesToRange(impl.perDrawConstantBuffers.tables, d3dPsDescriptorRanges, kIsPixelVisibleConstantBuffer);
+      appendDescriptorTablesToRange(
+              impl.perMaterialConstantBuffers->tables, d3dPsDescriptorRanges, kIsPixelVisibleConstantBuffer);
+      appendDescriptorTablesToRange(
+              impl.perDrawConstantBuffers.tables, d3dPsDescriptorRanges, kIsPixelVisibleConstantBuffer);
       rootParameters[kRootSignatureIdx_SrvPixel].InitAsDescriptorTable(
               d3dPsDescriptorRanges.size(), d3dPsDescriptorRanges.data(), D3D12_SHADER_VISIBILITY_PIXEL);
     }
@@ -309,7 +314,7 @@ void D3D12_material_manager::loadShaderResourcesToContext(
     // Only create sampler states if they don't exist.
     uint32_t numDescriptors = shaderResources.samplerDescriptors.size();
     if (impl.samplerDescriptorTable.descriptorCount == 0 && numDescriptors > 0) {
-      // TODO: If there were already descriptors, somehow release them back to the pool for re-use?
+      _deviceDependent.samplerHeap.releaseRange(impl.samplerDescriptorTable);
 
       // Create a descriptor table for the samplers
       impl.samplerDescriptorTable = _deviceDependent.samplerHeap.allocateRange(numDescriptors);
@@ -337,7 +342,7 @@ void D3D12_material_manager::loadShaderResourcesToContext(
         cpuHandle.Offset(singleDescriptorOffset);
       }
     }
-    std::array<CD3DX12_DESCRIPTOR_RANGE1, 1> d3dPsSrvDescriptorRanges {
+    std::array<CD3DX12_DESCRIPTOR_RANGE1, 1> d3dPsSrvDescriptorRanges{
             {{D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, numDescriptors, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC}}};
     OE_CHECK(impl.samplerDescriptorTable.descriptorCount == numDescriptors);
     rootParameters[kRootSignatureIdx_Sampler].InitAsDescriptorTable(
@@ -347,16 +352,15 @@ void D3D12_material_manager::loadShaderResourcesToContext(
   // Create the root signature.
   {
     D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-    CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC::Init_1_1(rootSignatureDesc,
-                                                    rootParameters.size(), rootParameters.data(), 0, nullptr,
-                                                    D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC::Init_1_1(
+            rootSignatureDesc, rootParameters.size(), rootParameters.data(), 0, nullptr,
+            D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
     ComPtr<ID3D10Blob> signature;
     ComPtr<ID3DBlob> error;
     ThrowIfFailed(D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &signature, &error));
     ThrowIfFailed(_deviceDependent.device->CreateRootSignature(
-            0, signature->GetBufferPointer(), signature->GetBufferSize(),
-            IID_PPV_ARGS(&impl.rootSignature)));
+            0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&impl.rootSignature)));
   }
 
   // Describe and create the graphics pipeline state object (PSO).
@@ -418,7 +422,7 @@ void D3D12_material_manager::loadMeshGpuDataToContext(
     const auto vertexGpuBufferPos = gpuData.vertexBuffers.find(vsInput.semantic);
     OE_CHECK(vertexGpuBufferPos != gpuData.vertexBuffers.end());
 
-    pipeline_d3d12::Gpu_buffer& vertexGpuBuffer = *vertexGpuBufferPos->second;
+    pipeline_d3d12::Gpu_buffer& vertexGpuBuffer = *vertexGpuBufferPos->second->gpuBuffer;
     *(viewIter++) = vertexGpuBuffer.GetAsVertexBufferView();
   }
 

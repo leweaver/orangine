@@ -9,11 +9,11 @@ const Camera_data Camera_data::IDENTITY = {
     SSE::Matrix4::identity(),
 };
 
-void Render_pass::setRenderTargets(const std::vector<std::shared_ptr<Texture>>& renderTargets) {
+void Render_pass::setCustomRenderTargets(const std::vector<std::shared_ptr<Texture>>& renderTargets) {
   _renderTargets = renderTargets;
   _renderTargetsChanged = true;
 }
 
-void Render_pass::clearRenderTargets() {
-  setRenderTargets({});
+void Render_pass::clearCustomRenderTargets() {
+  setCustomRenderTargets({});
 }

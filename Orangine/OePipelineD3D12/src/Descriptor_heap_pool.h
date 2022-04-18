@@ -30,6 +30,8 @@ class Descriptor_heap_pool {
   Descriptor_range allocateRange(uint32_t numDescriptors);
   uint32_t getAvailableDescriptorCount() const;
 
+  void releaseRange(const Descriptor_range&);
+
   D3D12_CPU_DESCRIPTOR_HANDLE getCpuDescriptorHandleForHeapStart();
   D3D12_GPU_DESCRIPTOR_HANDLE getGpuDescriptorHandleForHeapStart();
 

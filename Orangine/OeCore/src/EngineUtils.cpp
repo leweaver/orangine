@@ -85,7 +85,7 @@ bool oe::create_rotation_between_unit_vectors(
 }
 
 // Convert a wide Unicode string to an UTF8 string
-std::string oe::utf8_encode(const std::wstring& wstr) {
+std::string oe::utf8_encode(const std::wstring_view& wstr) {
   if (wstr.empty())
     return std::string();
   if (wstr.size() > static_cast<size_t>(INT_MAX))
@@ -100,7 +100,7 @@ std::string oe::utf8_encode(const std::wstring& wstr) {
 }
 
 // Convert an UTF8 string to a wide Unicode String
-std::wstring oe::utf8_decode(const std::string& str) {
+std::wstring oe::utf8_decode(const std::string_view& str) {
   if (str.empty())
     return std::wstring();
   if (str.size() > static_cast<size_t>(INT_MAX))

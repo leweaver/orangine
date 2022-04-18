@@ -1,8 +1,9 @@
 #include "D3D12_render_step_manager.h"
 #include "D3D12_device_resources.h"
+#include "D3D12_texture_manager.h"
 
-#include <OeCore/Render_pass_generic.h>
 #include <OeCore/Perf_timer.h>
+#include <OeCore/Render_pass_generic.h>
 
 using namespace oe;
 using namespace oe::pipeline_d3d12;
@@ -12,9 +13,10 @@ std::string D3D12_render_step_manager::_name;// NOLINT(cppcoreguidelines-avoid-n
 template<>
 void oe::create_manager(
         Manager_instance<IRender_step_manager>& out, IScene_graph_manager& sceneGraphManager,
-        IDev_tools_manager& devToolsManager, ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
-        IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager,
-        IPrimitive_mesh_data_factory& primitiveMeshDataFactory, std::unique_ptr<D3D12_device_resources>& deviceResources)
+        IDev_tools_manager& devToolsManager, D3D12_texture_manager& textureManager,
+        IShadowmap_manager& shadowmapManager, IEntity_render_manager& entityRenderManager,
+        ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory,
+        std::unique_ptr<D3D12_device_resources>& deviceResources)
 {
   out = Manager_instance<IRender_step_manager>(std::make_unique<D3D12_render_step_manager>(
           sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager, lightingManager,
@@ -22,14 +24,15 @@ void oe::create_manager(
 }
 
 D3D12_render_step_manager::D3D12_render_step_manager(
-        IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager, ITexture_manager& textureManager,
-        IShadowmap_manager& shadowmapManager, IEntity_render_manager& entityRenderManager,
-        ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory,
-        std::unique_ptr<D3D12_device_resources> deviceResources)
+        IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
+        D3D12_texture_manager& textureManager, IShadowmap_manager& shadowmapManager,
+        IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager,
+        IPrimitive_mesh_data_factory& primitiveMeshDataFactory, std::unique_ptr<D3D12_device_resources> deviceResources)
     : Render_step_manager(
               sceneGraphManager, devToolsManager, textureManager, shadowmapManager, entityRenderManager,
               lightingManager, primitiveMeshDataFactory)
     , _deviceResources(std::move(deviceResources))
+    , _textureManagerD3D12(textureManager)
 {}
 
 // Base class overrides
@@ -57,11 +60,33 @@ std::unique_ptr<Render_pass> D3D12_render_step_manager::createShadowMapRenderPas
 }
 void D3D12_render_step_manager::beginRenderNamedEvent(const wchar_t* name) {}
 void D3D12_render_step_manager::endRenderNamedEvent() {}
-void D3D12_render_step_manager::createRenderStepResources() {
+
+void D3D12_render_step_manager::createRenderStepResources()
+{
+  static constexpr UINT maxCustomRenderTargetCount = 3;
+  D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+  rtvHeapDesc.NumDescriptors = _deviceResources->GetBackBufferCount() + maxCustomRenderTargetCount;
+  rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+  rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+  // Descriptor heap for custom render targets
+  _rtvDescriptorHeapPool = std::make_unique<Descriptor_heap_pool>(
+          _deviceResources->GetD3DDevice(), rtvHeapDesc, "renderStepManager::rtvDescriptorHeapPool");
+
+  for (const auto& step : _renderSteps) {
+    D3D12_render_step_data renderStepData{};
+    for (const auto& pass : step->renderPasses) {
+      renderStepData.renderPassData.push_back({});
+    }
+    _renderStepData.push_back(std::move(renderStepData));
+  }
   _renderStepData.resize(_renderSteps.size());
 }
-void D3D12_render_step_manager::destroyRenderStepResources() {
+
+void D3D12_render_step_manager::destroyRenderStepResources()
+{
   _renderStepData.clear();
+  _rtvDescriptorHeapPool.reset();
 }
 void D3D12_render_step_manager::renderSteps(const Camera_data& cameraData)
 {
@@ -80,9 +105,8 @@ void D3D12_render_step_manager::renderSteps(const Camera_data& cameraData)
 }
 
 void D3D12_render_step_manager::renderStep(
-        Render_step& step,
-        D3D12_render_step_data& renderStepData,
-        const Camera_data& cameraData) {
+        Render_step& step, D3D12_render_step_data& renderStepData, const Camera_data& cameraData)
+{
   if (!step.enabled) {
     return;
   }
@@ -109,38 +133,59 @@ void D3D12_render_step_manager::renderStep(
     pCommandList->RSSetViewports(1, viewport);
     pCommandList->RSSetScissorRects(1, &scissorRect);
 
-    auto backBuffer = _deviceResources->getCurrentFrameBackBuffer();
-    auto depthStencil = _deviceResources->getDepthStencil();
-    pCommandList->OMSetRenderTargets(1, &backBuffer.cpuHandle, FALSE, &depthStencil.cpuHandle);
 
     auto& pass = *step.renderPasses[passIdx];
     auto& renderPassData = renderStepData.renderPassData[passIdx];
-    auto numRenderTargets = renderPassData.renderTargets.descriptorCount;
     const auto& depthStencilConfig = pass.getDepthStencilConfig();
 
     // Update render target views array if it is out of sync
     if (pass.popRenderTargetsChanged()) {
-      const auto& renderTargets = pass.getRenderTargets();
+      const auto& renderTargets = pass.getCustomRenderTargets();
+      const size_t numRenderTargets = renderTargets.size();
 
-      numRenderTargets = renderTargets.size();
-      renderPassData.renderTargets.resize(numRenderTargets);
-
-      for (size_t i = 0; i < numRenderTargets; ++i) {
-        if (renderTargets[i]) {
-          auto& rtt = D3D12_texture_manager::verifyAsD3dRenderTargetViewTexture(*renderTargets[i]);
-          renderPassData._renderTargetViews[i] = rtt.renderTargetView();
-          renderPassData._renderTargetViews[i]->AddRef();
+      for (const auto& textureIdDescriptor : renderPassData.renderTargetDescriptors) {
+        const auto descriptorUsagePos = _textureIdToDescriptorRangesAndUsageCount.find(textureIdDescriptor.first);
+        if (descriptorUsagePos != _textureIdToDescriptorRangesAndUsageCount.end()) {
+          OE_CHECK(descriptorUsagePos->second.second > 0);
+          if (--descriptorUsagePos->second.second == 0) {
+            _rtvDescriptorHeapPool->releaseRange(descriptorUsagePos->second.first);
+            _textureIdToDescriptorRangesAndUsageCount.erase(descriptorUsagePos);
+          }
         }
       }
-    }
-    ////beginRenderNamedEvent(L"RSM-OMSetRenderTargets");
-    if (pass.stencilRef() == 0 && renderPassData._renderTargetViews.size() > 0) {
-      ID3D1DepthStencilView* dsv = nullptr;
-      if (Render_pass_depth_mode::Disabled != depthStencilConfig.depthMode) {
-        dsv = d3dDeviceResources.GetDepthStencilView();
+      renderPassData.renderTargetDescriptors.clear();
+      renderPassData.cpuHandles.clear();
+
+      for (const auto& renderTargetTexture : renderTargets) {
+        TextureInternalId textureId = renderTargetTexture->internalId();
+        auto& descriptorUsage = _textureIdToDescriptorRangesAndUsageCount[textureId];
+        if (descriptorUsage.second == 0) {
+          descriptorUsage.first = _rtvDescriptorHeapPool->allocateRange(1);
+          CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(descriptorUsage.first.cpuHandle);
+          ID3D12Resource* rtResource = _textureManagerD3D12.getResource(*renderTargetTexture);
+          OE_CHECK(rtResource);
+          _deviceResources->GetD3DDevice()->CreateRenderTargetView(rtResource, nullptr, rtvHandle);
+        }
+        renderPassData.renderTargetDescriptors.push_back(std::make_pair(textureId, descriptorUsage.first));
+        renderPassData.cpuHandles.push_back(descriptorUsage.first.cpuHandle);
+        ++descriptorUsage.second;
       }
-      context->OMSetRenderTargets(
-              static_cast<UINT>(numRenderTargets), renderPassData._renderTargetViews.data(), dsv);
+    }
+
+    ////beginRenderNamedEvent(L"RSM-OMSetRenderTargets");
+    auto depthStencil = _deviceResources->getDepthStencil();
+    if (pass.stencilRef() == 0 && !renderPassData.renderTargetDescriptors.empty()) {
+      CD3DX12_CPU_DESCRIPTOR_HANDLE* depthStencilHandle = nullptr;
+      if (Render_pass_depth_mode::Disabled != depthStencilConfig.depthMode) {
+        depthStencilHandle = &depthStencil.cpuHandle;
+      }
+      pCommandList->OMSetRenderTargets(
+              static_cast<UINT>(renderPassData.cpuHandles.size()), renderPassData.cpuHandles.data(), false,
+              depthStencilHandle);
+    }
+    else {
+      auto backBuffer = _deviceResources->getCurrentFrameBackBuffer();
+      pCommandList->OMSetRenderTargets(1, &backBuffer.cpuHandle, false, &depthStencil.cpuHandle);
     }
     ////endRenderNamedEvent();
 
@@ -153,11 +198,11 @@ void D3D12_render_step_manager::renderStep(
       endRenderNamedEvent();
     }
   }
-
-  void D3D12_render_step_manager::initStatics()
-  {
-    D3D12_render_step_manager::_name = "D3D12_render_step_manager";
-  }
-
-  void D3D12_render_step_manager::destroyStatics() {}
 }
+
+void D3D12_render_step_manager::initStatics()
+{
+  D3D12_render_step_manager::_name = "D3D12_render_step_manager";
+}
+
+void D3D12_render_step_manager::destroyStatics() {}

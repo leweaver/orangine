@@ -22,7 +22,6 @@ Descriptor_heap_pool::Descriptor_heap_pool(ID3D12Device6* device, D3D12_DESCRIPT
 Descriptor_heap_pool::Descriptor_heap_pool()
     : _device(nullptr)
     , _heapDesc()
-    , _name(nullptr)
     , _handleIncrementSize(0)
     , _nextHeapId(0)
     , _currentAllocated(0)
@@ -46,7 +45,7 @@ void Descriptor_heap_pool::createHeap()
 
 Descriptor_range Descriptor_heap_pool::allocateRange(uint32_t numDescriptors)
 {
-    OE_CHECK(numDescriptors < getAvailableDescriptorCount());
+  OE_CHECK(numDescriptors <= getAvailableDescriptorCount());
 
   int32_t offsetScaledByIncrementSize = _currentAllocated * _handleIncrementSize;
   _currentAllocated += numDescriptors;
@@ -60,7 +59,7 @@ Descriptor_range Descriptor_heap_pool::allocateRange(uint32_t numDescriptors)
 
 uint32_t Descriptor_heap_pool::getAvailableDescriptorCount() const
 {
-    return _heapDesc.NumDescriptors - _currentAllocated;
+  return _heapDesc.NumDescriptors - _currentAllocated;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE Descriptor_heap_pool::getCpuDescriptorHandleForHeapStart()
@@ -71,4 +70,8 @@ D3D12_CPU_DESCRIPTOR_HANDLE Descriptor_heap_pool::getCpuDescriptorHandleForHeapS
 D3D12_GPU_DESCRIPTOR_HANDLE Descriptor_heap_pool::getGpuDescriptorHandleForHeapStart()
 {
   return _currentHeap->GetGPUDescriptorHandleForHeapStart();
+}
+void Descriptor_heap_pool::releaseRange(const Descriptor_range&)
+{
+  // TODO: return to some kind of pool?
 }

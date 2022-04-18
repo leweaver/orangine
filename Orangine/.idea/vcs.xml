@@ -2,5 +2,11 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/VS_2019_AMD64_Debug/_deps/directxtk12-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/VS_2019_AMD64_Debug/_deps/tinygltf_fc-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/VS_2019_AMD64_Debug/_deps/vectormath-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/out/build/windows-default/_deps/directxtk12-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/out/build/windows-default/_deps/tinygltf_fc-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/out/build/windows-default/_deps/vectormath-src" vcs="Git" />
   </component>
 </project>

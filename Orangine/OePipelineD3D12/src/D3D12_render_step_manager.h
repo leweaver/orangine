@@ -4,6 +4,7 @@
 
 #include "D3D12_device_resources.h"
 #include "D3D12_renderer_types.h"
+#include "D3D12_texture_manager.h"
 
 #include <vectormath.hpp>
 
@@ -17,12 +18,8 @@ namespace oe::pipeline_d3d12 {
 class D3D12_render_step_manager final : public Render_step_manager {
  public:
   struct D3D12_render_pass_data {
-    Descriptor_range renderTargets;
-    /*
-    std::vector<ID3D12RenderTargetView*> _renderTargetViews = {};
-    Microsoft::WRL::ComPtr<ID3D12BlendState> _blendState;
-    Microsoft::WRL::ComPtr<ID3D12DepthStencilState> _depthStencilState;
-     */
+    std::vector<std::pair<TextureInternalId, Descriptor_range>> renderTargetDescriptors;
+    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> cpuHandles;
   };
   struct D3D12_render_step_data {
     std::vector<D3D12_render_pass_data> renderPassData;
@@ -30,7 +27,7 @@ class D3D12_render_step_manager final : public Render_step_manager {
 
   D3D12_render_step_manager(
           IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
-          ITexture_manager& textureManager, IShadowmap_manager& shadowmapManager,
+          D3D12_texture_manager& textureManager, IShadowmap_manager& shadowmapManager,
           IEntity_render_manager& entityRenderManager, ILighting_manager& lightingManager,
           IPrimitive_mesh_data_factory& primitiveMeshDataFactory,
           std::unique_ptr<D3D12_device_resources> deviceResources);
@@ -65,7 +62,12 @@ class D3D12_render_step_manager final : public Render_step_manager {
   static std::string _name;
 
   std::unique_ptr<D3D12_device_resources> _deviceResources;
+  D3D12_texture_manager& _textureManagerD3D12;
+
   std::vector<D3D12_render_step_data> _renderStepData;
   std::vector<std::wstring> _passNames;
+
+  std::unordered_map<int32_t, std::pair<Descriptor_range, size_t>> _textureIdToDescriptorRangesAndUsageCount;
+  std::unique_ptr<pipeline_d3d12::Descriptor_heap_pool> _rtvDescriptorHeapPool;
 };
 }// namespace oe

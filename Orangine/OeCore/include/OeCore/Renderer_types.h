@@ -6,6 +6,8 @@
 #include <string>
 #include <vectormath.hpp>
 
+#include <gsl/span>
+
 namespace oe {
 
 // can be passed to some structs to invoke the explicit constructor that initializes default values.

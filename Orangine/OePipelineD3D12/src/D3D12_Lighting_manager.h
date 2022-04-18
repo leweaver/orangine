@@ -3,19 +3,23 @@
 #include <OeCore/ILighting_manager.h>
 
 #include "D3D12_renderer_data.h"
+#include "D3D12_device_resources.h"
 
 #include <vectormath.hpp>
 
 namespace oe {
 class ITexture_manager;
+}
 
+namespace oe::pipeline_d3d12 {
 class D3D12_lighting_manager : public ILighting_manager
-    , public Manager_base {
+    , public Manager_base, public Manager_deviceDependent {
  public:
-  explicit D3D12_lighting_manager(ITexture_manager& textureManager)
+  D3D12_lighting_manager(ITexture_manager& textureManager, D3D12_device_resources& deviceResources)
       : ILighting_manager()
       , Manager_base()
       , _textureManager(textureManager)
+      , _deviceResources(deviceResources)
   {}
 
   // Manager_base implementations
@@ -26,6 +30,9 @@ class D3D12_lighting_manager : public ILighting_manager
     return _name;
   }
 
+  void createDeviceDependentResources() override;
+  void destroyDeviceDependentResources() override;
+
   // ILighting_manager implementation
   void addEnvironmentVolume(Environment_volume& volume) override;
   void setCurrentVolumeEnvironmentLighting(const Vector3& position) override;
@@ -35,11 +42,11 @@ class D3D12_lighting_manager : public ILighting_manager
   }
   Render_light_data_impl<8>* getRenderLightDataLit() override
   {
-    return _renderLightData_lit.get();
+    return _deviceDependent._renderLightData_lit.get();
   }
   Render_light_data_impl<0>* getRenderLightDataUnlit() override
   {
-    return _renderLightData_unlit.get();
+    return _deviceDependent._renderLightData_unlit.get();
   }
 
   static void initStatics();
@@ -51,10 +58,14 @@ class D3D12_lighting_manager : public ILighting_manager
   Environment_volume _environment = {};
   Environment_volume::EnvironmentIBL _environmentIbl = {};
 
-  // The template arguments here must match the size of the lights array in the shader constant
-  // buffer files.
-  std::unique_ptr<D3D12_render_light_data<0>> _renderLightData_unlit;
-  std::unique_ptr<D3D12_render_light_data<8>> _renderLightData_lit;
+  struct {
+    // The template arguments here must match the size of the lights array in the shader constant
+    // buffer files.
+    std::unique_ptr<D3D12_render_light_data<0>> _renderLightData_unlit;
+    std::unique_ptr<D3D12_render_light_data<8>> _renderLightData_lit;
+  } _deviceDependent;
+
+  D3D12_device_resources& _deviceResources;
 
   static std::string _name;
 };

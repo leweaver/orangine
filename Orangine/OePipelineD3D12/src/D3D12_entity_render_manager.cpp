@@ -6,8 +6,8 @@
 
 #include <OeCore/Mesh_utils.h>
 
-using oe::Mesh_gpu_data;
 using Microsoft::WRL::ComPtr;
+using oe::Mesh_gpu_data;
 using namespace oe::pipeline_d3d12;
 
 template<>
@@ -24,8 +24,7 @@ void D3D12_entity_render_manager::drawRendererData(
         oe::Render_pass_blend_mode blendMode, const oe::Render_light_data& renderLightData,
         std::shared_ptr<Material> ptr, const oe::Mesh_vertex_layout& meshVertexLayout,
         oe::Material_context& materialContext, oe::Renderer_animation_data& rendererAnimationData, bool wireframe)
-{
-}
+{}
 
 void D3D12_entity_render_manager::createDeviceDependentResources()
 {
@@ -34,7 +33,8 @@ void D3D12_entity_render_manager::createDeviceDependentResources()
   _deviceDependent.device = device;
 }
 
-void D3D12_entity_render_manager::destroyDeviceDependentResources() {
+void D3D12_entity_render_manager::destroyDeviceDependentResources()
+{
   _deviceDependent = {};
 }
 
@@ -55,10 +55,12 @@ std::shared_ptr<Mesh_gpu_data> D3D12_entity_render_manager::createRendererData(
     rendererData->indexCount = meshData->indexBufferAccessor->count;
 
     const auto name = oe::utf8_decode("Index Buffer (count: " + std::to_string(rendererData->indexCount) + ")");
-    rendererData->indexBuffer = Gpu_buffer::create(_deviceDependent.device, name, *meshData->indexBufferAccessor, D3D12_RESOURCE_STATE_INDEX_BUFFER);
-    rendererData->indexFormat = mesh_utils::getDxgiFormat(Element_type::Scalar, meshData->indexBufferAccessor->component);
-
-  } else {
+    rendererData->indexBuffer = Gpu_buffer::create(
+            _deviceDependent.device, name, *meshData->indexBufferAccessor, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+    rendererData->indexFormat =
+            mesh_utils::getDxgiFormat(Element_type::Scalar, meshData->indexBufferAccessor->component);
+  }
+  else {
     // TODO: Simply log a warning, or try to draw a non-indexed mesh
     rendererData->indexCount = 0;
     OE_THROW(std::runtime_error("CreateRendererData: Missing index buffer"));
@@ -70,18 +72,42 @@ std::shared_ptr<Mesh_gpu_data> D3D12_entity_render_manager::createRendererData(
     const auto& vertexAttr = vertexAttrElement.semantic;
     if (rendererData->vertexBuffers.find(vertexAttr) != rendererData->vertexBuffers.end()) {
       OE_THROW(std::runtime_error(
-              std::string("Mesh data contains vertex attribute ") +
-              Vertex_attribute_meta::vsInputName(vertexAttr) + " more than once."));
+              std::string("Mesh data contains vertex attribute ") + Vertex_attribute_meta::vsInputName(vertexAttr) +
+              " more than once."));
     }
 
     Mesh_vertex_buffer_accessor* meshAccessor = findAccessorForSemantic(meshData, vertexMorphAttributes, vertexAttr);
 
-    const auto name = oe::utf8_decode(
-            "Vertex Buffer " + vertexAttributeToString(vertexAttr.attribute) +
-            std::to_string(vertexAttr.semanticIndex) + " (count: " + std::to_string(rendererData->indexCount) + ")");
-    rendererData->vertexBuffers[vertexAttr] = Gpu_buffer::create(_deviceDependent.device, name, *meshAccessor);
+    std::stringstream name;
+    name << "Vertex buffer";
+    if (!meshData->name.empty()) {
+      name << " (meshData: " << meshData->name << ")";
+    }
+    name << " (count: " << std::to_string(rendererData->indexCount) << ")";
+    rendererData->vertexBuffers[vertexAttr] = getOrCreateUsage(name.str(), meshAccessor->buffer);
   }
 
   _deviceDependent.createdRendererData.push_back(rendererData);
   return rendererData;
+}
+
+std::shared_ptr<Gpu_buffer_reference> D3D12_entity_render_manager::getOrCreateUsage(
+        const std::string_view& name, const std::shared_ptr<Mesh_buffer>& meshBuffer)
+{
+  auto pos = _deviceDependent.meshBufferToGpuBuffers.find(meshBuffer);
+  if (pos == _deviceDependent.meshBufferToGpuBuffers.end()) {
+    std::wstring name_w;
+    if (!name.empty()) {
+      name_w = oe::utf8_decode(name);
+    }
+    auto bufferPtr = Gpu_buffer::create(_deviceDependent.device, name_w, meshBuffer->dataSize);
+    auto gpuBufferRef = std::make_shared<Gpu_buffer_reference>();
+    gpuBufferRef->gpuBuffer = std::move(bufferPtr);
+    auto insertRes = _deviceDependent.meshBufferToGpuBuffers.insert(std::make_pair(meshBuffer, std::move(gpuBufferRef)));
+    OE_CHECK(insertRes.second);
+    pos = insertRes.first;
+
+    // TODO upload buffer data
+  }
+  return pos->second;
 }

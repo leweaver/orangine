@@ -134,24 +134,6 @@ Render_pass_stencil_mode stringToRenderPassStencilMode(const std::string & str)
 }
 
 ///////////////////////////////////
-// Render_pass_destination
-//
-std::string g_renderPassDestinationNames[] = {
-    "Default",
-    "Gbuffer",
-    "Render_target_view"
-};
-static_assert(static_cast<size_t>(Render_pass_destination::Num_render_pass_destination) == array_size(g_renderPassDestinationNames));
-const std::string& renderPassDestinationToString(Render_pass_destination enumValue)
-{
-    return g_renderPassDestinationNames[static_cast<size_t>(enumValue)];
-}
-Render_pass_destination stringToRenderPassDestination(const std::string & str)
-{
-    return stringToEnum<Render_pass_destination>(str, g_renderPassDestinationNames);
-}
-
-///////////////////////////////////
 // Vertex_attribute
 //
 std::string g_vertexAttributeNames[] = {

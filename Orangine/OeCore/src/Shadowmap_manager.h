@@ -39,7 +39,7 @@ class Shadowmap_manager : public IShadowmap_manager
  private:
   static std::string _name;
 
-  void verifyTexturePool() const;
+  bool verifyTexturePool() const;
   std::unique_ptr<Shadow_map_texture_pool> _texturePool;
   ITexture_manager& _textureManager;
 };

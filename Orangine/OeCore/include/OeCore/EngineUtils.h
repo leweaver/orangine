@@ -64,10 +64,10 @@ bool create_rotation_between_unit_vectors(
     const SSE::Vector3& directionTo);
 
 // Convert a wide Unicode string to an UTF8 string
-std::string utf8_encode(const std::wstring& wstring);
+std::string utf8_encode(const std::wstring_view& wstring);
 
 // Convert an UTF8 string to a wide Unicode String
-std::wstring utf8_decode(const std::string& str);
+std::wstring utf8_decode(const std::string_view& str);
 
 bool str_starts(const std::string& str, const std::string& prefix);
 bool str_ends(const std::string& str, const std::string& suffix);

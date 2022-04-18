@@ -10,7 +10,7 @@
 #include "PipelineUtils.h"
 
 using namespace DirectX;
-using namespace oe;
+using namespace oe::pipeline_d3d12;
 
 using Microsoft::WRL::ComPtr;
 
@@ -308,9 +308,10 @@ void D3D12_device_resources::resizePipelineResources(
     depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
     depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
+    _renderPipeline.dsvDescriptorRange = m_dsvDescriptorHeapPool->allocateRange(1);
     m_d3dDevice->CreateDepthStencilView(
             renderPipeline.depthStencilBuffer.Get(), &depthStencilDesc,
-            m_dsvDescriptorHeapPool->getCpuDescriptorHandleForHeapStart());
+            _renderPipeline.dsvDescriptorRange.cpuHandle);
   }
 
   // Set the 3D rendering viewport to target the entire window.
@@ -333,9 +334,11 @@ void D3D12_device_resources::createRenderPipeline(Render_pipeline& renderPipelin
       D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&renderPipeline.commandAllocator)));
 
   renderPipeline.commandList = createCommandListState();
+
+  renderPipeline.resourceUploadBatch = std::make_unique<DirectX::ResourceUploadBatch>(m_d3dDevice.Get());
 }
 
-D3D12_device_resources::Committed_gpu_resource D3D12_device_resources::getCurrentFrameBackBuffer() const
+Committed_gpu_resource D3D12_device_resources::getCurrentFrameBackBuffer() const
 {
   Committed_gpu_resource data{
           _renderPipeline.rtvBackBuffer[_renderPipeline.commandList.frameIndex].Get(),
@@ -348,12 +351,18 @@ D3D12_device_resources::Committed_gpu_resource D3D12_device_resources::getCurren
   return data;
 }
 
-D3D12_device_resources::Committed_gpu_resource D3D12_device_resources::getDepthStencil() const
+oe::Vector2u D3D12_device_resources::getBackBufferDimensions() const
+{
+  return {static_cast<uint32_t>(m_outputSize.right - m_outputSize.left),
+          static_cast<uint32_t>(m_outputSize.bottom - m_outputSize.top)};
+}
+
+Committed_gpu_resource D3D12_device_resources::getDepthStencil() const
 {
   return Committed_gpu_resource{
           _renderPipeline.depthStencilBuffer.Get(),
-          CD3DX12_CPU_DESCRIPTOR_HANDLE(m_dsvDescriptorHeapPool->getCpuDescriptorHandleForHeapStart()),
-          CD3DX12_GPU_DESCRIPTOR_HANDLE(m_dsvDescriptorHeapPool->getGpuDescriptorHandleForHeapStart())};
+          CD3DX12_CPU_DESCRIPTOR_HANDLE(_renderPipeline.dsvDescriptorRange.cpuHandle),
+          CD3DX12_GPU_DESCRIPTOR_HANDLE(_renderPipeline.dsvDescriptorRange.gpuHandle)};
 }
 
 bool D3D12_device_resources::checkSystemSupport(bool logFailures) {

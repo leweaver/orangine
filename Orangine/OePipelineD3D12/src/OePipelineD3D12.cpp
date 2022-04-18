@@ -1,6 +1,7 @@
 #include <OePipelineD3D12/OePipelineD3D12.h>
 
 #include "D3D12_device_resources.h"
+#include "D3D12_texture_manager.h"
 
 #include <memory>
 
@@ -24,11 +25,13 @@ void create(Manager_instances& managerInstances, oe::core::Manager_instances& co
   // Only device dependencies
   IDevice_resources& iDeviceResources = *managerInstances.deviceResources;
   auto userInterfaceManager = create_manager_instance<IUser_interface_manager>(iDeviceResources);
-  auto textureManager = create_manager_instance<ITexture_manager>(iDeviceResources);
+  auto textureManagerPtr = std::make_unique<oe::pipeline_d3d12::D3D12_texture_manager>(*deviceResources);
+  auto textureManagerImpl = textureManagerPtr.get();
+  auto textureManager = Manager_instance<ITexture_manager>(std::move(textureManagerPtr));
 
   auto primitiveMeshDataFactory = create_manager_instance<IPrimitive_mesh_data_factory>();
 
-  auto lightingManager = create_manager_instance<ILighting_manager>(*textureManager.instance);
+  auto lightingManager = create_manager_instance<ILighting_manager>(*textureManager.instance, *deviceResources);
   auto shadowmapManager = create_manager_instance<IShadowmap_manager>(*textureManager.instance);
   auto inputManager = create_manager_instance<IInput_manager>(*userInterfaceManager.instance);
 
@@ -48,7 +51,7 @@ void create(Manager_instances& managerInstances, oe::core::Manager_instances& co
 
   // Pulls everything together and draws pixels
   auto renderStepManager = create_manager_instance<IRender_step_manager>(sceneGraphManager, *devToolsManager.instance,
-                                                                         *textureManager.instance, *shadowmapManager.instance,
+                                                                         *textureManagerImpl, *shadowmapManager.instance,
                                                                          *entityRenderManager.instance, *lightingManager.instance, *primitiveMeshDataFactory.instance,
                                                                          deviceResources);
 
@@ -59,7 +62,8 @@ void create(Manager_instances& managerInstances, oe::core::Manager_instances& co
   std::get<Manager_instance<IMaterial_manager>>(managerInstances.managers) = std::move(materialManager);
   std::get<Manager_instance<IRender_step_manager>>(managerInstances.managers) = std::move(renderStepManager);
   std::get<Manager_instance<IShadowmap_manager>>(managerInstances.managers) = std::move(shadowmapManager);
-  std::get<Manager_instance<ITexture_manager>>(managerInstances.managers) = std::move(textureManager);
+  std::get<Manager_instance<ITexture_manager>>(managerInstances.managers) = {
+          std::move(textureManager.interfaces), std::move(textureManager.instance)};
   std::get<Manager_instance<IUser_interface_manager>>(managerInstances.managers) = std::move(userInterfaceManager);
   std::get<Manager_instance<IPrimitive_mesh_data_factory>>(managerInstances.managers) = std::move(primitiveMeshDataFactory);
 }

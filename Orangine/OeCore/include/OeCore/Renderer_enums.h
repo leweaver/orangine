@@ -84,17 +84,6 @@ enum class Render_pass_stencil_mode {
 const std::string& renderPassStencilModeToString(Render_pass_stencil_mode enumValue);
 Render_pass_stencil_mode stringToRenderPassStencilMode(const std::string& str);
 
-// Render_pass_destination
-enum class Render_pass_destination {
-  Default = 0,
-  Gbuffer,
-  Render_target_view,
-
-  Num_render_pass_destination = 3,
-};
-const std::string& renderPassDestinationToString(Render_pass_destination enumValue);
-Render_pass_destination stringToRenderPassDestination(const std::string& str);
-
 // Vertex_attribute
 enum class Vertex_attribute {
   Position = 0,

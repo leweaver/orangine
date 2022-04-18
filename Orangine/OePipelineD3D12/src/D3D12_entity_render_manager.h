@@ -31,6 +31,8 @@ class D3D12_entity_render_manager : public internal::Entity_render_manager {
           std::shared_ptr<Mesh_data> meshData, const std::vector<Vertex_attribute_element>& vertexAttributes,
           const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) override;
 
+  std::shared_ptr<Gpu_buffer_reference> getOrCreateUsage(const std::string_view& name, const std::shared_ptr<Mesh_buffer>& meshData);
+
  private:
   std::unique_ptr<Gpu_buffer> createGpuReadBuffer(const Mesh_buffer& meshBuffer, size_t strideInBytes);
 
@@ -38,7 +40,8 @@ class D3D12_entity_render_manager : public internal::Entity_render_manager {
 
   struct {
     std::vector<std::shared_ptr<Mesh_gpu_data>> createdRendererData;
-    ID3D12Device6* device;
+    ID3D12Device6* device = nullptr;
+    std::unordered_map<std::shared_ptr<Mesh_buffer>, std::shared_ptr<Gpu_buffer_reference>> meshBufferToGpuBuffers;
   } _deviceDependent;
 };
 }// namespace oe::pipeline_d3d12

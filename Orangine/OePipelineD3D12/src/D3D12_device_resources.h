@@ -6,13 +6,14 @@
 
 #include "OeCore/IDevice_resources.h"
 
+#include "D3D12_vendor.h"
+#include "D3D12_renderer_types.h"
 #include "Descriptor_heap_pool.h"
 
-#include "D3D12_vendor.h"
-#include <wrl/client.h>
 #include <ResourceUploadBatch.h>
+#include <wrl/client.h>
 
-namespace oe {
+namespace oe::pipeline_d3d12 {
 
 // Controls all the DirectX device resources.
 class D3D12_device_resources : public IDevice_resources {
@@ -21,14 +22,12 @@ class D3D12_device_resources : public IDevice_resources {
   static const unsigned int c_EnableHDR = 0x2;
 
   D3D12_device_resources(
-      HWND window,
-      DXGI_FORMAT backBufferFormat = DXGI_FORMAT_B8G8R8A8_UNORM,
-      DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D32_FLOAT,
-      UINT backBufferCount = 2,
-      unsigned int flags = 0);
+          HWND window, DXGI_FORMAT backBufferFormat = DXGI_FORMAT_B8G8R8A8_UNORM,
+          DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D32_FLOAT, UINT backBufferCount = 2, unsigned int flags = 0);
 
   // IDevice_resources interface
-  void registerDeviceNotify(IDevice_notify* deviceNotify) override {
+  void registerDeviceNotify(IDevice_notify* deviceNotify) override
+  {
     m_deviceNotify = deviceNotify;
   }
 
@@ -40,56 +39,80 @@ class D3D12_device_resources : public IDevice_resources {
   bool checkSystemSupport(bool logFailures) override;
 
 
-
   void Present();
 
   // Device Accessors.
-  RECT GetOutputSize() const { return m_outputSize; }
+  RECT GetOutputSize() const
+  {
+    return m_outputSize;
+  }
 
   // Direct3D Accessors.
-  ID3D12Device6* GetD3DDevice() const { return m_d3dDevice.Get(); }
-  D3D_FEATURE_LEVEL GetDeviceFeatureLevel() const { return m_d3dFeatureLevel; }
+  ID3D12Device6* GetD3DDevice() const
+  {
+    return m_d3dDevice.Get();
+  }
+  D3D_FEATURE_LEVEL GetDeviceFeatureLevel() const
+  {
+    return m_d3dFeatureLevel;
+  }
   // ID3D11Texture2D*        GetRenderTarget() const                 { return m_renderTarget.Get();
   // } ID3D11Texture2D*        GetDepthStencil() const                 { return
   // m_depthStencil.Get(); } ID3D11RenderTargetView*	GetRenderTargetView() const             {
   // return m_d3dRenderTargetView.Get(); } ID3D11DepthStencilView* GetDepthStencilView() const {
   // return m_d3dDepthStencilView.Get(); }
-  DXGI_FORMAT GetBackBufferFormat() const { return m_backBufferFormat; }
-  DXGI_FORMAT GetDepthBufferFormat() const { return m_depthBufferFormat; }
-  const D3D12_VIEWPORT& GetScreenViewport() const { return m_screenViewport; }
-  UINT GetBackBufferCount() const { return m_backBufferCount; }
-  DXGI_COLOR_SPACE_TYPE GetColorSpace() const { return m_colorSpace; }
-  unsigned int GetDeviceOptions() const { return m_options; }
+  DXGI_FORMAT GetBackBufferFormat() const
+  {
+    return m_backBufferFormat;
+  }
+  DXGI_FORMAT GetDepthBufferFormat() const
+  {
+    return m_depthBufferFormat;
+  }
+  const D3D12_VIEWPORT& GetScreenViewport() const
+  {
+    return m_screenViewport;
+  }
+  UINT GetBackBufferCount() const
+  {
+    return m_backBufferCount;
+  }
+  DXGI_COLOR_SPACE_TYPE GetColorSpace() const
+  {
+    return m_colorSpace;
+  }
+  unsigned int GetDeviceOptions() const
+  {
+    return m_options;
+  }
 
   ID3D12CommandQueue* GetCommandQueue() const;
 
   Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> GetPipelineCommandList();
-  DirectX::ResourceUploadBatch& getResourceUploader();
+  DirectX::ResourceUploadBatch& getResourceUploader() { return *_renderPipeline.resourceUploadBatch; }
 
   // Performance events
-  void PIXBeginEvent(_In_z_ const wchar_t* name) {
+  void PIXBeginEvent(_In_z_ const wchar_t* name)
+  {
     // m_d3dAnnotation->BeginEvent(name);
   }
 
-  void PIXEndEvent() {
+  void PIXEndEvent()
+  {
     // m_d3dAnnotation->EndEvent();
   }
 
-  void PIXSetMarker(_In_z_ const wchar_t* name) {
+  void PIXSetMarker(_In_z_ const wchar_t* name)
+  {
     // m_d3dAnnotation->SetMarker(name);
   }
 
-  struct Committed_gpu_resource {
-    ID3D12Resource* resource;
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle;
-    CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle;
-  };
   Committed_gpu_resource getCurrentFrameBackBuffer() const;
+  Vector2u getBackBufferDimensions() const;
   Committed_gpu_resource getDepthStencil() const;
 
  private:
-
-  struct Command_list_state  {
+  struct Command_list_state {
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList;
 
     // Synchronization objects.
@@ -108,13 +131,16 @@ class D3D12_device_resources : public IDevice_resources {
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
 
     Microsoft::WRL::ComPtr<IDXGISwapChain3> swapChain;
-    pipeline_d3d12::Descriptor_heap_pool::Descriptor_range rtvDescriptorRange;
+
+    Descriptor_range rtvDescriptorRange;
+    Descriptor_range dsvDescriptorRange;
     std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, frameCount> rtvBackBuffer;
 
     Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilBuffer;
 
     // TODO: will want more than one command list :)
     Command_list_state commandList;
+    std::unique_ptr<DirectX::ResourceUploadBatch> resourceUploadBatch;
   };
 
   void HandleDeviceLost();
@@ -123,15 +149,11 @@ class D3D12_device_resources : public IDevice_resources {
 
   void createRenderPipeline(Render_pipeline& renderPipeline);
 
-  void resizePipelineResources(
-      Render_pipeline& renderPipeline,
-      UINT backBufferWidth,
-      UINT backBufferHeight);
+  void resizePipelineResources(Render_pipeline& renderPipeline, UINT backBufferWidth, UINT backBufferHeight);
   void waitForPreviousFrame(Render_pipeline& renderPipeline);
 
   // If a null colour space is passed, just sets the state of m_colorSpace
   void updateColorSpace(const Microsoft::WRL::ComPtr<IDXGISwapChain>& swapChain);
-
 
 
   // Direct3D objects.
@@ -174,4 +196,4 @@ class D3D12_device_resources : public IDevice_resources {
   bool m_outputDetailedMemoryReport;
   Command_list_state createCommandListState();
 };
-} // namespace oe
+}// namespace oe

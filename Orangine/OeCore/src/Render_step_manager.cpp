@@ -15,10 +15,9 @@
 
 using namespace oe;
 
-Render_step_manager::Render_step::Render_step(
-    std::unique_ptr<Render_pass>&& renderPass,
-    std::wstring name)
-    : name(std::move(name)) {
+Render_step_manager::Render_step::Render_step(std::unique_ptr<Render_pass>&& renderPass, std::wstring name)
+    : name(std::move(name))
+{
   renderPasses.emplace_back(std::move(renderPass));
 }
 
@@ -50,15 +49,14 @@ Render_step_manager::Render_step_manager(
   };
 }
 
-void Render_step_manager::initialize() {
+void Render_step_manager::initialize()
+{
   using namespace std::placeholders;
 
   _renderableEntities = _sceneGraphManager.getEntityFilter({Renderable_component::type()});
   _lightEntities = _sceneGraphManager.getEntityFilter(
-      {Directional_light_component::type(),
-       Point_light_component::type(),
-       Ambient_light_component::type()},
-      Entity_filter_mode::Any);
+          {Directional_light_component::type(), Point_light_component::type(), Ambient_light_component::type()},
+          Entity_filter_mode::Any);
 
   _alphaSorter = std::make_unique<Entity_alpha_sorter>();
   _cullSorter = std::make_unique<Entity_cull_sorter>();
@@ -66,7 +64,8 @@ void Render_step_manager::initialize() {
   createRenderSteps();
 }
 
-void Render_step_manager::shutdown() {
+void Render_step_manager::shutdown()
+{
   if (_renderCount > 0) {
     std::stringstream ss;
     for (size_t i = 0; i < _renderTimes.size(); ++i) {
@@ -84,7 +83,8 @@ void Render_step_manager::shutdown() {
   _lightEntities.reset();
 }
 
-void Render_step_manager::createRenderSteps() {
+void Render_step_manager::createRenderSteps()
+{
   // Shadow maps
   {
     auto pass = createShadowMapRenderPass();
@@ -98,61 +98,56 @@ void Render_step_manager::createRenderSteps() {
 
   // Deferred Lighting
   {
-    auto clearGBufferPass = std::make_unique<Render_pass_generic>(
-        [this](const auto& cameraData, const Render_pass& pass) {
-          // Clear the rendered textures (ignoring depth)
-          auto& quad = _renderPassDeferredData.pass0ScreenSpaceQuad;
-          if (!quad.rendererData.expired() && quad.material) {
-            try {
-              _entityRenderManager.renderRenderable(
-                  quad,
-                  SSE::Matrix4::identity(),
-                  0.0f,
-                  Camera_data::IDENTITY,
-                  Light_provider::no_light_provider,
-                  pass.getDepthStencilConfig().blendMode,
-                  false);
-            } catch (std::runtime_error& e) {
-              _fatalError = true;
-              LOG(WARNING) << "Failed to clear G Buffer.\n" << e.what();
-            }
-          }
-        });
-
-    auto drawEntitiesPass = std::make_unique<Render_pass_generic>(
-        [this](const auto& cameraData, const Render_pass& pass) {
-          if (_enableDeferredRendering) {
-            _cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
-              for (const auto& entry : entities) {
-                // TODO: Stats
-                // ++_renderStats.opaqueEntityCount;
-                renderEntity(entry.entity, cameraData, Light_provider::no_light_provider, pass.getDepthStencilConfig());
+    auto clearGBufferPass =
+            std::make_unique<Render_pass_generic>([this](const auto& cameraData, const Render_pass& pass) {
+              // Clear the rendered textures (ignoring depth)
+              auto& quad = _renderPassDeferredData.pass0ScreenSpaceQuad;
+              if (!quad.rendererData.expired() && quad.material) {
+                try {
+                  _entityRenderManager.renderRenderable(
+                          quad, SSE::Matrix4::identity(), 0.0f, Camera_data::IDENTITY,
+                          Light_provider::no_light_provider, pass.getDepthStencilConfig().blendMode, false);
+                }
+                catch (std::runtime_error& e) {
+                  _fatalError = true;
+                  LOG(WARNING) << "Failed to clear G Buffer.\n" << e.what();
+                }
               }
             });
+
+    auto drawEntitiesPass = std::make_unique<Render_pass_generic>([this](const auto& cameraData,
+                                                                         const Render_pass& pass) {
+      if (_enableDeferredRendering) {
+        _cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
+          for (const auto& entry : entities) {
+            // TODO: Stats
+            // ++_renderStats.opaqueEntityCount;
+            renderEntity(entry.entity, cameraData, Light_provider::no_light_provider, pass.getDepthStencilConfig());
           }
         });
+      }
+    });
 
-    auto drawLightsPass = std::make_unique<Render_pass_generic>(
-        [this](const auto& cameraData, const Render_pass& pass) {
-          clearRenderTargetView(oe::Colors::Black);
+    auto drawLightsPass =
+            std::make_unique<Render_pass_generic>([this](const auto& cameraData, const Render_pass& pass) {
+              clearRenderTargetView(oe::Colors::Black);
 
-          if (!_fatalError) {
-            if (_enableDeferredRendering) {
-              renderLights(cameraData, pass.getDepthStencilConfig().blendMode);
-            }
-          }
-        });
+              if (!_fatalError) {
+                if (_enableDeferredRendering) {
+                  renderLights(cameraData, pass.getDepthStencilConfig().blendMode);
+                }
+              }
+            });
 
     clearGBufferPass->setDepthStencilConfig(
-        Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Disabled));
+            Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Disabled));
     drawEntitiesPass->setDepthStencilConfig(
-        Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_write));
+            Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_write));
     drawLightsPass->setDepthStencilConfig(
-        Depth_stencil_config(Render_pass_blend_mode::Additive, Render_pass_depth_mode::Disabled));
+            Depth_stencil_config(Render_pass_blend_mode::Additive, Render_pass_depth_mode::Disabled));
 
-    clearGBufferPass->setDrawDestination(Render_pass_destination::Gbuffer);
-    drawEntitiesPass->setDrawDestination(Render_pass_destination::Gbuffer);
-    drawLightsPass->setDrawDestination(Render_pass_destination::Render_target_view);
+    _gbufferRenderPasses.push_back(clearGBufferPass.get());
+    _gbufferRenderPasses.push_back(drawEntitiesPass.get());
 
     auto step = std::make_unique<Render_step>(L"Deferred Lighting");
 
@@ -164,73 +159,66 @@ void Render_step_manager::createRenderSteps() {
 
   // Standard Lighting pass
   {
-    auto drawTransparentEntitiesPass = std::make_unique<Render_pass_generic>(
-        [this](const auto& cameraData, const Render_pass& pass) {
-          _alphaSorter->waitThen([this, &cameraData, &pass](
-                                     const std::vector<Entity_alpha_sorter_entry>& entries) {
-            if (!_fatalError) {
-              _cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
-                for (const auto& entry : entities) {
-                  // TODO: Stats
-                  // ++_renderStats.alphaEntityCount;
-                  renderEntity(entry.entity, cameraData, _simpleLightProvider, pass.getDepthStencilConfig());
+    auto drawTransparentEntitiesPass =
+            std::make_unique<Render_pass_generic>([this](const auto& cameraData, const Render_pass& pass) {
+              _alphaSorter->waitThen([this, &cameraData, &pass](const std::vector<Entity_alpha_sorter_entry>& entries) {
+                if (!_fatalError) {
+                  _cullSorter->waitThen([&](const std::vector<Entity_cull_sorter_entry>& entities) {
+                    for (const auto& entry : entities) {
+                      // TODO: Stats
+                      // ++_renderStats.alphaEntityCount;
+                      renderEntity(entry.entity, cameraData, _simpleLightProvider, pass.getDepthStencilConfig());
+                    }
+                  });
                 }
               });
-            }
-          });
-        });
-    drawTransparentEntitiesPass->setDepthStencilConfig(Depth_stencil_config(
-        Render_pass_blend_mode::Blended_alpha, Render_pass_depth_mode::Read_write));
-
-    drawTransparentEntitiesPass->setDrawDestination(Render_pass_destination::Render_target_view);
+            });
+    drawTransparentEntitiesPass->setDepthStencilConfig(
+            Depth_stencil_config(Render_pass_blend_mode::Blended_alpha, Render_pass_depth_mode::Read_write));
 
     _renderSteps.emplace_back(new Render_step(std::move(drawTransparentEntitiesPass), L"Standard Lighting"));
   }
 
   // Debug Elements
   {
-    auto drawDebugElementsPass = std::make_unique<Render_pass_generic>(
-        [this](const auto& cameraData, const Render_pass& pass) {
-          _devToolsManager.renderDebugShapes(cameraData);
-        });
+    auto drawDebugElementsPass =
+            std::make_unique<Render_pass_generic>([this](const auto& cameraData, const Render_pass& pass) {
+              _devToolsManager.renderDebugShapes(cameraData);
+            });
     drawDebugElementsPass->setDepthStencilConfig(
-        Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Write_only));
-    drawDebugElementsPass->setDrawDestination(Render_pass_destination::Render_target_view);
+            Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Write_only));
     _renderSteps.emplace_back(new Render_step(std::move(drawDebugElementsPass), L"Debug Elements"));
   }
 
   // Sky box
   {
-    auto drawSkyboxPass = std::make_unique<Render_pass_skybox>(_entityRenderManager, _lightingManager, _primitiveMeshDataFactory);
+    auto drawSkyboxPass =
+            std::make_unique<Render_pass_skybox>(_entityRenderManager, _lightingManager, _primitiveMeshDataFactory);
     drawSkyboxPass->setDepthStencilConfig(
-        Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_only));
-    drawSkyboxPass->setDrawDestination(Render_pass_destination::Render_target_view);
+            Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_only));
     _renderSteps.emplace_back(new Render_step(std::move(drawSkyboxPass), L"Sky box"));
   }
 }
 
-void Render_step_manager::createDeviceDependentResources() {
+void Render_step_manager::createDeviceDependentResources()
+{
   auto deferredLightMaterial = std::make_shared<Deferred_light_material>();
   _renderPassDeferredData.deferredLightMaterial = deferredLightMaterial;
 
   _renderPassDeferredData.pass0ScreenSpaceQuad =
-      _entityRenderManager.createScreenSpaceQuad(std::make_shared<Clear_gbuffer_material>());
-  _renderPassDeferredData.pass2ScreenSpaceQuad =
-      _entityRenderManager.createScreenSpaceQuad(deferredLightMaterial);
+          _entityRenderManager.createScreenSpaceQuad(std::make_shared<Clear_gbuffer_material>());
+  _renderPassDeferredData.pass2ScreenSpaceQuad = _entityRenderManager.createScreenSpaceQuad(deferredLightMaterial);
 
   createRenderStepResources();
 }
 
-void Render_step_manager::createWindowSizeDependentResources(
-    HWND /*window*/,
-    int width,
-    int height) {
-  std::vector<std::shared_ptr<Texture>> renderTargets0;
-  renderTargets0.resize(maxRenderTargetViews());
-  for (auto& renderTargetViewTexture : renderTargets0) {
+void Render_step_manager::createWindowSizeDependentResources(HWND /*window*/, int width, int height)
+{
+  auto gbufferRenderTargets = std::vector<std::shared_ptr<Texture>>(maxRenderTargetViews());
+  for (auto& gbufferRenderTarget : gbufferRenderTargets) {
     const auto renderTargetTexture = _textureManager.createRenderTargetTexture(width, height);
     _textureManager.load(*renderTargetTexture);
-    renderTargetViewTexture = renderTargetTexture;
+    gbufferRenderTarget = renderTargetTexture;
   }
 
   // Step Deferred, Pass 0
@@ -241,38 +229,21 @@ void Render_step_manager::createWindowSizeDependentResources(
 
     // Assign textures to the deferred light material
     auto deferredLightMaterial = _renderPassDeferredData.deferredLightMaterial;
-    deferredLightMaterial->setColor0Texture(renderTargets0.at(0));
-    deferredLightMaterial->setColor1Texture(renderTargets0.at(1));
-    deferredLightMaterial->setColor2Texture(renderTargets0.at(2));
+    deferredLightMaterial->setColor0Texture(gbufferRenderTargets.at(0));
+    deferredLightMaterial->setColor1Texture(gbufferRenderTargets.at(1));
+    deferredLightMaterial->setColor2Texture(gbufferRenderTargets.at(2));
     deferredLightMaterial->setDepthTexture(depthTexture);
     deferredLightMaterial->setShadowMapDepthTexture(_shadowmapManager.shadowMapDepthTextureArray());
     deferredLightMaterial->setShadowMapStencilTexture(_shadowmapManager.shadowMapStencilTextureArray());
   }
 
-  const auto renderTargetViewTexture = _textureManager.createRenderTargetViewTexture();
-  std::vector<std::shared_ptr<Texture>> renderTargets1;
-  renderTargets1.resize(maxRenderTargetViews(), nullptr);
-  renderTargets1[0] = renderTargetViewTexture;
-
-  for (auto& step : _renderSteps) {
-    for (auto& pass : step->renderPasses) {
-      switch (pass->getDrawDestination()) {
-      case Render_pass_destination::Gbuffer:
-        // Give the render targets to the render pass
-        pass->setRenderTargets(renderTargets0);
-        break;
-      case Render_pass_destination::Render_target_view:
-        // Same as default
-      default:
-        // Give the render targets to the render pass
-        pass->setRenderTargets(renderTargets1);
-        break;
-      }
-    }
+  for (Render_pass* gbufferRenderPass : _gbufferRenderPasses) {
+    gbufferRenderPass->setCustomRenderTargets(gbufferRenderTargets);
   }
 }
 
-void Render_step_manager::destroyDeviceDependentResources() {
+void Render_step_manager::destroyDeviceDependentResources()
+{
   // Unload shadow maps
   if (_lightEntities) {
     for (const auto& lightEntity : *_lightEntities) {
@@ -283,7 +254,7 @@ void Render_step_manager::destroyDeviceDependentResources() {
           _shadowmapManager.returnTexture(std::move(component->shadowData()->shadowMap));
         }
         else {
-          assert(!component->shadowData());
+          OE_CHECK(!component->shadowData());
         }
       }
     }
@@ -296,10 +267,11 @@ void Render_step_manager::destroyDeviceDependentResources() {
   _fatalError = false;
 }
 
-void Render_step_manager::destroyWindowSizeDependentResources() {
+void Render_step_manager::destroyWindowSizeDependentResources()
+{
   for (auto& step : _renderSteps) {
     for (auto& pass : step->renderPasses) {
-      pass->clearRenderTargets();
+      pass->clearCustomRenderTargets();
     }
   }
 }
@@ -309,7 +281,8 @@ void Render_step_manager::setCameraEntity(std::shared_ptr<Entity> cameraEntity)
   _cameraEntity = cameraEntity;
 }
 
-void Render_step_manager::render() {
+void Render_step_manager::render()
+{
   // Create a camera matrix
   Camera_data cameraData;
   SSE::Vector3 cameraPos = {};
@@ -325,12 +298,11 @@ void Render_step_manager::render() {
 
     cameraData = createCameraData(*cameraComponent);
     cameraPos = _cameraEntity->worldPosition();
-  } else {
+  }
+  else {
     cameraData = createCameraData(
-        SSE::Matrix4::identity(),
-        Camera_component::DEFAULT_FOV,
-        Camera_component::DEFAULT_NEAR_PLANE,
-        Camera_component::DEFAULT_FAR_PLANE);
+            SSE::Matrix4::identity(), Camera_component::DEFAULT_FOV, Camera_component::DEFAULT_NEAR_PLANE,
+            Camera_component::DEFAULT_FAR_PLANE);
   }
   const auto frustum = BoundingFrustumRH(cameraData.projectionMatrix);
 
@@ -338,21 +310,20 @@ void Render_step_manager::render() {
 
   // Block on the cull sorter, since we can't render until it is done; and it is a good place to
   // kick off the alpha sort.
-  _cullSorter->waitThen(
-      [this, cameraPos, cameraData](const std::vector<Entity_cull_sorter_entry>& entities) {
-        // Find the list of entities that have alpha, and sort them.
-        _alphaSorter->beginSortAsync(entities.begin(), entities.end(), cameraPos);
+  _cullSorter->waitThen([this, cameraPos, cameraData](const std::vector<Entity_cull_sorter_entry>& entities) {
+    // Find the list of entities that have alpha, and sort them.
+    _alphaSorter->beginSortAsync(entities.begin(), entities.end(), cameraPos);
 
-        // Render steps
-        _entityRenderManager.clearRenderStats();
+    // Render steps
+    _entityRenderManager.clearRenderStats();
 
-        clearDepthStencil(1.0f, 0);
+    clearDepthStencil(1.0f, 0);
 
-        // Load lighting for camera
-        applyEnvironmentVolume(cameraPos);
+    // Load lighting for camera
+    applyEnvironmentVolume(cameraPos);
 
-        renderSteps(cameraData);
-      });
+    renderSteps(cameraData);
+  });
 
   ++_renderCount;
 
@@ -362,14 +333,14 @@ void Render_step_manager::render() {
   }
 }
 
-void Render_step_manager::applyEnvironmentVolume(const Vector3& cameraPos) {
+void Render_step_manager::applyEnvironmentVolume(const Vector3& cameraPos)
+{
   _lightingManager.setCurrentVolumeEnvironmentLighting(cameraPos);
 }
 
 // TODO: Move this to a Render_pass_deferred class?
-void Render_step_manager::renderLights(
-    const Camera_data& cameraData,
-    Render_pass_blend_mode blendMode) {
+void Render_step_manager::renderLights(const Camera_data& cameraData, Render_pass_blend_mode blendMode)
+{
   try {
     auto& quad = _renderPassDeferredData.pass2ScreenSpaceQuad;
 
@@ -379,36 +350,29 @@ void Render_step_manager::renderLights(
     std::vector<Entity*> deferredLights;
     const auto funcName = static_cast<const char*>(__PRETTY_FUNCTION__);
     const auto deferredLightProvider =
-        [&deferredLights, funcName](
-            const BoundingSphere& target, std::vector<Entity*>& lights, uint32_t maxLights) {
-          if (lights.size() + deferredLights.size() > static_cast<size_t>(maxLights)) {
-            throw oe::log_exception_for_throw(
-                    std::logic_error("destination lights array is not large enough to contain "
-                                     "Deferred_light_material's lights"),
-                    __FILE__, __LINE__, funcName);
-          }
+            [&deferredLights,
+             funcName](const BoundingSphere& target, std::vector<Entity*>& lights, uint32_t maxLights) {
+              if (lights.size() + deferredLights.size() > static_cast<size_t>(maxLights)) {
+                throw oe::log_exception_for_throw(
+                        std::logic_error("destination lights array is not large enough to contain "
+                                         "Deferred_light_material's lights"),
+                        __FILE__, __LINE__, funcName);
+              }
 
-          lights.insert(lights.end(), deferredLights.begin(), deferredLights.end());
-        };
+              lights.insert(lights.end(), deferredLights.begin(), deferredLights.end());
+            };
 
     auto lightIndex = 0u;
     const auto maxLights = deferredLightMaterial->max_lights;
     auto renderedOnce = false;
 
     deferredLightMaterial->setupEmitted(true);
-    for (auto eIter = _lightEntities->begin(); eIter != _lightEntities->end();
-         ++eIter, ++lightIndex) {
+    for (auto eIter = _lightEntities->begin(); eIter != _lightEntities->end(); ++eIter, ++lightIndex) {
       deferredLights.push_back(eIter->get());
 
       if (lightIndex == maxLights) {
         _entityRenderManager.renderRenderable(
-            quad,
-            SSE::Matrix4::identity(),
-            0.0f,
-            cameraData,
-            deferredLightProvider,
-            blendMode,
-            false);
+                quad, SSE::Matrix4::identity(), 0.0f, cameraData, deferredLightProvider, blendMode, false);
 
         deferredLightMaterial->setupEmitted(false);
         renderedOnce = true;
@@ -420,33 +384,24 @@ void Render_step_manager::renderLights(
 
     if (!deferredLights.empty() || !renderedOnce) {
       _entityRenderManager.renderRenderable(
-          quad,
-          SSE::Matrix4::identity(),
-          0.0f,
-          cameraData,
-          deferredLightProvider,
-          blendMode,
-          false);
+              quad, SSE::Matrix4::identity(), 0.0f, cameraData, deferredLightProvider, blendMode, false);
     }
-  } catch (const std::runtime_error& e) {
+  }
+  catch (const std::runtime_error& e) {
     _fatalError = true;
     LOG(WARNING) << "Failed to render lights.\n" << e.what();
   }
 }
 
-Camera_data Render_step_manager::createCameraData(Camera_component& component) const {
+Camera_data Render_step_manager::createCameraData(Camera_component& component) const
+{
   return createCameraData(
-          component.getEntity().worldTransform(),
-      component.fov(),
-      component.nearPlane(),
-      component.farPlane());
+          component.getEntity().worldTransform(), component.fov(), component.nearPlane(), component.farPlane());
 }
 
 Camera_data Render_step_manager::createCameraData(
-    const SSE::Matrix4& worldTransform,
-    float fov,
-    float nearPlane,
-    float farPlane) const {
+        const SSE::Matrix4& worldTransform, float fov, float nearPlane, float farPlane) const
+{
   const auto viewport = getScreenViewport();
   const auto aspectRatio = viewport.width / viewport.height;
 
@@ -463,18 +418,13 @@ Camera_data Render_step_manager::createCameraData(
 
   const auto perspectiveMat = SSE::Matrix4::perspective(fov, aspectRatio, nearPlane, farPlane);
 
-  return {
-      SSE::Matrix4::lookAt(pos, pos + forward.getXYZ(), up.getXYZ()),
-      perspectiveMat,
-      fov,
-      aspectRatio};
+  return {SSE::Matrix4::lookAt(pos, pos + forward.getXYZ(), up.getXYZ()), perspectiveMat, fov, aspectRatio};
 }
 
 void Render_step_manager::renderEntity(
-    Entity* entity,
-    const Camera_data& cameraData,
-    Light_provider::Callback_type& lightProvider,
-    const Depth_stencil_config& depthStencilConfig) const {
+        Entity* entity, const Camera_data& cameraData, Light_provider::Callback_type& lightProvider,
+        const Depth_stencil_config& depthStencilConfig) const
+{
   auto* const renderable = entity->getFirstComponentOfType<Renderable_component>();
   if (!renderable || !renderable->visible()) {
     return;
@@ -488,7 +438,8 @@ void Render_step_manager::renderEntity(
     if (material->getAlphaMode() != Material_alpha_mode::Blend) {
       return;
     }
-  } else {
+  }
+  else {
     if (material->getAlphaMode() == Material_alpha_mode::Blend) {
       return;
     }
@@ -497,7 +448,8 @@ void Render_step_manager::renderEntity(
   _entityRenderManager.renderEntity(*renderable, cameraData, lightProvider, depthStencilConfig.blendMode);
 }
 
-BoundingFrustumRH Render_step_manager::createFrustum(const Camera_component& cameraComponent) {
+BoundingFrustumRH Render_step_manager::createFrustum(const Camera_component& cameraComponent)
+{
   const auto viewport = getScreenViewport();
   const auto aspectRatio = viewport.width / viewport.height;
 

@@ -24,8 +24,8 @@ class ITexture_manager {
   // A 32 bit RGBA render target texture that can be drawn to, and read by other materials.
   virtual std::shared_ptr<Texture> createRenderTargetTexture(int width, int height) = 0;
 
-  // A texture that points to the main view
-  virtual std::shared_ptr<Texture> createRenderTargetViewTexture() = 0;
+  // A texture that points to the backbuffer of the main view. Can be used as a render target.
+  virtual std::shared_ptr<Texture> createSwapchainBackBufferTexture() = 0;
 
   // Used to allocate textures for shadowmapping
   virtual std::unique_ptr<Shadow_map_texture_pool> createShadowMapTexturePool(

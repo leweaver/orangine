@@ -79,7 +79,7 @@ inline D3D12_FILTER toD3DBasicFilter(Sampler_filter_type minFilterType, Sampler_
   return D3D12_ENCODE_BASIC_FILTER(minFilter, magFilter, mipFilter, D3D12_FILTER_REDUCTION_TYPE_STANDARD);
 }
 
-D3D12_SHADER_VISIBILITY toD3dShaderVisibility(Shader_constant_buffer_visibility visibility) {
+inline D3D12_SHADER_VISIBILITY toD3dShaderVisibility(Shader_constant_buffer_visibility visibility) {
   switch (visibility) {
     case Shader_constant_buffer_visibility::All:
       return D3D12_SHADER_VISIBILITY_ALL;

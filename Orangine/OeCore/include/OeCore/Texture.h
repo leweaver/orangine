@@ -9,8 +9,9 @@ namespace oe {
 enum class Texture_flags {
   Invalid = 0,
   Is_valid = 1 << 0,
-  Is_array_texture = 1 << 1,// this is a 3d (array) texture
-  Is_array_slice = 1 << 2,  // is a single slice of an array texture
+  Is_array_texture = 1 << 1,// this is an array texture
+  Is_cube_texture = 1 << 2,// this is a cube texture
+  Is_array_slice = 1 << 3,  // is a single slice of an array texture
 };
 
 using TextureInternalId = int64_t;
@@ -38,6 +39,14 @@ class Texture {
   {
     return _flags & static_cast<uint32_t>(Texture_flags::Is_array_slice);
   }
+  bool isCubeMap() const
+  {
+    return _flags & static_cast<uint32_t>(Texture_flags::Is_cube_texture);
+  }
+  bool isArray() const
+  {
+    return _flags & static_cast<uint32_t>(Texture_flags::Is_array_texture);
+  }
 
   // Returns which array slice this texture is; only valid when Is_array_slice flag is present.
   uint32_t arraySlice() const
@@ -49,6 +58,11 @@ class Texture {
   {
     return _internalId;
   }
+
+  /**
+   * A name that can be used to identify this texture.
+   */
+  virtual const std::string& getName() const = 0;
 
  protected:
   Texture(TextureInternalId internalId)

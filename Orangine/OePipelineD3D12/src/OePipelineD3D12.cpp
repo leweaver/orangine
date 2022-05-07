@@ -37,7 +37,7 @@ void create(Manager_instances& managerInstances, oe::core::Manager_instances& co
 
   auto materialManager = create_manager_instance<IMaterial_manager>(
           coreManagerInstances.getInstance<IAsset_manager>(),
-          *textureManager.instance,
+          *textureManagerImpl,
           *lightingManager.instance,
           *primitiveMeshDataFactory.instance,
           *deviceResources);

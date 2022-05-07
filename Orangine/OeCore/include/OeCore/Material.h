@@ -115,6 +115,8 @@ class Material {
 
   virtual Shader_constant_layout getShaderConstantLayout() const = 0;
 
+  virtual Shader_output_layout getShaderOutputLayout() const = 0;
+
   /*
    * Per Frame
    */

@@ -14,6 +14,7 @@ struct Descriptor_range {
   CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle;
   size_t incrementSize;
   uint32_t descriptorCount;
+  uint32_t offsetInDescriptorsFromHeapStart;
 };
 
 struct Committed_gpu_resource {
@@ -23,6 +24,10 @@ struct Committed_gpu_resource {
 };
 
 struct Gpu_buffer_reference {
+  // CPU Source data
+  std::shared_ptr<Mesh_buffer_accessor> cpuBuffer;
+
+  // GPU Destination
   std::unique_ptr<Gpu_buffer> gpuBuffer;
 };
 

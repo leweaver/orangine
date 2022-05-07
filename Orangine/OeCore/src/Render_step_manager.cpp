@@ -15,7 +15,7 @@
 
 using namespace oe;
 
-Render_step_manager::Render_step::Render_step(std::unique_ptr<Render_pass>&& renderPass, std::wstring name)
+Render_step_manager::Render_step::Render_step(std::unique_ptr<Render_pass> renderPass, std::wstring name)
     : name(std::move(name))
 {
   renderPasses.emplace_back(std::move(renderPass));
@@ -62,6 +62,8 @@ void Render_step_manager::initialize()
   _cullSorter = std::make_unique<Entity_cull_sorter>();
 
   createRenderSteps();
+
+  _renderTimes.resize(_renderSteps.size());
 }
 
 void Render_step_manager::shutdown()
@@ -69,7 +71,7 @@ void Render_step_manager::shutdown()
   if (_renderCount > 0) {
     std::stringstream ss;
     for (size_t i = 0; i < _renderTimes.size(); ++i) {
-      const auto renderTime = _renderTimes[i];
+      const auto renderTime = _renderTimes.at(i);
       if (renderTime > 0.0) {
         ss << "  " << i << ": " << (1000.0 * renderTime / _renderCount) << std::endl;
       }
@@ -85,15 +87,20 @@ void Render_step_manager::shutdown()
 
 void Render_step_manager::createRenderSteps()
 {
+  // Begin resource loading
+  {
+    _renderSteps.emplace_back(std::make_unique<Render_step>(createResourceUploadBeginPass(), L"Begin Resource Upload"));
+  }
+
   // Shadow maps
   {
     auto pass = createShadowMapRenderPass();
-    auto stencilConfig = Depth_stencil_config(Default_values());
-    stencilConfig.stencilMode = Render_pass_stencil_mode::Enabled;
+    Depth_stencil_config stencilConfig{
+            Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_write, Render_pass_stencil_mode::Enabled};
     pass->setDepthStencilConfig(stencilConfig);
     pass->setStencilRef(1);
 
-    _renderSteps.emplace_back(new Render_step(std::move(pass), L"Shadow Map"));
+    _renderSteps.emplace_back(std::make_unique<Render_step>(std::move(pass), L"Shadow Map"));
   }
 
   // Deferred Lighting
@@ -106,7 +113,7 @@ void Render_step_manager::createRenderSteps()
                 try {
                   _entityRenderManager.renderRenderable(
                           quad, SSE::Matrix4::identity(), 0.0f, Camera_data::IDENTITY,
-                          Light_provider::no_light_provider, pass.getDepthStencilConfig().blendMode, false);
+                          Light_provider::no_light_provider, pass.getDepthStencilConfig(), false);
                 }
                 catch (std::runtime_error& e) {
                   _fatalError = true;
@@ -134,7 +141,7 @@ void Render_step_manager::createRenderSteps()
 
               if (!_fatalError) {
                 if (_enableDeferredRendering) {
-                  renderLights(cameraData, pass.getDepthStencilConfig().blendMode);
+                  renderLights(cameraData, pass.getDepthStencilConfig());
                 }
               }
             });
@@ -153,7 +160,7 @@ void Render_step_manager::createRenderSteps()
 
     step->renderPasses.emplace_back(std::move(clearGBufferPass));
     step->renderPasses.emplace_back(std::move(drawEntitiesPass));
-    step->renderPasses.emplace_back(std::move(drawLightsPass));
+    //step->renderPasses.emplace_back(std::move(drawLightsPass));
     _renderSteps.emplace_back(std::move(step));
   }
 
@@ -176,7 +183,8 @@ void Render_step_manager::createRenderSteps()
     drawTransparentEntitiesPass->setDepthStencilConfig(
             Depth_stencil_config(Render_pass_blend_mode::Blended_alpha, Render_pass_depth_mode::Read_write));
 
-    _renderSteps.emplace_back(new Render_step(std::move(drawTransparentEntitiesPass), L"Standard Lighting"));
+    _renderSteps.emplace_back(
+            std::make_unique<Render_step>(std::move(drawTransparentEntitiesPass), L"Standard Lighting"));
   }
 
   // Debug Elements
@@ -187,7 +195,7 @@ void Render_step_manager::createRenderSteps()
             });
     drawDebugElementsPass->setDepthStencilConfig(
             Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Write_only));
-    _renderSteps.emplace_back(new Render_step(std::move(drawDebugElementsPass), L"Debug Elements"));
+    _renderSteps.emplace_back(std::make_unique<Render_step>(std::move(drawDebugElementsPass), L"Debug Elements"));
   }
 
   // Sky box
@@ -196,34 +204,39 @@ void Render_step_manager::createRenderSteps()
             std::make_unique<Render_pass_skybox>(_entityRenderManager, _lightingManager, _primitiveMeshDataFactory);
     drawSkyboxPass->setDepthStencilConfig(
             Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_only));
-    _renderSteps.emplace_back(new Render_step(std::move(drawSkyboxPass), L"Sky box"));
+    _renderSteps.emplace_back(std::make_unique<Render_step>(std::move(drawSkyboxPass), L"Sky box"));
   }
+
+  _renderSteps.emplace_back(std::make_unique<Render_step>(createResourceUploadEndPass(), L"End Resource Upload"));
 }
 
 void Render_step_manager::createDeviceDependentResources()
 {
-  auto deferredLightMaterial = std::make_shared<Deferred_light_material>();
-  _renderPassDeferredData.deferredLightMaterial = deferredLightMaterial;
+  _renderPassDeferredData.deferredLightMaterial = std::make_shared<Deferred_light_material>();
+  _renderPassDeferredData.clearGbufferMaterial = std::make_shared<Clear_gbuffer_material>();
 
   _renderPassDeferredData.pass0ScreenSpaceQuad =
-          _entityRenderManager.createScreenSpaceQuad(std::make_shared<Clear_gbuffer_material>());
-  _renderPassDeferredData.pass2ScreenSpaceQuad = _entityRenderManager.createScreenSpaceQuad(deferredLightMaterial);
+          _entityRenderManager.createScreenSpaceQuad(_renderPassDeferredData.clearGbufferMaterial);
+  _renderPassDeferredData.pass2ScreenSpaceQuad =
+          _entityRenderManager.createScreenSpaceQuad(_renderPassDeferredData.deferredLightMaterial);
 
   createRenderStepResources();
 }
 
 void Render_step_manager::createWindowSizeDependentResources(HWND /*window*/, int width, int height)
 {
-  auto gbufferRenderTargets = std::vector<std::shared_ptr<Texture>>(maxRenderTargetViews());
-  for (auto& gbufferRenderTarget : gbufferRenderTargets) {
-    const auto renderTargetTexture = _textureManager.createRenderTargetTexture(width, height);
+  auto gbufferRenderTargets = std::vector<std::shared_ptr<Texture>>(
+          _renderPassDeferredData.clearGbufferMaterial->getShaderOutputLayout().renderTargetCountFormats.size());
+  for (size_t idx = 0; idx < gbufferRenderTargets.size(); ++idx) {
+    auto& gbufferRenderTarget = gbufferRenderTargets[idx];
+    std::string name = "G-Buffer " + std::to_string(idx);
+    const auto renderTargetTexture = _textureManager.createRenderTargetTexture(width, height, name);
     _textureManager.load(*renderTargetTexture);
     gbufferRenderTarget = renderTargetTexture;
   }
 
   // Step Deferred, Pass 0
   {
-
     // Create a depth texture resource
     const auto depthTexture = _textureManager.createDepthTexture();
 
@@ -276,10 +289,7 @@ void Render_step_manager::destroyWindowSizeDependentResources()
   }
 }
 
-void Render_step_manager::setCameraEntity(std::shared_ptr<Entity> cameraEntity)
-{
-  _cameraEntity = cameraEntity;
-}
+void Render_step_manager::setCameraEntity(std::shared_ptr<Entity> cameraEntity) { _cameraEntity = cameraEntity; }
 
 void Render_step_manager::render()
 {
@@ -339,7 +349,7 @@ void Render_step_manager::applyEnvironmentVolume(const Vector3& cameraPos)
 }
 
 // TODO: Move this to a Render_pass_deferred class?
-void Render_step_manager::renderLights(const Camera_data& cameraData, Render_pass_blend_mode blendMode)
+void Render_step_manager::renderLights(const Camera_data& cameraData, const Depth_stencil_config& depthStencilConfig)
 {
   try {
     auto& quad = _renderPassDeferredData.pass2ScreenSpaceQuad;
@@ -372,7 +382,7 @@ void Render_step_manager::renderLights(const Camera_data& cameraData, Render_pas
 
       if (lightIndex == maxLights) {
         _entityRenderManager.renderRenderable(
-                quad, SSE::Matrix4::identity(), 0.0f, cameraData, deferredLightProvider, blendMode, false);
+                quad, SSE::Matrix4::identity(), 0.0f, cameraData, deferredLightProvider, depthStencilConfig, false);
 
         deferredLightMaterial->setupEmitted(false);
         renderedOnce = true;
@@ -384,7 +394,7 @@ void Render_step_manager::renderLights(const Camera_data& cameraData, Render_pas
 
     if (!deferredLights.empty() || !renderedOnce) {
       _entityRenderManager.renderRenderable(
-              quad, SSE::Matrix4::identity(), 0.0f, cameraData, deferredLightProvider, blendMode, false);
+              quad, SSE::Matrix4::identity(), 0.0f, cameraData, deferredLightProvider, depthStencilConfig, false);
     }
   }
   catch (const std::runtime_error& e) {
@@ -434,7 +444,7 @@ void Render_step_manager::renderEntity(
   assert(material != nullptr);
 
   // Check that this render pass supports this materials alpha mode
-  if (depthStencilConfig.blendMode == Render_pass_blend_mode::Blended_alpha) {
+  if (depthStencilConfig.getBlendMode() == Render_pass_blend_mode::Blended_alpha) {
     if (material->getAlphaMode() != Material_alpha_mode::Blend) {
       return;
     }
@@ -445,7 +455,7 @@ void Render_step_manager::renderEntity(
     }
   }
 
-  _entityRenderManager.renderEntity(*renderable, cameraData, lightProvider, depthStencilConfig.blendMode);
+  _entityRenderManager.renderEntity(*renderable, cameraData, lightProvider, depthStencilConfig);
 }
 
 BoundingFrustumRH Render_step_manager::createFrustum(const Camera_component& cameraComponent)

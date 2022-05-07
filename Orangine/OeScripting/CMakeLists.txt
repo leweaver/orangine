@@ -68,5 +68,7 @@ if (${OE_PYTHON_DEBUG})
 else ()
         set(OeScripting_PYTHON_RUNTIME_DLL "${Python3_RUNTIME_LIBRARY_DIRS}/python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}.dll")
 endif()
-install(FILES "${OeScripting_PYTHON_RUNTIME_DLL}" DESTINATION bin)
 set(OeScripting_PYTHON_RUNTIME_DLL ${OeScripting_PYTHON_RUNTIME_DLL} PARENT_SCOPE)
+
+# Set the DLL's on this target property so that the `oe_target_add_dependent_dynamic_libraries` helper will copy to the right places.
+set_property(TARGET ${PROJECT_NAME} PROPERTY OE_DYNAMIC_LIBRARIES "${OeScripting_PYTHON_RUNTIME_DLL}")

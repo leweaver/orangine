@@ -2,29 +2,35 @@
 #include "Material_base.h"
 
 namespace oe {
-	using Skybox_material_vs_constant_buffer = Vertex_constant_buffer_base;
+using Skybox_material_vs_constant_buffer = Vertex_constant_buffer_base;
 
-	class Skybox_material : public Material_base<Skybox_material_vs_constant_buffer, Pixel_constant_buffer_base> {
-        using Base_type = Material_base<Skybox_material_vs_constant_buffer, Pixel_constant_buffer_base>;
-	public:
-		Skybox_material();
+class Skybox_material : public Material_base<Skybox_material_vs_constant_buffer, Pixel_constant_buffer_base> {
+  using Base_type = Material_base<Skybox_material_vs_constant_buffer, Pixel_constant_buffer_base>;
 
-		Skybox_material(const Skybox_material& other) = delete;
-		Skybox_material(Skybox_material&& other) = delete;
-		void operator=(const Skybox_material& other) = delete;
-		void operator=(Skybox_material&& other) = delete;
+ public:
+  Skybox_material();
 
-		virtual ~Skybox_material() = default;
+  Skybox_material(const Skybox_material& other) = delete;
+  Skybox_material(Skybox_material&& other) = delete;
+  void operator=(const Skybox_material& other) = delete;
+  void operator=(Skybox_material&& other) = delete;
 
-		std::shared_ptr<Texture> cubeMapTexture() const { return _cubeMapTexture; }
-		void setCubeMapTexture(std::shared_ptr<Texture> cubeMapTexture) { _cubeMapTexture = cubeMapTexture; }
+  virtual ~Skybox_material() = default;
 
-		const std::string& materialType() const override;
+  std::shared_ptr<Texture> getCubeMapTexture() const { return _cubeMapTexture; }
+  void setCubeMapTexture(std::shared_ptr<Texture> cubeMapTexture)
+  {
+    OE_CHECK(cubeMapTexture == nullptr || cubeMapTexture->isCubeMap());
+    _cubeMapTexture = cubeMapTexture;
+  }
 
-        nlohmann::json serialize(bool compilerPropertiesOnly) const override;
-        Shader_resources shaderResources(const std::set<std::string>& flags, const Render_light_data& renderLightData) const override;
+  const std::string& materialType() const override;
 
-	private:
-		std::shared_ptr<Texture> _cubeMapTexture;
-	};
-}
+  nlohmann::json serialize(bool compilerPropertiesOnly) const override;
+  Shader_resources
+  shaderResources(const std::set<std::string>& flags, const Render_light_data& renderLightData) const override;
+
+ private:
+  std::shared_ptr<Texture> _cubeMapTexture;
+};
+}// namespace oe

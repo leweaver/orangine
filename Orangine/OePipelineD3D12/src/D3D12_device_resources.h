@@ -38,8 +38,9 @@ class D3D12_device_resources : public IDevice_resources {
   void recreateWindowSizeDependentResources() override;
   bool checkSystemSupport(bool logFailures) override;
 
-
-  void Present();
+  // Primary pipeline execution flow
+  void waitForFenceAndReset();
+  void present();
 
   // Device Accessors.
   RECT GetOutputSize() const
@@ -91,37 +92,24 @@ class D3D12_device_resources : public IDevice_resources {
   Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> GetPipelineCommandList();
   DirectX::ResourceUploadBatch& getResourceUploader() { return *_renderPipeline.resourceUploadBatch; }
 
-  // Performance events
-  void PIXBeginEvent(_In_z_ const wchar_t* name)
-  {
-    // m_d3dAnnotation->BeginEvent(name);
+  void PIXBeginEvent(const wchar_t* label);
+  void PIXBeginEvent(const char* label) {
+    PIXBeginEvent(oe::utf8_decode(label).c_str());
   }
 
-  void PIXEndEvent()
-  {
-    // m_d3dAnnotation->EndEvent();
-  }
+  void PIXEndEvent(void);
 
-  void PIXSetMarker(_In_z_ const wchar_t* name)
-  {
-    // m_d3dAnnotation->SetMarker(name);
+  void PIXSetMarker(const wchar_t* label);
+  void PIXSetMarker(const char* label) {
+    PIXBeginEvent(oe::utf8_decode(label).c_str());
   }
 
   Committed_gpu_resource getCurrentFrameBackBuffer() const;
   Vector2u getBackBufferDimensions() const;
   Committed_gpu_resource getDepthStencil() const;
+  DXGI_FORMAT getDepthStencilFormat();
 
  private:
-  struct Command_list_state {
-    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList;
-
-    // Synchronization objects.
-    UINT frameIndex;
-    HANDLE fenceEvent;
-    Microsoft::WRL::ComPtr<ID3D12Fence> fence;
-    UINT64 fenceValue;
-  };
-
   // TODO: Some parts of this probably belong in Render_step_manager (command queue/list/allocator)
   struct Render_pipeline {
     static const std::size_t frameCount = 2;
@@ -134,12 +122,17 @@ class D3D12_device_resources : public IDevice_resources {
 
     Descriptor_range rtvDescriptorRange;
     Descriptor_range dsvDescriptorRange;
-    std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, frameCount> rtvBackBuffer;
+    std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, frameCount> backBufferRtvs;
+    UINT frameIndex;
+
+    HANDLE fenceEvent;
+    Microsoft::WRL::ComPtr<ID3D12Fence> fence;
+    UINT64 fenceValue;
 
     Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilBuffer;
 
     // TODO: will want more than one command list :)
-    Command_list_state commandList;
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList;
     std::unique_ptr<DirectX::ResourceUploadBatch> resourceUploadBatch;
   };
 
@@ -194,6 +187,6 @@ class D3D12_device_resources : public IDevice_resources {
 
   // If true, outputs detailed DirectX memory information on shutdown
   bool m_outputDetailedMemoryReport;
-  Command_list_state createCommandListState();
+  void closeAndExecuteCommandList(Render_pipeline& renderPipeline);
 };
 }// namespace oe

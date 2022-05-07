@@ -151,7 +151,7 @@ void Entity_render_manager::createMissingVertexAttributes(
 
 void Entity_render_manager::renderEntity(
         Renderable_component& renderableComponent, const Camera_data& cameraData,
-        const Light_provider::Callback_type& lightDataProvider, const Render_pass_blend_mode blendMode)
+        const Light_provider::Callback_type& lightDataProvider, const Depth_stencil_config& depthStencilConfig)
 {
   if (!renderableComponent.visible()) {
     return;
@@ -180,7 +180,7 @@ void Entity_render_manager::renderEntity(
       // Note we get the flags for the case where all features are enabled, to make sure we load all
       // the data streams.
       const auto flags = material->configFlags(
-              Renderer_features_enabled(), blendMode, meshDataComponent->meshData()->vertexLayout);
+              Renderer_features_enabled(), depthStencilConfig.getBlendMode(), meshDataComponent->meshData()->vertexLayout);
       const auto vertexInputs = material->vertexInputs(flags);
       const auto vertexSettings = material->vertexShaderSettings(flags);
 
@@ -191,7 +191,7 @@ void Entity_render_manager::renderEntity(
     auto materialContext = renderableComponent.materialContext().lock();
     // This may be null if the device was reset since the last render.
     if (materialContext == nullptr) {
-      renderableComponent.setMaterialContext(_materialManager.createMaterialContext());
+      renderableComponent.setMaterialContext(_materialManager.createMaterialContext(entity.getName()));
 
       materialContext = renderableComponent.materialContext().lock();
 
@@ -282,7 +282,7 @@ void Entity_render_manager::renderEntity(
     }
 
     drawRendererData(
-            cameraData, *worldTransform, *rendererData, blendMode, *renderLightData, material, meshData->vertexLayout,
+            cameraData, *worldTransform, *rendererData, depthStencilConfig, *renderLightData, material, meshData->vertexLayout,
             *materialContext, _rendererAnimationData, renderableComponent.wireframe());
   }
   catch (std::runtime_error& e) {
@@ -294,7 +294,7 @@ void Entity_render_manager::renderEntity(
 
 void Entity_render_manager::renderRenderable(
         Renderable& renderable, const SSE::Matrix4& worldMatrix, float radius, const Camera_data& cameraData,
-        const Light_provider::Callback_type& lightDataProvider, Render_pass_blend_mode blendMode, bool wireFrame)
+        const Light_provider::Callback_type& lightDataProvider, const Depth_stencil_config& depthStencilConfig, bool wireFrame)
 {
   auto material = renderable.material;
 
@@ -309,7 +309,7 @@ void Entity_render_manager::renderRenderable(
 
     // Note we get the flags for the case where all features are enabled, to make sure we load all
     // the data streams.
-    const auto flags = material->configFlags(Renderer_features_enabled(), blendMode, renderable.meshData->vertexLayout);
+    const auto flags = material->configFlags(Renderer_features_enabled(), depthStencilConfig.getBlendMode(), renderable.meshData->vertexLayout);
     const auto vertexInputs = material->vertexInputs(flags);
     const auto vertexSettings = material->vertexShaderSettings(flags);
 
@@ -320,7 +320,7 @@ void Entity_render_manager::renderRenderable(
   auto materialContext = renderable.materialContext.lock();
   // This may be null if the device was reset since the last render.
   if (materialContext == nullptr) {
-    renderable.materialContext = _materialManager.createMaterialContext();
+    renderable.materialContext = _materialManager.createMaterialContext("Anonymous renderable");
     materialContext = renderable.materialContext.lock();
 
     if (materialContext == nullptr) {
@@ -361,7 +361,7 @@ void Entity_render_manager::renderRenderable(
   if (rendererAnimationData == nullptr) rendererAnimationData = &g_emptyRenderableAnimationData;
 
   drawRendererData(
-          cameraData, worldMatrix, *rendererData, blendMode, *renderLightData, material,
+          cameraData, worldMatrix, *rendererData, depthStencilConfig, *renderLightData, material,
           renderable.meshData->vertexLayout, *materialContext, *rendererAnimationData, wireFrame);
 }
 

@@ -27,7 +27,6 @@ class Material_manager : public IMaterial_manager,
   // Manager_base implementation
   void initialize() override;
   void shutdown() override {}
-  const std::string& name() const override;
 
   // Manager_tickable implementation
   void tick() override;
@@ -36,16 +35,13 @@ class Material_manager : public IMaterial_manager,
   const std::string& shaderPath() const;
 
   void updateMaterialContext(
-          Material_context& materialContext,
-          std::shared_ptr<const Material> material,
-          const Mesh_vertex_layout& meshVertexLayout,
-          const Mesh_gpu_data& meshGpuData,
-          const Render_light_data* renderLightData,
-          Render_pass_blend_mode blendMode,
-          bool enablePixelShader) override;
+          Material_context& materialContext, std::shared_ptr<const Material> material,
+          const Mesh_vertex_layout& meshVertexLayout, const Mesh_gpu_data& meshGpuData,
+          const Render_light_data* renderLightData, const Depth_stencil_config& depthStencilConfig,
+          bool enablePixelShader, bool wireframe) override;
 
   // Sets the given material context for rendering
-  void bind(Material_context& materialContext, bool enablePixelShader) override;
+  void bind(Material_context& materialContext) override;
 
   void unbind() override;
 
@@ -55,22 +51,15 @@ class Material_manager : public IMaterial_manager,
  protected:
   void setShaderPath(const std::string& path);
 
-  virtual void
-  createVertexShader(bool enableOptimizations, const Material& material, Material_context& materialContext) const = 0;
+  virtual void loadMaterialToContext(const Material& material, Material_context& materialContext, bool enableOptimizations) = 0;
 
-  virtual void
-  createPixelShader(bool enableOptimizations, const Material& material, Material_context& materialContext) const = 0;
+  virtual void loadResourcesToContext(
+          const Material::Shader_resources& shader_resources, const Mesh_gpu_data& gpuData,
+          const std::vector<Vertex_attribute_element>& vsInputs, Material_context& materialContext) = 0;
 
-  virtual void createConstantBuffers(const Material& material, Material_context& materialContext) = 0;
+  virtual void loadPipelineStateToContext(Material_context& materialContext) = 0;
 
-  virtual void loadShaderResourcesToContext(
-          const Material::Shader_resources& shader_resources, Material_context& material_context) = 0;
-
-  virtual void loadMeshGpuDataToContext(
-          const Mesh_gpu_data& gpuData, const std::vector<Vertex_attribute_element>& vsInputs,
-          Material_context& materialContext) = 0;
-
-  virtual void bindMaterialContextToDevice(const Material_context& materialContext, bool enablePixelShader) = 0;
+  virtual void bindMaterialContextToDevice(const Material_context& materialContext) = 0;
 
   /**
    * Helper that logs dumps a JSON representation of the given settings object to the debug log. Does nothing if the
@@ -79,8 +68,6 @@ class Material_manager : public IMaterial_manager,
   void debugLogSettings(const char* prefix, const Material::Shader_compile_settings& settings) const;
 
  private:
-  static std::string _name;
-
   std::string _shaderPath = "data/shaders";
 
   Renderer_features_enabled _rendererFeatures;

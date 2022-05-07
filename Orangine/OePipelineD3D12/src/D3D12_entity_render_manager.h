@@ -1,8 +1,8 @@
 #pragma once
 
 #include "D3D12_device_resources.h"
-#include "Gpu_buffer.h"
 #include "D3D12_renderer_types.h"
+#include "Gpu_buffer.h"
 
 #include <OeCore/Entity_render_manager.h>
 #include <OeCore/Renderer_data.h>
@@ -23,15 +23,16 @@ class D3D12_entity_render_manager : public internal::Entity_render_manager {
  protected:
   void drawRendererData(
           const Camera_data& cameraData, const Matrix4& worldTransform, Mesh_gpu_data& rendererData,
-          Render_pass_blend_mode blendMode, const Render_light_data& renderLightData, std::shared_ptr<Material> ptr,
-          const Mesh_vertex_layout& meshVertexLayout, Material_context& materialContext,
+          const Depth_stencil_config& depthStencilConfig, const Render_light_data& renderLightData,
+          std::shared_ptr<Material> ptr, const Mesh_vertex_layout& meshVertexLayout, Material_context& materialContext,
           Renderer_animation_data& rendererAnimationData, bool wireframe) override;
 
   std::shared_ptr<Mesh_gpu_data> createRendererData(
           std::shared_ptr<Mesh_data> meshData, const std::vector<Vertex_attribute_element>& vertexAttributes,
           const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) override;
 
-  std::shared_ptr<Gpu_buffer_reference> getOrCreateUsage(const std::string_view& name, const std::shared_ptr<Mesh_buffer>& meshData);
+  std::shared_ptr<Gpu_buffer_reference>
+  getOrCreateUsage(const std::string_view& name, const std::shared_ptr<Mesh_buffer>& meshData, size_t vertexSize);
 
  private:
   std::unique_ptr<Gpu_buffer> createGpuReadBuffer(const Mesh_buffer& meshBuffer, size_t strideInBytes);

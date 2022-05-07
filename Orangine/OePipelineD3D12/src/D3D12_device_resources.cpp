@@ -9,6 +9,11 @@
 #include <wrl/client.h>
 #include "PipelineUtils.h"
 
+#pragma warning(push)
+#pragma warning(disable:4100) // unreferenced formal parameters in PIXCopyEventArguments() (WinPixEventRuntime.1.0.200127001)
+#include <pix3.h>
+#pragma warning(pop)
+
 using namespace DirectX;
 using namespace oe::pipeline_d3d12;
 
@@ -178,7 +183,7 @@ void D3D12_device_resources::resizePipelineResources(
 
   // Must destroy existing resources before re-creating the pipeline
   for (auto n = 0; n < Render_pipeline::frameCount; ++n) {
-    renderPipeline.rtvBackBuffer.at(n).Reset();
+    renderPipeline.backBufferRtvs.at(n).Reset();
   }
 
   if (renderPipeline.swapChain) {
@@ -245,7 +250,7 @@ void D3D12_device_resources::resizePipelineResources(
   // Handle color space settings for HDR
   updateColorSpace(renderPipeline.swapChain);
 
-  // Create descriptor heap for backbuffer render target views
+  // Create descriptor heap and render target views for back buffer
   {
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
     rtvHeapDesc.NumDescriptors = Render_pipeline::frameCount;
@@ -258,15 +263,16 @@ void D3D12_device_resources::resizePipelineResources(
     // Create a render target view of the swap chain back buffers.
     renderPipeline.rtvDescriptorRange = m_rtvDescriptorHeapPool->allocateRange(Render_pipeline::frameCount);
 
-    renderPipeline.commandList.frameIndex = renderPipeline.swapChain->GetCurrentBackBufferIndex();
+    renderPipeline.frameIndex = renderPipeline.swapChain->GetCurrentBackBufferIndex();
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvDescriptorHeapPool->getCpuDescriptorHandleForHeapStart());
     for (auto n = 0; n < Render_pipeline::frameCount; ++n) {
-      ThrowIfFailed(renderPipeline.swapChain->GetBuffer(n, IID_PPV_ARGS(&renderPipeline.rtvBackBuffer.at(n))));
-      m_d3dDevice->CreateRenderTargetView(renderPipeline.rtvBackBuffer.at(n).Get(), nullptr, rtvHandle);
+      auto& backBufferRtv = _renderPipeline.backBufferRtvs.at(n);
+      ThrowIfFailed(renderPipeline.swapChain->GetBuffer(n, IID_PPV_ARGS(&backBufferRtv)));
+      m_d3dDevice->CreateRenderTargetView(backBufferRtv.Get(), nullptr, rtvHandle);
       rtvHandle.Offset(1, renderPipeline.rtvDescriptorRange.incrementSize);
 
-      oe::pipeline_d3d12::SetObjectNameIndexed(renderPipeline.rtvBackBuffer.at(n).Get(), L"rtvBackBuffer", n);
+      oe::pipeline_d3d12::SetObjectNameIndexed(backBufferRtv.Get(), L"rtvBackBuffer", n);
     }
   }
 
@@ -283,7 +289,7 @@ void D3D12_device_resources::resizePipelineResources(
   // Create the depth stencil view.
   {
     D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
-    depthOptimizedClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthOptimizedClearValue.Format = getDepthStencilFormat();
     depthOptimizedClearValue.DepthStencil.Depth = 1.0F;
     depthOptimizedClearValue.DepthStencil.Stencil = 0;
 
@@ -305,7 +311,7 @@ void D3D12_device_resources::resizePipelineResources(
     oe::pipeline_d3d12::SetObjectName(renderPipeline.depthStencilBuffer.Get(), L"depthStencilBuffer");
 
     D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
-    depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthStencilDesc.Format = getDepthStencilFormat();
     depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
     depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
     _renderPipeline.dsvDescriptorRange = m_dsvDescriptorHeapPool->allocateRange(1);
@@ -318,7 +324,34 @@ void D3D12_device_resources::resizePipelineResources(
   m_screenViewport = CD3DX12_VIEWPORT(
       0.0F, 0.0F, static_cast<float>(backBufferWidth), static_cast<float>(backBufferHeight));
 
-  waitForPreviousFrame(_renderPipeline);
+  // Close the command list and execute it to begin the initial GPU setup.
+  closeAndExecuteCommandList(renderPipeline);
+
+  // Create synchronization objects and wait until assets have been uploaded to the GPU.
+  {
+    _renderPipeline.fenceValue = 0;
+    ThrowIfFailed(m_d3dDevice->CreateFence(_renderPipeline.fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_renderPipeline.fence)));
+    _renderPipeline.fenceValue++;
+
+    // Create an event handle to use for frame synchronization.
+    _renderPipeline.fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    if (_renderPipeline.fenceEvent == nullptr)
+    {
+      ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+    }
+
+    // Wait for the command list to execute; we are reusing the same command
+    // list in our main loop but for now, we just want to wait for setup to
+    // complete before continuing.
+
+    // Signal the fence value.
+    const UINT64 fenceToWaitFor = _renderPipeline.fenceValue;
+    ThrowIfFailed(_renderPipeline.commandQueue->Signal(_renderPipeline.fence.Get(), fenceToWaitFor));
+
+    // Wait until the fence is completed.
+    ThrowIfFailed(_renderPipeline.fence->SetEventOnCompletion(fenceToWaitFor, _renderPipeline.fenceEvent));
+    WaitForSingleObject(_renderPipeline.fenceEvent, INFINITE);
+  }
 }
 
 void D3D12_device_resources::createRenderPipeline(Render_pipeline& renderPipeline) {
@@ -333,18 +366,21 @@ void D3D12_device_resources::createRenderPipeline(Render_pipeline& renderPipelin
   ThrowIfFailed(m_d3dDevice->CreateCommandAllocator(
       D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&renderPipeline.commandAllocator)));
 
-  renderPipeline.commandList = createCommandListState();
+
+  auto type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+  ThrowIfFailed(m_d3dDevice->CreateCommandList(0, type, _renderPipeline.commandAllocator.Get(), nullptr, IID_PPV_ARGS(&renderPipeline.commandList)));
+  SetObjectName(renderPipeline.commandList.Get(), L"RenderCommandList");
 
   renderPipeline.resourceUploadBatch = std::make_unique<DirectX::ResourceUploadBatch>(m_d3dDevice.Get());
 }
 
 Committed_gpu_resource D3D12_device_resources::getCurrentFrameBackBuffer() const
 {
+  int frameIdx = static_cast<int>(_renderPipeline.frameIndex);
   Committed_gpu_resource data{
-          _renderPipeline.rtvBackBuffer[_renderPipeline.commandList.frameIndex].Get(),
+          _renderPipeline.backBufferRtvs.at(frameIdx).Get(),
           _renderPipeline.rtvDescriptorRange.cpuHandle, _renderPipeline.rtvDescriptorRange.gpuHandle};
 
-  int frameIdx = static_cast<int>(_renderPipeline.commandList.frameIndex);
   data.cpuHandle.Offset(frameIdx, _renderPipeline.rtvDescriptorRange.incrementSize);
   data.gpuHandle.Offset(frameIdx, _renderPipeline.rtvDescriptorRange.incrementSize);
 
@@ -435,11 +471,70 @@ void D3D12_device_resources::HandleDeviceLost() {
   }
 }
 
+void D3D12_device_resources::closeAndExecuteCommandList(D3D12_device_resources::Render_pipeline& renderPipeline)
+{
+  ID3D12GraphicsCommandList4* commandList = _renderPipeline.commandList.Get();
+
+  // Close the command list
+  ThrowIfFailed(commandList->Close());
+
+  // Execute
+  std::array<ID3D12CommandList*, 1> ppCommandLists = {commandList};
+  renderPipeline.commandQueue->ExecuteCommandLists(ppCommandLists.size(), ppCommandLists.data());
+}
+
+void D3D12_device_resources::waitForFenceAndReset()
+{
+  waitForPreviousFrame(_renderPipeline);
+
+  // Start a new frame
+  _renderPipeline.fenceValue++;
+
+  // Command list allocators can only be reset when the associated
+  // command lists have finished execution on the GPU; apps should use
+  // fences to determine GPU execution progress.
+  ThrowIfFailed(_renderPipeline.commandAllocator->Reset());
+
+  // However, when ExecuteCommandList() is called on a particular command
+  // list, that command list can then be reset at any time and must be before
+  // re-recording.
+  ThrowIfFailed(_renderPipeline.commandList->Reset(_renderPipeline.commandAllocator.Get(), nullptr));
+
+  // Indicate that the back buffer will be used as a render target.
+  ID3D12Resource* backBuffer = _renderPipeline.backBufferRtvs.at(_renderPipeline.frameIndex).Get();
+  CD3DX12_RESOURCE_BARRIER resourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+          backBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+  _renderPipeline.commandList->ResourceBarrier(1, &resourceBarrier);
+}
+
+void D3D12_device_resources::waitForPreviousFrame(Render_pipeline& renderPipeline)
+{
+  const UINT64 lastCompletedFence = renderPipeline.fence->GetCompletedValue();
+
+  // Make sure that this frame resource isn't still in use by the GPU.
+  // If it is, wait for it to complete.
+  if (renderPipeline.fenceValue != 0 && renderPipeline.fenceValue > lastCompletedFence)
+  {
+    ThrowIfFailed(renderPipeline.fence->SetEventOnCompletion(renderPipeline.fenceValue, renderPipeline.fenceEvent));
+    WaitForSingleObject(renderPipeline.fenceEvent, INFINITE);
+  }
+}
+
 // Present the contents of the swap chain to the screen.
-void D3D12_device_resources::Present() {
+void D3D12_device_resources::present() {
   if (!_renderPipeline.swapChain) {
     return;
   }
+
+  // Transition backbuffer to present
+  ID3D12Resource* backBuffer = _renderPipeline.backBufferRtvs.at(_renderPipeline.frameIndex).Get();
+  CD3DX12_RESOURCE_BARRIER resourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+          backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
+  // Indicate that the back buffer will now be used to present.
+  _renderPipeline.commandList->ResourceBarrier(1, &resourceBarrier);
+
+  closeAndExecuteCommandList(_renderPipeline);
 
   HRESULT hr;
   if (m_options & c_AllowTearing) {
@@ -452,65 +547,36 @@ void D3D12_device_resources::Present() {
     hr = _renderPipeline.swapChain->Present(1, 0);
   }
 
-  waitForPreviousFrame(_renderPipeline);
+  // handle device lost and DXGI factory recreation
+  {
+    // If the device was removed either by a disconnection or a driver upgrade, we
+    // must recreate all device resources.
+    if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET) {
+      if constexpr (_DEBUG) {
+        char buff[64] = {};
+        sprintf_s(
+                buff, "Device Lost on Present: Reason code 0x%08X\n",
+                (hr == DXGI_ERROR_DEVICE_REMOVED) ? m_d3dDevice->GetDeviceRemovedReason() : hr);
+        OutputDebugStringA(buff);
+      }
+      HandleDeviceLost();
+    }
+    else {
+      ThrowIfFailed(hr);
 
-  /*LWL
-  // Discard the contents of the render target.
-  // This is a valid operation only when the existing contents will be entirely
-  // overwritten. If dirty or scroll rects are used, this call should be removed.
-  m_d3dContext->DiscardView(m_d3dRenderTargetView.Get());
-
-  if (m_d3dDepthStencilView) {
-    // Discard the contents of the depth stencil.
-    m_d3dContext->DiscardView(m_d3dDepthStencilView.Get());
-  }
-  LWL*/
-
-  // If the device was removed either by a disconnection or a driver upgrade, we
-  // must recreate all device resources.
-  if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET) {
-#ifdef _DEBUG
-    char buff[64] = {};
-    sprintf_s(
-        buff,
-        "Device Lost on Present: Reason code 0x%08X\n",
-        (hr == DXGI_ERROR_DEVICE_REMOVED) ? m_d3dDevice->GetDeviceRemovedReason() : hr);
-    OutputDebugStringA(buff);
-#endif
-    HandleDeviceLost();
-  } else {
-    ThrowIfFailed(hr);
-
-    if (!m_dxgiFactory->IsCurrent()) {
-      // Output information is cached on the DXGI Factory. If it is stale we need to create a new
-      // factory.
-      CreateFactory();
+      if (!m_dxgiFactory->IsCurrent()) {
+        // Output information is cached on the DXGI Factory. If it is stale we need to create a new
+        // factory.
+        CreateFactory();
+      }
     }
   }
-}
 
-void D3D12_device_resources::waitForPreviousFrame(Render_pipeline& renderPipeline)
-{
-  // WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
-  // This is code implemented as such for simplicity. The D3D12HelloFrameBuffering
-  // sample illustrates how to use fences for efficient resource usage and to
-  // maximize GPU utilization.
-
-  auto& state = renderPipeline.commandList;
+  // Update backbuffer index after present, which progresses the swapchain
+  _renderPipeline.frameIndex = _renderPipeline.swapChain->GetCurrentBackBufferIndex();
 
   // Signal and increment the fence value.
-  const UINT64 fence = state.fenceValue;
-  ThrowIfFailed(renderPipeline.commandQueue->Signal(state.fence.Get(), fence));
-  state.fenceValue++;
-
-  // Wait until the previous frame is finished.
-  if (state.fence->GetCompletedValue() < fence)
-  {
-    ThrowIfFailed(state.fence->SetEventOnCompletion(fence, state.fenceEvent));
-    WaitForSingleObject(state.fenceEvent, INFINITE);
-  }
-
-  state.frameIndex = renderPipeline.swapChain->GetCurrentBackBufferIndex();
+  ThrowIfFailed(_renderPipeline.commandQueue->Signal(_renderPipeline.fence.Get(), _renderPipeline.fenceValue));
 }
 
 void D3D12_device_resources::CreateFactory()
@@ -636,27 +702,32 @@ ID3D12CommandQueue* D3D12_device_resources::GetCommandQueue() const
 
 Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> D3D12_device_resources::GetPipelineCommandList()
 {
-  return _renderPipeline.commandList.commandList;
+  return _renderPipeline.commandList;
 }
 
-D3D12_device_resources::Command_list_state D3D12_device_resources::createCommandListState()
+DXGI_FORMAT D3D12_device_resources::getDepthStencilFormat() { return DXGI_FORMAT_D24_UNORM_S8_UINT; }
+
+void D3D12_device_resources::PIXBeginEvent(const wchar_t* label)
 {
-  Command_list_state state;
-  ThrowIfFailed(m_d3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&state.fence)));
-  state.fenceValue = 1;
+#ifdef RELEASE
+  (label);
+#else
+  ::PIXBeginEvent(_renderPipeline.commandList.Get(), 0, label);
+#endif
+}
 
-  // Create an event handle to use for frame synchronization.
-  state.fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-  if (state.fenceEvent == nullptr)
-  {
-    ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
-  }
+void D3D12_device_resources::PIXEndEvent(void)
+{
+#ifndef RELEASE
+  ::PIXEndEvent(_renderPipeline.commandList.Get());
+#endif
+}
 
-
-  // Create the command list.
-  // TODO: once not being hacky, type should be programatically stated.
-  auto type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-  ThrowIfFailed(m_d3dDevice->CreateCommandList(0, type, _renderPipeline.commandAllocator.Get(), nullptr, IID_PPV_ARGS(&state.commandList)));
-
-  return state;
+void D3D12_device_resources::PIXSetMarker(const wchar_t* label)
+{
+#ifdef RELEASE
+  (label);
+#else
+  ::PIXSetMarker(_renderPipeline.commandList.Get(), 0, label);
+#endif
 }

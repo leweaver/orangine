@@ -55,19 +55,44 @@ oe_target_generate_export_header(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC OeCore)
 
-# Public headers
-target_include_directories(${PROJECT_NAME}
-        PUBLIC
-        "${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
-        PRIVATE
-        include/nv_helpers_dx12
+# PIX
+SET(DEP_DIRECTORY "${CMAKE_BINARY_DIR}/_deps")
+SET(DEP_PIX_NAME WinPixEventRuntime)
+SET(DEP_PIX_VERSION 1.0.220124001)
+SET(DEP_PIX_DIRECTORY ${DEP_DIRECTORY}/${DEP_PIX_NAME}.${DEP_PIX_VERSION})
+if(NOT IS_DIRECTORY ${DEP_PIX_DIRECTORY})
+    # Download PIX if missing
+    find_program(NUGET nuget)
+    execute_process(COMMAND ${NUGET} install ${DEP_PIX_NAME} -OutputDirectory ${DEP_DIRECTORY} -Version ${DEP_PIX_VERSION})
+
+    if(NOT IS_DIRECTORY ${DEP_PIX_DIRECTORY})
+        MESSAGE(FATAL_ERROR "Failed to install PIX to ${DEP_PIX_DIRECTORY}")
+    endif()
+endif()
+
+target_link_libraries(${PROJECT_NAME} PUBLIC ${DEP_PIX_DIRECTORY}/bin/x64/WinPixEventRuntime.lib)
+set(${PROJECT_NAME}_DYNAMIC_LIBRARIES
+        "${DEP_PIX_DIRECTORY}/bin/x64/WinPixEventRunTime.dll"
         )
+set(${PROJECT_NAME}_DYNAMIC_LIBRARIES ${${PROJECT_NAME}_DYNAMIC_LIBRARIES} PARENT_SCOPE)
+
+# Set the DLL's on this target property so that the `oe_target_add_dependent_dynamic_libraries` helper will copy to the right places.
+set_property(TARGET ${PROJECT_NAME} PROPERTY OE_DYNAMIC_LIBRARIES "${${PROJECT_NAME}_DYNAMIC_LIBRARIES}")
 
 # DirectXTK
 target_link_libraries(${PROJECT_NAME} PUBLIC DirectXTK12)
 
 # DirectX Debug Interface
 target_link_libraries(${PROJECT_NAME} PUBLIC dxgi.lib)
+
+# Dependency Public headers
+target_include_directories(${PROJECT_NAME}
+        PUBLIC
+        "${OE_THIRDPARTY_PATH}/DirectXTK/Inc"
+        PRIVATE
+        include/nv_helpers_dx12
+        "${DEP_PIX_DIRECTORY}/Include/${DEP_PIX_NAME}"
+        )
 
 #####
 # Orangine module configuration

@@ -120,14 +120,14 @@ class com_exception : public std::exception {
 // Helper utility converts D3D API failures into exceptions.
 inline void ThrowIfFailed(HRESULT hr) {
   if (FAILED(hr)) {
-    throw com_exception(hr);
+    OE_THROW(com_exception(hr));
   }
 }
 
 // Helper utility converts D3D API failures into exceptions.
 inline void ThrowIfFailed(HRESULT hr, const std::string_view what) {
   if (FAILED(hr)) {
-    throw com_exception(hr, what);
+    OE_THROW(com_exception(hr, what));
   }
 }
 

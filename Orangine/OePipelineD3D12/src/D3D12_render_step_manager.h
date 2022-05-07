@@ -47,8 +47,10 @@ class D3D12_render_step_manager final : public Render_step_manager {
   void clearRenderTargetView(const Color& color);
   void clearDepthStencil(float f, uint8_t a);
   std::unique_ptr<Render_pass> createShadowMapRenderPass();
-  void beginRenderNamedEvent(const wchar_t* name);
-  void endRenderNamedEvent();
+  std::unique_ptr<Render_pass> createResourceUploadBeginPass() override;
+  std::unique_ptr<Render_pass> createResourceUploadEndPass() override;
+  void beginRenderNamedEvent(const wchar_t* name) override;
+  void endRenderNamedEvent() override;
   void createRenderStepResources();
   void destroyRenderStepResources();
   void renderSteps(const Camera_data& cameraData);
@@ -57,6 +59,7 @@ class D3D12_render_step_manager final : public Render_step_manager {
   static void destroyStatics();
 
  private:
+  void transitionToRenderTargets(const std::vector<std::shared_ptr<Texture>>& textures);
   void renderStep(Render_step& step, D3D12_render_step_data& renderStepData, const Camera_data& cameraData);
 
   static std::string _name;
@@ -69,5 +72,6 @@ class D3D12_render_step_manager final : public Render_step_manager {
 
   std::unordered_map<int32_t, std::pair<Descriptor_range, size_t>> _textureIdToDescriptorRangesAndUsageCount;
   std::unique_ptr<pipeline_d3d12::Descriptor_heap_pool> _rtvDescriptorHeapPool;
+  std::vector<std::shared_ptr<Texture>> _activeCustomRenderTargets;
 };
 }// namespace oe

@@ -118,6 +118,7 @@ function(oe_target_add_data_dir _target)
                         endif()
                         get_property(_TGT_DEP_DATA_SOURCE_DIR TARGET ${_dependency} PROPERTY OE_SCRIPT_SOURCE_DIRS SET)
                         if (_TGT_DEP_DATA_SOURCE_DIR)
+                                get_target_property(_TGT_DEP_DATA_SOURCE_DIR ${_dependency} OE_SCRIPT_SOURCE_DIRS)
                                 list(APPEND DATA_SOURCE_DIRS "${_TGT_DEP_DATA_SOURCE_DIR}")
                         endif()
                 endforeach()
@@ -135,6 +136,63 @@ function(oe_target_add_data_dir _target)
         set(_ADD_DATA_YAML_PARTIAL_FILE "${TGT_BINARY_DIR}/config_yaml/data_paths.yaml.partial")
         configure_file("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/yaml_templates/data_paths.yaml.in" "${_ADD_DATA_YAML_PARTIAL_FILE}")
         oe_target_add_config_yaml(${_target} "${_ADD_DATA_YAML_PARTIAL_FILE}")
+endfunction()
+
+function(oe_target_add_dependent_dynamic_libraries _target)
+        cmake_parse_arguments(_ARG "NO_INSTALL" "" "" ${ARGN})
+
+        get_target_property(TGT_NAME ${_target} NAME)
+        get_target_property(TGT_SOURCE_DIR ${_target} SOURCE_DIR)
+        get_target_property(TGT_BINARY_DIR ${_target} BINARY_DIR)
+
+        # This targets DLL's
+        get_property(_TGT_DYNAMIC_LIBRARIES TARGET ${TGT_NAME} PROPERTY OE_DYNAMIC_LIBRARIES SET)
+        if (_TGT_DYNAMIC_LIBRARIES)
+                get_target_property(_TGT_DYNAMIC_LIBRARIES ${TGT_NAME} OE_DYNAMIC_LIBRARIES)
+        else()
+                set(_TGT_DYNAMIC_LIBRARIES "")
+        endif()
+
+        # Get list of dependencies from link libraries property
+        get_property(_TGT_LINK_LIBRARIES TARGET ${TGT_NAME} PROPERTY LINK_LIBRARIES SET)
+        if (_TGT_LINK_LIBRARIES)
+                get_target_property(_TGT_LINK_LIBRARIES ${TGT_NAME} LINK_LIBRARIES)
+        else()
+                set(_TGT_LINK_LIBRARIES "")
+        endif()
+
+        # Iterate dependencies, adding their dynamic libraries to the list
+        if (_TGT_LINK_LIBRARIES)
+                foreach(_dependency ${_TGT_LINK_LIBRARIES})
+                        if (NOT TARGET ${_dependency})
+                                continue()
+                        endif()
+                        get_property(_TGT_DEP_DYNAMIC_LIBRARIES TARGET ${_dependency} PROPERTY OE_DYNAMIC_LIBRARIES SET)
+                        if (_TGT_DEP_DYNAMIC_LIBRARIES)
+                                get_target_property(_TGT_DEP_DYNAMIC_LIBRARIES ${_dependency} OE_DYNAMIC_LIBRARIES)
+                                list(APPEND _TGT_DYNAMIC_LIBRARIES "${_TGT_DEP_DYNAMIC_LIBRARIES}")
+                        endif()
+                endforeach()
+        endif()
+
+        if (NOT _ARG_NO_INSTALL)
+                install(FILES ${_TGT_DYNAMIC_LIBRARIES} DESTINATION bin)
+        endif()
+
+        SET(_IDX 0)
+        SET(_COPY_DLLS_COMMANDS "")
+        foreach(_LIB_PATH ${_TGT_DYNAMIC_LIBRARIES})
+                cmake_path(GET _LIB_PATH FILENAME _DLL_NAME_COMPONENT)
+                add_custom_command(
+                        OUTPUT ${TGT_NAME}_copy_dlls_command_${_IDX}
+                        COMMENT "${_target}: Copying ${_DLL_NAME_COMPONENT}"
+                        COMMAND "${CMAKE_COMMAND}" -E copy "${_LIB_PATH}" "${TGT_BINARY_DIR}"
+                )
+                list(APPEND _COPY_DLLS_COMMANDS "${TGT_NAME}_copy_dlls_command_${_IDX}")
+                MATH(EXPR _IDX "${_IDX}+1")
+        endforeach()
+        add_custom_target(${TGT_NAME}_copy_dlls DEPENDS ${_COPY_DLLS_COMMANDS})
+        add_dependencies(${TGT_NAME} ${TGT_NAME}_copy_dlls)
 endfunction()
 
 ########

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "D3D12_device_resources.h"
+#include "PipelineUtils.h"
 #include <OeCore/ITexture_manager.h>
 #include <OeCore/Texture.h>
 
@@ -32,17 +33,20 @@ class D3D12_texture : public Texture {
     else {
       _flags = _flags | static_cast<uint32_t>(Texture_flags::Is_valid);
       _resource = resource;
+
+      std::stringstream name;
+      name << getTextureTypeName() << " '" << getName() << "'";
+      SetObjectName(_resource.Get(), oe::utf8_decode(name.str()).c_str());
     }
   }
+
+  virtual const std::string& getTextureTypeName() const = 0;
 
   void setInternalId(uint64_t id) {
     _internalId = id;
   }
 
-  ID3D12Resource* getResource()
-  {
-    return _resource.Get();
-  }
+  ID3D12Resource* getResource() { return _resource.Get(); }
 
   virtual void load(D3D12_device_resources& deviceResources) {};
   virtual void unload()
@@ -73,12 +77,13 @@ class D3D12_texture_manager : public ITexture_manager, public Manager_base, publ
   // ITexture_manager implementation
   std::shared_ptr<Texture>
   createTextureFromBuffer(uint32_t stride, uint32_t buffer_size, std::unique_ptr<uint8_t>& buffer) override;
-  std::shared_ptr<Texture> createTextureFromFile(const std::string& fileName) override;
+  std::shared_ptr<Texture> createTextureFromFile(const std::string& fileName, bool generateMipsIfMissing = false) override;
   std::shared_ptr<Texture>
-  createTextureFromFile(const std::string& fileName, const Sampler_descriptor& samplerDescriptor) override;
+  createTextureFromFile(const std::string& fileName, const Sampler_descriptor& samplerDescriptor, bool generateMipsIfMissing = false) override;
+  std::shared_ptr<Texture> createCubeMapTextureFromFile(const std::string& fileName, const Sampler_descriptor& samplerDescriptor, bool generateMipsIfMissing = false) override;
 
   std::shared_ptr<Texture> createDepthTexture() override;
-  std::shared_ptr<Texture> createRenderTargetTexture(int width, int height) override;
+  std::shared_ptr<Texture> createRenderTargetTexture(int width, int height, std::string name) override;
   std::shared_ptr<Texture> createSwapchainBackBufferTexture() override;
 
   std::unique_ptr<Shadow_map_texture_pool>
@@ -105,7 +110,9 @@ class D3D12_texture_manager : public ITexture_manager, public Manager_base, publ
   std::vector<std::shared_ptr<D3D12_texture>> _textures;
   std::shared_ptr<D3D12_texture> _backbufferTexture;
   std::shared_ptr<D3D12_texture> _depthStencilTexture;
+
   D3D12_device_resources& _deviceResources;
+  std::vector<std::shared_ptr<D3D12_texture>> _pendingLoads;
 };
 
 }// namespace oe::pipeline_d3d12

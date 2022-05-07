@@ -25,11 +25,11 @@ class IEntity_render_manager {
  public:
   virtual void renderRenderable(
           Renderable& renderable, const SSE::Matrix4& worldMatrix, float radius, const Camera_data& cameraData,
-          const Light_provider::Callback_type& lightDataProvider, Render_pass_blend_mode blendMode, bool wireFrame) = 0;
+          const Light_provider::Callback_type& lightDataProvider, const Depth_stencil_config& depthStencilConfig, bool wireFrame) = 0;
 
   virtual void renderEntity(
           Renderable_component& renderable, const Camera_data& cameraData,
-          const Light_provider::Callback_type& lightDataProvider, Render_pass_blend_mode blendMode) = 0;
+          const Light_provider::Callback_type& lightDataProvider, const Depth_stencil_config& depthStencilConfig) = 0;
 
   virtual Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) = 0;
   virtual void clearRenderStats() = 0;

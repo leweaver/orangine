@@ -15,14 +15,17 @@ class ITexture_manager {
       uint32_t buffer_size,
       std::unique_ptr<uint8_t>& buffer) = 0;
 
-  virtual std::shared_ptr<Texture> createTextureFromFile(const std::string& fileName) = 0;
-  virtual std::shared_ptr<Texture> createTextureFromFile(const std::string& fileName, const Sampler_descriptor& samplerDescriptor) = 0;
+  virtual std::shared_ptr<Texture> createTextureFromFile(const std::string& fileName, bool generateMipsIfMissing = false) = 0;
+  virtual std::shared_ptr<Texture> createTextureFromFile(
+          const std::string& fileName, const Sampler_descriptor& samplerDescriptor, bool generateMipsIfMissing = false) = 0;
+
+  virtual std::shared_ptr<Texture> createCubeMapTextureFromFile(const std::string& fileName, const Sampler_descriptor& samplerDescriptor, bool generateMipsIfMissing = false) = 0;
 
   // The 32 bit depth/stencil texture, in R24 UNORM / X8 TYPELESS format.
   virtual std::shared_ptr<Texture> createDepthTexture() = 0;
 
   // A 32 bit RGBA render target texture that can be drawn to, and read by other materials.
-  virtual std::shared_ptr<Texture> createRenderTargetTexture(int width, int height) = 0;
+  virtual std::shared_ptr<Texture> createRenderTargetTexture(int width, int height, std::string name) = 0;
 
   // A texture that points to the backbuffer of the main view. Can be used as a render target.
   virtual std::shared_ptr<Texture> createSwapchainBackBufferTexture() = 0;

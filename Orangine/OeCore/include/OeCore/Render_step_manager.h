@@ -38,8 +38,6 @@ class Render_step_manager : public IRender_step_manager, public Manager_base, pu
   BoundingFrustumRH createFrustum(const Camera_component& cameraComponent) override;
   void setCameraEntity(std::shared_ptr<Entity> cameraEntity) override;
 
-  static constexpr size_t maxRenderTargetViews() { return 3; }
-
  protected:
   Render_step_manager(
           IScene_graph_manager& sceneGraphManager, IDev_tools_manager& devToolsManager,
@@ -50,6 +48,8 @@ class Render_step_manager : public IRender_step_manager, public Manager_base, pu
   // pure virtual method interface
   virtual void clearRenderTargetView(const Color& color) = 0;
   virtual void clearDepthStencil(float depth, uint8_t stencil) = 0;
+  virtual std::unique_ptr<Render_pass> createResourceUploadBeginPass() = 0;
+  virtual std::unique_ptr<Render_pass> createResourceUploadEndPass() = 0;
   virtual std::unique_ptr<Render_pass> createShadowMapRenderPass() = 0;
   virtual void beginRenderNamedEvent(const wchar_t* name) = 0;
   virtual void endRenderNamedEvent() = 0;
@@ -69,20 +69,21 @@ class Render_step_manager : public IRender_step_manager, public Manager_base, pu
       Light_provider::Callback_type& lightProvider,
       const Depth_stencil_config& depthStencilConfig) const;
 
-  void renderLights(const Camera_data& cameraData, Render_pass_blend_mode blendMode);
+  void renderLights(const Camera_data& cameraData, const Depth_stencil_config& depthStencilConfig);
 
   void applyEnvironmentVolume(const Vector3& cameraPos);
 
   // RenderStep definitions
   struct Render_step_deferred_data {
     std::shared_ptr<Deferred_light_material> deferredLightMaterial;
+    std::shared_ptr<Material> clearGbufferMaterial;
     Renderable pass0ScreenSpaceQuad;
     Renderable pass2ScreenSpaceQuad;
   };
 
   struct Render_step {
     explicit Render_step(std::wstring name) : name(std::move(name)) {}
-    Render_step(std::unique_ptr<Render_pass>&& renderPass, std::wstring name);
+    Render_step(std::unique_ptr<Render_pass> renderPass, std::wstring name);
     std::wstring name;
     bool enabled = true;
     std::vector<std::unique_ptr<Render_pass>> renderPasses;
@@ -106,7 +107,7 @@ class Render_step_manager : public IRender_step_manager, public Manager_base, pu
   bool _fatalError;
   bool _enableDeferredRendering;
 
-  std::array<double, 5> _renderTimes = {};
+  std::vector<double> _renderTimes;
   uint32_t _renderCount = 0;
 
   IScene_graph_manager& _sceneGraphManager;

@@ -174,6 +174,14 @@ class PBR_material
       int8_t& normalPosition,
       int8_t& tangentPosition);
 
+  Shader_output_layout getShaderOutputLayout() const override
+  {
+    static constexpr std::array<Texture_format, 3> gbufferRtvFormats{
+            {DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32B32A32_FLOAT}
+    };
+    return Shader_output_layout{gbufferRtvFormats};
+  }
+
  protected:
   void applyVertexLayoutShaderCompileSettings(Shader_compile_settings&) const;
 

@@ -5,7 +5,7 @@
         "commandLine": "",
         "environment": [
         ],
-        "executable": "C:\\Users\\hotma\\CMakeBuilds\\f1ec5103-18bd-4ba9-bb18-716bf97c2186\\build\\x64-Debug\\ViewerApp\\ViewerApp.exe",
+        "executable": "C:\\repos\\orangine\\Orangine\\build\\VS_2019_AMD64_Debug\\ViewerApp\\ViewerApp.exe",
         "inject": false,
         "numQueuedFrames": 1,
         "options": {

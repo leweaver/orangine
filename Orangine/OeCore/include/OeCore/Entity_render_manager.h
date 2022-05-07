@@ -16,13 +16,14 @@ class Material_context;
 class ITexture_manager;
 class IMaterial_manager;
 class ILighting_manager;
-}
+}// namespace oe
 
 namespace oe::internal {
 class Entity_render_manager : public IEntity_render_manager, public Manager_base, public Manager_deviceDependent {
  public:
   Entity_render_manager(
-          ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory);
+          ITexture_manager& textureManager, IMaterial_manager& materialManager, ILighting_manager& lightingManager,
+          IPrimitive_mesh_data_factory& primitiveMeshDataFactory);
 
   // Manager_base implementation
   void initialize() override;
@@ -33,19 +34,13 @@ class Entity_render_manager : public IEntity_render_manager, public Manager_base
 
   // IEntity_render_manager implementation
   void renderRenderable(
-      Renderable& renderable,
-      const SSE::Matrix4& worldMatrix,
-      float radius,
-      const Camera_data& cameraData,
-      const Light_provider::Callback_type& lightDataProvider,
-      Render_pass_blend_mode blendMode,
-      bool wireFrame) override;
+          Renderable& renderable, const SSE::Matrix4& worldMatrix, float radius, const Camera_data& cameraData,
+          const Light_provider::Callback_type& lightDataProvider, const Depth_stencil_config& depthStencilConfig,
+          bool wireFrame) override;
 
   void renderEntity(
-      Renderable_component& renderable,
-      const Camera_data& cameraData,
-      const Light_provider::Callback_type& lightDataProvider,
-      Render_pass_blend_mode blendMode) override;
+          Renderable_component& renderable, const Camera_data& cameraData,
+          const Light_provider::Callback_type& lightDataProvider, const Depth_stencil_config& blendMode) override;
 
   // Be warned - YOU are responsible for cleaning up this Renderable's D3D data on a device reset.
   Renderable createScreenSpaceQuad(std::shared_ptr<Material> material) override;
@@ -54,20 +49,14 @@ class Entity_render_manager : public IEntity_render_manager, public Manager_base
 
  protected:
   void createMissingVertexAttributes(
-      std::shared_ptr<Mesh_data> meshData,
-      const std::vector<Vertex_attribute_element>& requiredAttributes,
-      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const;
+          std::shared_ptr<Mesh_data> meshData, const std::vector<Vertex_attribute_element>& requiredAttributes,
+          const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) const;
 
   virtual void drawRendererData(
-      const Camera_data& cameraData,
-      const SSE::Matrix4& worldTransform, Mesh_gpu_data& rendererData,
-      Render_pass_blend_mode blendMode,
-      const Render_light_data& renderLightData,
-      std::shared_ptr<Material>,
-      const Mesh_vertex_layout& meshVertexLayout,
-      Material_context& materialContext,
-      Renderer_animation_data& rendererAnimationData,
-      bool wireframe) = 0;
+          const Camera_data& cameraData, const SSE::Matrix4& worldTransform, Mesh_gpu_data& rendererData,
+          const Depth_stencil_config& depthStencilConfig, const Render_light_data& renderLightData,
+          std::shared_ptr<Material>, const Mesh_vertex_layout& meshVertexLayout, Material_context& materialContext,
+          Renderer_animation_data& rendererAnimationData, bool wireframe) = 0;
 
   /**
    * \brief Creates a new Renderer_data instance from the given mesh data, in a format
@@ -80,9 +69,8 @@ class Entity_render_manager : public IEntity_render_manager, public Manager_base
    * \return new Renderer_data instance.
    */
   virtual std::shared_ptr<Mesh_gpu_data> createRendererData(
-      std::shared_ptr<Mesh_data> meshData,
-      const std::vector<Vertex_attribute_element>& vertexAttributes,
-      const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) = 0;
+          std::shared_ptr<Mesh_data> meshData, const std::vector<Vertex_attribute_element>& vertexAttributes,
+          const std::vector<Vertex_attribute_semantic>& vertexMorphAttributes) = 0;
 
   Mesh_vertex_buffer_accessor* findAccessorForSemantic(
           std::shared_ptr<Mesh_data>& meshData, const gsl::span<const Vertex_attribute_semantic>& attributes,
@@ -106,4 +94,4 @@ class Entity_render_manager : public IEntity_render_manager, public Manager_base
 
   static std::string _name;
 };
-} // namespace oe::internal
+}// namespace oe::internal

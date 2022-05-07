@@ -15,14 +15,21 @@ namespace oe {
 class Material_context {
  public:
   struct Material_compiler_inputs {
-    // State that the compiled state relied on
+    // State that the compiled shader relied on
     size_t materialHash = 0;
     size_t meshHash = 0;
     size_t rendererFeaturesHash = 0;
-    Render_pass_blend_mode blendMode = Render_pass_blend_mode::Opaque;
+    Depth_stencil_config depthStencilConfig;
     std::vector<Vertex_attribute_element> vsInputs;
     std::set<std::string> flags;
     Mesh_index_type meshIndexType;
+
+    // Used for debug identification
+    std::string name;
+  };
+  struct Pipeline_state_inputs {
+    // Options that don't need a recompile, but will need to modify pipeline state
+    bool wireframe;
   };
 
   Material_context() = default;
@@ -33,5 +40,6 @@ class Material_context {
 
   bool compilerInputsValid = false;
   Material_compiler_inputs compilerInputs;
+  Pipeline_state_inputs pipelineStateInputs;
 };
 } // namespace oe

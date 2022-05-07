@@ -10,5 +10,13 @@ class Clear_gbuffer_material : public Material_base<Vertex_constant_buffer_empty
   Clear_gbuffer_material();
 
   const std::string& materialType() const override;
+
+  Shader_output_layout getShaderOutputLayout() const override
+  {
+    static constexpr std::array<Texture_format, 3> gbufferRtvFormats{
+            {DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32B32A32_FLOAT}
+    };
+    return Shader_output_layout{gbufferRtvFormats};
+  }
 };
 }// namespace oe

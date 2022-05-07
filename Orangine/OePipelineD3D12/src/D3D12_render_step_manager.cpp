@@ -58,8 +58,29 @@ std::unique_ptr<Render_pass> D3D12_render_step_manager::createShadowMapRenderPas
 {
   return std::make_unique<Render_pass_generic>([](const Camera_data&, const Render_pass&) {});
 }
-void D3D12_render_step_manager::beginRenderNamedEvent(const wchar_t* name) {}
-void D3D12_render_step_manager::endRenderNamedEvent() {}
+
+std::unique_ptr<Render_pass> D3D12_render_step_manager::createResourceUploadBeginPass()
+{
+  return std::make_unique<Render_pass_generic>([dr=_deviceResources.get()](const Camera_data&, const Render_pass&) {
+    dr->getResourceUploader().Begin();
+  });
+}
+
+std::unique_ptr<Render_pass> D3D12_render_step_manager::createResourceUploadEndPass()
+{
+  return std::make_unique<Render_pass_generic>([dr=_deviceResources.get()](const Camera_data&, const Render_pass&) {
+    auto future = dr->getResourceUploader().End(dr->GetCommandQueue());
+    future.wait();
+  });
+}
+
+void D3D12_render_step_manager::beginRenderNamedEvent(const wchar_t* name) {
+  _deviceResources->PIXBeginEvent(name);
+}
+
+void D3D12_render_step_manager::endRenderNamedEvent() {
+  _deviceResources->PIXEndEvent();
+}
 
 void D3D12_render_step_manager::createRenderStepResources()
 {
@@ -87,9 +108,14 @@ void D3D12_render_step_manager::destroyRenderStepResources()
 {
   _renderStepData.clear();
   _rtvDescriptorHeapPool.reset();
+  _activeCustomRenderTargets.clear();
 }
+
 void D3D12_render_step_manager::renderSteps(const Camera_data& cameraData)
 {
+  _deviceResources->waitForFenceAndReset();
+
+  beginRenderNamedEvent(L"Render");
   auto timer = Perf_timer::start();
   for (size_t i = 0; i < _renderSteps.size(); ++i) {
     timer.restart();
@@ -100,8 +126,46 @@ void D3D12_render_step_manager::renderSteps(const Camera_data& cameraData)
     timer.stop();
     _renderTimes[i] += timer.elapsedSeconds();
   }
+  endRenderNamedEvent();
 
-  _deviceResources->Present();
+  // Make sure to unset render targets to transition custom RTV resource states from render_target to common.
+  transitionToRenderTargets({});
+
+  _deviceResources->present();
+}
+
+void D3D12_render_step_manager::transitionToRenderTargets(const std::vector<std::shared_ptr<Texture>>& textures)
+{
+  // Any render targets that are currently active, but not in the new set - transition out for use as SRVs
+  for (const auto& oldTex : _activeCustomRenderTargets) {
+    if (std::find(textures.begin(), textures.end(), oldTex) != textures.end()) {
+      // Going to re-use as an RTV this pass, don't transition to SRV mode
+      continue;
+    }
+
+    CD3DX12_RESOURCE_BARRIER resourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+            _textureManagerD3D12.getResource(*oldTex),
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    _deviceResources->GetPipelineCommandList()->ResourceBarrier(1, &resourceBarrier);
+  }
+
+  // Any render targets that are currently inactive, but not in the old set - transition for use as RTV
+  for (const auto& texture : textures) {
+    if (std::find(_activeCustomRenderTargets.begin(), _activeCustomRenderTargets.end(), texture) != _activeCustomRenderTargets.end()) {
+      // Going to re-use as an RTV this pass, don't need to transition to RTV mode as it is already in it
+      continue;
+    }
+
+    CD3DX12_RESOURCE_BARRIER resourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+            _textureManagerD3D12.getResource(*texture),
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            D3D12_RESOURCE_STATE_RENDER_TARGET);
+    _deviceResources->GetPipelineCommandList()->ResourceBarrier(1, &resourceBarrier);
+  }
+
+  // Keep track of the state
+  _activeCustomRenderTargets.assign(textures.begin(), textures.end());
 }
 
 void D3D12_render_step_manager::renderStep(
@@ -132,7 +196,6 @@ void D3D12_render_step_manager::renderStep(
     /* Need to set the following stuff on the command list: */
     pCommandList->RSSetViewports(1, viewport);
     pCommandList->RSSetScissorRects(1, &scissorRect);
-
 
     auto& pass = *step.renderPasses[passIdx];
     auto& renderPassData = renderStepData.renderPassData[passIdx];
@@ -166,33 +229,38 @@ void D3D12_render_step_manager::renderStep(
           OE_CHECK(rtResource);
           _deviceResources->GetD3DDevice()->CreateRenderTargetView(rtResource, nullptr, rtvHandle);
         }
-        renderPassData.renderTargetDescriptors.push_back(std::make_pair(textureId, descriptorUsage.first));
+        renderPassData.renderTargetDescriptors.emplace_back(std::make_pair(textureId, descriptorUsage.first));
         renderPassData.cpuHandles.push_back(descriptorUsage.first.cpuHandle);
         ++descriptorUsage.second;
       }
     }
 
-    ////beginRenderNamedEvent(L"RSM-OMSetRenderTargets");
+    beginRenderNamedEvent(L"RSM-OMSetRenderTargets");
     auto depthStencil = _deviceResources->getDepthStencil();
     if (pass.stencilRef() == 0 && !renderPassData.renderTargetDescriptors.empty()) {
       CD3DX12_CPU_DESCRIPTOR_HANDLE* depthStencilHandle = nullptr;
-      if (Render_pass_depth_mode::Disabled != depthStencilConfig.depthMode) {
+      if (Render_pass_depth_mode::Disabled != depthStencilConfig.getDepthMode()) {
         depthStencilHandle = &depthStencil.cpuHandle;
       }
+
+      transitionToRenderTargets(pass.getCustomRenderTargets());
+
       pCommandList->OMSetRenderTargets(
               static_cast<UINT>(renderPassData.cpuHandles.size()), renderPassData.cpuHandles.data(), false,
               depthStencilHandle);
     }
     else {
+      transitionToRenderTargets({});
+
       auto backBuffer = _deviceResources->getCurrentFrameBackBuffer();
       pCommandList->OMSetRenderTargets(1, &backBuffer.cpuHandle, false, &depthStencil.cpuHandle);
     }
-    ////endRenderNamedEvent();
+    endRenderNamedEvent();
 
-    ////beginRenderNamedEvent(L"RSM-Render");
+    beginRenderNamedEvent(L"RSM-Render");
     // Call the render method.
     pass.render(cameraData);
-    ////endRenderNamedEvent();
+    endRenderNamedEvent();
 
     if (groupRenderEvents) {
       endRenderNamedEvent();

@@ -43,6 +43,13 @@ conan_cmake_install(PATH_OR_REFERENCE .
         SETTINGS ${settings})
 
 # --------------------------------
+# NuGet - Check it is installed on the command line.
+find_program(NUGET nuget)
+if(NOT NUGET)
+    message(FATAL_ERROR "Cannot find nuget command line tool.\nInstall it with e.g. choco install nuget.commandline")
+endif()
+
+# --------------------------------
 # Orangine Helper Modules. Ordering matters here.
 include(OeThirdPartyContent)
 include(OeVars)

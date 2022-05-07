@@ -52,7 +52,7 @@
     },
     {
       "name": "VS_2019_AMD64_Debug_Asan",
-      "inherits": "VS_2019",
+      "inherits": "VS_2019_AMD64",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "OE_BUILD_ASAN": "TRUE"

@@ -35,18 +35,17 @@ class Descriptor_heap_pool {
   D3D12_CPU_DESCRIPTOR_HANDLE getCpuDescriptorHandleForHeapStart();
   D3D12_GPU_DESCRIPTOR_HANDLE getGpuDescriptorHandleForHeapStart();
 
- private:
+  ID3D12DescriptorHeap* getDescriptorHeap() { return _currentHeap.Get(); }
 
+ private:
   void createHeap();
 
   ID3D12Device6* _device;
   D3D12_DESCRIPTOR_HEAP_DESC _heapDesc;
   std::string _name;
-  uint32_t _handleIncrementSize = 0;
-  uint32_t _nextHeapId = 0;
+  size_t _handleIncrementSize = 0;
 
-  std::vector<Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>> _heapsAtCapacity;
   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> _currentHeap;
   uint32_t _currentAllocated = 0;
 };
-}
+}// namespace oe::pipeline_d3d12

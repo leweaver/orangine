@@ -45,7 +45,7 @@ Gpu_buffer::create(ID3D12Device6* device, const std::wstring& name, const oe::Me
           new Gpu_buffer(std::move(buffer), gpuBufferSize, meshBufferAccessor.stride, bufferState));
 }
 
-std::unique_ptr<Gpu_buffer> Gpu_buffer::create(ID3D12Device6* device, const std::wstring& name, size_t sizeInBytes, D3D12_RESOURCE_STATES bufferState)
+std::unique_ptr<Gpu_buffer> Gpu_buffer::create(ID3D12Device6* device, const std::wstring& name, size_t sizeInBytes, uint32_t stride, D3D12_RESOURCE_STATES bufferState)
 {
   ComPtr<ID3D12Resource> buffer;
 
@@ -56,15 +56,15 @@ std::unique_ptr<Gpu_buffer> Gpu_buffer::create(ID3D12Device6* device, const std:
           IID_PPV_ARGS(&buffer)));
 
   auto gpuBufferSize = static_cast<uint32_t>(sizeInBytes);
-  return std::unique_ptr<Gpu_buffer>(new Gpu_buffer(std::move(buffer), gpuBufferSize, gpuBufferSize, bufferState));
+  return std::unique_ptr<Gpu_buffer>(new Gpu_buffer(std::move(buffer), gpuBufferSize, stride, bufferState));
 }
 
-D3D12_VERTEX_BUFFER_VIEW Gpu_buffer::GetAsVertexBufferView() const
+D3D12_VERTEX_BUFFER_VIEW Gpu_buffer::getAsVertexBufferView() const
 {
   return {_gpuBuffer->GetGPUVirtualAddress(), _gpuBufferSizeInBytes, _gpuBufferStride};
 }
 
-D3D12_INDEX_BUFFER_VIEW Gpu_buffer::GetAsIndexBufferView(DXGI_FORMAT format) const
+D3D12_INDEX_BUFFER_VIEW Gpu_buffer::getAsIndexBufferView(DXGI_FORMAT format) const
 {
 #if !defined(NDEBUG)
   if (_resourceState != D3D12_RESOURCE_STATE_INDEX_BUFFER) {
@@ -74,7 +74,7 @@ D3D12_INDEX_BUFFER_VIEW Gpu_buffer::GetAsIndexBufferView(DXGI_FORMAT format) con
   return {_gpuBuffer->GetGPUVirtualAddress(), _gpuBufferSizeInBytes, format};
 }
 
-D3D12_CONSTANT_BUFFER_VIEW_DESC Gpu_buffer::GetAsConstantBufferView() const
+D3D12_CONSTANT_BUFFER_VIEW_DESC Gpu_buffer::getAsConstantBufferView() const
 {
   return {_gpuBuffer->GetGPUVirtualAddress(), _gpuBufferSizeInBytes};
 }

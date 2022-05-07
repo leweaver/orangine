@@ -68,14 +68,15 @@ class ViewerApp : public App {
     auto& textureManager = getTextureManager();
 
     Environment_volume ev;
-    ev.environmentIbl.skyboxTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemap.dds"));
-    ev.environmentIbl.iblBrdfTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapBrdf.dds"));
-    ev.environmentIbl.iblDiffuseTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapDiffuseHDR.dds"));
-    ev.environmentIbl.iblSpecularTexture = textureManager.createTextureFromFile(
-        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapSpecularHDR.dds"));
+    Sampler_descriptor samplerDescriptor {Default_values{}};
+    ev.environmentIbl.skyboxTexture = textureManager.createCubeMapTextureFromFile(
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemap.dds"), samplerDescriptor);
+    ev.environmentIbl.iblBrdfTexture = textureManager.createCubeMapTextureFromFile(
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapBrdf.dds"), samplerDescriptor);
+    ev.environmentIbl.iblDiffuseTexture = textureManager.createCubeMapTextureFromFile(
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapDiffuseHDR.dds"), samplerDescriptor);
+    ev.environmentIbl.iblSpecularTexture = textureManager.createCubeMapTextureFromFile(
+        assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapSpecularHDR.dds"), samplerDescriptor);
 
     getLightingManager().addEnvironmentVolume(ev);
   }

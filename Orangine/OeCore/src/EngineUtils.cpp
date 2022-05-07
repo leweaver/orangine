@@ -40,6 +40,9 @@ std::exception&& oe::log_exception_for_throw(
   // This also helps enforce the rule that exceptions should never be used for business logic,
   // only for program errors.
   const auto level = FATAL;
+  if (g_enableCheckDebugBreak) {
+    __debugbreak();
+  }
 #else
   const auto level = WARNING;
 #endif

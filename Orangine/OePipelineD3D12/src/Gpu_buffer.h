@@ -22,12 +22,21 @@ class Gpu_buffer {
    * @param device d3d device
    * @param name Name given to the DX Object - debug builds only
    * @param sizeInBytes How large the buffer will be, in bytes
+   * @param stride Only used to populate the stride in the result of @see getAsVertexBufferView
    */
-  static std::unique_ptr<Gpu_buffer> create(ID3D12Device6* device, const std::wstring& name, size_t sizeInBytes, D3D12_RESOURCE_STATES bufferState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+  static std::unique_ptr<Gpu_buffer> create(ID3D12Device6* device, const std::wstring& name, size_t sizeInBytes, uint32_t stride = 0, D3D12_RESOURCE_STATES bufferState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 
-  D3D12_VERTEX_BUFFER_VIEW GetAsVertexBufferView() const;
-  D3D12_INDEX_BUFFER_VIEW GetAsIndexBufferView(DXGI_FORMAT format) const;
-  D3D12_CONSTANT_BUFFER_VIEW_DESC GetAsConstantBufferView() const;
+  D3D12_VERTEX_BUFFER_VIEW getAsVertexBufferView() const;
+  D3D12_INDEX_BUFFER_VIEW getAsIndexBufferView(DXGI_FORMAT format) const;
+  D3D12_CONSTANT_BUFFER_VIEW_DESC getAsConstantBufferView() const;
+
+  ID3D12Resource* getResource() {
+    return _gpuBuffer.Get();
+  };
+
+  uint32_t getBufferSizeBytes() {
+    return _gpuBufferSizeInBytes;
+  }
 
  private:
   Gpu_buffer(

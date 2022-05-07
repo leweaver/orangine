@@ -23,7 +23,6 @@ Descriptor_heap_pool::Descriptor_heap_pool()
     : _device(nullptr)
     , _heapDesc()
     , _handleIncrementSize(0)
-    , _nextHeapId(0)
     , _currentAllocated(0)
 {
   _heapDesc.NumDescriptors = 0;
@@ -31,15 +30,11 @@ Descriptor_heap_pool::Descriptor_heap_pool()
 
 void Descriptor_heap_pool::createHeap()
 {
-  if (_currentHeap) {
-    _heapsAtCapacity.push_back(_currentHeap);
-    _currentHeap.Reset();
-  }
+  OE_CHECK(!_currentHeap);
 
-  DX::ThrowIfFailed(_device->CreateDescriptorHeap(&_heapDesc, IID_PPV_ARGS(&_currentHeap)));
+  ThrowIfFailed(_device->CreateDescriptorHeap(&_heapDesc, IID_PPV_ARGS(&_currentHeap)));
 
-  SetObjectNameIndexed(_currentHeap.Get(), _name.c_str(), _nextHeapId);
-  ++_nextHeapId;
+  SetObjectName(_currentHeap.Get(), _name.c_str());
   _currentAllocated = 0;
 }
 
@@ -47,14 +42,15 @@ Descriptor_range Descriptor_heap_pool::allocateRange(uint32_t numDescriptors)
 {
   OE_CHECK(numDescriptors <= getAvailableDescriptorCount());
 
-  int32_t offsetScaledByIncrementSize = _currentAllocated * _handleIncrementSize;
+  auto offsetScaledByIncrementSize = static_cast<int32_t>(_currentAllocated * _handleIncrementSize);
+  uint32_t offsetInDescriptorsFromHeapStart = _currentAllocated;
   _currentAllocated += numDescriptors;
 
   return {CD3DX12_CPU_DESCRIPTOR_HANDLE(
                   _currentHeap->GetCPUDescriptorHandleForHeapStart(), offsetScaledByIncrementSize),
           CD3DX12_GPU_DESCRIPTOR_HANDLE(
                   _currentHeap->GetGPUDescriptorHandleForHeapStart(), offsetScaledByIncrementSize),
-          _handleIncrementSize, numDescriptors};
+          _handleIncrementSize, numDescriptors, offsetInDescriptorsFromHeapStart};
 }
 
 uint32_t Descriptor_heap_pool::getAvailableDescriptorCount() const

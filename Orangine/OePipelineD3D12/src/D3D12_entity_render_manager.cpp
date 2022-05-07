@@ -19,12 +19,6 @@ void oe::create_manager(
   out = Manager_instance<IEntity_render_manager>(std::make_unique<D3D12_entity_render_manager>(
           textureManager, materialManager, lightingManager, primitiveMeshDataFactory, deviceResources));
 }
-void D3D12_entity_render_manager::drawRendererData(
-        const oe::Camera_data& cameraData, const Matrix4& worldTransform, oe::Mesh_gpu_data& rendererData,
-        oe::Render_pass_blend_mode blendMode, const oe::Render_light_data& renderLightData,
-        std::shared_ptr<Material> ptr, const oe::Mesh_vertex_layout& meshVertexLayout,
-        oe::Material_context& materialContext, oe::Renderer_animation_data& rendererAnimationData, bool wireframe)
-{}
 
 void D3D12_entity_render_manager::createDeviceDependentResources()
 {
@@ -84,7 +78,7 @@ std::shared_ptr<Mesh_gpu_data> D3D12_entity_render_manager::createRendererData(
       name << " (meshData: " << meshData->name << ")";
     }
     name << " (count: " << std::to_string(rendererData->indexCount) << ")";
-    rendererData->vertexBuffers[vertexAttr] = getOrCreateUsage(name.str(), meshAccessor->buffer);
+    rendererData->vertexBuffers[vertexAttr] = getOrCreateUsage(name.str(), meshAccessor->buffer, meshAccessor->stride);
   }
 
   _deviceDependent.createdRendererData.push_back(rendererData);
@@ -92,7 +86,7 @@ std::shared_ptr<Mesh_gpu_data> D3D12_entity_render_manager::createRendererData(
 }
 
 std::shared_ptr<Gpu_buffer_reference> D3D12_entity_render_manager::getOrCreateUsage(
-        const std::string_view& name, const std::shared_ptr<Mesh_buffer>& meshBuffer)
+        const std::string_view& name, const std::shared_ptr<Mesh_buffer>& meshBuffer, size_t vertexSize)
 {
   auto pos = _deviceDependent.meshBufferToGpuBuffers.find(meshBuffer);
   if (pos == _deviceDependent.meshBufferToGpuBuffers.end()) {
@@ -100,14 +94,53 @@ std::shared_ptr<Gpu_buffer_reference> D3D12_entity_render_manager::getOrCreateUs
     if (!name.empty()) {
       name_w = oe::utf8_decode(name);
     }
-    auto bufferPtr = Gpu_buffer::create(_deviceDependent.device, name_w, meshBuffer->dataSize);
+    auto bufferPtr = Gpu_buffer::create(_deviceDependent.device, name_w, meshBuffer->dataSize, vertexSize);
     auto gpuBufferRef = std::make_shared<Gpu_buffer_reference>();
     gpuBufferRef->gpuBuffer = std::move(bufferPtr);
-    auto insertRes = _deviceDependent.meshBufferToGpuBuffers.insert(std::make_pair(meshBuffer, std::move(gpuBufferRef)));
+    auto insertRes =
+            _deviceDependent.meshBufferToGpuBuffers.insert(std::make_pair(meshBuffer, std::move(gpuBufferRef)));
     OE_CHECK(insertRes.second);
     pos = insertRes.first;
 
     // TODO upload buffer data
   }
   return pos->second;
+}
+
+void D3D12_entity_render_manager::drawRendererData(
+        const oe::Camera_data& cameraData, const Matrix4& worldTransform, oe::Mesh_gpu_data& rendererData,
+        const Depth_stencil_config& depthStencilConfig, const oe::Render_light_data& renderLightData,
+        std::shared_ptr<Material> material, const oe::Mesh_vertex_layout& meshVertexLayout,
+        oe::Material_context& materialContext, oe::Renderer_animation_data& rendererAnimationData, bool wireframe)
+{
+  if (rendererData.failedRendering || rendererData.vertexBuffers.empty()) {
+    return;
+  }
+
+  try {
+    // Make sure that material has is up to date, so that materialManager can simply call
+    // `ensureCompilerPropertiesHash` instead of non-const `calculateCompilerPropertiesHash`
+    material->calculateCompilerPropertiesHash();
+
+    // Compile shaders if need be
+    _materialManager.updateMaterialContext(
+            materialContext, material, meshVertexLayout, rendererData, &renderLightData, depthStencilConfig,
+            cameraData.enablePixelShader, wireframe);
+
+    _materialManager.bind(materialContext);
+  }
+  catch (std::exception& ex) {
+    rendererData.failedRendering = true;
+    LOG(FATAL) << "drawRendererData: Failed bind material, marking failedRendering to true. (" << ex.what() << ")";
+    return;
+  }
+
+  try {
+    _materialManager.render(materialContext, worldTransform, rendererAnimationData, cameraData);
+  }
+  catch (std::exception& ex) {
+    rendererData.failedRendering = true;
+    LOG(FATAL) << "drawRendererData: Failed render, marking failedRendering to true. (" << ex.what() << ")";
+  }
+  _materialManager.unbind();
 }

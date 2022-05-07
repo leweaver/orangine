@@ -6,6 +6,7 @@
 #include <string>
 #include <vectormath.hpp>
 
+#include <dxgiformat.h>
 #include <gsl/span>
 
 namespace oe {
@@ -22,12 +23,13 @@ struct Vertex_attribute_semantic {
   Vertex_attribute attribute;
   uint8_t semanticIndex;
 
-  bool operator<(const Vertex_attribute_semantic& other) const {
-    if (attribute == other.attribute)
-      return semanticIndex < other.semanticIndex;
+  bool operator<(const Vertex_attribute_semantic& other) const
+  {
+    if (attribute == other.attribute) return semanticIndex < other.semanticIndex;
     return attribute < other.attribute;
   }
-  bool operator==(const Vertex_attribute_semantic& other) const {
+  bool operator==(const Vertex_attribute_semantic& other) const
+  {
     return attribute == other.attribute && semanticIndex == other.semanticIndex;
   }
   bool operator!=(const Vertex_attribute_semantic& other) const { return !(*this == other); }
@@ -54,7 +56,8 @@ struct Sampler_descriptor {
       , wrapU(Sampler_texture_address_mode::Wrap)
       , wrapV(Sampler_texture_address_mode::Wrap)
       , wrapW(Sampler_texture_address_mode::Wrap)
-      , comparisonFunc(Sampler_comparison_func::Never) {}
+      , comparisonFunc(Sampler_comparison_func::Never)
+  {}
 };
 
 struct Viewport {
@@ -81,17 +84,38 @@ struct Vector2i {
 // and packing order is important.
 // Convert to a SSE::VectorN before performing mathematical operations.
 struct Float2 {
-  Float2() : x(0.0f), y(0.0f) {}
-  Float2(float x, float y) : x(x), y(y) {}
-  explicit Float2(const SSE::Vector3& vec) : x(vec.getX()), y(vec.getY()) {}
+  Float2()
+      : x(0.0f)
+      , y(0.0f)
+  {}
+  Float2(float x, float y)
+      : x(x)
+      , y(y)
+  {}
+  explicit Float2(const SSE::Vector3& vec)
+      : x(vec.getX())
+      , y(vec.getY())
+  {}
 
   float x, y;
 };
 
 struct Float3 {
-  Float3() : x(0.0f), y(0.0f), z(0.0f) {}
-  Float3(float x, float y, float z) : x(x), y(y), z(z) {}
-  explicit Float3(const SSE::Vector3& vec) : x(vec.getX()), y(vec.getY()), z(vec.getZ()) {}
+  Float3()
+      : x(0.0f)
+      , y(0.0f)
+      , z(0.0f)
+  {}
+  Float3(float x, float y, float z)
+      : x(x)
+      , y(y)
+      , z(z)
+  {}
+  explicit Float3(const SSE::Vector3& vec)
+      : x(vec.getX())
+      , y(vec.getY())
+      , z(vec.getZ())
+  {}
 
   SSE::Vector3 toVector3() const { return {x, y, z}; }
 
@@ -99,11 +123,30 @@ struct Float3 {
 };
 
 struct Float4 {
-  Float4() : x(0.0f), y(0.0f), z(0.0f), w(0.0f) {}
-  Float4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
-  Float4(const SSE::Vector3& v, float w) : x(v.getX()), y(v.getY()), z(v.getZ()), w(w) {}
+  Float4()
+      : x(0.0f)
+      , y(0.0f)
+      , z(0.0f)
+      , w(0.0f)
+  {}
+  Float4(float x, float y, float z, float w)
+      : x(x)
+      , y(y)
+      , z(z)
+      , w(w)
+  {}
+  Float4(const SSE::Vector3& v, float w)
+      : x(v.getX())
+      , y(v.getY())
+      , z(v.getZ())
+      , w(w)
+  {}
   explicit Float4(const SSE::Vector4& vec)
-      : x(vec.getX()), y(vec.getY()), z(vec.getZ()), w(vec.getW()) {}
+      : x(vec.getX())
+      , y(vec.getY())
+      , z(vec.getZ())
+      , w(vec.getW())
+  {}
 
   SSE::Vector4 toVector4() const { return {x, y, z, w}; }
   SSE::Quat toQuaternion() const { return {x, y, z, w}; }
@@ -116,30 +159,55 @@ struct Camera_data {
   SSE::Matrix4 projectionMatrix;
   float fov;
   float aspectRatio;
+
   bool enablePixelShader = true;
 
   static const Camera_data IDENTITY;
 };
 
 struct Depth_stencil_config {
-  Depth_stencil_config() {}
-  Depth_stencil_config(Render_pass_blend_mode blendMode, Render_pass_depth_mode depthMode)
-      : Depth_stencil_config(Default_values()) {
-    this->blendMode = blendMode;
-    this->depthMode = depthMode;
+  explicit Depth_stencil_config(
+          Render_pass_blend_mode blendMode = Render_pass_blend_mode::Opaque,
+          Render_pass_depth_mode depthMode = Render_pass_depth_mode::Read_write,
+          Render_pass_stencil_mode stencilMode = Render_pass_stencil_mode::Disabled)
+      : _blendMode(blendMode)
+      , _depthMode(depthMode)
+      , _stencilMode(stencilMode)
+      , _stencilReadMask(0xff)
+      , _stencilWriteMask(0xff)
+  {
+    std::hash<int> hashGen;
+    _modeHash = hashGen(static_cast<int>(blendMode)) ^ hashGen(static_cast<int>(depthMode)) ^
+                hashGen(static_cast<int>(stencilMode));
   }
-  explicit Depth_stencil_config(Default_values)
-      : blendMode(Render_pass_blend_mode::Opaque)
-      , depthMode(Render_pass_depth_mode::Read_write)
-      , stencilMode(Render_pass_stencil_mode::Disabled)
-      , stencilReadMask(0xff)
-      , stencilWriteMask(0xff) {}
-  Render_pass_blend_mode blendMode;
-  Render_pass_depth_mode depthMode;
-  Render_pass_stencil_mode stencilMode;
-  uint32_t stencilReadMask;
-  uint32_t stencilWriteMask;
+
+  inline Render_pass_blend_mode getBlendMode() const { return _blendMode; }
+  inline Render_pass_depth_mode getDepthMode() const { return _depthMode; }
+  inline Render_pass_stencil_mode getStencilMode() const { return _stencilMode; }
+  inline uint32_t getStencilReadMask() const { return _stencilReadMask; }
+  inline uint32_t getStencilWriteMask() const { return _stencilWriteMask; }
+  size_t getModeHash() const { return _modeHash; }
+
+  void setStencilReadMask(uint32_t stencilReadMask) { _stencilReadMask = stencilReadMask; }
+  void setStencilWriteMask(uint32_t stencilWriteMask) { _stencilWriteMask = stencilWriteMask; }
+
+ private:
+  Render_pass_blend_mode _blendMode;
+  Render_pass_depth_mode _depthMode;
+  Render_pass_stencil_mode _stencilMode;
+  uint32_t _stencilReadMask;
+  uint32_t _stencilWriteMask;
+  size_t _modeHash;
 };
+
+template<typename CTy, typename CTr>
+std::basic_ostream<CTy, CTr>& operator<<(std::basic_ostream<CTy, CTr>& ss, const Depth_stencil_config& config)
+{
+  ss << "{ blendMode=" << renderPassBlendModeToString(config.getBlendMode()) << ", "
+     << "depthMode=" << renderPassDepthModeToString(config.getDepthMode()) << ", "
+     << "stencilMode=" << renderPassStencilModeToString(config.getStencilMode()) << " }";
+  return ss;
+}
 
 struct Shader_layout_constant_buffer {
   uint32_t registerIndex;
@@ -152,19 +220,20 @@ struct Shader_constant_layout {
   gsl::span<const Shader_layout_constant_buffer> constantBuffers;
 };
 
-} // namespace oe
+using Texture_format = DXGI_FORMAT;
+struct Shader_output_layout {
+  gsl::span<const Texture_format> renderTargetCountFormats;
+};
+
+}// namespace oe
 
 namespace std {
 
-template <>
-struct hash<oe::Vertex_attribute_semantic>
-{
+template<> struct hash<oe::Vertex_attribute_semantic> {
   std::size_t operator()(const oe::Vertex_attribute_semantic& k) const
   {
     using std::hash;
-    return ((hash<uint8_t>()(static_cast<uint8_t>(k.attribute))
-             ^ (hash<uint8_t>()(k.semanticIndex) << 1)) >> 1);
+    return ((hash<uint8_t>()(static_cast<uint8_t>(k.attribute)) ^ (hash<uint8_t>()(k.semanticIndex) << 1)) >> 1);
   }
 };
-
-}
+}// namespace std

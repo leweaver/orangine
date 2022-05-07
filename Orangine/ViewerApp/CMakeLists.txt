@@ -16,7 +16,8 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CM
 # Dependencies
 #####
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Oe::App)
+# Being explicit about sub dependencies here to allow inspection of them in helper functions below
+target_link_libraries(${PROJECT_NAME} PUBLIC Oe::App Oe::PipelineD3D12 Oe::Scripting Oe::Core)
 
 #####
 # Testing
@@ -33,10 +34,13 @@ endif()
 oe_target_configure_cmake_dir(${PROJECT_NAME})
 
 # configure /data folder
-oe_target_add_data_dir(${PROJECT_NAME} DEPENDENCIES Oe::App Oe::Core Oe::Scripting)
+oe_target_add_data_dir(${PROJECT_NAME})
 
 # configure /scripts folder
 oe_target_add_scripts_dir(${PROJECT_NAME} HAS_SCRIPTS)
+
+# configure any DLL's that need copying
+oe_target_add_dependent_dynamic_libraries(${PROJECT_NAME})
 
 # Precompiled Headers
 target_precompile_headers(${PROJECT_NAME} REUSE_FROM OeApp)
@@ -54,11 +58,3 @@ configure_file("cmake/viewer_app_config.yaml.in" "${_ADD_CONFIG_YAML_PARTIAL_FIL
 oe_target_add_config_yaml(${PROJECT_NAME} "${_ADD_CONFIG_YAML_PARTIAL_FILE}")
 
 oe_target_build_config_yaml(${PROJECT_NAME} SOURCE_TARGETS ${PROJECT_NAME} Oe::App Oe::Core Oe::Scripting)
-
-#####
-# Post-build: copy python runtime
-#####
-add_custom_command(TARGET ${PROJECT_NAME}
-        POST_BUILD
-        COMMAND "${CMAKE_COMMAND}" -E copy "${OeScripting_PYTHON_RUNTIME_DLL}" "${PROJECT_BINARY_DIR}"
-        )

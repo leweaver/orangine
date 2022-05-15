@@ -87,6 +87,15 @@ void Render_step_manager::shutdown()
 
 void Render_step_manager::createRenderSteps()
 {
+  // Clear buffers
+  {
+    auto clearDsvRtvStep = std::make_unique<Render_pass_generic>([this](const auto& cameraData, const Render_pass& pass) {
+          clearRenderTargetView(oe::Colors::Black);
+          clearDepthStencil(1.0F, 0);
+    });
+    _renderSteps.emplace_back(std::make_unique<Render_step>(std::move(clearDsvRtvStep), L"Clear RTV and DSV"));
+  }
+
   // Begin resource loading
   {
     _renderSteps.emplace_back(std::make_unique<Render_step>(createResourceUploadBeginPass(), L"Begin Resource Upload"));
@@ -137,8 +146,6 @@ void Render_step_manager::createRenderSteps()
 
     auto drawLightsPass =
             std::make_unique<Render_pass_generic>([this](const auto& cameraData, const Render_pass& pass) {
-              clearRenderTargetView(oe::Colors::Black);
-
               if (!_fatalError) {
                 if (_enableDeferredRendering) {
                   renderLights(cameraData, pass.getDepthStencilConfig());
@@ -326,8 +333,6 @@ void Render_step_manager::render()
 
     // Render steps
     _entityRenderManager.clearRenderStats();
-
-    clearDepthStencil(1.0f, 0);
 
     // Load lighting for camera
     applyEnvironmentVolume(cameraPos);

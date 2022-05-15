@@ -51,8 +51,9 @@ std::shared_ptr<Mesh_gpu_data> D3D12_entity_render_manager::createRendererData(
     rendererData->indexCount = meshData->indexBufferAccessor->count;
 
     const auto name = oe::utf8_decode("Index Buffer (count: " + std::to_string(rendererData->indexCount) + ")");
-    rendererData->indexBuffer = Gpu_buffer::create(
-            _deviceDependent.device, name, *meshData->indexBufferAccessor, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+    rendererData->indexBuffer = Gpu_buffer::createAndUpload(
+            _deviceDependent.device, name, *meshData->indexBufferAccessor, _deviceResources.getResourceUploader(),
+            D3D12_RESOURCE_STATE_INDEX_BUFFER);
     rendererData->indexFormat =
             mesh_utils::getDxgiFormat(Element_type::Scalar, meshData->indexBufferAccessor->component);
   }
@@ -101,14 +102,16 @@ std::shared_ptr<Gpu_buffer_reference> D3D12_entity_render_manager::getOrCreateUs
       name_w = oe::utf8_decode(name);
     }
     auto bufferPtr = Gpu_buffer::create(_deviceDependent.device, name_w, meshBuffer->dataSize, vertexSize);
+    bufferPtr->uploadAndTransition(
+            _deviceResources.getResourceUploader(), {meshBuffer->data, meshBuffer->dataSize},
+            D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+
     auto gpuBufferRef = std::make_shared<Gpu_buffer_reference>();
     gpuBufferRef->gpuBuffer = std::move(bufferPtr);
     auto insertRes =
             _deviceDependent.meshBufferToGpuBuffers.insert(std::make_pair(meshBuffer, std::move(gpuBufferRef)));
     OE_CHECK(insertRes.second);
     pos = insertRes.first;
-
-    // TODO upload buffer data
   }
   return pos->second;
 }

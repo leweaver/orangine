@@ -35,7 +35,6 @@ D3D12_device_resources::D3D12_device_resources(
     , m_outputSize{0, 0, 1, 1}
     , m_colorSpace(DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709)
     , m_options(flags)
-    , m_deviceNotify(nullptr)
     , m_outputDetailedMemoryReport(true) {}
 
 // Configures the Direct3D device, and stores handles to it and the device context.
@@ -160,16 +159,6 @@ void D3D12_device_resources::recreateWindowSizeDependentResources() {
   }
 
   GetClientRect(m_window, &m_outputSize);
-  // Clear the previous window size specific context.
-  /*LWL
-  ID3D11RenderTargetView* nullViews[] = {nullptr};
-  m_d3dContext->OMSetRenderTargets(_countof(nullViews), nullViews, nullptr);
-  m_d3dRenderTargetView.Reset();
-  m_d3dDepthStencilView.Reset();
-  m_renderTarget.Reset();
-  m_depthStencil.Reset();
-  m_d3dContext->Flush();
-  LWL*/
 
   // Determine the render target size in pixels.
   UINT backBufferWidth = std::max<UINT>(m_outputSize.right - m_outputSize.left, 1);
@@ -179,6 +168,21 @@ void D3D12_device_resources::recreateWindowSizeDependentResources() {
             << ", h=" << backBufferHeight;
 
   resizePipelineResources(_renderPipeline, backBufferWidth, backBufferHeight);
+
+  ++_renderPipeline.fenceValue;
+  ThrowIfFailed(_renderPipeline.commandQueue->Signal(_renderPipeline.fence.Get(), _renderPipeline.fenceValue));
+}
+
+
+void D3D12_device_resources::beginResourcesUploadStep()
+{
+  _renderPipeline.resourceUploadBatch->Begin();
+}
+
+void D3D12_device_resources::endResourcesUploadStep()
+{
+  auto future = _renderPipeline.resourceUploadBatch->End(GetCommandQueue());
+  future.wait();
 }
 
 void D3D12_device_resources::resizePipelineResources(
@@ -332,18 +336,6 @@ void D3D12_device_resources::resizePipelineResources(
     {
       ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
     }
-
-    // Wait for the command list to execute; we are reusing the same command
-    // list in our main loop but for now, we just want to wait for setup to
-    // complete before continuing.
-
-    // Signal the fence value.
-    const UINT64 fenceToWaitFor = _renderPipeline.fenceValue;
-    ThrowIfFailed(_renderPipeline.commandQueue->Signal(_renderPipeline.fence.Get(), fenceToWaitFor));
-
-    // Wait until the fence is completed.
-    ThrowIfFailed(_renderPipeline.fence->SetEventOnCompletion(fenceToWaitFor, _renderPipeline.fenceEvent));
-    WaitForSingleObject(_renderPipeline.fenceEvent, INFINITE);
   }
 }
 
@@ -462,10 +454,6 @@ bool D3D12_device_resources::setWindowSize(int width, int height) {
 
 // Recreate all device resources and set them back to the current state.
 void D3D12_device_resources::HandleDeviceLost() {
-  if (m_deviceNotify) {
-    m_deviceNotify->onDeviceLost();
-  }
-
   destroyDeviceDependentResources();
 
 #ifdef _DEBUG
@@ -484,10 +472,6 @@ void D3D12_device_resources::HandleDeviceLost() {
 
   createDeviceDependentResources();
   recreateWindowSizeDependentResources();
-
-  if (m_deviceNotify) {
-    m_deviceNotify->onDeviceRestored();
-  }
 }
 
 void D3D12_device_resources::closeAndExecuteCommandList(D3D12_device_resources::Render_pipeline& renderPipeline)

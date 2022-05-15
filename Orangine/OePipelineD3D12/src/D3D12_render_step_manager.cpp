@@ -52,8 +52,20 @@ Viewport D3D12_render_step_manager::getScreenViewport() const
 }
 
 // IRender_step_manager implementation
-void D3D12_render_step_manager::clearRenderTargetView(const Color& color) {}
-void D3D12_render_step_manager::clearDepthStencil(float depth, uint8_t stencil) {}
+void D3D12_render_step_manager::clearRenderTargetView(const Color& color) {
+  ID3D12GraphicsCommandList1* commandList = _deviceResources->GetPipelineCommandList().Get();
+
+  auto colorFloats = static_cast<Float4>(color);
+  commandList->ClearRenderTargetView(_deviceResources->getCurrentFrameBackBuffer().cpuHandle, &colorFloats.x, 0, nullptr);
+}
+
+void D3D12_render_step_manager::clearDepthStencil(float depth, uint8_t stencil) {
+  ID3D12GraphicsCommandList1* commandList = _deviceResources->GetPipelineCommandList().Get();
+  commandList->ClearDepthStencilView(
+          _deviceResources->getDsvHeap().getCpuDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, depth, stencil, 0,
+          nullptr);
+}
+
 std::unique_ptr<Render_pass> D3D12_render_step_manager::createShadowMapRenderPass()
 {
   return std::make_unique<Render_pass_generic>([](const Camera_data&, const Render_pass&) {});
@@ -62,15 +74,14 @@ std::unique_ptr<Render_pass> D3D12_render_step_manager::createShadowMapRenderPas
 std::unique_ptr<Render_pass> D3D12_render_step_manager::createResourceUploadBeginPass()
 {
   return std::make_unique<Render_pass_generic>([dr=_deviceResources.get()](const Camera_data&, const Render_pass&) {
-    dr->getResourceUploader().Begin();
+    dr->beginResourcesUploadStep();
   });
 }
 
 std::unique_ptr<Render_pass> D3D12_render_step_manager::createResourceUploadEndPass()
 {
   return std::make_unique<Render_pass_generic>([dr=_deviceResources.get()](const Camera_data&, const Render_pass&) {
-    auto future = dr->getResourceUploader().End(dr->GetCommandQueue());
-    future.wait();
+    dr->endResourcesUploadStep();
   });
 }
 

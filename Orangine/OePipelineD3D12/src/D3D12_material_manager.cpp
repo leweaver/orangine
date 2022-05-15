@@ -650,12 +650,12 @@ void D3D12_material_manager::bindMaterialContextToDevice(const Material_context&
 
   _deviceResources.getCurrentFrameResources().setCurrentBoundRootSignature(impl.rootSignature.Get());
   _deviceDependent.commandList->SetGraphicsRootSignature(impl.rootSignature.Get());
-  uint32_t index = 0;
-  for (const auto& descriptorTable : impl.rootSignatureRootDescriptorTables) {
+  for (uint32_t index = 0; index < impl.rootSignatureRootDescriptorTables.size(); ++index) {
     if (index == Frame_resources::kConstantBufferRootSignatureIndex) {
       continue;
     }
-    _deviceDependent.commandList->SetGraphicsRootDescriptorTable(index++, descriptorTable);
+    _deviceDependent.commandList->SetGraphicsRootDescriptorTable(
+            index, impl.rootSignatureRootDescriptorTables.at(index));
   }
   _deviceDependent.commandList->SetPipelineState(impl.pipelineState.Get());
 }

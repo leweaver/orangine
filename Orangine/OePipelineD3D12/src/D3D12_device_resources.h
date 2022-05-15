@@ -27,17 +27,15 @@ class D3D12_device_resources : public IDevice_resources {
           HWND window, DXGI_FORMAT backBufferFormat = DXGI_FORMAT_B8G8R8A8_UNORM,
           DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D32_FLOAT, UINT backBufferCount = 2, unsigned int flags = 0);
 
-  // IDevice_resources interface
-  void registerDeviceNotify(IDevice_notify* deviceNotify) override
-  {
-    m_deviceNotify = deviceNotify;
-  }
-
   void createDeviceDependentResources() override;
+  void recreateWindowSizeDependentResources() override;
+
+  void beginResourcesUploadStep() override;
+  void endResourcesUploadStep() override;
+
   void destroyDeviceDependentResources() override;
   bool getWindowSize(int& width, int& height) override;
   bool setWindowSize(int width, int height) override;
-  void recreateWindowSizeDependentResources() override;
   bool checkSystemSupport(bool logFailures) override;
 
   // Primary pipeline execution flow
@@ -195,9 +193,6 @@ class D3D12_device_resources : public IDevice_resources {
 
   // DeviceResources options (see flags above)
   unsigned int m_options;
-
-  // The IDeviceNotify can be held directly as it owns the DeviceResources.
-  IDevice_notify* m_deviceNotify;
 
   // If true, outputs detailed DirectX memory information on shutdown
   bool m_outputDetailedMemoryReport;

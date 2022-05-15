@@ -17,7 +17,7 @@ struct PS_OUTPUT
 //--------------------------------------------------------------------------------------
 PS_OUTPUT PSMain(PS_INPUT input)
 {
-	PS_OUTPUT output;    
+	PS_OUTPUT output;
 	// TODO: Bring clear color in as a constant
 	//output.Color0 = float4(0.78f, 0.64f, 0.78f, 1.0f);
 	output.Color0 = float4(0.0f, 0.0f, 0.2f, 1.0f);

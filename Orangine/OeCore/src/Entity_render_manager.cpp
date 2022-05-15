@@ -367,11 +367,14 @@ void Entity_render_manager::renderRenderable(
 
 Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material> material)
 {
-  auto renderable = Renderable();
-  if (renderable.meshData == nullptr)
+  Renderable renderable {};
+  if (renderable.meshData == nullptr) {
     renderable.meshData = _primitiveMeshDataFactory.createQuad(2.0f, 2.0f, {-1.f, -1.f, 0.f});
+  }
 
-  if (renderable.material == nullptr) renderable.material = material;
+  if (renderable.material == nullptr) {
+    renderable.material = material;
+  }
 
   auto rendererData = renderable.rendererData.lock();
   if (rendererData == nullptr) {

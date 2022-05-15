@@ -149,15 +149,11 @@ class App_impl {
 
     if (tickCount > 0) {
       const auto& tickableManagers = _managers.getTickableManagers();
-      for (auto i = 0U; i < tickableManagers.size(); ++i) {
-        const auto& mgrConfig = tickableManagers.at(i);
-
-        for (int idx = 0; idx < tickableManagers.size(); idx++) {
-          auto manager = tickableManagers.at(idx);
-          if (_managerTickTimes.at(idx) > 0.0) {
-            ss << "  " << manager.config->asBase->name() << ": " << (1000.0 * _managerTickTimes.at(idx) / tickCount)
-               << std::endl;
-          }
+      for (int idx = 0; idx < tickableManagers.size(); idx++) {
+        auto manager = tickableManagers.at(idx);
+        if (_managerTickTimes.at(idx) > 0.0) {
+          ss << "  " << manager.config->asBase->name() << ": " << (1000.0 * _managerTickTimes.at(idx) / tickCount)
+             << std::endl;
         }
       }
       LOG(INFO) << "Manager average tick times (ms): " << std::endl << ss.str();
@@ -261,11 +257,14 @@ class App_impl {
   void createDeviceDependentResources() {
     try {
       _deviceResources->createDeviceDependentResources();
+      _deviceResources->beginResourcesUploadStep();
 
       for (auto& manager : _managers.getDeviceDependentManagers()) {
         LOG(DEBUG) << "Creating device dependent resources for " << manager.config->asBase->name();
         manager()->createDeviceDependentResources();
       };
+
+      _deviceResources->endResourcesUploadStep();
     } catch (std::exception& e) {
       LOG(FATAL) << "Failed to create device dependent resources: " << e.what();
       _fatalError = true;
@@ -281,6 +280,8 @@ class App_impl {
         return;
       }
 
+      _deviceResources->beginResourcesUploadStep();
+
       width = std::max(width, 1);
       height = std::max(height, 1);
       for (auto& manager : _managers.getWindowDependentManagers()) {
@@ -288,6 +289,8 @@ class App_impl {
                    << " (width=" << width << " height=" << height << ")";
         manager()->createWindowSizeDependentResources(_hwnd, width, height);
       };
+
+      _deviceResources->endResourcesUploadStep();
     } catch (std::exception& e) {
       LOG(FATAL) << "Failed to create window size dependent resources: " << e.what();
       _fatalError = true;

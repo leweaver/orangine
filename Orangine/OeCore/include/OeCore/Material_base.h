@@ -33,7 +33,8 @@ class Material_base : public Material {
       const Renderer_animation_data& rendererAnimationData,
       uint8_t* buffer,
       size_t bufferSize) const override {
-    assert(bufferSize == sizeof(TVertex_shader_constants));
+    size_t shaderConstantsSize =sizeof(TVertex_shader_constants);
+    OE_CHECK(bufferSize >= shaderConstantsSize);
     auto& constantsVs = *reinterpret_cast<TVertex_shader_constants*>(buffer);
 
     if constexpr (std::is_assignable_v<Vertex_constant_buffer_base, TVertex_shader_constants>) {
@@ -49,7 +50,8 @@ class Material_base : public Material {
       const SSE::Matrix4& projMatrix,
       uint8_t* buffer,
       size_t bufferSize) const override {
-    assert(bufferSize == sizeof(TPixel_shader_constants));
+    size_t shaderConstantsSize =sizeof(TPixel_shader_constants);
+    OE_CHECK(bufferSize >= shaderConstantsSize);
     auto& constantsPs = *reinterpret_cast<TPixel_shader_constants*>(buffer);
 
     updatePsConstantBufferValues(constantsPs, worldMatrix, viewMatrix, projMatrix);

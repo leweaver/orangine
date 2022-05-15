@@ -15,6 +15,8 @@
 
 namespace oe::pipeline_d3d12 {
 
+class Frame_resources;
+
 // Controls all the DirectX device resources.
 class D3D12_device_resources : public IDevice_resources {
  public:
@@ -109,15 +111,20 @@ class D3D12_device_resources : public IDevice_resources {
   Committed_gpu_resource getDepthStencil() const;
   DXGI_FORMAT getDepthStencilFormat();
 
+  Frame_resources& getCurrentFrameResources();
+  size_t getCurrentFrameIndex() const;
+
+  Descriptor_heap_pool& getRtvHeap() { return *m_rtvDescriptorHeapPool; }
+  Descriptor_heap_pool& getDsvHeap() { return *m_dsvDescriptorHeapPool; }
+  Descriptor_heap_pool& getSrvHeap() { return *m_srvDescriptorHeapPool; }
+  Descriptor_heap_pool& getSamplerHeap() { return *m_samplerDescriptorHeapPool; }
+
  private:
-  // TODO: Some parts of this probably belong in Render_step_manager (command queue/list/allocator)
   struct Render_pipeline {
     static const std::size_t frameCount = 2;
+    static const std::size_t frameResourceCount = 2;
 
     // Pipeline Objects
-    Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue;
-    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
-
     Microsoft::WRL::ComPtr<IDXGISwapChain3> swapChain;
 
     Descriptor_range rtvDescriptorRange;
@@ -125,15 +132,23 @@ class D3D12_device_resources : public IDevice_resources {
     std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, frameCount> backBufferRtvs;
     UINT frameIndex;
 
+    std::array<std::unique_ptr<Frame_resources>, frameResourceCount> frameResources;
+    size_t currentFrameResources = 0;
+
     HANDLE fenceEvent;
     Microsoft::WRL::ComPtr<ID3D12Fence> fence;
     UINT64 fenceValue;
 
     Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilBuffer;
 
-    // TODO: will want more than one command list :)
-    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList;
     std::unique_ptr<DirectX::ResourceUploadBatch> resourceUploadBatch;
+
+    // TODO: Below here needs to move to Frame_resources
+    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
+
+    // TODO: Below here needs to move various pipelines
+    Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue;
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList;
   };
 
   void HandleDeviceLost();
@@ -152,17 +167,16 @@ class D3D12_device_resources : public IDevice_resources {
   // Direct3D objects.
   Microsoft::WRL::ComPtr<IDXGIFactory4> m_dxgiFactory;
   Microsoft::WRL::ComPtr<ID3D12Device6> m_d3dDevice;
-  // Microsoft::WRL::ComPtr<ID3DUserDefinedAnnotation>   m_d3dAnnotation;
 
-
-  // Direct3D rendering objects. Required for 3D.
-  // Microsoft::WRL::ComPtr<ID3D11Texture2D>         m_renderTarget;
-  // Microsoft::WRL::ComPtr<ID3D11Texture2D>         m_depthStencil;
-  // Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_d3dRenderTargetView;
-  // Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_d3dDepthStencilView;
   D3D12_VIEWPORT m_screenViewport;
-  std::unique_ptr<pipeline_d3d12::Descriptor_heap_pool> m_rtvDescriptorHeapPool;
-  std::unique_ptr<pipeline_d3d12::Descriptor_heap_pool> m_dsvDescriptorHeapPool;
+
+  inline static constexpr uint32_t kDescriptorPoolSizeDsvRtv = 128;
+  inline static constexpr uint32_t kDescriptorPoolSizeSrv = 10240;
+  inline static constexpr uint32_t kDescriptorPoolSizeSampler = 1024;
+  std::unique_ptr<Descriptor_heap_pool> m_rtvDescriptorHeapPool;
+  std::unique_ptr<Descriptor_heap_pool> m_dsvDescriptorHeapPool;
+  std::unique_ptr<Descriptor_heap_pool> m_srvDescriptorHeapPool;
+  std::unique_ptr<Descriptor_heap_pool> m_samplerDescriptorHeapPool;
 
   // Direct3D properties.
   DXGI_FORMAT m_backBufferFormat;
@@ -171,7 +185,7 @@ class D3D12_device_resources : public IDevice_resources {
 
   // Cached device properties.
   HWND m_window;
-  static constexpr D3D_FEATURE_LEVEL m_d3dFeatureLevel = D3D_FEATURE_LEVEL_12_1;
+  inline static constexpr D3D_FEATURE_LEVEL m_d3dFeatureLevel = D3D_FEATURE_LEVEL_12_1;
   RECT m_outputSize;
 
   // HDR Support

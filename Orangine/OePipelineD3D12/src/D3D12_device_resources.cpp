@@ -8,6 +8,7 @@
 
 #include <wrl/client.h>
 #include "PipelineUtils.h"
+#include "Frame_resources.h"
 
 #pragma warning(push)
 #pragma warning(disable:4100) // unreferenced formal parameters in PIXCopyEventArguments() (WinPixEventRuntime.1.0.200127001)
@@ -131,6 +132,10 @@ void D3D12_device_resources::createDeviceDependentResources()
 
 void D3D12_device_resources::destroyDeviceDependentResources() {
   m_rtvDescriptorHeapPool = {};
+  m_dsvDescriptorHeapPool = {};
+  m_srvDescriptorHeapPool = {};
+  m_samplerDescriptorHeapPool = {};
+
   _renderPipeline = {};
 
 #ifdef _DEBUG
@@ -250,16 +255,14 @@ void D3D12_device_resources::resizePipelineResources(
   // Handle color space settings for HDR
   updateColorSpace(renderPipeline.swapChain);
 
-  // Create descriptor heap and render target views for back buffer
+  // Initialize descriptor heaps
+  m_rtvDescriptorHeapPool->initialize();
+  m_dsvDescriptorHeapPool->initialize();
+  m_srvDescriptorHeapPool->initialize();
+  m_samplerDescriptorHeapPool->initialize();
+
+  // Create render target views for back buffer
   {
-    D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-    rtvHeapDesc.NumDescriptors = Render_pipeline::frameCount;
-    rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-    rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-    m_rtvDescriptorHeapPool = std::make_unique<pipeline_d3d12::Descriptor_heap_pool>(
-            m_d3dDevice.Get(), rtvHeapDesc, "rtvDescriptorHeapPool");
-
     // Create a render target view of the swap chain back buffers.
     renderPipeline.rtvDescriptorRange = m_rtvDescriptorHeapPool->allocateRange(Render_pipeline::frameCount);
 
@@ -274,16 +277,6 @@ void D3D12_device_resources::resizePipelineResources(
 
       oe::pipeline_d3d12::SetObjectNameIndexed(backBufferRtv.Get(), L"rtvBackBuffer", n);
     }
-  }
-
-  // Create descriptor heap for render depth stencil view descriptor
-  {
-    D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-    dsvHeapDesc.NumDescriptors = 1;
-    dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-    dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    m_dsvDescriptorHeapPool = std::make_unique<pipeline_d3d12::Descriptor_heap_pool>(
-            m_d3dDevice.Get(), dsvHeapDesc, "dsvDescriptorHeapPool");
   }
 
   // Create the depth stencil view.
@@ -372,6 +365,32 @@ void D3D12_device_resources::createRenderPipeline(Render_pipeline& renderPipelin
   SetObjectName(renderPipeline.commandList.Get(), L"RenderCommandList");
 
   renderPipeline.resourceUploadBatch = std::make_unique<DirectX::ResourceUploadBatch>(m_d3dDevice.Get());
+
+  for (size_t idx = 0; idx < Render_pipeline::frameResourceCount; ++idx)
+  {
+    renderPipeline.frameResources.at(idx) = std::make_unique<Frame_resources>(m_d3dDevice.Get());
+  }
+
+  // Create Descriptor heap pools
+  D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {
+          D3D12_DESCRIPTOR_HEAP_TYPE_RTV, kDescriptorPoolSizeDsvRtv, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, 0};
+  m_rtvDescriptorHeapPool = std::make_unique<pipeline_d3d12::Descriptor_heap_pool>(
+          m_d3dDevice.Get(), rtvHeapDesc, Render_pipeline::frameCount, "rtvDescriptorHeapPool");
+
+  D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {
+          D3D12_DESCRIPTOR_HEAP_TYPE_DSV, kDescriptorPoolSizeDsvRtv, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, 0};
+  m_dsvDescriptorHeapPool = std::make_unique<pipeline_d3d12::Descriptor_heap_pool>(
+          m_d3dDevice.Get(), dsvHeapDesc, Render_pipeline::frameCount, "dsvDescriptorHeapPool");
+
+  D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc{
+          D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kDescriptorPoolSizeSrv, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 0};
+  m_srvDescriptorHeapPool = std::make_unique<Descriptor_heap_pool>(
+          m_d3dDevice.Get(), srvHeapDesc, Render_pipeline::frameCount, "srvDescriptorHeapPool");
+
+  D3D12_DESCRIPTOR_HEAP_DESC samplerHeapDesc{
+          D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, kDescriptorPoolSizeSampler, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 0};
+  m_samplerDescriptorHeapPool = std::make_unique<Descriptor_heap_pool>(
+          m_d3dDevice.Get(), samplerHeapDesc, Render_pipeline::frameCount, "samplerDescriptorHeapPool");
 }
 
 Committed_gpu_resource D3D12_device_resources::getCurrentFrameBackBuffer() const
@@ -487,9 +506,6 @@ void D3D12_device_resources::waitForFenceAndReset()
 {
   waitForPreviousFrame(_renderPipeline);
 
-  // Start a new frame
-  _renderPipeline.fenceValue++;
-
   // Command list allocators can only be reset when the associated
   // command lists have finished execution on the GPU; apps should use
   // fences to determine GPU execution progress.
@@ -505,6 +521,12 @@ void D3D12_device_resources::waitForFenceAndReset()
   CD3DX12_RESOURCE_BARRIER resourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
           backBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
   _renderPipeline.commandList->ResourceBarrier(1, &resourceBarrier);
+
+  // Flush heaps
+  m_rtvDescriptorHeapPool->handleFrameStart(_renderPipeline.frameIndex);
+  m_dsvDescriptorHeapPool->handleFrameStart(_renderPipeline.frameIndex);
+  m_srvDescriptorHeapPool->handleFrameStart(_renderPipeline.frameIndex);
+  m_samplerDescriptorHeapPool->handleFrameStart(_renderPipeline.frameIndex);
 }
 
 void D3D12_device_resources::waitForPreviousFrame(Render_pipeline& renderPipeline)
@@ -575,7 +597,8 @@ void D3D12_device_resources::present() {
   // Update backbuffer index after present, which progresses the swapchain
   _renderPipeline.frameIndex = _renderPipeline.swapChain->GetCurrentBackBufferIndex();
 
-  // Signal and increment the fence value.
+  // increment the fence value and signal.
+  ++_renderPipeline.fenceValue;
   ThrowIfFailed(_renderPipeline.commandQueue->Signal(_renderPipeline.fence.Get(), _renderPipeline.fenceValue));
 }
 
@@ -731,3 +754,14 @@ void D3D12_device_resources::PIXSetMarker(const wchar_t* label)
   ::PIXSetMarker(_renderPipeline.commandList.Get(), 0, label);
 #endif
 }
+
+Frame_resources& D3D12_device_resources::getCurrentFrameResources()
+{
+  return *_renderPipeline.frameResources.at(_renderPipeline.currentFrameResources);
+}
+
+size_t D3D12_device_resources::getCurrentFrameIndex() const
+{
+  return _renderPipeline.frameIndex;
+}
+

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Constant_buffer_pool.h"
 #include "D3D12_device_resources.h"
 #include "D3D12_texture_manager.h"
 #include "Descriptor_heap_pool.h"
@@ -52,12 +53,9 @@ class Material_context_impl : public Material_context {
   Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
   Descriptor_range samplerDescriptorTable;
 
-  std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews;
-  uint32_t numVerticesPerInstance;
-  D3D12_INDEX_BUFFER_VIEW indexBufferView;
-  uint32_t numIndices;
   std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
 
+  uint32_t constantBufferCount;
   Material_gpu_constant_buffers perDrawConstantBuffers;
   Material_gpu_constant_buffers* perMaterialConstantBuffers = nullptr;
   bool perDrawConstantBuffersInitialized = false;
@@ -75,7 +73,6 @@ class Material_context_impl : public Material_context {
 
 class D3D12_material_manager : public Material_manager {
  public:
-  static constexpr uint32_t kDescriptorPoolSize = 100;
   D3D12_material_manager(
           IAsset_manager& assetManager, oe::pipeline_d3d12::D3D12_texture_manager& textureManager,
           ILighting_manager& lightingManager, IPrimitive_mesh_data_factory& primitiveMeshDataFactory,
@@ -102,21 +99,20 @@ class D3D12_material_manager : public Material_manager {
   void loadMaterialToContext(const Material& material, Material_context& materialContext, bool enableOptimizations);
 
   void loadResourcesToContext(
-          const Material::Shader_resources& shaderResources, const Mesh_gpu_data& gpuData,
-          const std::vector<Vertex_attribute_element>& vsInputs, Material_context& materialContext) override;
+          const Material::Shader_resources& shaderResources,
+          const std::vector<Vertex_attribute_element>& vsInputs,
+          Material_context& materialContext) override;
 
   void loadPipelineStateToContext(Material_context& materialContext) override;
 
   void bindMaterialContextToDevice(const Material_context& materialContext) override;
 
-  void
-  render(const Material_context& materialContext, const SSE::Matrix4& worldMatrix,
-         const Renderer_animation_data& rendererAnimationData, const Camera_data& camera) override;
+  void unbind() override;
 
   void updateLightBuffers() override {}
 
  private:
-  inline Material_context_impl& getMaterialContextImpl(Material_context& context) const
+  inline static Material_context_impl& getMaterialContextImpl(Material_context& context)
   {
     return static_cast<Material_context_impl&>(context);
   }
@@ -138,18 +134,18 @@ class D3D12_material_manager : public Material_manager {
   void createPixelShader(
           bool enableOptimizations, const Material& material, Material_context_impl& materialContext) const;
 
-  void createConstantBuffers(const Material& material, Material_context_impl& materialContext);
+  void createStaticConstantBuffers(const Material& material, Material_context_impl& materialContext);
 
   // Adds mappings of shader visibility to buffer table. Any buffer visibilities on the material will be split up into
   // duplicate entries for both PIXEL and VERTEX D3D12 visibilities.
-  void createConstantBuffersForUsage(
+  void createStaticConstantBuffersForUsage(
           const Material& material, const Shader_constant_buffer_usage& usage,
           Material_gpu_constant_buffers& constantBuffers);
 
   void createRootSignature(
           const oe::Material::Shader_resources& shaderResources, Material_context_impl& impl);
   void createMeshBufferViews(
-          const Mesh_gpu_data& gpuData, const std::vector<Vertex_attribute_element>& vsInputs,
+          const std::vector<Vertex_attribute_element>& vsInputs,
           Material_context_impl& impl);
   void createPipelineState(Material_context_impl& impl);
 
@@ -164,9 +160,6 @@ class D3D12_material_manager : public Material_manager {
 
     std::vector<std::shared_ptr<Material_context_impl>> materialContexts;
     ID3D12Device6* device = nullptr;
-
-    Descriptor_heap_pool srvHeap = {};
-    Descriptor_heap_pool samplerHeap = {};
 
     D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
 

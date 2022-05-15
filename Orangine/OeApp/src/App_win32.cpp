@@ -159,8 +159,8 @@ class App_impl {
                << std::endl;
           }
         }
-        LOG(INFO) << "Manager average tick times (ms): " << std::endl << ss.str();
       }
+      LOG(INFO) << "Manager average tick times (ms): " << std::endl << ss.str();
     }
 
     std::for_each(_initializedManagers.rbegin(), _initializedManagers.rend(), [](const auto& managerInterfaces) {

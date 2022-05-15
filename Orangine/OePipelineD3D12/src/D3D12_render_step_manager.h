@@ -71,7 +71,6 @@ class D3D12_render_step_manager final : public Render_step_manager {
   std::vector<std::wstring> _passNames;
 
   std::unordered_map<int32_t, std::pair<Descriptor_range, size_t>> _textureIdToDescriptorRangesAndUsageCount;
-  std::unique_ptr<pipeline_d3d12::Descriptor_heap_pool> _rtvDescriptorHeapPool;
   std::vector<std::shared_ptr<Texture>> _activeCustomRenderTargets;
 };
 }// namespace oe

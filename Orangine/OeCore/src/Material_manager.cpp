@@ -44,6 +44,7 @@ void Material_manager::updateMaterialContext(
     const Render_light_data* renderLightData,
     const Depth_stencil_config& depthStencilConfig,
     bool enablePixelShader, bool wireframe) {
+  LOG(INFO) << "Binding material " << material->materialType();
   OE_CHECK(!_boundMaterial);
 
   const auto materialHash = material->ensureCompilerPropertiesHash();
@@ -124,7 +125,7 @@ void Material_manager::updateMaterialContext(
     const auto shaderResources =
         material->shaderResources(compiledMaterial.flags, *renderLightData);
 
-    loadResourcesToContext(shaderResources, meshGpuData, meshVertexLayout.vertexLayout(), materialContext);
+    loadResourcesToContext(shaderResources, meshVertexLayout.vertexLayout(), materialContext);
   }
 
   if (updatePipelineState) {
@@ -143,7 +144,10 @@ void Material_manager::bind(Material_context& materialContext)
 }
 
 
-void Material_manager::unbind() { _boundMaterial = false; }
+void Material_manager::unbind() {
+  LOG(INFO) << "Unbinding material";
+  _boundMaterial = false;
+}
 
 void Material_manager::setRendererFeaturesEnabled(
     const Renderer_features_enabled& renderer_feature_enabled) {

@@ -3,6 +3,8 @@
 //
 
 #include "D3D12_entity_render_manager.h"
+#include "D3D12_material_manager.h"
+#include "Frame_resources.h"
 
 #include <OeCore/Mesh_utils.h>
 
@@ -62,6 +64,8 @@ std::shared_ptr<Mesh_gpu_data> D3D12_entity_render_manager::createRendererData(
 
   // Create D3D vertex buffers
   rendererData->vertexCount = meshData->getVertexCount();
+  rendererData->vertexBufferViews.resize(vertexAttributes.size());
+  auto viewIter = rendererData->vertexBufferViews.begin();
   for (auto vertexAttrElement : vertexAttributes) {
     const auto& vertexAttr = vertexAttrElement.semantic;
     if (rendererData->vertexBuffers.find(vertexAttr) != rendererData->vertexBuffers.end()) {
@@ -78,7 +82,9 @@ std::shared_ptr<Mesh_gpu_data> D3D12_entity_render_manager::createRendererData(
       name << " (meshData: " << meshData->name << ")";
     }
     name << " (count: " << std::to_string(rendererData->indexCount) << ")";
-    rendererData->vertexBuffers[vertexAttr] = getOrCreateUsage(name.str(), meshAccessor->buffer, meshAccessor->stride);
+    std::shared_ptr<Gpu_buffer_reference> vertexGpuBuffer = getOrCreateUsage(name.str(), meshAccessor->buffer, meshAccessor->stride);
+    rendererData->vertexBuffers[vertexAttr] = vertexGpuBuffer;
+    *(viewIter++) = vertexGpuBuffer->gpuBuffer->getAsVertexBufferView();
   }
 
   _deviceDependent.createdRendererData.push_back(rendererData);
@@ -134,13 +140,88 @@ void D3D12_entity_render_manager::drawRendererData(
     LOG(FATAL) << "drawRendererData: Failed bind material, marking failedRendering to true. (" << ex.what() << ")";
     return;
   }
+  
+  // Upload constant buffer data
+  const Shader_constant_layout& constantLayout = material->getShaderConstantLayout();
+  auto& frameResources = _deviceResources.getCurrentFrameResources();
 
+  std::array<int64_t, static_cast<size_t>(Shader_constant_buffer_visibility::Num_shader_constant_buffer_visibility)> constantBufferCounts {};
+
+  auto descriptorRange = _deviceResources.getSrvHeap().allocateRange(constantLayout.constantBuffers.size());
+  auto currentDescriptorHandle = descriptorRange.cpuHandle;
+  for (auto constantBufferInfo : constantLayout.constantBuffers) {
+    Constant_buffer_pool& pool = frameResources.getOrCreateConstantBufferPoolToFit(
+            constantBufferInfo.sizeInBytes, constantLayout.constantBuffers.size());
+
+    // Sanity check that we have not seen this type of buffer before. This is basically a placeholder limitation until
+    // Material API catches up and supports updating of multiple constant buffers.
+    auto visibilityIdx = static_cast<size_t>(constantBufferInfo.visibility);
+    OE_CHECK(constantBufferCounts.at(visibilityIdx) == 0);
+    ++constantBufferCounts.at(visibilityIdx);
+
+    uint8_t* cpuBuffer = nullptr;
+    size_t cpuBufferSizeBytes = pool.getItemSizeInBytes();
+
+    D3D12_GPU_VIRTUAL_ADDRESS gpuBufferAddress;
+    OE_CHECK(pool.getTop(cpuBuffer, gpuBufferAddress) && cpuBuffer);
+
+    if (constantBufferInfo.visibility == Shader_constant_buffer_visibility::Vertex) {
+      material->updateVsConstantBuffer(
+              worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, rendererAnimationData, cpuBuffer,
+              pool.getItemSizeInBytes());
+    } else if (constantBufferInfo.visibility == Shader_constant_buffer_visibility::Pixel) {
+      material->updatePsConstantBuffer(
+              worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, cpuBuffer, pool.getItemSizeInBytes());
+    }
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
+    desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+    desc.Format = DXGI_FORMAT_R32_TYPELESS;
+    desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    OE_CHECK(cpuBufferSizeBytes % 4 == 0 && cpuBufferSizeBytes != 0);
+    desc.Buffer.NumElements = (UINT) cpuBufferSizeBytes / 4U;
+    desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc {gpuBufferAddress, static_cast<UINT>(cpuBufferSizeBytes)};
+    _deviceResources.GetD3DDevice()->CreateConstantBufferView(&cbvDesc, currentDescriptorHandle);
+    currentDescriptorHandle.Offset(descriptorRange.incrementSize);
+  }
+  
   try {
-    _materialManager.render(materialContext, worldTransform, rendererAnimationData, cameraData);
+
+    ID3D12RootSignature* rootSignature = frameResources.getCurrentBoundRootSignature();
+    ID3D12GraphicsCommandList4* commandList = _deviceResources.GetPipelineCommandList().Get();
+
+    // Set heaps
+    std::array<ID3D12DescriptorHeap*, 2> heaps = {
+            {_deviceResources.getSrvHeap().getDescriptorHeap(), _deviceResources.getSamplerHeap().getDescriptorHeap()}};
+    commandList->SetDescriptorHeaps(heaps.size(), heaps.data());
+
+    // Set our constant buffers descriptor table address
+    commandList->SetGraphicsRootDescriptorTable(
+            Frame_resources::kConstantBufferRootSignatureIndex,
+            descriptorRange.gpuHandle);
+
+    // Set geometry
+    const auto numVertexViews = static_cast<uint32_t>(rendererData.vertexBufferViews.size());
+    commandList->IASetVertexBuffers(0, numVertexViews, rendererData.vertexBufferViews.data());
+    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // Draw the primitive
+    if (rendererData.indexCount > 0) {
+      D3D12_INDEX_BUFFER_VIEW indexBufferView = rendererData.indexBuffer->getAsIndexBufferView(rendererData.indexFormat);
+      commandList->IASetIndexBuffer(&indexBufferView);
+      commandList->DrawIndexedInstanced(rendererData.indexCount, 1, 0, 0, 0);
+    }
+    else {
+      commandList->DrawInstanced(rendererData.vertexCount, 1, 0, 0);
+    }
   }
   catch (std::exception& ex) {
     rendererData.failedRendering = true;
     LOG(FATAL) << "drawRendererData: Failed render, marking failedRendering to true. (" << ex.what() << ")";
   }
+
+  _deviceResources.getSrvHeap().releaseRangeAtFrameStart(descriptorRange, _deviceResources.getCurrentFrameIndex());
   _materialManager.unbind();
 }

@@ -54,8 +54,9 @@ class Material_manager : public IMaterial_manager,
   virtual void loadMaterialToContext(const Material& material, Material_context& materialContext, bool enableOptimizations) = 0;
 
   virtual void loadResourcesToContext(
-          const Material::Shader_resources& shader_resources, const Mesh_gpu_data& gpuData,
-          const std::vector<Vertex_attribute_element>& vsInputs, Material_context& materialContext) = 0;
+          const Material::Shader_resources& shader_resources,
+          const std::vector<Vertex_attribute_element>& vsInputs,
+          Material_context& materialContext) = 0;
 
   virtual void loadPipelineStateToContext(Material_context& materialContext) = 0;
 

@@ -35,8 +35,6 @@ class D3D12_entity_render_manager : public internal::Entity_render_manager {
   getOrCreateUsage(const std::string_view& name, const std::shared_ptr<Mesh_buffer>& meshData, size_t vertexSize);
 
  private:
-  std::unique_ptr<Gpu_buffer> createGpuReadBuffer(const Mesh_buffer& meshBuffer, size_t strideInBytes);
-
   D3D12_device_resources& _deviceResources;
 
   struct {

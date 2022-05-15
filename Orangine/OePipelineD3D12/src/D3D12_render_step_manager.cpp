@@ -84,16 +84,6 @@ void D3D12_render_step_manager::endRenderNamedEvent() {
 
 void D3D12_render_step_manager::createRenderStepResources()
 {
-  static constexpr UINT maxCustomRenderTargetCount = 3;
-  D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-  rtvHeapDesc.NumDescriptors = _deviceResources->GetBackBufferCount() + maxCustomRenderTargetCount;
-  rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-  rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-  // Descriptor heap for custom render targets
-  _rtvDescriptorHeapPool = std::make_unique<Descriptor_heap_pool>(
-          _deviceResources->GetD3DDevice(), rtvHeapDesc, "renderStepManager::rtvDescriptorHeapPool");
-
   for (const auto& step : _renderSteps) {
     D3D12_render_step_data renderStepData{};
     for (const auto& pass : step->renderPasses) {
@@ -107,7 +97,6 @@ void D3D12_render_step_manager::createRenderStepResources()
 void D3D12_render_step_manager::destroyRenderStepResources()
 {
   _renderStepData.clear();
-  _rtvDescriptorHeapPool.reset();
   _activeCustomRenderTargets.clear();
 }
 
@@ -211,7 +200,7 @@ void D3D12_render_step_manager::renderStep(
         if (descriptorUsagePos != _textureIdToDescriptorRangesAndUsageCount.end()) {
           OE_CHECK(descriptorUsagePos->second.second > 0);
           if (--descriptorUsagePos->second.second == 0) {
-            _rtvDescriptorHeapPool->releaseRange(descriptorUsagePos->second.first);
+            _deviceResources->getRtvHeap().releaseRange(descriptorUsagePos->second.first);
             _textureIdToDescriptorRangesAndUsageCount.erase(descriptorUsagePos);
           }
         }
@@ -223,7 +212,7 @@ void D3D12_render_step_manager::renderStep(
         TextureInternalId textureId = renderTargetTexture->internalId();
         auto& descriptorUsage = _textureIdToDescriptorRangesAndUsageCount[textureId];
         if (descriptorUsage.second == 0) {
-          descriptorUsage.first = _rtvDescriptorHeapPool->allocateRange(1);
+          descriptorUsage.first = _deviceResources->getRtvHeap().allocateRange(1);
           CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(descriptorUsage.first.cpuHandle);
           ID3D12Resource* rtResource = _textureManagerD3D12.getResource(*renderTargetTexture);
           OE_CHECK(rtResource);

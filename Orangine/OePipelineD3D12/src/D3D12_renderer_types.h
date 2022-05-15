@@ -9,12 +9,14 @@
 #include <unordered_map>
 
 namespace oe::pipeline_d3d12 {
+class Descriptor_heap_pool;
 struct Descriptor_range {
   CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle;
   CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle;
   size_t incrementSize;
   uint32_t descriptorCount;
   uint32_t offsetInDescriptorsFromHeapStart;
+  bool isValid() const { return cpuHandle.ptr != 0; }
 };
 
 struct Committed_gpu_resource {
@@ -38,6 +40,9 @@ namespace oe {
 struct Mesh_gpu_data {
   unsigned int vertexCount;
   std::unordered_map<Vertex_attribute_semantic, std::shared_ptr<pipeline_d3d12::Gpu_buffer_reference>> vertexBuffers;
+
+  // List matches the ordering of the vertex semantic layout used on this mesh
+  std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews;
 
   std::unique_ptr<pipeline_d3d12::Gpu_buffer> indexBuffer;
   DXGI_FORMAT indexFormat;

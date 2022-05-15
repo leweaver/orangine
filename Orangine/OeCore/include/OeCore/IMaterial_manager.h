@@ -37,13 +37,6 @@ class IMaterial_manager {
   // Sets the given material context for rendering
   virtual void bind(Material_context& materialContext) = 0;
 
-  // Uploads shader constants, then renders
-  virtual void render(
-          const Material_context& materialContext,
-          const SSE::Matrix4& worldMatrix,
-          const Renderer_animation_data& rendererAnimationState,
-          const Camera_data& camera) = 0;
-
   // Unbinds the current material. Must be called when rendering of an object is complete.
   virtual void unbind() = 0;
 

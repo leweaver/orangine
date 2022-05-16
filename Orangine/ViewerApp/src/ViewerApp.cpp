@@ -108,7 +108,10 @@ class ViewerApp : public App {
 
   void CreateHelloWorldScene(Sample_scene& sampleScene) {
     sampleScene.addFloor();
-    sampleScene.addSphere({0,0,0}, {1,1,1,1}, 0.0, 1.0);
+    sampleScene.addSphere({2,0,0}, {1,0,0,1}, 0.0, 1.0);
+    sampleScene.addSphere({0,0,2}, {0,1,0,1}, 0.0, 1.0);
+    sampleScene.addSphere({-2,0,0}, {0,0,1,1}, 0.0, 1.0);
+    sampleScene.addSphere({0,0,-2}, {1,1,1,1}, 0.0, 1.0);
   }
 
 

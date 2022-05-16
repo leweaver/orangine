@@ -109,7 +109,7 @@ Sample_scene::addSphere(const SSE::Vector3& center, const Color& color, float me
 
   const auto meshData = _primitiveMeshDataFactory.createSphere();
   sphere->addComponent<Mesh_data_component>().setMeshData(meshData);
-  sphere->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 1.0f));
+  sphere->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 0.5f));
 
   return sphere;
 }

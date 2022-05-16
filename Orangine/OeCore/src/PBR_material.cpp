@@ -406,6 +406,4 @@ void PBR_material::updatePsConstantBufferValues(PBR_material_ps_constant_buffer&
   constants.baseColor = static_cast<Float4>(_baseColor);
   constants.metallicRoughness = {_metallic, _roughness, 0.0, 0.0};
   constants.emissive = {_emissive.getX(), _emissive.getY(), _emissive.getZ(), 0.0};
-  // todo: remove this, it's redundant.
-  constants.eyePosition = Float4{worldMatrix.getTranslation(), 0.0};
 }

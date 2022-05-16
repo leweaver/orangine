@@ -10,6 +10,7 @@
 #include <memory>
 
 namespace oe {
+__declspec(align(16))
 struct PBR_material_vs_constant_buffer : Vertex_constant_buffer_base {
   SSE::Matrix4 world;
   SSE::Matrix4 viewProjection;
@@ -17,12 +18,12 @@ struct PBR_material_vs_constant_buffer : Vertex_constant_buffer_base {
   Float4 morphWeights[2];
 };
 
+__declspec(align(16))
 struct PBR_material_ps_constant_buffer : Pixel_constant_buffer_base {
   SSE::Matrix4 world;
   Float4 baseColor;
   Float4 metallicRoughness; // metallic, roughness
   Float4 emissive;          // emissive color (RGB)
-  Float4 eyePosition;
 };
 
 class PBR_material

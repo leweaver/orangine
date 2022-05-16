@@ -154,7 +154,7 @@ void D3D12_entity_render_manager::drawRendererData(
   auto currentDescriptorHandle = descriptorRange.cpuHandle;
   for (auto constantBufferInfo : constantLayout.constantBuffers) {
     Constant_buffer_pool& pool = frameResources.getOrCreateConstantBufferPoolToFit(
-            constantBufferInfo.sizeInBytes, constantLayout.constantBuffers.size());
+            constantBufferInfo.sizeInBytes, 1);
 
     // Sanity check that we have not seen this type of buffer before. This is basically a placeholder limitation until
     // Material API catches up and supports updating of multiple constant buffers.
@@ -167,6 +167,7 @@ void D3D12_entity_render_manager::drawRendererData(
 
     D3D12_GPU_VIRTUAL_ADDRESS gpuBufferAddress;
     OE_CHECK(pool.getTop(cpuBuffer, gpuBufferAddress) && cpuBuffer);
+    pool.pop(1);
 
     if (constantBufferInfo.visibility == Shader_constant_buffer_visibility::Vertex) {
       material->updateVsConstantBuffer(
@@ -176,14 +177,6 @@ void D3D12_entity_render_manager::drawRendererData(
       material->updatePsConstantBuffer(
               worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, cpuBuffer, pool.getItemSizeInBytes());
     }
-
-    D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
-    desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-    desc.Format = DXGI_FORMAT_R32_TYPELESS;
-    desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    OE_CHECK(cpuBufferSizeBytes % 4 == 0 && cpuBufferSizeBytes != 0);
-    desc.Buffer.NumElements = (UINT) cpuBufferSizeBytes / 4U;
-    desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc {gpuBufferAddress, static_cast<UINT>(cpuBufferSizeBytes)};
     _deviceResources.GetD3DDevice()->CreateConstantBufferView(&cbvDesc, currentDescriptorHandle);

@@ -49,14 +49,14 @@ SamplerState g_shadowMapSampler;
 // Globals
 //--------------------------------------------------------------------------------------
 
-cbuffer main_cb : register(b0)
+cbuffer main_cb : register(b1)
 {
 	matrix        g_viewMatrixInv;
 	matrix        g_projMatrixInv;
 	float4        g_eyePosition;
 	bool          g_emittedEnabled;
 };
-cbuffer light_cb : register(b1)
+cbuffer light_cb : register(b2)
 {
 	Light g_lights[8];
 	uint  g_lightCount;

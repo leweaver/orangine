@@ -4,13 +4,12 @@
 // Globals
 //--------------------------------------------------------------------------------------
 
-cbuffer cb_surface : register(b0)
+cbuffer cb_surface : register(b1)
 {
-	matrix        g_mWorld             : packoffset(c0);
-	float4        g_baseColor          : packoffset(c4);
-	float4        g_metallicRoughness  : packoffset(c5); // metallic, roughness
-	float4        g_emissive           : packoffset(c6); // emissive color (RGB)
-	float4        g_eyePosition        : packoffset(c7);
+  float4x4      g_mWorld;
+  float4        g_baseColor;
+  float4        g_metallicRoughness;  // x=metallic, y=roughness
+  float4        g_emissive;           // xyz=emissive color (RGB)
 };
 
 #if PS_PIPELINE_DEFERRED

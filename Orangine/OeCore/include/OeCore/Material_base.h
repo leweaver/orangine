@@ -69,7 +69,7 @@ class Material_base : public Material {
     static constexpr std::array<Shader_layout_constant_buffer, 2> baseConstantLayout{
             {{0, sizeof(TVertex_shader_constants), Shader_constant_buffer_usage::Per_draw,
               Shader_constant_buffer_visibility::Vertex},
-             {0, sizeof(TPixel_shader_constants), Shader_constant_buffer_usage::Per_draw,
+             {1, sizeof(TPixel_shader_constants), Shader_constant_buffer_usage::Per_draw,
               Shader_constant_buffer_visibility::Pixel}}};
     return Shader_constant_layout{baseConstantLayout};
   }

@@ -343,7 +343,7 @@ Sampler_comparison_func stringToSamplerComparisonFunc(const std::string & str)
 std::string g_shaderConstantBufferUsageNames[] = {
     "Per_material",
     "Per_draw",
-    "Skeleton"
+    "External_buffer"
 };
 static_assert(static_cast<size_t>(Shader_constant_buffer_usage::Num_shader_constant_buffer_usage) == array_size(g_shaderConstantBufferUsageNames));
 const std::string& shaderConstantBufferUsageToString(Shader_constant_buffer_usage enumValue)
@@ -371,6 +371,24 @@ const std::string& shaderConstantBufferVisibilityToString(Shader_constant_buffer
 Shader_constant_buffer_visibility stringToShaderConstantBufferVisibility(const std::string & str)
 {
     return stringToEnum<Shader_constant_buffer_visibility>(str, g_shaderConstantBufferVisibilityNames);
+}
+
+///////////////////////////////////
+// Shader_texture_resource_format
+//
+std::string g_shaderTextureResourceFormatNames[] = {
+    "Default",
+    "Depth_r24x8",
+    "Stencil_x24u8"
+};
+static_assert(static_cast<size_t>(Shader_texture_resource_format::Num_shader_texture_resource_format) == array_size(g_shaderTextureResourceFormatNames));
+const std::string& shaderTextureResourceFormatToString(Shader_texture_resource_format enumValue)
+{
+    return g_shaderTextureResourceFormatNames[static_cast<size_t>(enumValue)];
+}
+Shader_texture_resource_format stringToShaderTextureResourceFormat(const std::string & str)
+{
+    return stringToEnum<Shader_texture_resource_format>(str, g_shaderTextureResourceFormatNames);
 }
 
 } // namespace oe

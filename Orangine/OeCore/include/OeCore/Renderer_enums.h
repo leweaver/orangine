@@ -222,7 +222,7 @@ Sampler_comparison_func stringToSamplerComparisonFunc(const std::string& str);
 enum class Shader_constant_buffer_usage {
   Per_material = 0,
   Per_draw,
-  Skeleton,
+  External_buffer,
 
   Num_shader_constant_buffer_usage = 3,
 };
@@ -239,5 +239,16 @@ enum class Shader_constant_buffer_visibility {
 };
 const std::string& shaderConstantBufferVisibilityToString(Shader_constant_buffer_visibility enumValue);
 Shader_constant_buffer_visibility stringToShaderConstantBufferVisibility(const std::string& str);
+
+// Shader_texture_resource_format
+enum class Shader_texture_resource_format {
+  Default = 0,
+  Depth_r24x8,
+  Stencil_x24u8,
+
+  Num_shader_texture_resource_format = 3,
+};
+const std::string& shaderTextureResourceFormatToString(Shader_texture_resource_format enumValue);
+Shader_texture_resource_format stringToShaderTextureResourceFormat(const std::string& str);
 
 } // namespace oe

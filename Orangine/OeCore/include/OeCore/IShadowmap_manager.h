@@ -11,9 +11,8 @@ class IShadowmap_manager {
  public:
   virtual ~IShadowmap_manager() = default;
 
-  virtual std::shared_ptr<Texture> borrowTexture() = 0;
-  virtual void returnTexture(std::shared_ptr<Texture> shadowMap) = 0;
-  virtual std::shared_ptr<Texture> shadowMapDepthTextureArray() = 0;
-  virtual std::shared_ptr<Texture> shadowMapStencilTextureArray() = 0;
+  virtual std::shared_ptr<Texture> borrowTextureSlice() = 0;
+  virtual void returnTextureSlice(std::shared_ptr<Texture> shadowMap) = 0;
+  virtual std::shared_ptr<Texture> getShadowMapTextureArray() = 0;
 };
 } // namespace oe

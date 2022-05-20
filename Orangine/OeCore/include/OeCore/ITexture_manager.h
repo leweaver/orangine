@@ -16,32 +16,40 @@ class ITexture_manager {
       std::unique_ptr<uint8_t>& buffer) = 0;
 
   virtual std::shared_ptr<Texture> createTextureFromFile(const std::string& fileName, bool generateMipsIfMissing = false) = 0;
-  virtual std::shared_ptr<Texture> createTextureFromFile(
-          const std::string& fileName, const Sampler_descriptor& samplerDescriptor, bool generateMipsIfMissing = false) = 0;
 
-  virtual std::shared_ptr<Texture> createCubeMapTextureFromFile(const std::string& fileName, const Sampler_descriptor& samplerDescriptor, bool generateMipsIfMissing = false) = 0;
+  virtual std::shared_ptr<Texture> createCubeMapTextureFromFile(const std::string& fileName, bool generateMipsIfMissing = false) = 0;
 
-  // The 32 bit depth/stencil texture, in R24 UNORM / X8 TYPELESS format.
+  // The 32 bit depth/stencil texture, in R24 UNORM / X8 TYPELESS format. This won't contain any data - it shuold be
+  // used as a copy target.
   virtual std::shared_ptr<Texture> createDepthTexture() = 0;
 
-  // A 32 bit RGBA render target texture that can be drawn to, and read by other materials.
+  // A 32 bit RGBA render target texture that can be drawn to and read by other materials.
   virtual std::shared_ptr<Texture> createRenderTargetTexture(int width, int height, std::string name) = 0;
 
   // A texture that points to the backbuffer of the main view. Can be used as a render target.
-  virtual std::shared_ptr<Texture> createSwapchainBackBufferTexture() = 0;
+  virtual std::shared_ptr<Texture> getSwapchainBackBufferTexture() = 0;
+  // A texture that points to the depth/stencil of the main view. Can be used as a copy source.
+  virtual std::shared_ptr<Texture> getSwapchainDepthStencilTexture() = 0;
 
   // Used to allocate textures for shadowmapping
-  virtual std::unique_ptr<Shadow_map_texture_pool> createShadowMapTexturePool(
+  virtual std::shared_ptr<Shadow_map_texture_pool> createShadowMapTexturePool(
       uint32_t maxDimension,
       uint32_t textureArraySize) = 0;
 
   // Load will initialize the texture (e.g. load from disk) ready for use.
-  virtual void load(Texture& texture) = 0;
+  virtual void load(const Texture& texture) = 0;
+
+  //
+  virtual void flushLoads() = 0;
 
   // ITexture_manager implementing classes will automatically call Unload
   // on any texture that was returned from any of the `createBlahTexture` methods.
   // You can optionally call it here as well to free up memory. Once a texture has
   // been unloaded, you can then call load on it again to reload it.
-  virtual void unload(Texture& texture) = 0;
+  virtual void unload(const Texture& texture) = 0;
+
+  virtual void release(std::shared_ptr<Texture> texture) = 0;
+
+  virtual void release(std::shared_ptr<Shadow_map_texture_pool> pool) = 0;
 };
 } // namespace oe

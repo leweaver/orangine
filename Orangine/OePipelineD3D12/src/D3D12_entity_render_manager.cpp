@@ -136,6 +136,11 @@ void D3D12_entity_render_manager::drawRendererData(
             materialContext, material, meshVertexLayout, rendererData, &renderLightData, depthStencilConfig,
             cameraData.enablePixelShader, wireframe);
 
+    if (!materialContext.compilerInputsValid) {
+      // Material is not ready for rendering. Might still be loading textures
+      return;
+    }
+
     _materialManager.bind(materialContext);
   }
   catch (std::exception& ex) {
@@ -143,61 +148,53 @@ void D3D12_entity_render_manager::drawRendererData(
     LOG(FATAL) << "drawRendererData: Failed bind material, marking failedRendering to true. (" << ex.what() << ")";
     return;
   }
+
+  const Root_signature_layout& rootSignatureLayout = _deviceResources.getCurrentFrameResources().getCurrentBoundRootSignature();
+  ID3D12GraphicsCommandList4* commandList = _deviceResources.GetPipelineCommandList().Get();
   
   // Upload constant buffer data
-  const Shader_constant_layout& constantLayout = material->getShaderConstantLayout();
-  auto& frameResources = _deviceResources.getCurrentFrameResources();
+  if (rootSignatureLayout.constantBufferAllVisParamIndex != Root_signature_layout::kSlotInvalid) {
+    const Shader_constant_layout& constantLayout = material->getShaderConstantLayout();
 
-  std::array<int64_t, static_cast<size_t>(Shader_constant_buffer_visibility::Num_shader_constant_buffer_visibility)> constantBufferCounts {};
+    Material::Update_constant_buffer_inputs cbInputs{
+            worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, renderLightData, rendererAnimationData};
 
-  auto descriptorRange = _deviceResources.getSrvHeap().allocateRange(constantLayout.constantBuffers.size());
-  auto currentDescriptorHandle = descriptorRange.cpuHandle;
-  for (auto constantBufferInfo : constantLayout.constantBuffers) {
-    Constant_buffer_pool& pool = frameResources.getOrCreateConstantBufferPoolToFit(
-            constantBufferInfo.sizeInBytes, 1);
+    auto descriptorRange = _deviceResources.getSrvHeap().allocateRange(constantLayout.constantBuffers.size());
+    auto currentDescriptorHandle = descriptorRange.cpuHandle;
+    for (auto constantBufferInfo : constantLayout.constantBuffers) {
+      gsl::span<uint8_t> cpuBuffer{};
+      D3D12_GPU_VIRTUAL_ADDRESS gpuBufferAddress{};
+      if (constantBufferInfo.getUsage() == Shader_constant_buffer_usage::Per_draw) {
+        acquireConstantBufferForSize(
+                constantBufferInfo.getUsagePerDraw().bufferSizeInBytes, cpuBuffer, gpuBufferAddress);
+        material->updatePerDrawConstantBuffer(cpuBuffer, constantBufferInfo, cbInputs);
+      }
+      else if (constantBufferInfo.getUsage() == Shader_constant_buffer_usage::Per_draw) {
+        // TODO: Custom handles.
+        // TODO: Skeleton animation data.
+        auto handle = constantBufferInfo.getUsageExternalBuffer().handle;
+        if (handle == Material::kExternalUsageLightingHandle) {
+          acquireConstantBufferForSize(renderLightData.getConstantBufferSize(), cpuBuffer, gpuBufferAddress);
+          renderLightData.copyConstantsToBuffer(cpuBuffer);
+        }
+      }
 
-    // Sanity check that we have not seen this type of buffer before. This is basically a placeholder limitation until
-    // Material API catches up and supports updating of multiple constant buffers.
-    auto visibilityIdx = static_cast<size_t>(constantBufferInfo.visibility);
-    OE_CHECK(constantBufferCounts.at(visibilityIdx) == 0);
-    ++constantBufferCounts.at(visibilityIdx);
-
-    uint8_t* cpuBuffer = nullptr;
-    size_t cpuBufferSizeBytes = pool.getItemSizeInBytes();
-
-    D3D12_GPU_VIRTUAL_ADDRESS gpuBufferAddress;
-    OE_CHECK(pool.getTop(cpuBuffer, gpuBufferAddress) && cpuBuffer);
-    pool.pop(1);
-
-    if (constantBufferInfo.visibility == Shader_constant_buffer_visibility::Vertex) {
-      material->updateVsConstantBuffer(
-              worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, rendererAnimationData, cpuBuffer,
-              pool.getItemSizeInBytes());
-    } else if (constantBufferInfo.visibility == Shader_constant_buffer_visibility::Pixel) {
-      material->updatePsConstantBuffer(
-              worldTransform, cameraData.viewMatrix, cameraData.projectionMatrix, cpuBuffer, pool.getItemSizeInBytes());
+      D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc{gpuBufferAddress, static_cast<UINT>(cpuBuffer.size())};
+      _deviceResources.GetD3DDevice()->CreateConstantBufferView(&cbvDesc, currentDescriptorHandle);
+      currentDescriptorHandle.Offset(static_cast<int32_t>(descriptorRange.incrementSize));
     }
 
-    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc {gpuBufferAddress, static_cast<UINT>(cpuBufferSizeBytes)};
-    _deviceResources.GetD3DDevice()->CreateConstantBufferView(&cbvDesc, currentDescriptorHandle);
-    currentDescriptorHandle.Offset(descriptorRange.incrementSize);
+    // Set our constant buffers descriptor table address
+    LOG(INFO) << "  Root[" << rootSignatureLayout.constantBufferAllVisParamIndex << "] = CBV Table (size=" << descriptorRange.descriptorCount << ")";
+    commandList->SetGraphicsRootDescriptorTable(
+            rootSignatureLayout.constantBufferAllVisParamIndex,
+            descriptorRange.gpuHandle);
+
+    // Queue the descriptor to be released the next time this frame index is started
+    _deviceResources.getSrvHeap().releaseRangeAtFrameStart(descriptorRange, _deviceResources.getCurrentFrameIndex());
   }
   
   try {
-
-    ID3D12RootSignature* rootSignature = frameResources.getCurrentBoundRootSignature();
-    ID3D12GraphicsCommandList4* commandList = _deviceResources.GetPipelineCommandList().Get();
-
-    // Set heaps
-    std::array<ID3D12DescriptorHeap*, 2> heaps = {
-            {_deviceResources.getSrvHeap().getDescriptorHeap(), _deviceResources.getSamplerHeap().getDescriptorHeap()}};
-    commandList->SetDescriptorHeaps(heaps.size(), heaps.data());
-
-    // Set our constant buffers descriptor table address
-    commandList->SetGraphicsRootDescriptorTable(
-            Frame_resources::kConstantBufferRootSignatureIndex,
-            descriptorRange.gpuHandle);
-
     // Set geometry
     const auto numVertexViews = static_cast<uint32_t>(rendererData.vertexBufferViews.size());
     commandList->IASetVertexBuffers(0, numVertexViews, rendererData.vertexBufferViews.data());
@@ -218,6 +215,17 @@ void D3D12_entity_render_manager::drawRendererData(
     LOG(FATAL) << "drawRendererData: Failed render, marking failedRendering to true. (" << ex.what() << ")";
   }
 
-  _deviceResources.getSrvHeap().releaseRangeAtFrameStart(descriptorRange, _deviceResources.getCurrentFrameIndex());
   _materialManager.unbind();
+}
+
+void D3D12_entity_render_manager::acquireConstantBufferForSize(size_t requiredSize, gsl::span<uint8_t>& cpuBuffer, D3D12_GPU_VIRTUAL_ADDRESS& gpuAddress)
+{
+  Constant_buffer_pool& pool = _deviceResources.getCurrentFrameResources().getOrCreateConstantBufferPoolToFit(
+          requiredSize, 1);
+
+  uint8_t* cpuBufferData = nullptr;
+  OE_CHECK(pool.getTop(cpuBufferData, gpuAddress) && cpuBufferData);
+  pool.pop(1);
+
+  cpuBuffer = {cpuBufferData, pool.getItemSizeInBytes()};
 }

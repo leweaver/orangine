@@ -30,17 +30,17 @@ const std::string g_flag_skinned_joints_sint16 = "joints_sint16";
 const std::string g_flag_skinned_joints_sint32 = "joints_sint32";
 
 PBR_material::PBR_material()
-    : Base_type(static_cast<uint8_t>(Material_type_index::Pbr)), _baseColor(Colors::White),
+    : Material(static_cast<uint8_t>(Material_type_index::Pbr)), _baseColor(Colors::White),
       _metallic(1.0), _roughness(1.0), _emissive(Colors::Black), _alphaCutoff(0.5)
 {
-  std::fill(_textures.begin(), _textures.end(), nullptr);
+  std::fill(_textures.begin(), _textures.end(), Shader_texture_input{nullptr, Sampler_descriptor(Default_values{})});
 }
 
 const std::string& PBR_material::materialType() const { return g_material_type; }
 
 nlohmann::json PBR_material::serialize(bool compilerPropertiesOnly) const
 {
-  auto j = Base_type::serialize(compilerPropertiesOnly);
+  auto j = Material::serialize(compilerPropertiesOnly);
 
   if (!compilerPropertiesOnly) {
     j[g_json_baseColor] = _baseColor;
@@ -63,7 +63,7 @@ std::set<std::string> PBR_material::configFlags(const Renderer_features_enabled&
                                                 Render_pass_blend_mode blendMode,
                                                 const Mesh_vertex_layout& meshVertexLayout) const
 {
-  auto flags = Base_type::configFlags(rendererFeatures, blendMode, meshVertexLayout);
+  auto flags = Material::configFlags(rendererFeatures, blendMode, meshVertexLayout);
 
   // TODO: This is a hacky way of finding this information out.
   if (blendMode == Render_pass_blend_mode::Opaque) {
@@ -157,6 +157,35 @@ void PBR_material::decodeMorphTargetConfig(const std::set<std::string>& flags, u
   }
 }
 
+void PBR_material::updatePerDrawConstantBuffer(
+        gsl::span<uint8_t> cpuBuffer, const Shader_layout_constant_buffer& bufferDesc,
+        const Update_constant_buffer_inputs& inputs) {
+  switch (bufferDesc.getRegisterIndex()) {
+    case kCbRegisterVsMain:
+      OE_CHECK(cpuBuffer.size() >= sizeof(PBR_material_vs_constant_buffer));
+      updateVsConstantBufferValues(*reinterpret_cast<PBR_material_vs_constant_buffer*>(cpuBuffer.data()), inputs);
+      break;
+    case kCbRegisterPsMain:
+      OE_CHECK(cpuBuffer.size() >= sizeof(PBR_material_ps_constant_buffer));
+      updatePsConstantBufferValues(*reinterpret_cast<PBR_material_ps_constant_buffer*>(cpuBuffer.data()), inputs);
+      break;
+    default:
+      OE_CHECK_MSG(false, "Unexpceted constant buffer register");
+      break;
+  }
+}
+
+Shader_constant_layout PBR_material::getShaderConstantLayout() const {
+  static std::array<Shader_layout_constant_buffer, 2> layout {{
+          Shader_layout_constant_buffer{kCbRegisterVsMain, Shader_constant_buffer_visibility::Vertex, Shader_layout_constant_buffer::Usage_per_draw_data{sizeof(PBR_material_vs_constant_buffer)}},
+          Shader_layout_constant_buffer{kCbRegisterPsMain, Shader_constant_buffer_visibility::Pixel, Shader_layout_constant_buffer::Usage_per_draw_data{sizeof(PBR_material_ps_constant_buffer)}},
+/*
+          Shader_layout_constant_buffer{kCbRegisterVsSkinning, Shader_constant_buffer_visibility::Vertex, Shader_layout_constant_buffer::Usage_per_draw_data{sizeof( skinned meshes? )}}
+  */
+  }};
+  return Shader_constant_layout { layout };
+}
+
 int PBR_material::getMorphPositionAttributeIndexOffset() { return 1; }
 
 int PBR_material::getMorphNormalAttributeIndexOffset() { return 1; }
@@ -166,7 +195,7 @@ int PBR_material::getMorphTangentAttributeIndexOffset() const { return requiresT
 std::vector<Vertex_attribute_element>
 PBR_material::vertexInputs(const std::set<std::string>& flags) const
 {
-  auto vertexAttributes = Base_type::vertexInputs(flags);
+  auto vertexAttributes = Material::vertexInputs(flags);
 
   vertexAttributes.push_back(Vertex_attribute_element{{Vertex_attribute::Normal, 0},
                                                       Element_type::Vector3,
@@ -239,15 +268,16 @@ Material::Shader_resources
 PBR_material::shaderResources(const std::set<std::string>& flags,
                               const Render_light_data& renderLightData) const
 {
-  auto sr = Base_type::shaderResources(flags, renderLightData);
+  auto sr = Material::shaderResources(flags, renderLightData);
 
   for (size_t i = 0; i < _textures.size(); ++i) {
-    const auto& texture = _textures[i];
-    if (!texture)
+    const auto& texture = _textures.at(i).texture;
+    if (!texture) {
       continue;
+    }
 
-    sr.textures.push_back(texture);
-    sr.samplerDescriptors.push_back(texture->getSamplerDescriptor());
+    sr.textures.push_back({texture});
+    sr.samplerDescriptors.push_back(_textures[i].samplerDescriptor);
   }
 
   return sr;
@@ -256,7 +286,7 @@ PBR_material::shaderResources(const std::set<std::string>& flags,
 Material::Shader_compile_settings
 PBR_material::vertexShaderSettings(const std::set<std::string>& flags) const
 {
-  auto settings = Base_type::vertexShaderSettings(flags);
+  auto settings = Material::vertexShaderSettings(flags);
   applyVertexLayoutShaderCompileSettings(settings);
 
   // Skinning
@@ -341,17 +371,17 @@ PBR_material::vertexShaderSettings(const std::set<std::string>& flags) const
 Material::Shader_compile_settings
 PBR_material::pixelShaderSettings(const std::set<std::string>& flags) const
 {
-  auto settings = Base_type::pixelShaderSettings(flags);
+  auto settings = Material::pixelShaderSettings(flags);
 
-  if (_textures[BaseColor])
+  if (_textures[BaseColor].texture)
     settings.defines["MAP_BASECOLOR"] = "1";
-  if (_textures[MetallicRoughness])
+  if (_textures[MetallicRoughness].texture)
     settings.defines["MAP_METALLIC_ROUGHNESS"] = "1";
-  if (_textures[Normal])
+  if (_textures[Normal].texture)
     settings.defines["MAP_NORMAL"] = "1";
-  if (_textures[Emissive])
+  if (_textures[Emissive].texture)
     settings.defines["MAP_EMISSIVE"] = "1";
-  if (_textures[Occlusion])
+  if (_textures[Occlusion].texture)
     settings.defines["MAP_OCCLUSION"] = "1";
 
   if (flags.find(g_flag_enableDeferred) != flags.end())
@@ -360,7 +390,7 @@ PBR_material::pixelShaderSettings(const std::set<std::string>& flags) const
     settings.defines["PS_PIPELINE_STANDARD"] = "1";
 
   if (getAlphaMode() == Material_alpha_mode::Mask)
-    settings.defines["ALPHA_MASK_VALUE"] = std::to_string(alphaCutoff());
+    settings.defines["ALPHA_MASK_VALUE"] = std::to_string(getAlphaCutoff());
 
   applyVertexLayoutShaderCompileSettings(settings);
 
@@ -379,31 +409,35 @@ void PBR_material::applyVertexLayoutShaderCompileSettings(Shader_compile_setting
 }
 
 void PBR_material::updateVsConstantBufferValues(
-    PBR_material_vs_constant_buffer& constants, const SSE::Matrix4& worldMatrix,
-    const SSE::Matrix4& viewMatrix, const SSE::Matrix4& projMatrix,
-    const Renderer_animation_data& rendererAnimationData) const
+    PBR_material_vs_constant_buffer& constants, const Update_constant_buffer_inputs& inputs) const
 {
-  constants.viewProjection = projMatrix * viewMatrix;
-  constants.world = worldMatrix;
+  constants.viewProjection = inputs.projectionMatrix * inputs.viewMatrix;
+  constants.world = inputs.worldTransform;
+  constants.worldViewProjection = constants.viewProjection * constants.world;
   constants.worldInvTranspose = SSE::inverse(SSE::transpose(constants.world));
   static_assert(sizeof(Float4) / sizeof(float) * 2 == Renderer_animation_data::morphWeightsSize);
-  constants.morphWeights[0] = {rendererAnimationData.morphWeights[0],
-                               rendererAnimationData.morphWeights[1],
-                               rendererAnimationData.morphWeights[2],
-                               rendererAnimationData.morphWeights[3]};
-  constants.morphWeights[1] = {rendererAnimationData.morphWeights[4],
-                               rendererAnimationData.morphWeights[5],
-                               rendererAnimationData.morphWeights[6],
-                               rendererAnimationData.morphWeights[7]};
+  constants.morphWeights[0] = {inputs.rendererAnimationData.morphWeights[0],
+                               inputs.rendererAnimationData.morphWeights[1],
+                               inputs.rendererAnimationData.morphWeights[2],
+                               inputs.rendererAnimationData.morphWeights[3]};
+  constants.morphWeights[1] = {inputs.rendererAnimationData.morphWeights[4],
+                               inputs.rendererAnimationData.morphWeights[5],
+                               inputs.rendererAnimationData.morphWeights[6],
+                               inputs.rendererAnimationData.morphWeights[7]};
 }
 
 void PBR_material::updatePsConstantBufferValues(PBR_material_ps_constant_buffer& constants,
-                                                const SSE::Matrix4& worldMatrix,
-                                                const SSE::Matrix4& /* viewMatrix */,
-                                                const SSE::Matrix4& /* projMatrix */) const
+                                                const Update_constant_buffer_inputs& inputs) const
 {
-  constants.world = worldMatrix;
+  constants.world = inputs.worldTransform;
   constants.baseColor = static_cast<Float4>(_baseColor);
   constants.metallicRoughness = {_metallic, _roughness, 0.0, 0.0};
   constants.emissive = {_emissive.getX(), _emissive.getY(), _emissive.getZ(), 0.0};
+}
+
+void PBR_material::setTexture(const Shader_texture_input& src, Shader_texture_input& dest) {
+  if (dest.texture != src.texture || dest.samplerDescriptor != src.samplerDescriptor) {
+    dest.texture = src.texture;
+    markRequiresRecompile();
+  }
 }

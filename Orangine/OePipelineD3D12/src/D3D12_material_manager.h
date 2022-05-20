@@ -112,6 +112,8 @@ class D3D12_material_manager : public Material_manager {
   void updateLightBuffers() override {}
 
  private:
+  void queueTextureLoad(const Texture& texture) override;
+
   inline static Material_context_impl& getMaterialContextImpl(Material_context& context)
   {
     return static_cast<Material_context_impl&>(context);

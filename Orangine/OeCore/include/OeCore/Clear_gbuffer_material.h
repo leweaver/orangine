@@ -1,11 +1,9 @@
 ﻿#pragma once
-#include "OeCore/Material.h"
-#include "OeCore/Material_base.h"
+
+#include <OeCore/Material.h>
 
 namespace oe {
-class Clear_gbuffer_material : public Material_base<Vertex_constant_buffer_empty, Pixel_constant_buffer_base> {
-  using Base_type = Material_base<Vertex_constant_buffer_empty, Pixel_constant_buffer_base>;
-
+class Clear_gbuffer_material : public Material {
  public:
   Clear_gbuffer_material();
 
@@ -18,5 +16,11 @@ class Clear_gbuffer_material : public Material_base<Vertex_constant_buffer_empty
     };
     return Shader_output_layout{gbufferRtvFormats};
   }
+
+  void updatePerDrawConstantBuffer(
+          gsl::span<uint8_t> cpuBuffer, const Shader_layout_constant_buffer& bufferDesc,
+          const Update_constant_buffer_inputs& inputs) override;
+
+  Shader_constant_layout getShaderConstantLayout() const override;
 };
 }// namespace oe

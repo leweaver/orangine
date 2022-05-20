@@ -15,24 +15,16 @@ class Shadow_map_texture_pool {
  public:
   virtual ~Shadow_map_texture_pool() {}
 
-  /// Must be called by the owner of this pool
-  virtual void createDeviceDependentResources() = 0;
-
-  /// Must be called by the owner of this pool
-  virtual void destroyDeviceDependentResources() = 0;
-
   // If the pool is waiting for textures to be returned, this will throw.
   // If the pool is exhausted (all textures are allocated) then this will return nullptr.
-  virtual std::shared_ptr<Texture> borrowTexture() = 0;
+  virtual std::shared_ptr<Texture> borrowTextureSlice() = 0;
 
   // once a texture has been returned to the pool, no more can be borrowed until
   // all have been returned back to the pool.
-  virtual void returnTexture(std::shared_ptr<Texture> shadowMap) = 0;
+  virtual void returnTextureSlice(std::shared_ptr<Texture> shadowMap) = 0;
 
-  // Shader resource view that can be used when sampling the shadow map depth
-  virtual std::shared_ptr<Texture> shadowMapDepthTextureArray() = 0;
-
-  // Shader resource view that can be used when sampling the shadow map stencil
-  virtual std::shared_ptr<Texture> shadowMapStencilTextureArray() = 0;
+  // Shader resource view that can be used when sampling the shadow map depth or stencil. The consumer will need to
+  // bind with the appropriate texture format - the returned texture will have an Unknown format.
+  virtual std::shared_ptr<Texture> getShadowMapTextureArray() = 0;
 };
 } // namespace oe

@@ -280,8 +280,6 @@ class App_impl {
         return;
       }
 
-      _deviceResources->beginResourcesUploadStep();
-
       width = std::max(width, 1);
       height = std::max(height, 1);
       for (auto& manager : _managers.getWindowDependentManagers()) {
@@ -290,7 +288,6 @@ class App_impl {
         manager()->createWindowSizeDependentResources(_hwnd, width, height);
       };
 
-      _deviceResources->endResourcesUploadStep();
     } catch (std::exception& e) {
       LOG(FATAL) << "Failed to create window size dependent resources: " << e.what();
       _fatalError = true;

@@ -17,18 +17,14 @@ class Frame_resources {
   inline static constexpr size_t kConstantBufferPoolSize1024 = 1024;
   inline static constexpr size_t kConstantBufferPoolInitialCapacity = 16;
 
-  // Any RootSignature format that uses the constant buffer below will store the descriptor table at the following
-  // root signature index.
-  inline static constexpr size_t kConstantBufferRootSignatureIndex = 0;
-
   Frame_resources(ID3D12Device4* device);
 
   Constant_buffer_pool& getOrCreateConstantBufferPoolToFit(size_t itemSizeInBytes, int64_t itemCount);
 
   // Used to share the current root signature that is bound by the material manager
-  void setCurrentBoundRootSignature(ID3D12RootSignature* rootSignature);
+  void setCurrentBoundRootSignature(Root_signature_layout);
 
-  ID3D12RootSignature* getCurrentBoundRootSignature();
+  const Root_signature_layout& getCurrentBoundRootSignature();
 
   void reset();
 
@@ -38,7 +34,7 @@ class Frame_resources {
   std::vector<std::unique_ptr<Constant_buffer_pool>> _retiredPools;
 
   ID3D12Device4* _device;
-  ID3D12RootSignature* _currentRootSignature;
+  Root_signature_layout _currentRootSignatureLayout;
 };
 
 }// namespace oe::pipeline_d3d12

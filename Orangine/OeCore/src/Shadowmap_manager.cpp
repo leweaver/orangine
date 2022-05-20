@@ -13,25 +13,24 @@ template<> void oe::create_manager(Manager_instance<IShadowmap_manager>& out, IT
 
 const std::string& Shadowmap_manager::name() const { return _name; }
 
-void Shadowmap_manager::createDeviceDependentResources() {
-  // TODO:
-  //_texturePool = _textureManager.createShadowMapTexturePool(256, 8);
-  //_texturePool->createDeviceDependentResources();
+void Shadowmap_manager::initialize()
+{
+  _texturePool = _textureManager.createShadowMapTexturePool(256, 8);
 }
 
-void Shadowmap_manager::destroyDeviceDependentResources() {
+void Shadowmap_manager::shutdown()
+{
   if (_texturePool) {
-    _texturePool->destroyDeviceDependentResources();
-    _texturePool.reset();
+    _textureManager.release(_texturePool);
   }
 }
 
-std::shared_ptr<Texture> Shadowmap_manager::borrowTexture() {
+std::shared_ptr<Texture> Shadowmap_manager::borrowTextureSlice() {
   if (!verifyTexturePool()) {
     return nullptr;
   }
 
-  auto texture = _texturePool->borrowTexture();
+  auto texture = _texturePool->borrowTextureSlice();
   if (!texture->isValid()) {
     _textureManager.load(*texture);
   }
@@ -40,18 +39,14 @@ std::shared_ptr<Texture> Shadowmap_manager::borrowTexture() {
   return texture;
 }
 
-void Shadowmap_manager::returnTexture(std::shared_ptr<Texture> shadowMap) {
+void Shadowmap_manager::returnTextureSlice(std::shared_ptr<Texture> shadowMap) {
   if (verifyTexturePool()) {
-    _texturePool->returnTexture(move(shadowMap));
+    _texturePool->returnTextureSlice(move(shadowMap));
   }
 }
 
-std::shared_ptr<Texture> Shadowmap_manager::shadowMapDepthTextureArray() {
-  return verifyTexturePool() ? _texturePool->shadowMapDepthTextureArray() : nullptr;
-}
-
-std::shared_ptr<Texture> Shadowmap_manager::shadowMapStencilTextureArray() {
-  return verifyTexturePool() ? _texturePool->shadowMapStencilTextureArray() : nullptr;
+std::shared_ptr<Texture> Shadowmap_manager::getShadowMapTextureArray() {
+  return verifyTexturePool() ? _texturePool->getShadowMapTextureArray() : nullptr;
 }
 
 bool Shadowmap_manager::verifyTexturePool() const {

@@ -1,28 +1,12 @@
 ﻿#pragma once
 
-#include "OeCore/Material.h"
-#include "OeCore/Material_base.h"
+#include <OeCore/Material.h>
 
 namespace oe {
-class Render_target_texture;
-
-// This constant buffer contains data that is shared across each light that is rendered, such as the
-// camera data. Individual light parameters are stored in the constant buffer managed by the
-// Render_light_data_impl class.
-struct Deferred_light_material_constant_buffer : Pixel_constant_buffer_base {
-  SSE::Matrix4 viewMatrixInv;
-  SSE::Matrix4 projMatrixInv;
-  SSE::Vector4 eyePosition;
-  bool emittedEnabled = false;
-};
-
-class Deferred_light_material
-    : public Material_base<Vertex_constant_buffer_empty, Deferred_light_material_constant_buffer> {
-  using Base_type =
-      Material_base<Vertex_constant_buffer_empty, Deferred_light_material_constant_buffer>;
-
+class Deferred_light_material : public Material {
  public:
-  static constexpr uint32_t max_lights = 8;
+  inline static constexpr uint32_t kMaxLights = 8;
+  inline static constexpr uint32_t kCbRegisterPsMain = 0;
 
   Deferred_light_material();
 
@@ -34,15 +18,9 @@ class Deferred_light_material
   void setColor2Texture(const std::shared_ptr<Texture>& texture) { _color2Texture = texture; }
   const std::shared_ptr<Texture>& depthTexture() const { return _depthTexture; }
   void setDepthTexture(const std::shared_ptr<Texture>& texture) { _depthTexture = texture; }
-  const std::shared_ptr<Texture>& shadowMapDepthTexture() const { return _shadowMapDepthTexture; }
-  void setShadowMapDepthTexture(const std::shared_ptr<Texture>& texture) {
-    _shadowMapDepthTexture = texture;
-  }
-  const std::shared_ptr<Texture>& shadowMapStencilTexture() const {
-    return _shadowMapStencilTexture;
-  }
-  void setShadowMapStencilTexture(const std::shared_ptr<Texture>& texture) {
-    _shadowMapStencilTexture = texture;
+  const std::shared_ptr<Texture>& shadowMapArrayTexture() const { return _shadowMapArrayTexture; }
+  void setShadowMapArrayTexture(const std::shared_ptr<Texture>& texture) {
+    _shadowMapArrayTexture = texture;
   }
   bool iblEnabled() const { return _iblEnabled; }
   void setIblEnabled(bool iblEnabled) { _iblEnabled = iblEnabled; }
@@ -64,30 +42,21 @@ class Deferred_light_material
       const std::set<std::string>& flags,
       const Render_light_data& renderLightData) const override;
 
+  void updatePerDrawConstantBuffer(
+          gsl::span<uint8_t> cpuBuffer, const Shader_layout_constant_buffer& bufferDesc,
+          const Update_constant_buffer_inputs& inputs) override;
+
+  Shader_constant_layout getShaderConstantLayout() const override;
+
  protected:
   Shader_compile_settings pixelShaderSettings(const std::set<std::string>& flags) const override;
-
-  void updatePsConstantBufferValues(
-      Deferred_light_material_constant_buffer& constants,
-      const SSE::Matrix4& worldMatrix,
-      const SSE::Matrix4& viewMatrix,
-      const SSE::Matrix4& projMatrix) const override;
 
  private:
   std::shared_ptr<Texture> _color0Texture;
   std::shared_ptr<Texture> _color1Texture;
   std::shared_ptr<Texture> _color2Texture;
   std::shared_ptr<Texture> _depthTexture;
-  std::shared_ptr<Texture> _shadowMapDepthTexture;
-  std::shared_ptr<Texture> _shadowMapStencilTexture;
-
-  /*
-          Microsoft::WRL::ComPtr<ID3D11SamplerState> _color0SamplerState;
-          Microsoft::WRL::ComPtr<ID3D11SamplerState> _color1SamplerState;
-          Microsoft::WRL::ComPtr<ID3D11SamplerState> _color2SamplerState;
-          Microsoft::WRL::ComPtr<ID3D11SamplerState> _depthSamplerState;
-          Microsoft::WRL::ComPtr<ID3D11SamplerState> _shadowMapSamplerState;
-  */
+  std::shared_ptr<Texture> _shadowMapArrayTexture;
 
   int32_t _shadowMapCount = 0;
   bool _emittedEnabled = false;

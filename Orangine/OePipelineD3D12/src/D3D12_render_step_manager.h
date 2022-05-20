@@ -18,7 +18,7 @@ namespace oe::pipeline_d3d12 {
 class D3D12_render_step_manager final : public Render_step_manager {
  public:
   struct D3D12_render_pass_data {
-    std::vector<std::pair<TextureInternalId, Descriptor_range>> renderTargetDescriptors;
+    std::vector<std::pair<Texture_internal_id, Descriptor_range>> renderTargetDescriptors;
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> cpuHandles;
   };
   struct D3D12_render_step_data {
@@ -49,6 +49,7 @@ class D3D12_render_step_manager final : public Render_step_manager {
   std::unique_ptr<Render_pass> createShadowMapRenderPass();
   std::unique_ptr<Render_pass> createResourceUploadBeginPass() override;
   std::unique_ptr<Render_pass> createResourceUploadEndPass() override;
+  std::unique_ptr<Render_pass> createCopyDepthToResourceRenderPass(CopyFromTo copyFromTo) override;
   void beginRenderNamedEvent(const wchar_t* name) override;
   void endRenderNamedEvent() override;
   void createRenderStepResources();

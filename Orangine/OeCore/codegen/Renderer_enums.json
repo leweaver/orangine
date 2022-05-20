@@ -172,7 +172,7 @@
       "values": [
         "per material",
         "per draw",
-        "skeleton"
+        "external buffer"
       ]
     },
     {
@@ -181,6 +181,14 @@
         "all",
         "vertex",
         "pixel"
+      ]
+    },
+    {
+      "name": "shader texture resource format",
+      "values": [
+        "default",
+        "depth r24x8",
+        "stencil x24u8"
       ]
     }
   ]

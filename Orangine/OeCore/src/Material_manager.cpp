@@ -84,7 +84,21 @@ void Material_manager::updateMaterialContext(
 
     LOG(DEBUG) << "Material flags: " << nlohmann::json(flags).dump(2);
 
-    auto requiresRecompile = true;
+    // Are the textures on the material loaded and ready to use?
+    const Material::Shader_resources shaderResources = material->shaderResources(flags, *renderLightData);
+    bool waitingOnTextureLoad = false;
+    for (const auto& textureResource : shaderResources.textures) {
+      if (!textureResource.texture->isValid()) {
+        LOG(DEBUG) << "Texture is not loaded yet: " << textureResource.texture->getName();
+        queueTextureLoad(*textureResource.texture);
+        waitingOnTextureLoad = true;
+      }
+    }
+    if (waitingOnTextureLoad) {
+      return;
+    }
+
+    bool requiresRecompile = true;
     // Skip recompile if the flags are actually the same.
     if (flags.size() == compiledMaterial.flags.size() &&
         std::equal(flags.begin(), flags.end(), compiledMaterial.flags.begin())) {
@@ -121,9 +135,6 @@ void Material_manager::updateMaterialContext(
             "Failed to create resources in Material_manager::updateMaterialContext. "s + ex.what()));
       }
     }
-
-    const auto shaderResources =
-        material->shaderResources(compiledMaterial.flags, *renderLightData);
 
     loadResourcesToContext(shaderResources, meshVertexLayout.vertexLayout(), materialContext);
   }

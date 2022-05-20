@@ -69,6 +69,8 @@ class Material_manager : public IMaterial_manager,
   void debugLogSettings(const char* prefix, const Material::Shader_compile_settings& settings) const;
 
  private:
+  virtual void queueTextureLoad(const Texture& texture) = 0;
+
   std::string _shaderPath = "data/shaders";
 
   Renderer_features_enabled _rendererFeatures;

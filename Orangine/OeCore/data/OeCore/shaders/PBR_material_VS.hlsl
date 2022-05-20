@@ -13,10 +13,12 @@ cbuffer constants : register(b0)
     float4        g_morphWeights1;
 };
 
-cbuffer skinnedConstants : register(b1)
+#if VB_SKINNED
+cbuffer skinnedConstants : register(b2)
 {
     matrix        g_boneTransforms[96];
 }
+#endif
 
 //--------------------------------------------------------------------------------------
 // Input / Output structures

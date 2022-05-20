@@ -49,14 +49,14 @@ SamplerState g_shadowMapSampler;
 // Globals
 //--------------------------------------------------------------------------------------
 
-cbuffer main_cb : register(b1)
+cbuffer main_cb : register(b0)
 {
 	matrix        g_viewMatrixInv;
 	matrix        g_projMatrixInv;
 	float4        g_eyePosition;
 	bool          g_emittedEnabled;
 };
-cbuffer light_cb : register(b2)
+cbuffer light_cb : register(b1)
 {
 	Light g_lights[8];
 	uint  g_lightCount;
@@ -108,6 +108,7 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
 #endif
 
 	// Vector from surface point to camera
+  // TODO: get g_eyePosition from g_viewMatrixInv translate values
 	brdf.eyeVectorW = normalize(g_eyePosition.xyz - brdf.worldPosition);
 
 	float3 finalColor = float3(0, 0, 0);

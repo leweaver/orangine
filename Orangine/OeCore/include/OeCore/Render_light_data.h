@@ -10,6 +10,9 @@ class Render_light_data {
   std::shared_ptr<Texture> environmentMapDiffuse() const { return _environmentIblMapDiffuse; }
   std::shared_ptr<Texture> environmentMapSpecular() const { return _environmentIblMapSpecular; }
 
+  virtual size_t getConstantBufferSize() const = 0;
+  virtual void copyConstantsToBuffer(gsl::span<uint8_t> cpuBuffer) const = 0;
+
  protected:
   std::shared_ptr<Texture> _environmentIblMapBrdf;
   std::shared_ptr<Texture> _environmentIblMapDiffuse;
@@ -40,10 +43,10 @@ template <uint8_t TMax_lights> class Render_light_data_impl : public Render_ligh
         Light_type::Directional,
         static_cast<Float3>(lightDirection),
         encodeColor(color, intensity),
-        static_cast<int32_t>(shadowMapData.shadowMap->arraySlice()),
+        static_cast<int32_t>(shadowMapData.shadowMap->getArraySlice()),
         shadowMapData.worldViewProjMatrix,
         shadowMapBias,
-        static_cast<int32_t>(shadowMapData.shadowMap->dimension().x)};
+        static_cast<int32_t>(shadowMapData.shadowMap->getDimension().x)};
 
     if (_lightConstants.addLight(std::move(lightEntry))) {
       return true;
@@ -68,6 +71,15 @@ template <uint8_t TMax_lights> class Render_light_data_impl : public Render_ligh
   bool full() const { return _lightConstants.full(); }
   static constexpr uint8_t maxLights() { return TMax_lights; }
   uint8_t getMaxLights() { return TMax_lights; }
+
+  size_t getConstantBufferSize() const override {
+    return sizeof(Light_constants);
+  }
+
+  void copyConstantsToBuffer(gsl::span<uint8_t> cpuBuffer) const override {
+    OE_CHECK(cpuBuffer.size() >= sizeof(Light_constants));
+    memcpy(cpuBuffer.data(), &_lightConstants, sizeof (Light_constants));
+  }
 
  protected:
   class alignas(16) Light_constants {

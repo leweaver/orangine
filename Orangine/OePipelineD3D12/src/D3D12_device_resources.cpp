@@ -292,7 +292,7 @@ void D3D12_device_resources::resizePipelineResources(
 
     auto resourceState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
     auto resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-            DXGI_FORMAT_D24_UNORM_S8_UINT, backBufferWidth, backBufferHeight, 1, 0, 1, 0,
+            getDepthStencilFormat(), backBufferWidth, backBufferHeight, 1, 1, 1, 0,
             D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
     // TODO: What is d3d12 equiv of this? Do I need to toggle state between D3D12_RESOURCE_STATE_DEPTH_READ and
@@ -712,7 +712,9 @@ Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> D3D12_device_resources::GetPi
   return _renderPipeline.commandList;
 }
 
-DXGI_FORMAT D3D12_device_resources::getDepthStencilFormat() { return DXGI_FORMAT_D24_UNORM_S8_UINT; }
+DXGI_FORMAT D3D12_device_resources::getDepthStencilFormat() {
+  return DXGI_FORMAT_D24_UNORM_S8_UINT;
+}
 
 void D3D12_device_resources::PIXBeginEvent(const wchar_t* label)
 {

@@ -27,13 +27,23 @@ const std::string g_flag_debugLighting = "debug_lighting";
 const std::string g_flag_shadowsEnabled = "shadowsEnabled";
 const std::string g_flag_iblEnabled = "iblEnabled";
 
+// This constant buffer contains data that is shared across each light that is rendered, such as the
+// camera data. Individual light parameters are stored in the constant buffer managed by the
+// Render_light_data_impl class.
+struct Deferred_light_material_ps_constant_buffer {
+  SSE::Matrix4 viewMatrixInv;
+  SSE::Matrix4 projMatrixInv;
+  SSE::Vector4 eyePosition;
+  bool emittedEnabled = false;
+};
+
 Deferred_light_material::Deferred_light_material()
-    : Base_type(static_cast<uint8_t>(Material_type_index::Deferred_light)) {}
+    : Material(static_cast<uint8_t>(Material_type_index::Deferred_light)) {}
 
 const std::string& Deferred_light_material::materialType() const { return g_material_type; }
 
 nlohmann::json Deferred_light_material::serialize(bool compilerPropertiesOnly) const {
-  auto j = Base_type::serialize(compilerPropertiesOnly);
+  auto j = Material::serialize(compilerPropertiesOnly);
 
   // TODO: Store asset ID's here.
   if (!compilerPropertiesOnly) {
@@ -45,10 +55,8 @@ nlohmann::json Deferred_light_material::serialize(bool compilerPropertiesOnly) c
   j[g_json_color1Texture] = serializeTexture(compilerPropertiesOnly, _color1Texture);
   j[g_json_color2Texture] = serializeTexture(compilerPropertiesOnly, _color2Texture);
   j[g_json_depthTexture] = serializeTexture(compilerPropertiesOnly, _depthTexture);
-  j[g_json_shadowMapDepthTexture] =
-      serializeTexture(compilerPropertiesOnly, _shadowMapDepthTexture);
-  j[g_json_shadowMapStencilTexture] =
-      serializeTexture(compilerPropertiesOnly, _shadowMapStencilTexture);
+  j[g_json_shadowMapDepthTexture] = serializeTexture(compilerPropertiesOnly, _shadowMapArrayTexture);
+  j[g_json_shadowMapStencilTexture] = serializeTexture(compilerPropertiesOnly, _shadowMapArrayTexture);
   j[g_json_iblEnabled] = _iblEnabled;
   j[g_json_shadowArrayEnabled] = _shadowArrayEnabled;
 
@@ -59,7 +67,7 @@ std::set<std::string> Deferred_light_material::configFlags(
     const Renderer_features_enabled& rendererFeatures,
     Render_pass_blend_mode blendMode,
     const Mesh_vertex_layout& meshBindContext) const {
-  auto flags = Base_type::configFlags(rendererFeatures, blendMode, meshBindContext);
+  auto flags = Material::configFlags(rendererFeatures, blendMode, meshBindContext);
 
   if (rendererFeatures.debugDisplayMode == Debug_display_mode::World_positions) {
     flags.insert(g_flag_debugWorldPosition);
@@ -83,7 +91,7 @@ std::set<std::string> Deferred_light_material::configFlags(
 Material::Shader_resources Deferred_light_material::shaderResources(
     const std::set<std::string>& flags,
     const Render_light_data& renderLightData) const {
-  auto sr = Base_type::shaderResources(flags, renderLightData);
+  auto sr = Material::shaderResources(flags, renderLightData);
 
   if (!_color0Texture || !_color1Texture || !_color2Texture || !_depthTexture)
     return sr;
@@ -94,16 +102,16 @@ Material::Shader_resources Deferred_light_material::shaderResources(
   samplerDesc.wrapW = Sampler_texture_address_mode::Clamp;
   //samplerDesc.comparisonFunc = Sampler_comparison_func::Always;
 
-  sr.textures.push_back(_color0Texture);
+  sr.textures.push_back({_color0Texture});
   sr.samplerDescriptors.push_back(samplerDesc);
 
-  sr.textures.push_back(_color1Texture);
+  sr.textures.push_back({_color1Texture});
   sr.samplerDescriptors.push_back(samplerDesc);
 
-  sr.textures.push_back(_color2Texture);
+  sr.textures.push_back({_color2Texture});
   sr.samplerDescriptors.push_back(samplerDesc);
 
-  sr.textures.push_back(_depthTexture);
+  sr.textures.push_back({_depthTexture});
   sr.samplerDescriptors.push_back(samplerDesc);
 
   if (flags.find(g_flag_iblEnabled) != flags.end()) {
@@ -114,9 +122,9 @@ Material::Shader_resources Deferred_light_material::shaderResources(
                              "in the Render_light_data"));
     }
 
-    sr.textures.push_back(renderLightData.environmentMapBrdf());
-    sr.textures.push_back(renderLightData.environmentMapDiffuse());
-    sr.textures.push_back(renderLightData.environmentMapSpecular());
+    sr.textures.push_back({renderLightData.environmentMapBrdf()});
+    sr.textures.push_back({renderLightData.environmentMapDiffuse()});
+    sr.textures.push_back({renderLightData.environmentMapSpecular()});
 
     // Create IBL sampler desc
     samplerDesc.wrapU = Sampler_texture_address_mode::Wrap;
@@ -126,13 +134,13 @@ Material::Shader_resources Deferred_light_material::shaderResources(
   }
 
   if (flags.find(g_flag_shadowsEnabled) != flags.end()) {
-    if (!(_shadowMapStencilTexture && _shadowMapDepthTexture)) {
+    if (!_shadowMapArrayTexture) {
       OE_THROW(std::logic_error(
           "Cannot bind a shadow map stencil texture without a shadow map depth texture."));
     }
 
-    sr.textures.push_back(_shadowMapDepthTexture);
-    sr.textures.push_back(_shadowMapStencilTexture);
+    sr.textures.push_back({_shadowMapArrayTexture, Shader_texture_resource_format::Depth_r24x8});
+    sr.textures.push_back({_shadowMapArrayTexture, Shader_texture_resource_format::Stencil_x24u8});
 
     samplerDesc.wrapU = Sampler_texture_address_mode::Clamp;
     samplerDesc.wrapV = Sampler_texture_address_mode::Clamp;
@@ -145,7 +153,7 @@ Material::Shader_resources Deferred_light_material::shaderResources(
 
 Material::Shader_compile_settings Deferred_light_material::pixelShaderSettings(
     const std::set<std::string>& flags) const {
-  auto settings = Base_type::pixelShaderSettings(flags);
+  auto settings = Material::pixelShaderSettings(flags);
 
   if (flags.find(g_flag_iblEnabled) != flags.end()) {
     settings.defines["MAP_IBL"] = "1";
@@ -172,29 +180,26 @@ Material::Shader_compile_settings Deferred_light_material::pixelShaderSettings(
 
 void Deferred_light_material::setupEmitted(bool enabled) { _emittedEnabled = enabled; }
 
-void Deferred_light_material::updatePsConstantBufferValues(
-    Deferred_light_material_constant_buffer& constants,
-    const SSE::Matrix4& worldMatrix,
-    const SSE::Matrix4& viewMatrix,
-    const SSE::Matrix4& projMatrix) const {
-  constants.viewMatrixInv = SSE::inverse(viewMatrix);
-  constants.projMatrixInv = SSE::inverse(projMatrix);
-  /*
-  LOG(DEBUG) <<
-          "\n{" <<
-          "\n  " << worldMatrix._11 << ", " << worldMatrix._12 << ", " << worldMatrix._13 << ", " <<
-  worldMatrix._14 <<
-          "\n  " << worldMatrix._21 << ", " << worldMatrix._22 << ", " << worldMatrix._23 << ", " <<
-  worldMatrix._24 <<
-          "\n  " << worldMatrix._31 << ", " << worldMatrix._32 << ", " << worldMatrix._33 << ", " <<
-  worldMatrix._34 <<
-          "\n  " << worldMatrix._41 << ", " << worldMatrix._42 << ", " << worldMatrix._43 << ", " <<
-  worldMatrix._44 <<
-          "\n}";
-          */
+void Deferred_light_material::updatePerDrawConstantBuffer(
+        gsl::span<uint8_t> cpuBuffer, const Shader_layout_constant_buffer& bufferDesc,
+        const Update_constant_buffer_inputs& inputs) {
+  OE_CHECK(bufferDesc.getRegisterIndex() == kCbRegisterPsMain);
+  OE_CHECK(cpuBuffer.size() >= sizeof(Deferred_light_material_ps_constant_buffer));
+  auto& cb = *reinterpret_cast<Deferred_light_material_ps_constant_buffer*>(cpuBuffer.data());
+
+  cb.viewMatrixInv = SSE::inverse(inputs.viewMatrix);
+  cb.projMatrixInv = SSE::inverse(inputs.projectionMatrix);
 
   // Inverse of the view matrix is the camera transform matrix
-  // TODO: This is redundant, remove from the constants.
-  constants.eyePosition = {constants.viewMatrixInv.getTranslation(), 0.0};
-  constants.emittedEnabled = _emittedEnabled;
+  // TODO: This is redundant, remove from the cb and use viewMatrixInv in the PS
+  cb.eyePosition = {cb.viewMatrixInv.getTranslation(), 0.0};
+  cb.emittedEnabled = _emittedEnabled;
+}
+
+Shader_constant_layout Deferred_light_material::getShaderConstantLayout() const {
+  static std::array<Shader_layout_constant_buffer, 2> layout {{
+      {0, Shader_constant_buffer_visibility::Pixel, Shader_layout_constant_buffer::Usage_per_draw_data{0}},
+      {1, Shader_constant_buffer_visibility::Pixel, Shader_layout_constant_buffer::Usage_external_buffer_data{Material::kExternalUsageLightingHandle}}
+    }};
+  return Shader_constant_layout { layout };
 }

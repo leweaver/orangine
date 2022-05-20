@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Collision.h"
+#include "EngineUtils.h"
 #include "Renderer_enums.h"
 
 #include <string>
@@ -58,6 +59,14 @@ struct Sampler_descriptor {
       , wrapW(Sampler_texture_address_mode::Wrap)
       , comparisonFunc(Sampler_comparison_func::Never)
   {}
+
+  bool operator==(const Sampler_descriptor& other) const
+  {
+    return minFilter == other.minFilter && magFilter == other.magFilter && wrapU == other.wrapU &&
+           wrapV == other.wrapV && wrapW == other.wrapW && comparisonFunc == other.comparisonFunc;
+  }
+
+  bool operator!=(const Sampler_descriptor& other) const { return !(*this == other); }
 };
 
 struct Viewport {
@@ -209,11 +218,42 @@ std::basic_ostream<CTy, CTr>& operator<<(std::basic_ostream<CTy, CTr>& ss, const
   return ss;
 }
 
-struct Shader_layout_constant_buffer {
-  uint32_t registerIndex;
-  uint32_t sizeInBytes;
-  Shader_constant_buffer_usage usage;
-  Shader_constant_buffer_visibility visibility;
+using Shader_external_constant_buffer_handle = int64_t;
+
+class Shader_layout_constant_buffer {
+ public:
+  struct Usage_per_draw_data {
+    size_t bufferSizeInBytes;
+  };
+  struct Usage_external_buffer_data {
+    Shader_external_constant_buffer_handle handle;
+  };
+
+  Shader_layout_constant_buffer()
+      : Shader_layout_constant_buffer(0, Shader_constant_buffer_visibility::Num_shader_constant_buffer_visibility, Usage_per_draw_data{0})
+  {}
+  Shader_layout_constant_buffer(uint32_t registerIndex, Shader_constant_buffer_visibility visibility, Usage_per_draw_data data)
+      : _registerIndex(registerIndex), _usage(Shader_constant_buffer_usage::Per_draw), _visibility(visibility), _usagePerDraw(data)
+  {}
+  Shader_layout_constant_buffer(uint32_t registerIndex, Shader_constant_buffer_visibility visibility, Usage_external_buffer_data data)
+      : _registerIndex(registerIndex), _usage(Shader_constant_buffer_usage::External_buffer), _visibility(visibility), _usageExternalBuffer(data)
+  {}
+
+  const uint32_t getRegisterIndex() const { return _registerIndex; }
+  const Shader_constant_buffer_usage getUsage() const { return _usage; }
+  const Shader_constant_buffer_visibility getVisibility() const { return _visibility; }
+  const Usage_per_draw_data& getUsagePerDraw() const { OE_CHECK(_usage == Shader_constant_buffer_usage::Per_draw); return _usagePerDraw; }
+  const Usage_external_buffer_data& getUsageExternalBuffer() const { OE_CHECK(_usage == Shader_constant_buffer_usage::External_buffer); return _usageExternalBuffer; }
+
+ private:
+  const uint32_t _registerIndex;
+  const Shader_constant_buffer_usage _usage;
+  const Shader_constant_buffer_visibility _visibility;
+
+  union {
+    const Usage_per_draw_data _usagePerDraw;
+    const Usage_external_buffer_data _usageExternalBuffer;
+  };
 };
 
 struct Shader_constant_layout {

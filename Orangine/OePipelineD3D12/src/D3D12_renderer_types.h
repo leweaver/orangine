@@ -33,6 +33,14 @@ struct Gpu_buffer_reference {
   std::unique_ptr<Gpu_buffer> gpuBuffer;
 };
 
+struct Root_signature_layout
+{
+  inline static constexpr int32_t kSlotInvalid = -1;
+
+  ID3D12RootSignature* rootSignature = nullptr;
+  int32_t constantBufferAllVisParamIndex = kSlotInvalid;
+};
+
 }// namespace oe::pipeline_d3d12
 
 // Must be in the regular oe namespace to match forward declarations in the non-D3D12 library.

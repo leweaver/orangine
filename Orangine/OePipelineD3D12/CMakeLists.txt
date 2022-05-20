@@ -35,7 +35,7 @@ add_library(${PROJECT_NAME} STATIC
         src/Gpu_buffer.cpp
         src/Gpu_buffer.h
         src/D3D12_material_manager.cpp
-        src/D3D12_material_manager.h src/Descriptor_heap_pool.cpp src/Descriptor_heap_pool.h src/PipelineUtils.h src/D3D12_renderer_types.h src/D3D12_texture_manager.cpp src/D3D12_texture_manager.h src/Constant_buffer_pool.cpp src/Constant_buffer_pool.h src/Frame_resources.cpp src/Frame_resources.h)
+        src/D3D12_material_manager.h src/Descriptor_heap_pool.cpp src/Descriptor_heap_pool.h src/PipelineUtils.h src/D3D12_renderer_types.h src/D3D12_texture_manager.cpp src/D3D12_texture_manager.h src/Constant_buffer_pool.cpp src/Constant_buffer_pool.h src/Frame_resources.cpp src/Frame_resources.h src/Render_pass_copy_depth_to_resource.cpp src/Render_pass_copy_depth_to_resource.h)
 
 # CPP17
 target_compile_features(OeCore PUBLIC cxx_std_17)

@@ -51,6 +51,10 @@ class Render_step_manager : public IRender_step_manager, public Manager_base, pu
   virtual std::unique_ptr<Render_pass> createResourceUploadBeginPass() = 0;
   virtual std::unique_ptr<Render_pass> createResourceUploadEndPass() = 0;
   virtual std::unique_ptr<Render_pass> createShadowMapRenderPass() = 0;
+
+  using CopyFromTo = std::vector<std::pair<std::shared_ptr<Texture>, std::shared_ptr<Texture>>>;
+  virtual std::unique_ptr<Render_pass> createCopyDepthToResourceRenderPass(
+          CopyFromTo copyFromTo) = 0;
   virtual void beginRenderNamedEvent(const wchar_t* name) = 0;
   virtual void endRenderNamedEvent() = 0;
   virtual void createRenderStepResources() = 0;

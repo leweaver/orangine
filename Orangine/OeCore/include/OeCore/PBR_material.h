@@ -4,14 +4,14 @@
 #include "Texture.h"
 
 #include "Color.h"
-#include "Material_base.h"
 #include "Renderer_types.h"
 #include <array>
 #include <memory>
 
 namespace oe {
 __declspec(align(16))
-struct PBR_material_vs_constant_buffer : Vertex_constant_buffer_base {
+struct PBR_material_vs_constant_buffer {
+  SSE::Matrix4 worldViewProjection;
   SSE::Matrix4 world;
   SSE::Matrix4 viewProjection;
   SSE::Matrix4 worldInvTranspose;
@@ -19,17 +19,14 @@ struct PBR_material_vs_constant_buffer : Vertex_constant_buffer_base {
 };
 
 __declspec(align(16))
-struct PBR_material_ps_constant_buffer : Pixel_constant_buffer_base {
+struct PBR_material_ps_constant_buffer {
   SSE::Matrix4 world;
   Float4 baseColor;
   Float4 metallicRoughness; // metallic, roughness
   Float4 emissive;          // emissive color (RGB)
 };
 
-class PBR_material
-    : public Material_base<PBR_material_vs_constant_buffer, PBR_material_ps_constant_buffer> {
-  using Base_type = Material_base<PBR_material_vs_constant_buffer, PBR_material_ps_constant_buffer>;
-
+class PBR_material : public Material {
   enum Texture_type {
     BaseColor,
     MetallicRoughness,
@@ -41,7 +38,9 @@ class PBR_material
   };
 
  public:
-  static constexpr uint32_t max_lights = 8;
+  inline static constexpr uint32_t kCbRegisterVsMain = 0;
+  inline static constexpr uint32_t kCbRegisterPsMain = 1;
+  inline static constexpr uint32_t kCbRegisterVsSkinning = 2;
 
   PBR_material();
 
@@ -50,15 +49,13 @@ class PBR_material
   void operator=(const PBR_material& other) = delete;
   void operator=(PBR_material&& other) = delete;
 
-  virtual ~PBR_material() = default;
-
   /*
    * The RGBA components of the base color of the material.The fourth component(A) is the alpha
    * coverage of the material. The alphaMode property specifies how alpha is interpreted. These
    * values are linear. If a baseColorTexture is specified, this value is multiplied with the texel
    * values.
    */
-  const Color& baseColor() const { return _baseColor; }
+  const Color& getBaseColor() const { return _baseColor; }
   void setBaseColor(const Color& color) { _baseColor = color; }
 
   /*
@@ -68,13 +65,10 @@ class PBR_material
    * of 1.0 is assumed. The alphaMode property specifies how alpha is interpreted. The stored texels
    * must not be premultiplied.
    */
-  const std::shared_ptr<Texture>& baseColorTexture() const { return _textures[BaseColor]; }
+  const Shader_texture_input& getBaseColorTexture() const { return _textures[BaseColor]; }
 
-  void setBaseColorTexture(const std::shared_ptr<Texture>& baseColorTexture) {
-    if (_textures[BaseColor] != baseColorTexture) {
-      _textures[BaseColor] = baseColorTexture;
-      markRequiresRecompile();
-    }
+  void setBaseColorTexture(const Shader_texture_input& baseColorTexture) {
+    setTexture(baseColorTexture, _textures[BaseColor]);
   }
 
   /*
@@ -84,7 +78,7 @@ class PBR_material
    * surfaces. This value is linear. If a metallicRoughnessTexture is specified, this value is
    * multiplied with the metallic texel values.
    */
-  float metallicFactor() const { return _metallic; }
+  float getMetallicFactor() const { return _metallic; }
 
   void setMetallicFactor(float metallic) { _metallic = metallic; }
 
@@ -94,15 +88,15 @@ class PBR_material
    * If a metallicRoughnessTexture is specified, this value is multiplied with the roughness texel
    * values.
    */
-  float roughnessFactor() const { return _roughness; }
+  float getRoughnessFactor() const { return _roughness; }
 
   void setRoughnessFactor(float roughness) { _roughness = roughness; }
 
-  const Color& emissiveFactor() const { return _emissive; }
+  const Color& getEmissiveFactor() const { return _emissive; }
 
   void setEmissiveFactor(const Color& emissive) { _emissive = emissive; }
 
-  float alphaCutoff() const { return _alphaCutoff; }
+  float getAlphaCutoff() const { return _alphaCutoff; }
 
   void setAlphaCutoff(float alphaCutoff) { _alphaCutoff = alphaCutoff; }
 
@@ -112,42 +106,30 @@ class PBR_material
    * G channel. These values are linear. If other channels are present (R or A), they are ignored
    * for metallic-roughness calculations.
    */
-  const std::shared_ptr<Texture>& metallicRoughnessTexture() const {
+  const Shader_texture_input& getMetallicRoughnessTexture() const {
     return _textures[MetallicRoughness];
   }
 
-  void setMetallicRoughnessTexture(const std::shared_ptr<Texture>& metallicRoughnessTexture) {
-    if (_textures[MetallicRoughness] != metallicRoughnessTexture) {
-      _textures[MetallicRoughness] = metallicRoughnessTexture;
-      markRequiresRecompile();
-    }
+  void setMetallicRoughnessTexture(const Shader_texture_input& metallicRoughnessTexture) {
+    setTexture(metallicRoughnessTexture, _textures[MetallicRoughness]);
   }
 
-  const std::shared_ptr<Texture>& normalTexture() const { return _textures[Normal]; }
+  const Shader_texture_input& getNormalTexture() const { return _textures[Normal]; }
 
-  void setNormalTexture(const std::shared_ptr<Texture>& normalTexture) {
-    if (_textures[Normal] != normalTexture) {
-      _textures[Normal] = normalTexture;
-      markRequiresRecompile();
-    }
+  void setNormalTexture(const Shader_texture_input& normalTexture) {
+    setTexture(normalTexture, _textures[Normal]);
   }
 
-  const std::shared_ptr<Texture>& occlusionTexture() const { return _textures[Occlusion]; }
+  const Shader_texture_input& getOcclusionTexture() const { return _textures[Occlusion]; }
 
-  void setOcclusionTexture(const std::shared_ptr<Texture>& occlusionTexture) {
-    if (_textures[Occlusion] != occlusionTexture) {
-      _textures[Occlusion] = occlusionTexture;
-      markRequiresRecompile();
-    }
+  void setOcclusionTexture(const Shader_texture_input& occlusionTexture) {
+    setTexture(occlusionTexture, _textures[Occlusion]);
   }
 
-  const std::shared_ptr<Texture>& emissiveTexture() const { return _textures[Emissive]; }
+  const Shader_texture_input& getEmissiveTexture() const { return _textures[Emissive]; }
 
-  void setEmissiveTexture(const std::shared_ptr<Texture>& emissiveTexture) {
-    if (_textures[Emissive] != emissiveTexture) {
-      _textures[Emissive] = emissiveTexture;
-      markRequiresRecompile();
-    }
+  void setEmissiveTexture(const Shader_texture_input& emissiveTexture) {
+    setTexture(emissiveTexture, _textures[Emissive]);
   }
 
   Material_light_mode lightMode() override { return Material_light_mode::Lit; }
@@ -175,6 +157,12 @@ class PBR_material
       int8_t& normalPosition,
       int8_t& tangentPosition);
 
+  void updatePerDrawConstantBuffer(
+          gsl::span<uint8_t> cpuBuffer, const Shader_layout_constant_buffer& bufferDesc,
+          const Update_constant_buffer_inputs& inputs) override;
+
+  Shader_constant_layout getShaderConstantLayout() const override;
+
   Shader_output_layout getShaderOutputLayout() const override
   {
     static constexpr std::array<Texture_format, 3> gbufferRtvFormats{
@@ -184,27 +172,22 @@ class PBR_material
   }
 
  protected:
+  void setTexture(const Shader_texture_input& src, Shader_texture_input& dest);
+
   void applyVertexLayoutShaderCompileSettings(Shader_compile_settings&) const;
 
   void updateVsConstantBufferValues(
-      PBR_material_vs_constant_buffer& constants,
-      const SSE::Matrix4& worldMatrix,
-      const SSE::Matrix4& viewMatrix,
-      const SSE::Matrix4& projMatrix,
-      const Renderer_animation_data& rendererAnimationData) const override;
+      PBR_material_vs_constant_buffer& constants, const Update_constant_buffer_inputs& inputs) const;
 
   void updatePsConstantBufferValues(
-      PBR_material_ps_constant_buffer& constants,
-      const SSE::Matrix4& worldMatrix,
-      const SSE::Matrix4& viewMatrix,
-      const SSE::Matrix4& projMatrix) const override;
+      PBR_material_ps_constant_buffer& constants, const Update_constant_buffer_inputs& inputs) const;
 
   bool requiresTexCoord0() const {
-    return _textures[BaseColor] || _textures[MetallicRoughness] || _textures[Emissive] ||
-           _textures[Occlusion] || _textures[Normal];
+    return std::any_of(
+            _textures.begin(), _textures.end(), [](const Shader_texture_input& t) { return t.texture != nullptr; });
   }
 
-  bool requiresTangents() const { return _textures[Normal] != nullptr; }
+  bool requiresTangents() const { return _textures[Normal].texture != nullptr; }
 
   static int getMorphPositionAttributeIndexOffset();
   static int getMorphNormalAttributeIndexOffset();
@@ -217,6 +200,6 @@ class PBR_material
   Color _emissive;
   float _alphaCutoff;
 
-  std::array<std::shared_ptr<Texture>, NumTextureTypes> _textures;
+  std::array<Shader_texture_input, NumTextureTypes> _textures;
 };
 } // namespace oe

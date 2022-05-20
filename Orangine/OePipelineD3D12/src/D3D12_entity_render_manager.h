@@ -34,6 +34,8 @@ class D3D12_entity_render_manager : public internal::Entity_render_manager {
   std::shared_ptr<Gpu_buffer_reference>
   getOrCreateUsage(const std::string_view& name, const std::shared_ptr<Mesh_buffer>& meshData, size_t vertexSize);
 
+  void acquireConstantBufferForSize(size_t requiredSize, gsl::span<uint8_t>& cpuBuffer, D3D12_GPU_VIRTUAL_ADDRESS& gpuAddress);
+
  private:
   D3D12_device_resources& _deviceResources;
 

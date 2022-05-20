@@ -7,6 +7,7 @@
 
 namespace oe::pipeline_d3d12 {
 
+class D3D12_shadow_map_texture_pool;
 class D3D12_texture : public Texture {
  public:
   D3D12_texture(uint32_t extraFlags = 0)
@@ -16,7 +17,8 @@ class D3D12_texture : public Texture {
     OE_CHECK(!isValid());
   }
 
-  D3D12_texture(Vector2u dimension, uint32_t extraFlags, Microsoft::WRL::ComPtr<ID3D12Resource> resource)
+  D3D12_texture(
+          Vector2u dimension, uint32_t extraFlags, Microsoft::WRL::ComPtr<ID3D12Resource> resource)
       : Texture(0, dimension, extraFlags)
   {
     // Make sure that the 'Is_valid' flag wasn't passed in
@@ -24,7 +26,7 @@ class D3D12_texture : public Texture {
     setResource(resource);
   }
 
-  void setResource(Microsoft::WRL::ComPtr<ID3D12Resource> resource)
+  void setResource(Microsoft::WRL::ComPtr<ID3D12Resource> resource, bool rename = true)
   {
     if (resource == nullptr) {
       _flags = _flags & ~static_cast<uint32_t>(Texture_flags::Is_valid);
@@ -34,24 +36,29 @@ class D3D12_texture : public Texture {
       _flags = _flags | static_cast<uint32_t>(Texture_flags::Is_valid);
       _resource = resource;
 
-      std::stringstream name;
-      name << getTextureTypeName() << " '" << getName() << "'";
-      SetObjectName(_resource.Get(), oe::utf8_decode(name.str()).c_str());
+      if (rename) {
+        std::stringstream name;
+        name << getTextureTypeName() << " '" << getName() << "'";
+        SetObjectName(_resource.Get(), oe::utf8_decode(name.str()).c_str());
+      }
     }
   }
 
   virtual const std::string& getTextureTypeName() const = 0;
 
-  void setInternalId(uint64_t id) {
-    _internalId = id;
-  }
+  void setInternalId(int64_t id) { _internalId = id; }
 
   ID3D12Resource* getResource() { return _resource.Get(); }
 
-  virtual void load(D3D12_device_resources& deviceResources) {};
-  virtual void unload()
+  virtual void load(D3D12_device_resources& deviceResources){};
+  virtual void unload() { setResource(nullptr); }
+
+  DXGI_FORMAT getFormat()
   {
-    setResource(nullptr);
+    if (_resource) {
+      return _resource->GetDesc().Format;
+    }
+    return DXGI_FORMAT_UNKNOWN;
   }
 
  private:
@@ -65,10 +72,7 @@ class D3D12_texture_manager : public ITexture_manager, public Manager_base, publ
   // Manager_base implementation
   void initialize() override {}
   void shutdown() override {}
-  const std::string& name() const override
-  {
-    return _name;
-  }
+  const std::string& name() const override { return _name; }
 
   // Manager_deviceDependent implementation
   void createDeviceDependentResources() override;
@@ -77,29 +81,43 @@ class D3D12_texture_manager : public ITexture_manager, public Manager_base, publ
   // ITexture_manager implementation
   std::shared_ptr<Texture>
   createTextureFromBuffer(uint32_t stride, uint32_t buffer_size, std::unique_ptr<uint8_t>& buffer) override;
-  std::shared_ptr<Texture> createTextureFromFile(const std::string& fileName, bool generateMipsIfMissing = false) override;
   std::shared_ptr<Texture>
-  createTextureFromFile(const std::string& fileName, const Sampler_descriptor& samplerDescriptor, bool generateMipsIfMissing = false) override;
-  std::shared_ptr<Texture> createCubeMapTextureFromFile(const std::string& fileName, const Sampler_descriptor& samplerDescriptor, bool generateMipsIfMissing = false) override;
+  createTextureFromFile(const std::string& fileName, bool generateMipsIfMissing = false) override;
+  std::shared_ptr<Texture> createCubeMapTextureFromFile(
+          const std::string& fileName, bool generateMipsIfMissing = false) override;
 
   std::shared_ptr<Texture> createDepthTexture() override;
   std::shared_ptr<Texture> createRenderTargetTexture(int width, int height, std::string name) override;
-  std::shared_ptr<Texture> createSwapchainBackBufferTexture() override;
 
-  std::unique_ptr<Shadow_map_texture_pool>
+  std::shared_ptr<Texture> getSwapchainBackBufferTexture() override;
+  std::shared_ptr<Texture> getSwapchainDepthStencilTexture() override;
+
+  void release(std::shared_ptr<Texture> texture) override;
+
+  void release(std::shared_ptr<Shadow_map_texture_pool> pool) override;
+
+
+  std::shared_ptr<Shadow_map_texture_pool>
   createShadowMapTexturePool(uint32_t maxDimension, uint32_t textureArraySize) override;
 
-  void load(Texture& texture) override;
-  void unload(Texture& texture) override;
+  void load(const Texture& texture) override;
+  void unload(const Texture& texture) override;
 
   static void initStatics();
   static void destroyStatics();
 
   ID3D12Resource* getResource(Texture& texture) const;
 
+  DXGI_FORMAT getFormat(Texture& texture) const;
+
+  void updateSwapchainDependentResources();
+  void flushLoads();
+
  private:
-  template <class _Ty, class... _Types>
-  std::shared_ptr<_Ty> createTexture(_Types&&... _Args) {
+  D3D12_texture* getAsTextureImpl(const Texture& texture) const;
+
+  template<class _Ty, class... _Types> std::shared_ptr<_Ty> createTexture(_Types&&... _Args)
+  {
     auto texture = std::make_shared<_Ty>(std::forward<_Types>(_Args)...);
     texture->setInternalId(_textures.size());
     _textures.push_back(texture);
@@ -108,11 +126,14 @@ class D3D12_texture_manager : public ITexture_manager, public Manager_base, publ
 
   static std::string _name;
   std::vector<std::shared_ptr<D3D12_texture>> _textures;
-  std::shared_ptr<D3D12_texture> _backbufferTexture;
-  std::shared_ptr<D3D12_texture> _depthStencilTexture;
+  std::shared_ptr<D3D12_texture> _swapchainBackbufferTexture;
+  std::shared_ptr<D3D12_texture> _swapchainDepthStencilTexture;
+
+  std::vector<std::shared_ptr<D3D12_shadow_map_texture_pool>> _shadowMapTexturePools;
 
   D3D12_device_resources& _deviceResources;
   std::vector<std::shared_ptr<D3D12_texture>> _pendingLoads;
+  bool isValidTextureId(Texture_internal_id id);
 };
 
 }// namespace oe::pipeline_d3d12

@@ -4,7 +4,7 @@ using namespace oe::pipeline_d3d12;
 
 Frame_resources::Frame_resources(ID3D12Device4* device)
     : _device(device)
-    , _currentRootSignature(nullptr)
+    , _currentRootSignatureLayout({})
 {
   _constantBufferPools = {
           {std::make_unique<Constant_buffer_pool>(
@@ -56,10 +56,10 @@ void Frame_resources::reset()
   }
 }
 
-void Frame_resources::setCurrentBoundRootSignature(ID3D12RootSignature* rootSignature)
+void Frame_resources::setCurrentBoundRootSignature(Root_signature_layout rootSignatureLayout)
 {
-  OE_CHECK(rootSignature == nullptr || !_currentRootSignature);
-  _currentRootSignature = rootSignature;
+  OE_CHECK(rootSignatureLayout.rootSignature == nullptr || !_currentRootSignatureLayout.rootSignature);
+  _currentRootSignatureLayout = rootSignatureLayout;
 }
 
-ID3D12RootSignature* Frame_resources::getCurrentBoundRootSignature() { return _currentRootSignature; }
+const Root_signature_layout& Frame_resources::getCurrentBoundRootSignature() { return _currentRootSignatureLayout; }

@@ -61,6 +61,11 @@ void Render_step_manager::initialize()
   _alphaSorter = std::make_unique<Entity_alpha_sorter>();
   _cullSorter = std::make_unique<Entity_cull_sorter>();
 
+  _renderPassDeferredData.deferredLightMaterial = std::make_shared<Deferred_light_material>();
+  _renderPassDeferredData.deferredLightMaterial->setDepthTexture( _textureManager.createDepthTexture());
+
+  _renderPassDeferredData.clearGbufferMaterial = std::make_shared<Clear_gbuffer_material>();
+
   createRenderSteps();
 
   _renderTimes.resize(_renderSteps.size());
@@ -144,6 +149,10 @@ void Render_step_manager::createRenderSteps()
       }
     });
 
+    auto copyDepthPass = createCopyDepthToResourceRenderPass({std::make_pair(
+            _textureManager.getSwapchainDepthStencilTexture(),
+            _renderPassDeferredData.deferredLightMaterial->depthTexture())});
+
     auto drawLightsPass =
             std::make_unique<Render_pass_generic>([this](const auto& cameraData, const Render_pass& pass) {
               if (!_fatalError) {
@@ -163,11 +172,12 @@ void Render_step_manager::createRenderSteps()
     _gbufferRenderPasses.push_back(clearGBufferPass.get());
     _gbufferRenderPasses.push_back(drawEntitiesPass.get());
 
-    auto step = std::make_unique<Render_step>(L"Deferred Lighting");
+    auto step = std::make_unique<Render_step>(L"G-Buffer Lighting");
 
     step->renderPasses.emplace_back(std::move(clearGBufferPass));
     step->renderPasses.emplace_back(std::move(drawEntitiesPass));
-    //step->renderPasses.emplace_back(std::move(drawLightsPass));
+    step->renderPasses.emplace_back(std::move(copyDepthPass));
+    step->renderPasses.emplace_back(std::move(drawLightsPass));
     _renderSteps.emplace_back(std::move(step));
   }
 
@@ -219,9 +229,6 @@ void Render_step_manager::createRenderSteps()
 
 void Render_step_manager::createDeviceDependentResources()
 {
-  _renderPassDeferredData.deferredLightMaterial = std::make_shared<Deferred_light_material>();
-  _renderPassDeferredData.clearGbufferMaterial = std::make_shared<Clear_gbuffer_material>();
-
   _renderPassDeferredData.pass0ScreenSpaceQuad =
           _entityRenderManager.createScreenSpaceQuad(_renderPassDeferredData.clearGbufferMaterial);
   _renderPassDeferredData.pass2ScreenSpaceQuad =
@@ -244,17 +251,13 @@ void Render_step_manager::createWindowSizeDependentResources(HWND /*window*/, in
 
   // Step Deferred, Pass 0
   {
-    // Create a depth texture resource
-    const auto depthTexture = _textureManager.createDepthTexture();
-
     // Assign textures to the deferred light material
     auto deferredLightMaterial = _renderPassDeferredData.deferredLightMaterial;
     deferredLightMaterial->setColor0Texture(gbufferRenderTargets.at(0));
     deferredLightMaterial->setColor1Texture(gbufferRenderTargets.at(1));
     deferredLightMaterial->setColor2Texture(gbufferRenderTargets.at(2));
-    deferredLightMaterial->setDepthTexture(depthTexture);
-    deferredLightMaterial->setShadowMapDepthTexture(_shadowmapManager.shadowMapDepthTextureArray());
-    deferredLightMaterial->setShadowMapStencilTexture(_shadowmapManager.shadowMapStencilTextureArray());
+    deferredLightMaterial->setDepthTexture(_renderPassDeferredData.deferredLightMaterial->depthTexture());
+    deferredLightMaterial->setShadowMapArrayTexture(_shadowmapManager.getShadowMapTextureArray());
   }
 
   for (Render_pass* gbufferRenderPass : _gbufferRenderPasses) {
@@ -271,7 +274,7 @@ void Render_step_manager::destroyDeviceDependentResources()
       auto* const component = lightEntity->getFirstComponentOfType<Directional_light_component>();
       if (component && component->shadowsEnabled()) {
         if (component->shadowData()) {
-          _shadowmapManager.returnTexture(std::move(component->shadowData()->shadowMap));
+          _shadowmapManager.returnTextureSlice(std::move(component->shadowData()->shadowMap));
         }
         else {
           OE_CHECK(!component->shadowData());
@@ -378,7 +381,7 @@ void Render_step_manager::renderLights(const Camera_data& cameraData, const Dept
             };
 
     auto lightIndex = 0u;
-    const auto maxLights = deferredLightMaterial->max_lights;
+    const auto maxLights = Deferred_light_material::kMaxLights;
     auto renderedOnce = false;
 
     deferredLightMaterial->setupEmitted(true);

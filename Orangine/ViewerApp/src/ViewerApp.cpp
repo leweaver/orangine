@@ -70,7 +70,7 @@ class ViewerApp : public App {
     Environment_volume ev;
     ev.environmentIbl.skyboxTexture = textureManager.createCubeMapTextureFromFile(
         assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemap.dds"));
-    ev.environmentIbl.iblBrdfTexture = textureManager.createCubeMapTextureFromFile(
+    ev.environmentIbl.iblBrdfTexture = textureManager.createTextureFromFile(
         assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapBrdf.dds"));
     ev.environmentIbl.iblDiffuseTexture = textureManager.createCubeMapTextureFromFile(
         assetManager.makeAbsoluteAssetPath("OeApp/textures/park-cubemapDiffuseHDR.dds"));

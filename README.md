@@ -21,6 +21,13 @@ Visual Studio 2019 must be installed. When installing, ensure you select the fol
 - Python Development (if you want to use mixed mode python debugging in the editor, which you should want! See: https://docs.microsoft.com/en-us/visualstudio/python/debugging-mixed-mode-c-cpp-python-in-visual-studio?view=vs-2019)
   - Python native development tools
 
+## NUGET Command Line
+Visual Studio's package manager. Install the command line using whichever method you prefer; choco is the easiest if you have that:
+
+```
+choco install nuget.commandline
+```
+
 ## Visual studio find module
 (This is a microsoft module, see here: https://github.com/microsoft/vssetup.powershell)
 
@@ -36,7 +43,7 @@ Then, enable powershell execution:
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-## Python 3.7
+## Python 3.7 (or newer)
 Orangine uses python for both helper scripts in the build process, and also to link against for purposes of embedding python scripting functionality to the engine.
 
 Python 3 (both 32 and 64 bit) must be installed and on the system path.

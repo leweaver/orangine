@@ -115,7 +115,8 @@ class Material {
   // Used at material compile time - determines flags that are later passed in to the shaderSettings
   // methods.
   virtual std::set<std::string> configFlags(
-          const Renderer_features_enabled& rendererFeatures, Render_pass_blend_mode blendMode,
+          const Renderer_features_enabled& rendererFeatures,
+          Render_pass_target_layout targetLayout,
           const Mesh_vertex_layout& meshBindContext) const;
   // Used at compile time
   virtual Shader_compile_settings vertexShaderSettings(const std::set<std::string>& flags) const;
@@ -150,6 +151,8 @@ class Material {
 
   // Serialize properties to a map
   virtual nlohmann::json serialize(bool compilerPropertiesOnly) const;
+
+  virtual const gsl::span<const Render_pass_target_layout> getAllowedTargetFlags() const;
 
  protected:
   void markRequiresRecompile() { _requiresRecompile = true; }

@@ -40,6 +40,7 @@ void Material_manager::updateMaterialContext(
         Material_context_handle materialContextHandle, std::shared_ptr<const Material> material,
         const Mesh_vertex_layout& meshVertexLayout, const Mesh_gpu_data& meshGpuData,
         const Render_light_data* renderLightData, const Depth_stencil_config& depthStencilConfig,
+        Render_pass_target_layout targetLayout,
         bool enablePixelShader, bool wireframe)
 {
   LOG(DEBUG) << "Binding material " << material->materialType();
@@ -49,29 +50,30 @@ void Material_manager::updateMaterialContext(
   Material_state_identifier stateIdentifier{};
   bool rebuildConfig = !getMaterialStateIdentifier(materialContextHandle, stateIdentifier);
   if (!rebuildConfig) {
-    if (stateIdentifier.depthStencilModeHash != depthStencilConfig.getModeHash()) {
-      LOG(DEBUG) << "Rendering material with a different depth stencil config than last frame. This "
-                    "will be a big performance hit.\n"
-                 << "New config: " << depthStencilConfig;
-      rebuildConfig = true;
-    }
-    else if (stateIdentifier.meshHash != meshVertexLayout.propertiesHash()) {
-      LOG(WARNING) << "Rendering material with a different mesh vertex layout than last frame. This "
-                      "will be a big performance hit.";
+    if (stateIdentifier.meshHash != meshVertexLayout.propertiesHash()) {
+      LOG(WARNING) << "Rendering material with a different mesh vertex layout than last frame.";
+      stateIdentifier.meshHash = meshVertexLayout.propertiesHash();
       rebuildConfig = true;
     }
     else if (stateIdentifier.materialHash != materialHash) {
       LOG(DEBUG) << "Material hash changed.";
+      stateIdentifier.materialHash = materialHash;
       rebuildConfig = true;
     }
     else if (stateIdentifier.rendererFeaturesHash != _rendererFeaturesHash) {
       LOG(DEBUG) << "Renderer features hash changed.";
+      stateIdentifier.rendererFeaturesHash = _rendererFeaturesHash;
+      rebuildConfig = true;
+    }
+    else if (enablePixelShader && stateIdentifier.targetLayout != targetLayout) {
+      LOG(DEBUG) << "Target layout changed changed.";
+      stateIdentifier.targetLayout = targetLayout;
       rebuildConfig = true;
     }
   }
 
   if (rebuildConfig) {
-    auto flags = material->configFlags(_rendererFeatures, depthStencilConfig.getBlendMode(), meshVertexLayout);
+    auto flags = material->configFlags(_rendererFeatures, targetLayout, meshVertexLayout);
 
     // Add flag for shader optimisation, to determine if we need to recompile
     if (!_rendererFeatures.enableShaderOptimization) {
@@ -104,7 +106,6 @@ void Material_manager::updateMaterialContext(
       requiresRecompile = false;
     }
      */
-    stateIdentifier.rendererFeaturesHash = _rendererFeaturesHash;
 
     if (requiresRecompile) {
 
@@ -118,12 +119,6 @@ void Material_manager::updateMaterialContext(
                                               std::move(flags),    meshVertexLayout.getMeshIndexType(),
                                               enableOptimizations, material->materialType()};
       LOG(INFO) << "Recompiling shaders for material";
-
-      // TODO: Look in a cache for a compiled material that matches the hash
-      stateIdentifier.depthStencilModeHash = depthStencilConfig.getModeHash();
-      stateIdentifier.materialHash = materialHash;
-      stateIdentifier.meshHash = meshVertexLayout.propertiesHash();
-
       try {
         loadMaterialToContext(materialContextHandle, *material, stateIdentifier, compilerInputs);
       }
@@ -136,7 +131,13 @@ void Material_manager::updateMaterialContext(
     loadResourcesToContext(materialContextHandle, shaderResources, meshVertexLayout.vertexLayout());
   }
 
+  // Pipeline state
   bool updatePipelineState = rebuildConfig || stateIdentifier.wireframeEnabled != wireframe;
+  if (stateIdentifier.depthStencilModeHash != depthStencilConfig.getModeHash()) {
+    stateIdentifier.depthStencilModeHash = depthStencilConfig.getModeHash();
+    updatePipelineState = true;
+  }
+
   if (updatePipelineState) {
     Pipeline_state_inputs pipelineStateInputs{wireframe};
     loadPipelineStateToContext(materialContextHandle, pipelineStateInputs);

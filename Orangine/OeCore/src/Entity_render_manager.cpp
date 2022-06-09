@@ -44,10 +44,7 @@ void Entity_render_manager::initialize() {}
 
 void Entity_render_manager::shutdown() {}
 
-const std::string& Entity_render_manager::name() const
-{
-  return _name;
-}
+const std::string& Entity_render_manager::name() const { return _name; }
 
 template<uint8_t TMax_lights>
 bool addLightToRenderLightData(const Entity& lightEntity, Render_light_data_impl<TMax_lights>& renderLightData)
@@ -151,7 +148,8 @@ void Entity_render_manager::createMissingVertexAttributes(
 
 void Entity_render_manager::renderEntity(
         Renderable_component& renderableComponent, const Camera_data& cameraData,
-        const Light_provider::Callback_type& lightDataProvider, const Depth_stencil_config& depthStencilConfig)
+        const Light_provider::Callback_type& lightDataProvider, const Depth_stencil_config& depthStencilConfig,
+        Render_pass_target_layout targetLayout)
 {
   if (!renderableComponent.visible()) {
     return;
@@ -180,7 +178,7 @@ void Entity_render_manager::renderEntity(
       // Note we get the flags for the case where all features are enabled, to make sure we load all
       // the data streams.
       const auto flags = material->configFlags(
-              Renderer_features_enabled(), depthStencilConfig.getBlendMode(), meshDataComponent->meshData()->vertexLayout);
+              Renderer_features_enabled(), targetLayout, meshDataComponent->meshData()->vertexLayout);
       const auto vertexInputs = material->vertexInputs(flags);
       const auto vertexSettings = material->vertexShaderSettings(flags);
 
@@ -274,8 +272,9 @@ void Entity_render_manager::renderEntity(
     }
 
     drawRendererData(
-            cameraData, *worldTransform, *rendererData, depthStencilConfig, *renderLightData, material, meshData->vertexLayout,
-            renderableComponent.getMaterialContext(), _rendererAnimationData, renderableComponent.wireframe());
+            cameraData, *worldTransform, *rendererData, depthStencilConfig, targetLayout, *renderLightData, material,
+            meshData->vertexLayout, renderableComponent.getMaterialContext(), _rendererAnimationData,
+            renderableComponent.wireframe());
   }
   catch (std::runtime_error& e) {
     renderableComponent.setVisible(false);
@@ -286,7 +285,8 @@ void Entity_render_manager::renderEntity(
 
 void Entity_render_manager::renderRenderable(
         Renderable& renderable, const SSE::Matrix4& worldMatrix, float radius, const Camera_data& cameraData,
-        const Light_provider::Callback_type& lightDataProvider, const Depth_stencil_config& depthStencilConfig, bool wireFrame)
+        const Light_provider::Callback_type& lightDataProvider, const Depth_stencil_config& depthStencilConfig,
+        Render_pass_target_layout targetLayout, bool wireFrame)
 {
   auto material = renderable.material;
 
@@ -301,7 +301,8 @@ void Entity_render_manager::renderRenderable(
 
     // Note we get the flags for the case where all features are enabled, to make sure we load all
     // the data streams.
-    const auto flags = material->configFlags(Renderer_features_enabled(), depthStencilConfig.getBlendMode(), renderable.meshData->vertexLayout);
+    const auto flags =
+            material->configFlags(Renderer_features_enabled(), targetLayout, renderable.meshData->vertexLayout);
     const auto vertexInputs = material->vertexInputs(flags);
     const auto vertexSettings = material->vertexShaderSettings(flags);
 
@@ -347,13 +348,13 @@ void Entity_render_manager::renderRenderable(
   if (rendererAnimationData == nullptr) rendererAnimationData = &g_emptyRenderableAnimationData;
 
   drawRendererData(
-          cameraData, worldMatrix, *rendererData, depthStencilConfig, *renderLightData, material,
+          cameraData, worldMatrix, *rendererData, depthStencilConfig, targetLayout, *renderLightData, material,
           renderable.meshData->vertexLayout, renderable.materialContext, *rendererAnimationData, wireFrame);
 }
 
 Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material> material)
 {
-  Renderable renderable {};
+  Renderable renderable{};
   if (renderable.meshData == nullptr) {
     renderable.meshData = _primitiveMeshDataFactory.createQuad(2.0f, 2.0f, {-1.f, -1.f, 0.f});
   }
@@ -364,24 +365,17 @@ Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material
 
   auto rendererData = renderable.rendererData.lock();
   if (rendererData == nullptr) {
-    // Note we get the flags for the case where all features are enabled, to make sure we load all
-    // the data streams.
-    const auto flags = material->configFlags(
-            Renderer_features_enabled(), Render_pass_blend_mode::Opaque, renderable.meshData->vertexLayout);
-    std::vector<Vertex_attribute> vertexAttributes;
-    const auto vertexInputs = renderable.material->vertexInputs(flags);
-    const auto vertexSettings = material->vertexShaderSettings(flags);
-    rendererData = createRendererData(renderable.meshData, vertexInputs, vertexSettings.morphAttributes);
+    rendererData = createRendererData(
+            renderable.meshData,
+            renderable.meshData->vertexLayout.vertexLayout(),
+            renderable.meshData->vertexLayout.morphTargetLayout());
     renderable.rendererData = std::weak_ptr(rendererData);
   }
 
   return renderable;
 }
 
-void Entity_render_manager::clearRenderStats()
-{
-  _renderStats = {};
-}
+void Entity_render_manager::clearRenderStats() { _renderStats = {}; }
 
 oe::Mesh_vertex_buffer_accessor* Entity_render_manager::findAccessorForSemantic(
         std::shared_ptr<Mesh_data>& meshData, const gsl::span<const Vertex_attribute_semantic>& attributes,
@@ -391,7 +385,8 @@ oe::Mesh_vertex_buffer_accessor* Entity_render_manager::findAccessorForSemantic(
   auto vbAccessorPos = meshData->vertexBufferAccessors.find(vertexAttrSemantic);
   if (vbAccessorPos != meshData->vertexBufferAccessors.end()) {
     meshAccessor = vbAccessorPos->second.get();
-  } else {
+  }
+  else {
     // Since there is no guarantee that the order is the same in the requested attributes array,
     // and the mesh data, we need to do a search to find out the morph target index of this
     // attribute/semantic.
@@ -423,31 +418,24 @@ oe::Mesh_vertex_buffer_accessor* Entity_render_manager::findAccessorForSemantic(
       }
     }
     if (morphLayoutOffset == -1) {
-      OE_THROW(
-              std::runtime_error("Could not find morph attribute in mesh morph target layout"));
+      OE_THROW(std::runtime_error("Could not find morph attribute in mesh morph target layout"));
     }
 
-    if (meshData->attributeMorphBufferAccessors.size() >=
-        static_cast<size_t>(morphLayoutOffset)) {
+    if (meshData->attributeMorphBufferAccessors.size() >= static_cast<size_t>(morphLayoutOffset)) {
       std::string msg = string_format(
               "CreateRendererData: Failed to read morph target "
               "%" PRIi32 " for vertex attribute: %s",
-              morphTargetIdx,
-              Vertex_attribute_meta::vsInputName(vertexAttrSemantic).c_str());
+              morphTargetIdx, Vertex_attribute_meta::vsInputName(vertexAttrSemantic).c_str());
       OE_THROW(std::runtime_error(msg));
     }
-    if (meshData->attributeMorphBufferAccessors.at(morphTargetIdx).size() >=
-        static_cast<size_t>(morphTargetIdx)) {
+    if (meshData->attributeMorphBufferAccessors.at(morphTargetIdx).size() >= static_cast<size_t>(morphTargetIdx)) {
       OE_THROW(std::runtime_error(string_format(
               "CreateRendererData: Failed to read morph target "
               "%" PRIi32 " layout offset %" PRIi32 "for vertex attribute: %s",
-              morphTargetIdx,
-              morphLayoutOffset,
-              Vertex_attribute_meta::vsInputName(vertexAttrSemantic).c_str())));
+              morphTargetIdx, morphLayoutOffset, Vertex_attribute_meta::vsInputName(vertexAttrSemantic).c_str())));
     }
 
-    meshAccessor =
-            meshData->attributeMorphBufferAccessors[morphTargetIdx][morphLayoutOffset].get();
+    meshAccessor = meshData->attributeMorphBufferAccessors[morphTargetIdx][morphLayoutOffset].get();
   }
   return meshAccessor;
 }

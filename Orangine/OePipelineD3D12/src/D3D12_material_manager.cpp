@@ -202,6 +202,7 @@ void D3D12_material_manager::loadMaterialToContext(
   }
 
   // Create pixel shader
+  if (stateIdentifier.targetLayout != Render_pass_target_layout::None)
   {
     auto pixelCompileSettings = material.pixelShaderSettings(materialCompilerInputs.flags);
     debugLogSettings("pixel shader", pixelCompileSettings);
@@ -561,7 +562,9 @@ void D3D12_material_manager::createPipelineState(Material_context_impl& impl)
   psoDesc.InputLayout = {impl.inputElementDescs.data(), static_cast<UINT>(impl.inputElementDescs.size())};
   psoDesc.pRootSignature = impl.rootSignature.Get();
   psoDesc.VS = CD3DX12_SHADER_BYTECODE(impl.vertexShader.Get());
-  psoDesc.PS = CD3DX12_SHADER_BYTECODE(impl.pixelShader.Get());
+  if (impl.pixelShader) {
+    psoDesc.PS = CD3DX12_SHADER_BYTECODE(impl.pixelShader.Get());
+  }
   psoDesc.PrimitiveTopologyType = impl.primitiveTopologyType;
   psoDesc.SampleMask = UINT_MAX;// TODO
   psoDesc.SampleDesc.Count = 1; // TODO - set quality and sample counts

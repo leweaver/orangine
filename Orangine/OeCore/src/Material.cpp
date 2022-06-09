@@ -26,9 +26,14 @@ Material::shaderResources(const std::set<std::string>& flags, const Render_light
 }
 
 std::set<std::string> Material::configFlags(
-        const Renderer_features_enabled& rendererFeatures, Render_pass_blend_mode blendMode,
+        const Renderer_features_enabled& rendererFeatures, Render_pass_target_layout targetLayout,
         const Mesh_vertex_layout& meshBindContext) const
 {
+  gsl::span<const Render_pass_target_layout> allowedTargetFlags = getAllowedTargetFlags();
+  OE_CHECK_FMT(
+          std::find(allowedTargetFlags.begin(), allowedTargetFlags.end(), targetLayout) != allowedTargetFlags.end(),
+          "%s: Unsupported target layout %s", materialType().c_str(),
+          renderPassTargetLayoutToString(targetLayout).c_str());
   return {};
 }
 
@@ -76,6 +81,15 @@ size_t Material::calculateCompilerPropertiesHash()
 
 size_t Material::ensureCompilerPropertiesHash() const
 {
-  if (_requiresRecompile) OE_THROW(std::domain_error("Material requires recompile"));
+  if (_requiresRecompile) {
+    OE_THROW(std::domain_error("Material requires recompile"));
+  }
   return _propertiesHash;
+}
+
+const gsl::span<const Render_pass_target_layout> Material::getAllowedTargetFlags() const
+{
+  static const std::vector<Render_pass_target_layout> allowedFlags{
+          Render_pass_target_layout::None, Render_pass_target_layout::Rgba};
+  return allowedFlags;
 }

@@ -29,10 +29,7 @@ void D3D12_entity_render_manager::createDeviceDependentResources()
   _deviceDependent.device = device;
 }
 
-void D3D12_entity_render_manager::destroyDeviceDependentResources()
-{
-  _deviceDependent = {};
-}
+void D3D12_entity_render_manager::destroyDeviceDependentResources() { _deviceDependent = {}; }
 
 std::shared_ptr<Mesh_gpu_data> D3D12_entity_render_manager::createRendererData(
         std::shared_ptr<Mesh_data> meshData, const std::vector<Vertex_attribute_element>& vertexAttributes,
@@ -83,7 +80,8 @@ std::shared_ptr<Mesh_gpu_data> D3D12_entity_render_manager::createRendererData(
       name << " (meshData: " << meshData->name << ")";
     }
     name << " (count: " << std::to_string(rendererData->indexCount) << ")";
-    std::shared_ptr<Gpu_buffer_reference> vertexGpuBuffer = getOrCreateUsage(name.str(), meshAccessor->buffer, meshAccessor->stride);
+    std::shared_ptr<Gpu_buffer_reference> vertexGpuBuffer =
+            getOrCreateUsage(name.str(), meshAccessor->buffer, meshAccessor->stride);
     rendererData->vertexBuffers[vertexAttr] = vertexGpuBuffer;
     *(viewIter++) = vertexGpuBuffer->gpuBuffer->getAsVertexBufferView(static_cast<size_t>(meshAccessor->offset));
   }
@@ -118,9 +116,10 @@ std::shared_ptr<Gpu_buffer_reference> D3D12_entity_render_manager::getOrCreateUs
 
 void D3D12_entity_render_manager::drawRendererData(
         const oe::Camera_data& cameraData, const Matrix4& worldTransform, oe::Mesh_gpu_data& rendererData,
-        const Depth_stencil_config& depthStencilConfig, const oe::Render_light_data& renderLightData,
-        std::shared_ptr<Material> material, const oe::Mesh_vertex_layout& meshVertexLayout,
-        oe::Material_context_handle materialContext, oe::Renderer_animation_data& rendererAnimationData, bool wireframe)
+        const Depth_stencil_config& depthStencilConfig, Render_pass_target_layout targetLayout,
+        const oe::Render_light_data& renderLightData, std::shared_ptr<Material> material,
+        const oe::Mesh_vertex_layout& meshVertexLayout, oe::Material_context_handle materialContext,
+        oe::Renderer_animation_data& rendererAnimationData, bool wireframe)
 {
   if (rendererData.failedRendering || rendererData.vertexBuffers.empty()) {
     return;
@@ -134,7 +133,7 @@ void D3D12_entity_render_manager::drawRendererData(
     // Compile shaders if need be
     _materialManager.updateMaterialContext(
             materialContext, material, meshVertexLayout, rendererData, &renderLightData, depthStencilConfig,
-            cameraData.enablePixelShader, wireframe);
+            targetLayout, cameraData.enablePixelShader, wireframe);
 
     if (!_materialManager.isMaterialContextDataReady(materialContext)) {
       // Material is not ready for rendering. Might still be loading textures
@@ -149,9 +148,10 @@ void D3D12_entity_render_manager::drawRendererData(
     return;
   }
 
-  const Root_signature_layout& rootSignatureLayout = _deviceResources.getCurrentFrameResources().getCurrentBoundRootSignature();
+  const Root_signature_layout& rootSignatureLayout =
+          _deviceResources.getCurrentFrameResources().getCurrentBoundRootSignature();
   ID3D12GraphicsCommandList4* commandList = _deviceResources.GetPipelineCommandList().Get();
-  
+
   // Upload constant buffer data
   if (rootSignatureLayout.constantBufferAllVisParamIndex != Root_signature_layout::kSlotInvalid) {
     const Shader_constant_layout& constantLayout = material->getShaderConstantLayout();
@@ -185,15 +185,15 @@ void D3D12_entity_render_manager::drawRendererData(
     }
 
     // Set our constant buffers descriptor table address
-    LOG(DEBUG) << "  Root[" << rootSignatureLayout.constantBufferAllVisParamIndex << "] = CBV Table (size=" << descriptorRange.descriptorCount << ")";
+    LOG(DEBUG) << "  Root[" << rootSignatureLayout.constantBufferAllVisParamIndex
+               << "] = CBV Table (size=" << descriptorRange.descriptorCount << ")";
     commandList->SetGraphicsRootDescriptorTable(
-            rootSignatureLayout.constantBufferAllVisParamIndex,
-            descriptorRange.gpuHandle);
+            rootSignatureLayout.constantBufferAllVisParamIndex, descriptorRange.gpuHandle);
 
     // Queue the descriptor to be released the next time this frame index is started
     _deviceResources.getSrvHeap().releaseRangeAtFrameStart(descriptorRange, _deviceResources.getCurrentFrameIndex());
   }
-  
+
   try {
     // Set geometry
     const auto numVertexViews = static_cast<uint32_t>(rendererData.vertexBufferViews.size());
@@ -202,7 +202,8 @@ void D3D12_entity_render_manager::drawRendererData(
 
     // Draw the primitive
     if (rendererData.indexCount > 0) {
-      D3D12_INDEX_BUFFER_VIEW indexBufferView = rendererData.indexBuffer->getAsIndexBufferView(rendererData.indexFormat);
+      D3D12_INDEX_BUFFER_VIEW indexBufferView =
+              rendererData.indexBuffer->getAsIndexBufferView(rendererData.indexFormat);
       commandList->IASetIndexBuffer(&indexBufferView);
       commandList->DrawIndexedInstanced(rendererData.indexCount, 1, 0, 0, 0);
     }
@@ -218,10 +219,11 @@ void D3D12_entity_render_manager::drawRendererData(
   _materialManager.unbind();
 }
 
-void D3D12_entity_render_manager::acquireConstantBufferForSize(size_t requiredSize, gsl::span<uint8_t>& cpuBuffer, D3D12_GPU_VIRTUAL_ADDRESS& gpuAddress)
+void D3D12_entity_render_manager::acquireConstantBufferForSize(
+        size_t requiredSize, gsl::span<uint8_t>& cpuBuffer, D3D12_GPU_VIRTUAL_ADDRESS& gpuAddress)
 {
-  Constant_buffer_pool& pool = _deviceResources.getCurrentFrameResources().getOrCreateConstantBufferPoolToFit(
-          requiredSize, 1);
+  Constant_buffer_pool& pool =
+          _deviceResources.getCurrentFrameResources().getOrCreateConstantBufferPoolToFit(requiredSize, 1);
 
   uint8_t* cpuBufferData = nullptr;
   OE_CHECK(pool.getTop(cpuBufferData, gpuAddress) && cpuBufferData);

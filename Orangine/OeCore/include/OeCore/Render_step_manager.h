@@ -68,10 +68,8 @@ class Render_step_manager : public IRender_step_manager, public Manager_base, pu
       float farPlane) const;
 
   void renderEntity(
-      Entity* entity,
-      const Camera_data& cameraData,
-      Light_provider::Callback_type& lightProvider,
-      const Depth_stencil_config& depthStencilConfig) const;
+          Entity* entity, const Camera_data& cameraData, Light_provider::Callback_type& lightProvider,
+          const Depth_stencil_config& depthStencilConfig, Render_pass_target_layout layout) const;
 
   void renderLights(const Camera_data& cameraData, const Depth_stencil_config& depthStencilConfig);
 

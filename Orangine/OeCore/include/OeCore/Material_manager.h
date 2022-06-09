@@ -18,6 +18,7 @@ struct Material_state_identifier {
   size_t meshHash = 0;
   size_t rendererFeaturesHash = 0;
   bool wireframeEnabled = false;
+  Render_pass_target_layout targetLayout = Render_pass_target_layout::None;
 };
 
 class Material_manager : public IMaterial_manager,
@@ -49,6 +50,7 @@ class Material_manager : public IMaterial_manager,
           Material_context_handle materialContextHandle, std::shared_ptr<const Material> material,
           const Mesh_vertex_layout& meshVertexLayout, const Mesh_gpu_data& meshGpuData,
           const Render_light_data* renderLightData, const Depth_stencil_config& depthStencilConfig,
+          Render_pass_target_layout targetLayout,
           bool enablePixelShader, bool wireframe) override;
 
   // Sets the given material context for rendering

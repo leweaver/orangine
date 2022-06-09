@@ -139,7 +139,7 @@ class PBR_material : public Material {
 
   std::set<std::string> configFlags(
       const Renderer_features_enabled& rendererFeatures,
-      Render_pass_blend_mode blendMode,
+      Render_pass_target_layout targetLayout,
       const Mesh_vertex_layout& meshVertexLayout) const override;
 
   std::vector<Vertex_attribute_element> vertexInputs(
@@ -170,6 +170,8 @@ class PBR_material : public Material {
     };
     return Shader_output_layout{gbufferRtvFormats};
   }
+
+  const gsl::span<const Render_pass_target_layout> getAllowedTargetFlags() const override;
 
  protected:
   void setTexture(const Shader_texture_input& src, Shader_texture_input& dest);

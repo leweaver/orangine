@@ -19,3 +19,10 @@ void Clear_gbuffer_material::updatePerDrawConstantBuffer(
 }
 
 Shader_constant_layout Clear_gbuffer_material::getShaderConstantLayout() const { return Shader_constant_layout(); }
+
+const gsl::span<const Render_pass_target_layout> Clear_gbuffer_material::getAllowedTargetFlags() const
+{
+  static const std::vector<Render_pass_target_layout> allowedFlags{
+          Render_pass_target_layout::None, Render_pass_target_layout::G_buffer};
+  return allowedFlags;
+}

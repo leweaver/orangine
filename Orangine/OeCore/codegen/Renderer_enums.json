@@ -64,6 +64,14 @@
       ]
     },
     {
+      "name": "render pass target layout",
+      "values": [
+        "rgba",
+        "g buffer",
+        "none"
+      ]
+    },
+    {
       "name": "vertex attribute",
       "values": [
         "position",

@@ -216,7 +216,8 @@ void Dev_tools_manager::renderDebugShapes(const Camera_data& cameraData)
     auto& renderable = std::get<std::shared_ptr<Renderable>>(debugShape);
 
     _unlitMaterial->setBaseColor(color);
-    _entityRenderManager.renderRenderable(*renderable, transform, 0.0f, cameraData, _noLightProvider, config, true);
+    _entityRenderManager.renderRenderable(
+            *renderable, transform, 0.0f, cameraData, _noLightProvider, config, Render_pass_target_layout::Rgba, true);
   }
 }
 

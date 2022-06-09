@@ -65,9 +65,9 @@ nlohmann::json Deferred_light_material::serialize(bool compilerPropertiesOnly) c
 
 std::set<std::string> Deferred_light_material::configFlags(
     const Renderer_features_enabled& rendererFeatures,
-    Render_pass_blend_mode blendMode,
+        Render_pass_target_layout targetLayout,
     const Mesh_vertex_layout& meshBindContext) const {
-  auto flags = Material::configFlags(rendererFeatures, blendMode, meshBindContext);
+  auto flags = Material::configFlags(rendererFeatures, targetLayout, meshBindContext);
 
   if (rendererFeatures.debugDisplayMode == Debug_display_mode::World_positions) {
     flags.insert(g_flag_debugWorldPosition);

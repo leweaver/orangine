@@ -134,6 +134,24 @@ Render_pass_stencil_mode stringToRenderPassStencilMode(const std::string & str)
 }
 
 ///////////////////////////////////
+// Render_pass_target_layout
+//
+std::string g_renderPassTargetLayoutNames[] = {
+    "Rgba",
+    "G_buffer",
+    "None"
+};
+static_assert(static_cast<size_t>(Render_pass_target_layout::Num_render_pass_target_layout) == array_size(g_renderPassTargetLayoutNames));
+const std::string& renderPassTargetLayoutToString(Render_pass_target_layout enumValue)
+{
+    return g_renderPassTargetLayoutNames[static_cast<size_t>(enumValue)];
+}
+Render_pass_target_layout stringToRenderPassTargetLayout(const std::string & str)
+{
+    return stringToEnum<Render_pass_target_layout>(str, g_renderPassTargetLayoutNames);
+}
+
+///////////////////////////////////
 // Vertex_attribute
 //
 std::string g_vertexAttributeNames[] = {

@@ -197,9 +197,7 @@ struct Depth_stencil_config {
       , _stencilReadMask(0xff)
       , _stencilWriteMask(0xff)
   {
-    std::hash<int> hashGen;
-    _modeHash = hashGen(static_cast<int>(blendMode)) ^ hashGen(static_cast<int>(depthMode)) ^
-                hashGen(static_cast<int>(stencilMode));
+    generateHash();
   }
 
   inline Render_pass_blend_mode getBlendMode() const { return _blendMode; }
@@ -209,10 +207,17 @@ struct Depth_stencil_config {
   inline uint32_t getStencilWriteMask() const { return _stencilWriteMask; }
   size_t getModeHash() const { return _modeHash; }
 
-  void setStencilReadMask(uint32_t stencilReadMask) { _stencilReadMask = stencilReadMask; }
-  void setStencilWriteMask(uint32_t stencilWriteMask) { _stencilWriteMask = stencilWriteMask; }
+  void setStencilReadMask(uint32_t stencilReadMask) { _stencilReadMask = stencilReadMask; generateHash(); }
+  void setStencilWriteMask(uint32_t stencilWriteMask) { _stencilWriteMask = stencilWriteMask; generateHash(); }
 
  private:
+  void generateHash() {
+    std::hash<int> hashGenS;
+    std::hash<uint32_t> hashGenU;
+    _modeHash = hashGenS(static_cast<int>(_blendMode)) ^ hashGenS(static_cast<int>(_depthMode)) ^
+                hashGenS(static_cast<int>(_stencilMode)) ^ hashGenU(_stencilReadMask) ^ hashGenU(_stencilWriteMask);
+  }
+
   Render_pass_blend_mode _blendMode;
   Render_pass_depth_mode _depthMode;
   Render_pass_stencil_mode _stencilMode;

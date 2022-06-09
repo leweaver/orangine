@@ -19,9 +19,7 @@ class Deferred_light_material : public Material {
   const std::shared_ptr<Texture>& depthTexture() const { return _depthTexture; }
   void setDepthTexture(const std::shared_ptr<Texture>& texture) { _depthTexture = texture; }
   const std::shared_ptr<Texture>& shadowMapArrayTexture() const { return _shadowMapArrayTexture; }
-  void setShadowMapArrayTexture(const std::shared_ptr<Texture>& texture) {
-    _shadowMapArrayTexture = texture;
-  }
+  void setShadowMapArrayTexture(const std::shared_ptr<Texture>& texture) { _shadowMapArrayTexture = texture; }
   bool iblEnabled() const { return _iblEnabled; }
   void setIblEnabled(bool iblEnabled) { _iblEnabled = iblEnabled; }
   bool shadowArrayEnabled() const { return _shadowArrayEnabled; }
@@ -35,12 +33,10 @@ class Deferred_light_material : public Material {
   nlohmann::json serialize(bool compilerPropertiesOnly) const;
 
   std::set<std::string> configFlags(
-      const Renderer_features_enabled& rendererFeatures,
-      Render_pass_blend_mode blendMode,
-      const Mesh_vertex_layout& meshBindContext) const override;
-  Shader_resources shaderResources(
-      const std::set<std::string>& flags,
-      const Render_light_data& renderLightData) const override;
+          const Renderer_features_enabled& rendererFeatures, Render_pass_target_layout targetLayout,
+          const Mesh_vertex_layout& meshBindContext) const override;
+  Shader_resources
+  shaderResources(const std::set<std::string>& flags, const Render_light_data& renderLightData) const override;
 
   void updatePerDrawConstantBuffer(
           gsl::span<uint8_t> cpuBuffer, const Shader_layout_constant_buffer& bufferDesc,
@@ -63,4 +59,4 @@ class Deferred_light_material : public Material {
   bool _iblEnabled = true;
   bool _shadowArrayEnabled = true;
 };
-} // namespace oe
+}// namespace oe

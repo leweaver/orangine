@@ -32,10 +32,10 @@ nlohmann::json Unlit_material::serialize(bool compilerPropertiesOnly) const
 }
 
 std::set<std::string> Unlit_material::configFlags(const Renderer_features_enabled& rendererFeatures,
-                                                  Render_pass_blend_mode blendMode,
+                                                  Render_pass_target_layout targetLayout,
                                                   const Mesh_vertex_layout& meshVertexLayout) const
 {
-  auto flags = Material::configFlags(rendererFeatures, blendMode, meshVertexLayout);
+  auto flags = Material::configFlags(rendererFeatures, targetLayout, meshVertexLayout);
 
   const auto vertexLayout = meshVertexLayout.vertexLayout();
   const auto hasColors = std::any_of(vertexLayout.begin(), vertexLayout.end(), [](const auto& vae) {

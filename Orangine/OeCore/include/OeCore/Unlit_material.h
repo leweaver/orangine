@@ -31,7 +31,7 @@ class Unlit_material : public Material {
   nlohmann::json serialize(bool compilerPropertiesOnly) const override;
 
   std::set<std::string> configFlags(
-          const Renderer_features_enabled& rendererFeatures, Render_pass_blend_mode blendMode,
+          const Renderer_features_enabled& rendererFeatures, Render_pass_target_layout targetLayout,
           const Mesh_vertex_layout& meshVertexLayout) const override;
   std::vector<Vertex_attribute_element> vertexInputs(const std::set<std::string>& flags) const override;
   Material::Shader_compile_settings vertexShaderSettings(const std::set<std::string>& flags) const override;

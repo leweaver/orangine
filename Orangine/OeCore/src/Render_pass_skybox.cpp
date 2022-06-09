@@ -34,5 +34,5 @@ void Render_pass_skybox::render(const Camera_data& cameraData)
   _material->setCubeMapTexture(environmentVolume.skyboxTexture);
   _entityRenderManager.renderRenderable(
           *_renderable, SSE::Matrix4::identity(), 0.0f, skyboxCamera, Light_provider::no_light_provider,
-          getDepthStencilConfig(), false);
+          getDepthStencilConfig(), Render_pass_target_layout::Rgba, false);
 }

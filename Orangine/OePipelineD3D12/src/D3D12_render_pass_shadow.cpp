@@ -46,14 +46,14 @@ const CD3DX12_CPU_DESCRIPTOR_HANDLE& D3D12_render_pass_shadow::getResourceForSli
       depthStencilDesc.Texture2DArray.FirstArraySlice = texture.getArraySlice();
     }
     sliceDescRange = _deviceResources.getDsvHeap().allocateRange(1);
-    _deviceResources.GetD3DDevice()->CreateDepthStencilView(textureResource, &depthStencilDesc, sliceDescRange.cpuHandle);
+    _deviceResources.GetD3DDevice()->CreateDepthStencilView(
+            textureResource, &depthStencilDesc, sliceDescRange.cpuHandle);
   }
   return sliceDescRange.cpuHandle;
 }
 
 void D3D12_render_pass_shadow::render(const Camera_data&)
 {
-  return;
   auto arrayTexture = _shadowMapManager.getShadowMapTextureArray();
   if (!arrayTexture) {
     return;
@@ -78,7 +78,8 @@ void D3D12_render_pass_shadow::render(const Camera_data&)
   commandList->ResourceBarrier(1, &postRenderBarrier);
 }
 
-void D3D12_render_pass_shadow::renderShadowMapArray(ID3D12GraphicsCommandList* commandList) {
+void D3D12_render_pass_shadow::renderShadowMapArray(ID3D12GraphicsCommandList* commandList)
+{
   // Render shadow maps for each shadow enabled light
   for (const auto& lightEntity : *_lightEntities) {
     // Directional light only, right now
@@ -172,7 +173,9 @@ void D3D12_render_pass_shadow::renderShadowMapArray(ID3D12GraphicsCommandList* c
         }
 
         if (shadowVolumeBoundingBox.contains(entity->boundSphere())) {
-          _entityRenderManager.renderEntity(*renderable, shadowCameraData, Light_provider::no_light_provider, this->getDepthStencilConfig());
+          _entityRenderManager.renderEntity(
+                  *renderable, shadowCameraData, Light_provider::no_light_provider, this->getDepthStencilConfig(),
+                  Render_pass_target_layout::None);
         }
       }
     }

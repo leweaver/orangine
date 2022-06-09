@@ -60,13 +60,12 @@ nlohmann::json PBR_material::serialize(bool compilerPropertiesOnly) const
 }
 
 std::set<std::string> PBR_material::configFlags(const Renderer_features_enabled& rendererFeatures,
-                                                Render_pass_blend_mode blendMode,
+                                                Render_pass_target_layout targetLayout,
                                                 const Mesh_vertex_layout& meshVertexLayout) const
 {
-  auto flags = Material::configFlags(rendererFeatures, blendMode, meshVertexLayout);
+  auto flags = Material::configFlags(rendererFeatures, targetLayout, meshVertexLayout);
 
-  // TODO: This is a hacky way of finding this information out.
-  if (blendMode == Render_pass_blend_mode::Opaque) {
+  if (targetLayout == Render_pass_target_layout::G_buffer) {
     flags.insert(g_flag_enableDeferred);
   }
 
@@ -440,4 +439,11 @@ void PBR_material::setTexture(const Shader_texture_input& src, Shader_texture_in
     dest.texture = src.texture;
     markRequiresRecompile();
   }
+}
+
+const gsl::span<const Render_pass_target_layout> PBR_material::getAllowedTargetFlags() const
+{
+  static const std::vector<Render_pass_target_layout> allowedFlags{
+          Render_pass_target_layout::None, Render_pass_target_layout::G_buffer, Render_pass_target_layout::Rgba};
+  return allowedFlags;
 }

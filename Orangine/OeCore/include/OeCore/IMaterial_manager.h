@@ -31,6 +31,7 @@ class IMaterial_manager {
           const Mesh_gpu_data& meshGpuData,
           const Render_light_data* renderLightData,
           const Depth_stencil_config& stencilConfig,
+          Render_pass_target_layout targetLayout,
           bool enablePixelShader,
           bool wireframe) = 0;
 

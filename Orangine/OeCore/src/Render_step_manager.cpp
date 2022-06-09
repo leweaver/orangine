@@ -112,7 +112,6 @@ void Render_step_manager::createRenderSteps()
     auto pass = createShadowMapRenderPass();
     Depth_stencil_config stencilConfig{
             Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_write, Render_pass_stencil_mode::Enabled};
-    stencilConfig.setStencilWriteMask(1);
     pass->setDepthStencilConfig(stencilConfig);
 
     _renderSteps.emplace_back(std::make_unique<Render_step>(std::move(pass), L"Shadow Map"));

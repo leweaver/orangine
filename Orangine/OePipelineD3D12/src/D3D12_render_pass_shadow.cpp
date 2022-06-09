@@ -155,6 +155,7 @@ void D3D12_render_pass_shadow::renderShadowMapArray(ID3D12GraphicsCommandList* c
       const auto& depthStencilView = getResourceForSlice(shadowMapTexture);
 
       // note that there are no render target views since we are only rendering to the depth buffer.
+      commandList->OMSetStencilRef(1);
       commandList->OMSetRenderTargets(0, nullptr, false, &depthStencilView);
       commandList->ClearDepthStencilView(
               depthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0, 0, 0, nullptr);
@@ -178,6 +179,8 @@ void D3D12_render_pass_shadow::renderShadowMapArray(ID3D12GraphicsCommandList* c
                   Render_pass_target_layout::None);
         }
       }
+
+      commandList->OMSetStencilRef(0);
     }
   }
 }

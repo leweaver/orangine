@@ -49,11 +49,6 @@ D3D12_VERTEX_BUFFER_VIEW Gpu_buffer::getAsVertexBufferView(size_t offset) const
 
 D3D12_INDEX_BUFFER_VIEW Gpu_buffer::getAsIndexBufferView(DXGI_FORMAT format) const
 {
-#if !defined(NDEBUG)
-  if (_resourceState != D3D12_RESOURCE_STATE_INDEX_BUFFER) {
-    LOG(WARNING) << "Retrieving an indexBufferView for a Gpu_buffer with an unusual resource state: " << _resourceState;
-  }
-#endif
   return {_gpuBuffer->GetGPUVirtualAddress(), _gpuBufferSizeInBytes, format};
 }
 

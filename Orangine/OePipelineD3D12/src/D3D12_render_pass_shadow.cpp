@@ -146,7 +146,7 @@ void D3D12_render_pass_shadow::renderShadowMapArray(ID3D12GraphicsCommandList* c
       ID3D12Device4* device = _deviceResources.GetD3DDevice();
 
       Texture& shadowMapTexture = *shadowData->shadowMap;
-      if (shadowMapTexture.isValid()) {
+      if (!shadowMapTexture.isValid()) {
         // Not ready to render yet.
         _textureManager.load(shadowMapTexture);
         continue;

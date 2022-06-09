@@ -96,8 +96,6 @@ class Material_context_impl {
   Descriptor_range samplerDescriptorTable;
 
   std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
-  D3D12_BLEND_DESC blendDesc;
-  D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
   D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType;
 
   uint32_t constantBufferCount = 0;
@@ -110,7 +108,9 @@ class Material_context_impl {
   // Only used to create pipeline state objects - can be modified independently for the purposes of recreating only
   // the PSO
   struct {
+    D3D12_BLEND_DESC blendDesc;
     D3D12_RASTERIZER_DESC rasterizerDesc;
+    D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
   } pipelineStateDesc;
 
   std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> rootSignatureRootDescriptorTables;
@@ -202,8 +202,7 @@ void D3D12_material_manager::loadMaterialToContext(
   }
 
   // Create pixel shader
-  if (stateIdentifier.targetLayout != Render_pass_target_layout::None)
-  {
+  if (stateIdentifier.targetLayout != Render_pass_target_layout::None) {
     auto pixelCompileSettings = material.pixelShaderSettings(materialCompilerInputs.flags);
     debugLogSettings("pixel shader", pixelCompileSettings);
     compileShader(
@@ -222,26 +221,7 @@ void D3D12_material_manager::loadMaterialToContext(
   impl->cullMode = material.faceCullMode();
   impl->stateIdentifier = stateIdentifier;
   impl->materialName = oe::utf8_decode(materialCompilerInputs.name);
-
-  // Blend state
-  switch (materialCompilerInputs.depthStencilConfig.getBlendMode()) {
-    case (Render_pass_blend_mode::Opaque):
-      impl->blendDesc = DirectX::CommonStates::Opaque;
-      break;
-    case (Render_pass_blend_mode::Blended_alpha):
-      impl->blendDesc = DirectX::CommonStates::AlphaBlend;
-      break;
-    case (Render_pass_blend_mode::Additive):
-      impl->blendDesc = DirectX::CommonStates::Additive;
-      break;
-    default:
-      OE_THROW(std::runtime_error("Invalid blend state"));
-  }
-
   impl->primitiveTopologyType = getMeshDataTopology(materialCompilerInputs.meshIndexType);
-
-  // Depth Stencil State
-  impl->depthStencilDesc = getD12DepthStencilDesc(materialCompilerInputs.depthStencilConfig);
 
   impl->stateIdentifier = stateIdentifier;
 }
@@ -263,6 +243,7 @@ void D3D12_material_manager::loadPipelineStateToContext(
   Material_context_impl* impl = getMaterialContextImpl(materialContextHandle);
   OE_CHECK_MSG(impl != nullptr, "loadPipelineStateToContext: Invalid material context handle");
 
+  // Rasterizer Desc
   if (inputs.wireframe) {
     impl->pipelineStateDesc.rasterizerDesc = DirectX::CommonStates::Wireframe;
   }
@@ -278,8 +259,28 @@ void D3D12_material_manager::loadPipelineStateToContext(
   else {
     OE_THROW(std::invalid_argument("Invalid cull mode"));
   }
+
+  // Blend Desc
+  switch (inputs.depthStencilConfig.getBlendMode()) {
+    case (Render_pass_blend_mode::Opaque):
+      impl->pipelineStateDesc.blendDesc = DirectX::CommonStates::Opaque;
+      break;
+    case (Render_pass_blend_mode::Blended_alpha):
+      impl->pipelineStateDesc.blendDesc = DirectX::CommonStates::AlphaBlend;
+      break;
+    case (Render_pass_blend_mode::Additive):
+      impl->pipelineStateDesc.blendDesc = DirectX::CommonStates::Additive;
+      break;
+    default:
+      OE_THROW(std::runtime_error("Invalid blend state"));
+  }
+
+  // Depth Stencil Desc
+  impl->pipelineStateDesc.depthStencilDesc = getD12DepthStencilDesc(inputs.depthStencilConfig);
+
   createPipelineState(*impl);
 
+  impl->stateIdentifier.depthStencilModeHash = inputs.depthStencilConfig.getModeHash();
   impl->stateIdentifier.wireframeEnabled = inputs.wireframe;
 }
 
@@ -571,8 +572,8 @@ void D3D12_material_manager::createPipelineState(Material_context_impl& impl)
 
   // Rasterizer state
   psoDesc.RasterizerState = impl.pipelineStateDesc.rasterizerDesc;
-  psoDesc.BlendState = impl.blendDesc;
-  psoDesc.DepthStencilState = impl.depthStencilDesc;
+  psoDesc.BlendState = impl.pipelineStateDesc.blendDesc;
+  psoDesc.DepthStencilState = impl.pipelineStateDesc.depthStencilDesc;
   if (psoDesc.DepthStencilState.DepthEnable || psoDesc.DepthStencilState.StencilEnable) {
     psoDesc.DSVFormat = _deviceResources.getDepthStencilFormat();
   }

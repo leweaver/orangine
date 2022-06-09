@@ -40,8 +40,7 @@ void Material_manager::updateMaterialContext(
         Material_context_handle materialContextHandle, std::shared_ptr<const Material> material,
         const Mesh_vertex_layout& meshVertexLayout, const Mesh_gpu_data& meshGpuData,
         const Render_light_data* renderLightData, const Depth_stencil_config& depthStencilConfig,
-        Render_pass_target_layout targetLayout,
-        bool enablePixelShader, bool wireframe)
+        Render_pass_target_layout targetLayout, bool enablePixelShader, bool wireframe)
 {
   LOG(DEBUG) << "Binding material " << material->materialType();
   OE_CHECK(!_boundMaterial);
@@ -115,9 +114,9 @@ void Material_manager::updateMaterialContext(
       bool enableOptimizations = true;
 #endif
 
-      Material_compiler_inputs compilerInputs{depthStencilConfig,  material->vertexInputs(flags),
-                                              std::move(flags),    meshVertexLayout.getMeshIndexType(),
-                                              enableOptimizations, material->materialType()};
+      Material_compiler_inputs compilerInputs{
+              material->vertexInputs(flags), std::move(flags), meshVertexLayout.getMeshIndexType(), enableOptimizations,
+              material->materialType()};
       LOG(INFO) << "Recompiling shaders for material";
       try {
         loadMaterialToContext(materialContextHandle, *material, stateIdentifier, compilerInputs);
@@ -139,7 +138,7 @@ void Material_manager::updateMaterialContext(
   }
 
   if (updatePipelineState) {
-    Pipeline_state_inputs pipelineStateInputs{wireframe};
+    Pipeline_state_inputs pipelineStateInputs{wireframe, depthStencilConfig};
     loadPipelineStateToContext(materialContextHandle, pipelineStateInputs);
   }
   setDataReady(materialContextHandle, true);

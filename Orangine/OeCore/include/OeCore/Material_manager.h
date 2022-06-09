@@ -65,7 +65,6 @@ class Material_manager : public IMaterial_manager,
   void setShaderPath(const std::string& path);
 
   struct Material_compiler_inputs {
-    Depth_stencil_config depthStencilConfig;
     std::vector<Vertex_attribute_element> vsInputs;
     std::set<std::string> flags;
     Mesh_index_type meshIndexType;
@@ -87,6 +86,7 @@ class Material_manager : public IMaterial_manager,
   struct Pipeline_state_inputs {
     // Options that don't need a recompile, but will need to modify pipeline state
     bool wireframe;
+    Depth_stencil_config depthStencilConfig;
   };
   virtual void loadPipelineStateToContext(Material_context_handle materialContextHandle,
                                           const Pipeline_state_inputs& inputs) = 0;

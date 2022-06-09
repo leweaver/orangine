@@ -34,7 +34,11 @@ class Gpu_buffer {
   create(ID3D12Device6* device, const std::wstring& name, size_t sizeInBytes, uint32_t stride = 0,
          D3D12_RESOURCE_STATES bufferState = D3D12_RESOURCE_STATE_COPY_DEST);
 
-  D3D12_VERTEX_BUFFER_VIEW getAsVertexBufferView() const;
+  /**
+   *
+   * @param offset Adds an offset (in bytes) to the CPU and GPU addresses
+   */
+  D3D12_VERTEX_BUFFER_VIEW getAsVertexBufferView(size_t offset = 0) const;
   D3D12_INDEX_BUFFER_VIEW getAsIndexBufferView(DXGI_FORMAT format) const;
   D3D12_CONSTANT_BUFFER_VIEW_DESC getAsConstantBufferView() const;
 

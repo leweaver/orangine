@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include "Material_context.h"
-
 namespace oe {
 class Mesh_data;
 class Material;
@@ -22,6 +20,6 @@ struct Renderable {
 
   // The following two properties will be deleted by managers on a device reset.
   std::weak_ptr<Mesh_gpu_data> rendererData;
-  std::weak_ptr<Material_context> materialContext;
+  Material_context_handle materialContext = {};
 };
 } // namespace oe

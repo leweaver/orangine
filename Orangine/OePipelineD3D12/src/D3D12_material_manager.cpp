@@ -45,6 +45,13 @@ constexpr auto kIsPixelVisibleConstantBuffer = [](const VisibilityGpuConstantBuf
   return buffer.first == D3D12_SHADER_VISIBILITY_PIXEL;
 };
 
+size_t materialContextHandleToIndex(Material_context_handle handle) { return static_cast<size_t>(handle - 1); }
+
+Material_context_handle arrayIndexToMaterialContextHandle(size_t index)
+{
+  return static_cast<Material_context_handle>(index + 1);
+}
+
 std::string createErrorBlobString(HRESULT hr, ID3D10Blob* errorMessage)
 {
   std::stringstream ss;
@@ -72,6 +79,49 @@ createShaderErrorString(HRESULT hr, ID3D10Blob* errorMessage, const Material::Sh
   ss << createErrorBlobString(hr, errorMessage);
   return ss.str();
 }
+
+class Material_context_impl {
+ public:
+  Material_context_impl() = default;
+  Material_context_impl(const Material_context_impl&) = delete;
+  Material_context_impl(Material_context_impl&&) = default;
+  Material_context_impl& operator=(const Material_context_impl&) = delete;
+  Material_context_impl& operator=(Material_context_impl&&) = default;
+
+  Material_state_identifier stateIdentifier;
+
+  Microsoft::WRL::ComPtr<ID3DBlob> vertexShader;
+  Microsoft::WRL::ComPtr<ID3DBlob> pixelShader;
+  Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
+  Descriptor_range samplerDescriptorTable;
+
+  std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
+  D3D12_BLEND_DESC blendDesc;
+  D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
+  D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType;
+
+  uint32_t constantBufferCount = 0;
+  Material_gpu_constant_buffers perDrawConstantBuffers;
+  Material_face_cull_mode cullMode = {};
+
+  // Texture formats of the render target views.
+  std::vector<DXGI_FORMAT> rtvFormats;
+
+  // Only used to create pipeline state objects - can be modified independently for the purposes of recreating only
+  // the PSO
+  struct {
+    D3D12_RASTERIZER_DESC rasterizerDesc;
+  } pipelineStateDesc;
+
+  std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> rootSignatureRootDescriptorTables;
+  Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
+
+  // Optional: used primarily for debugging purposes.
+  std::wstring name;
+  std::wstring materialName;
+
+  bool isDataReady = false;
+};
 
 D3D12_material_manager::D3D12_material_manager(
         oe::IAsset_manager& assetManager, oe::pipeline_d3d12::D3D12_texture_manager& textureManager,
@@ -113,192 +163,146 @@ void D3D12_material_manager::createDeviceDependentResources()
 
 void D3D12_material_manager::destroyDeviceDependentResources() { _deviceDependent = {}; }
 
-std::weak_ptr<Material_context> D3D12_material_manager::createMaterialContext(const std::string& name)
+Material_context_handle D3D12_material_manager::createMaterialContext(const std::string& name)
 {
   auto context = std::make_shared<Material_context_impl>();
   context->name = oe::utf8_decode(name);
+  Material_context_handle handle = arrayIndexToMaterialContextHandle(
+          static_cast<Material_context_handle>(_deviceDependent.materialContexts.size()));
 
   _deviceDependent.materialContexts.push_back(context);
-  return std::static_pointer_cast<Material_context>(context);
+  return handle;
+}
+
+bool D3D12_material_manager::getMaterialStateIdentifier(
+        Material_context_handle handle, Material_state_identifier& stateIdentifier)
+{
+  Material_context_impl* impl = getMaterialContextImpl(handle);
+  if (!impl) {
+    return false;
+  }
+  stateIdentifier = impl->stateIdentifier;
+  return true;
 }
 
 void D3D12_material_manager::loadMaterialToContext(
-        const Material& material, Material_context& materialContext, bool enableOptimizations)
+        Material_context_handle materialContextHandle, const Material& material,
+        const Material_state_identifier& stateIdentifier, const Material_compiler_inputs& materialCompilerInputs)
 {
-  Material_context_impl& impl = getMaterialContextImpl(materialContext);
+  Material_context_impl* impl = getMaterialContextImpl(materialContextHandle);
+  OE_CHECK_MSG(impl != nullptr, "loadMaterialToContext: Invalid material context handle");
 
-  createVertexShader(enableOptimizations, material, impl);
-  createPixelShader(enableOptimizations, material, impl);
-  impl.constantBufferCount = material.getShaderConstantLayout().constantBuffers.size();
-  //createStaticConstantBuffers(material, impl);
-  impl.cullMode = material.faceCullMode();
+  // Create vertex shader
+  {
+    auto vertexCompileSettings = material.vertexShaderSettings(materialCompilerInputs.flags);
+    debugLogSettings("vertex shader", vertexCompileSettings);
+    compileShader(
+            vertexCompileSettings, materialCompilerInputs.enableOptimizations, _shaderTargetVertex,
+            impl->vertexShader.ReleaseAndGetAddressOf());
+  }
+
+  // Create pixel shader
+  {
+    auto pixelCompileSettings = material.pixelShaderSettings(materialCompilerInputs.flags);
+    debugLogSettings("pixel shader", pixelCompileSettings);
+    compileShader(
+            pixelCompileSettings, materialCompilerInputs.enableOptimizations, _shaderTargetPixel,
+            impl->pixelShader.ReleaseAndGetAddressOf());
+
+    impl->rtvFormats.clear();
+    OE_CHECK(material.getShaderOutputLayout().renderTargetCountFormats.size() < 8);
+    OE_CHECK(!material.getShaderOutputLayout().renderTargetCountFormats.empty());
+    impl->rtvFormats.assign(
+            material.getShaderOutputLayout().renderTargetCountFormats.begin(),
+            material.getShaderOutputLayout().renderTargetCountFormats.end());
+  }
+
+  impl->constantBufferCount = material.getShaderConstantLayout().constantBuffers.size();
+  impl->cullMode = material.faceCullMode();
+  impl->stateIdentifier = stateIdentifier;
+  impl->materialName = oe::utf8_decode(materialCompilerInputs.name);
+
+  // Blend state
+  switch (materialCompilerInputs.depthStencilConfig.getBlendMode()) {
+    case (Render_pass_blend_mode::Opaque):
+      impl->blendDesc = DirectX::CommonStates::Opaque;
+      break;
+    case (Render_pass_blend_mode::Blended_alpha):
+      impl->blendDesc = DirectX::CommonStates::AlphaBlend;
+      break;
+    case (Render_pass_blend_mode::Additive):
+      impl->blendDesc = DirectX::CommonStates::Additive;
+      break;
+    default:
+      OE_THROW(std::runtime_error("Invalid blend state"));
+  }
+
+  impl->primitiveTopologyType = getMeshDataTopology(materialCompilerInputs.meshIndexType);
+
+  // Depth Stencil State
+  impl->depthStencilDesc = getD12DepthStencilDesc(materialCompilerInputs.depthStencilConfig);
+
+  impl->stateIdentifier = stateIdentifier;
 }
 
 void D3D12_material_manager::loadResourcesToContext(
-        const Material::Shader_resources& shaderResources, const std::vector<Vertex_attribute_element>& vsInputs,
-        Material_context& materialContext)
+        Material_context_handle materialContextHandle, const Material::Shader_resources& shaderResources,
+        const std::vector<Vertex_attribute_element>& vsInputs)
 {
-  Material_context_impl& impl = getMaterialContextImpl(materialContext);
+  Material_context_impl* impl = getMaterialContextImpl(materialContextHandle);
+  OE_CHECK_MSG(impl != nullptr, "loadResourcesToContext: Invalid material context handle");
 
-  createRootSignature(shaderResources, impl);
-  createMeshBufferViews(vsInputs, impl);
+  createRootSignature(shaderResources, *impl);
+  createMeshBufferViews(vsInputs, *impl);
 }
 
-void D3D12_material_manager::loadPipelineStateToContext(Material_context& materialContext)
+void D3D12_material_manager::loadPipelineStateToContext(
+        Material_context_handle materialContextHandle, const Pipeline_state_inputs& inputs)
 {
-  Material_context_impl& impl = getMaterialContextImpl(materialContext);
+  Material_context_impl* impl = getMaterialContextImpl(materialContextHandle);
+  OE_CHECK_MSG(impl != nullptr, "loadPipelineStateToContext: Invalid material context handle");
 
-  createPipelineState(impl);
-}
-
-void D3D12_material_manager::createVertexShader(
-        bool enableOptimizations, const Material& material, Material_context_impl& materialContext) const
-{
-  // Generate a settings object from the given flags
-  auto compileSettings = material.vertexShaderSettings(materialContext.compilerInputs.flags);
-  debugLogSettings("vertex shader", compileSettings);
-
-  compileShader(compileSettings, _shaderTargetVertex, materialContext.vertexShader.ReleaseAndGetAddressOf());
-}
-
-void D3D12_material_manager::createPixelShader(
-        bool enableOptimizations, const Material& material, Material_context_impl& materialContext) const
-{
-  // Generate a settings object from the given flags
-  auto compileSettings = material.pixelShaderSettings(materialContext.compilerInputs.flags);
-  debugLogSettings("pixel shader", compileSettings);
-
-  compileShader(compileSettings, _shaderTargetPixel, materialContext.pixelShader.ReleaseAndGetAddressOf());
-
-  materialContext.rtvFormats.clear();
-  OE_CHECK(material.getShaderOutputLayout().renderTargetCountFormats.size() < 8);
-  OE_CHECK(!material.getShaderOutputLayout().renderTargetCountFormats.empty());
-  materialContext.rtvFormats.assign(
-          material.getShaderOutputLayout().renderTargetCountFormats.begin(),
-          material.getShaderOutputLayout().renderTargetCountFormats.end());
-}
-
-void D3D12_material_manager::createStaticConstantBuffers(
-        const Material& material, Material_context_impl& materialContext)
-{
-  // Create the constant buffers that are specific to this material instance
-  // (i.e. shared for all renders using this material)
-  {
-    auto matPos = _deviceDependent.perMaterialConstantBuffers.find(&material);
-    if (matPos == _deviceDependent.perMaterialConstantBuffers.end()) {
-      Shader_constant_buffer_usage usage = Shader_constant_buffer_usage::Per_material;
-      auto constantBuffers = std::make_unique<Material_gpu_constant_buffers>();
-      createStaticConstantBuffersForUsage(material, usage, *constantBuffers);
-      auto insertRes = _deviceDependent.perMaterialConstantBuffers.insert({&material, std::move(constantBuffers)});
-      OE_CHECK(insertRes.second == true);
-      matPos = insertRes.first;
-    }
-
-    materialContext.perMaterialConstantBuffers = matPos->second.get();
+  if (inputs.wireframe) {
+    impl->pipelineStateDesc.rasterizerDesc = DirectX::CommonStates::Wireframe;
   }
-
-  // Create per-draw constant buffers
-  {
-    if (!materialContext.perDrawConstantBuffersInitialized) {
-      Shader_constant_buffer_usage usage = Shader_constant_buffer_usage::Per_draw;
-      createStaticConstantBuffersForUsage(material, usage, materialContext.perDrawConstantBuffers);
-      materialContext.perDrawConstantBuffersInitialized = true;
-    }
+  else if (impl->cullMode == Material_face_cull_mode::Back_face) {
+    impl->pipelineStateDesc.rasterizerDesc = DirectX::CommonStates::CullClockwise;
   }
-
-  // TODO: Skelington constant buffers
-}
-
-void D3D12_material_manager::createStaticConstantBuffersForUsage(
-        const Material& material, const Shader_constant_buffer_usage& usage,
-        Material_gpu_constant_buffers& constantBuffers)
-{
-  {
-    std::wstring bufferName{};
-    OE_CHECK(constantBuffers.gpuBuffers.empty());
-    for (const auto& bufferInfo : material.getShaderConstantLayout().constantBuffers) {
-      if (bufferInfo.getUsage() != usage) {
-        continue;
-      }
-
-#if !defined(NDEBUG)
-      bufferName = utf8_decode(
-              material.materialType() + " " + shaderConstantBufferUsageToString(usage) + " " +
-              shaderConstantBufferVisibilityToString(bufferInfo.getVisibility()) + " CB r" +
-              std::to_string(bufferInfo.getRegisterIndex()));
-#endif
-
-      auto gpuBufferReference = std::make_shared<Gpu_buffer_reference>();
-      size_t paddedBufferSizeBytes = 256 + (bufferInfo.getUsagePerDraw().bufferSizeInBytes / 256) * 256;
-      gpuBufferReference->gpuBuffer = Gpu_buffer::create(_deviceDependent.device, bufferName, paddedBufferSizeBytes);
-      gpuBufferReference->cpuBuffer = std::make_shared<Mesh_buffer_accessor>(
-              std::make_shared<Mesh_buffer>(paddedBufferSizeBytes), 1U, static_cast<uint32_t>(paddedBufferSizeBytes),
-              0U);
-      memset(gpuBufferReference->cpuBuffer->buffer->data, 0, gpuBufferReference->cpuBuffer->buffer->dataSize);
-      constantBuffers.gpuBuffers.push_back(gpuBufferReference);
-
-      static constexpr auto numVisibility =
-              static_cast<uint32_t>(Shader_constant_buffer_visibility::Num_shader_constant_buffer_visibility);
-      for (auto visibilityIdx = 0; visibilityIdx < numVisibility; visibilityIdx++) {
-        const auto visibility = static_cast<Shader_constant_buffer_visibility>(visibilityIdx);
-        if (bufferInfo.getVisibility() != Shader_constant_buffer_visibility::All &&
-            bufferInfo.getVisibility() != visibility) {
-          continue;
-        }
-
-        D3D12_SHADER_VISIBILITY d3dvisibility = toD3dShaderVisibility(visibility);
-        auto pos = std::find_if(
-                constantBuffers.tables.begin(), constantBuffers.tables.end(),
-                [d3dvisibility](const VisibilityGpuConstantBufferTablePair& tablePair) {
-                  return tablePair.first == d3dvisibility;
-                });
-        if (pos == constantBuffers.tables.end()) {
-          constantBuffers.tables.emplace_back(d3dvisibility, Material_gpu_constant_buffer_table{});
-          pos = constantBuffers.tables.end() - 1;
-        }
-        pos->second.buffers.push_back(gpuBufferReference.get());
-      }
-
-      constantBuffers.gpuBuffers.push_back(std::move(gpuBufferReference));
-    }
-
-    // Now we know how many descriptors are needed in each range, create them.
-    for (auto& tablePair : constantBuffers.tables) {
-      auto& table = tablePair.second;
-      if (table.buffers.empty()) {
-        continue;
-      }
-
-      table.descriptorRange = _deviceResources.getSrvHeap().allocateRange(table.buffers.size());
-
-      auto cpuHandle = table.descriptorRange.cpuHandle;
-      for (const auto& buffer : table.buffers) {
-        D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
-        desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-        desc.Format = DXGI_FORMAT_R32_TYPELESS;
-        desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        uint32_t bufferSizeBytes = buffer->gpuBuffer->getBufferSizeBytes();
-        OE_CHECK(bufferSizeBytes % 4 == 0 && bufferSizeBytes != 0);
-        desc.Buffer.NumElements = (UINT) bufferSizeBytes / 4U;
-        desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
-
-        auto constantBufferView = buffer->gpuBuffer->getAsConstantBufferView();
-        _deviceResources.GetD3DDevice()->CreateConstantBufferView(&constantBufferView, cpuHandle);
-
-        cpuHandle.Offset(1, table.descriptorRange.incrementSize);
-      }
-    }
+  else if (impl->cullMode == Material_face_cull_mode::Front_face) {
+    impl->pipelineStateDesc.rasterizerDesc = DirectX::CommonStates::CullCounterClockwise;
   }
+  else if (impl->cullMode == Material_face_cull_mode::None) {
+    impl->pipelineStateDesc.rasterizerDesc = DirectX::CommonStates::CullNone;
+  }
+  else {
+    OE_THROW(std::invalid_argument("Invalid cull mode"));
+  }
+  createPipelineState(*impl);
+
+  impl->stateIdentifier.wireframeEnabled = inputs.wireframe;
 }
 
-void D3D12_material_manager::queueTextureLoad(const Texture& texture)
+bool D3D12_material_manager::isMaterialContextDataReady(Material_context_handle materialContext) const
 {
-  _textureManager.load(texture);
+  const Material_context_impl* impl = getMaterialContextImpl(materialContext);
+  OE_CHECK_MSG(impl != nullptr, "isMaterialContextDataReady: Invalid material context handle");
+
+  return impl->isDataReady;
 }
+
+void D3D12_material_manager::setDataReady(Material_context_handle materialContextHandle, bool ready)
+{
+  Material_context_impl* impl = getMaterialContextImpl(materialContextHandle);
+  OE_CHECK_MSG(impl != nullptr, "setDataReady: Invalid material context handle");
+
+  impl->isDataReady = ready;
+}
+
+void D3D12_material_manager::queueTextureLoad(const Texture& texture) { _textureManager.load(texture); }
 
 void D3D12_material_manager::compileShader(
-        const Material::Shader_compile_settings& compileSettings, const std::string& shaderTarget,
-        ID3DBlob** result) const
+        const Material::Shader_compile_settings& compileSettings, bool enableOptimizations,
+        const std::string& shaderTarget, ID3DBlob** result) const
 {
   // Compiler defines
   std::vector<D3D_SHADER_MACRO> defines;
@@ -308,12 +312,10 @@ void D3D12_material_manager::compileShader(
   // Null terminated array
   defines.push_back({nullptr, nullptr});
 
-#if !defined(NDEBUG)
   // Enable better shader debugging with the graphics debugging tools.
-  uint32_t compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_PREFER_FLOW_CONTROL;
-#else
-  uint32_t compileFlags = D3DCOMPILE_ENABLE_STRICTNESS
-#endif
+  uint32_t compileFlags = enableOptimizations
+                                  ? D3DCOMPILE_ENABLE_STRICTNESS
+                                  : (D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_PREFER_FLOW_CONTROL);
 
   const auto filename = shaderPath() + "/" + compileSettings.filename;
   LOG(DEBUG) << "Compiling shader " << filename.c_str();
@@ -324,20 +326,6 @@ void D3D12_material_manager::compileShader(
           errorMsgs.ReleaseAndGetAddressOf());
   if (!SUCCEEDED(hr)) {
     OE_THROW(std::runtime_error(createShaderErrorString(hr, errorMsgs.Get(), compileSettings)));
-  }
-}
-
-void appendDescriptorTablesToRange(
-        const VisibilityGpuConstantBufferTablePairs& tables, std::vector<CD3DX12_DESCRIPTOR_RANGE1>& descriptorRanges,
-        const VisibilityTestFn& visilibityFn)
-{
-  // Get the descriptor table containing all the vertex visible constant buffers, if one exists.
-  auto constantBufferTablePos = std::find_if(tables.begin(), tables.end(), visilibityFn);
-  if (constantBufferTablePos != tables.end()) {
-    const auto& range = constantBufferTablePos->second.descriptorRange;
-    descriptorRanges.emplace_back(
-            D3D12_DESCRIPTOR_RANGE_TYPE_CBV, range.descriptorCount, 0, 0,
-            D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE, range.offsetInDescriptorsFromHeapStart);
   }
 }
 
@@ -357,41 +345,6 @@ void D3D12_material_manager::createRootSignature(
   std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters;
   impl.rootSignatureRootDescriptorTables.clear();
 
-  /*
-OE_CHECK(impl.perMaterialConstantBuffers);
-  std::vector<CD3DX12_DESCRIPTOR_RANGE1> d3dVsCbvDescriptorRanges;
-  std::vector<CD3DX12_DESCRIPTOR_RANGE1> d3dPsCbvDescriptorRanges;
-  ///////////////////////////////
-  /// Create constant buffer descriptor tables
-  // Ordering is per-material, then per-draw.
-  appendDescriptorTablesToRange(
-          impl.perMaterialConstantBuffers->tables, d3dVsCbvDescriptorRanges, kIsVertexVisibleConstantBuffer);
-  appendDescriptorTablesToRange(
-          impl.perDrawConstantBuffers.tables, d3dVsCbvDescriptorRanges, kIsVertexVisibleConstantBuffer);
-  if (!d3dVsCbvDescriptorRanges.empty()) {
-    // Using the heap start handle, as the range has offsetInDescriptorsFromTableStart defined as the number of descriptors from the start of the heap.
-    impl.rootSignatureRootDescriptorTables.emplace_back(_deviceResources.getSrvHeap().getGpuDescriptorHandleForHeapStart());
-    LOG(INFO) << "  Root[" << rootParameters.size()
-              << "] = CBV Table for VS (#ranges=" << d3dVsCbvDescriptorRanges.size() << ")";
-    rootParameters.emplace_back();
-    rootParameters.back().InitAsDescriptorTable(
-            d3dVsCbvDescriptorRanges.size(), d3dVsCbvDescriptorRanges.data(), D3D12_SHADER_VISIBILITY_VERTEX);
-  }
-
-  appendDescriptorTablesToRange(
-          impl.perMaterialConstantBuffers->tables, d3dPsCbvDescriptorRanges, kIsPixelVisibleConstantBuffer);
-  appendDescriptorTablesToRange(
-          impl.perDrawConstantBuffers.tables, d3dPsCbvDescriptorRanges, kIsPixelVisibleConstantBuffer);
-  if (!d3dPsCbvDescriptorRanges.empty()) {
-    // Using the heap start handle, as the range has offsetInDescriptorsFromTableStart defined as the number of descriptors from the start of the heap.
-    impl.rootSignatureRootDescriptorTables.emplace_back(_deviceResources.getSrvHeap().getGpuDescriptorHandleForHeapStart());
-    LOG(INFO) << "  Root[" << rootParameters.size()
-              << "] = CBV Table for PS (#ranges=" << d3dPsCbvDescriptorRanges.size() << ")";
-    rootParameters.emplace_back();
-    rootParameters.back().InitAsDescriptorTable(
-            d3dPsCbvDescriptorRanges.size(), d3dPsCbvDescriptorRanges.data(), D3D12_SHADER_VISIBILITY_PIXEL);
-  }
-  */
   ///////////////////////////////
   /// Create a placeholder for constants at slot 0. This is populated by whomever calls DrawInstance
   if (impl.constantBufferCount) {
@@ -400,7 +353,7 @@ OE_CHECK(impl.perMaterialConstantBuffers);
             D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE};
     // Don't know the address - just put a dummy value in here. It will be set after the fact
 
-    LOG(INFO) << "  Root[" << rootParameters.size() << "] = CBV Table (size=" << impl.constantBufferCount << ")";
+    LOG(DEBUG) << "  Root[" << rootParameters.size() << "] = CBV Table (size=" << impl.constantBufferCount << ")";
 
     impl.rootSignatureRootDescriptorTables.emplace_back(D3D12_GPU_DESCRIPTOR_HANDLE{});
     rootParameters.emplace_back();
@@ -417,34 +370,21 @@ OE_CHECK(impl.perMaterialConstantBuffers);
     for (const auto& textureResource : shaderResources.textures) {
       Texture* texture = textureResource.texture.get();
       OE_CHECK(texture->isValid());
-      ID3D12Resource* resource = _textureManager.getResource(*texture);
-      auto resourceDesc = resource->GetDesc();
-      OE_CHECK(resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D);
 
       D3D12_SHADER_RESOURCE_VIEW_DESC desc{};
+      const bool isArray2dDesc = texture->isArray() || texture->isArraySlice();
+      desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+      // DXGI_FORMAT
       switch (textureResource.format) {
         case Shader_texture_resource_format::Default:
           desc.Format = _textureManager.getFormat(*texture);
           break;
         case Shader_texture_resource_format::Depth_r24x8:
           desc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-          // See: https://docs.microsoft.com/en-us/windows/win32/direct3d12/subresources#plane-slice
-          if (texture->isArray()) {
-            desc.Texture2DArray.PlaneSlice = 0;
-          }
-          else {
-            desc.Texture2D.PlaneSlice = 0;
-          }
           break;
         case Shader_texture_resource_format::Stencil_x24u8:
           desc.Format = DXGI_FORMAT_X24_TYPELESS_G8_UINT;
-          // See: https://docs.microsoft.com/en-us/windows/win32/direct3d12/subresources#plane-slice
-          if (texture->isArray()) {
-            desc.Texture2DArray.PlaneSlice = 1;
-          }
-          else {
-            desc.Texture2D.PlaneSlice = 1;
-          }
           break;
         default:
           OE_CHECK_FMT(
@@ -452,21 +392,45 @@ OE_CHECK(impl.perMaterialConstantBuffers);
                   shaderTextureResourceFormatToString(textureResource.format).c_str());
       }
 
-      if (texture->isCubeMap()) {
-        desc.ViewDimension =
-                texture->isArray() ? D3D12_SRV_DIMENSION_TEXTURECUBEARRAY : D3D12_SRV_DIMENSION_TEXTURECUBE;
+      // PLANE SLICE
+      if (desc.Format == DXGI_FORMAT_X24_TYPELESS_G8_UINT) {
+        UINT& sliceField = isArray2dDesc ? desc.Texture2DArray.PlaneSlice : desc.Texture2D.PlaneSlice;
+        sliceField = 1;
       }
-      else if (texture->isArray()) {
+
+      // VIEW DIMENSION / ARRAY SIZE
+      ID3D12Resource* resource = _textureManager.getResource(*texture);
+      auto resourceDesc = resource->GetDesc();
+      OE_CHECK(resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D);
+
+      if (texture->isCubeMap()) {
+        desc.ViewDimension = isArray2dDesc ? D3D12_SRV_DIMENSION_TEXTURECUBEARRAY : D3D12_SRV_DIMENSION_TEXTURECUBE;
+      }
+      else if (isArray2dDesc) {
         desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-        desc.Texture2DArray.ArraySize = resourceDesc.DepthOrArraySize;
       }
       else {
         desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+      };
+
+      // MIP SLICE / ARRAY SLICE
+      if (isArray2dDesc) {
+        if (texture->isArraySlice()) {
+          desc.Texture2DArray.FirstArraySlice = texture->getArraySlice();
+          desc.Texture2DArray.ArraySize = 1;
+        }
+        else {
+          desc.Texture2DArray.FirstArraySlice = 0;
+          desc.Texture2DArray.ArraySize = resourceDesc.DepthOrArraySize;
+        }
+        desc.Texture2DArray.MipLevels = resourceDesc.MipLevels;
+        desc.Texture2DArray.MostDetailedMip = 0;
+        desc.Texture2DArray.ResourceMinLODClamp = 0.0f;
       }
-      desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-      desc.Texture2D.MipLevels = resource->GetDesc().MipLevels;
-      if (texture->isArraySlice()) {
-        desc.Texture2DArray.FirstArraySlice = texture->getArraySlice();
+      else {
+        desc.Texture2D.MipLevels = resourceDesc.MipLevels;
+        desc.Texture2D.MostDetailedMip = 0;
+        desc.Texture2D.ResourceMinLODClamp = 0.0f;
       }
 
       _deviceResources.GetD3DDevice()->CreateShaderResourceView(resource, &desc, cpuHandle);
@@ -479,7 +443,7 @@ OE_CHECK(impl.perMaterialConstantBuffers);
 
     impl.rootSignatureRootDescriptorTables.emplace_back(range.gpuHandle);
 
-    LOG(INFO) << "  Root[" << rootParameters.size() << "] = SRV Table (size=" << range.descriptorCount << ")";
+    LOG(DEBUG) << "  Root[" << rootParameters.size() << "] = SRV Table (size=" << range.descriptorCount << ")";
     rootParameters.emplace_back();
     rootParameters.back().InitAsDescriptorTable(
             d3dPsSrvDescriptorRanges.size(), d3dPsSrvDescriptorRanges.data(), D3D12_SHADER_VISIBILITY_PIXEL);
@@ -528,7 +492,7 @@ OE_CHECK(impl.perMaterialConstantBuffers);
 
     impl.rootSignatureRootDescriptorTables.emplace_back(impl.samplerDescriptorTable.gpuHandle);
 
-    LOG(INFO) << "  Root[" << rootParameters.size() << "] = Sampler Table (size=" << numSamplerDescriptors << ")";
+    LOG(DEBUG) << "  Root[" << rootParameters.size() << "] = Sampler Table (size=" << numSamplerDescriptors << ")";
     rootParameters.emplace_back();
     rootParameters.back().InitAsDescriptorTable(
             d3dPsSamplerDescriptorRanges.size(), d3dPsSamplerDescriptorRanges.data(), D3D12_SHADER_VISIBILITY_PIXEL);
@@ -549,10 +513,15 @@ OE_CHECK(impl.perMaterialConstantBuffers);
       LOG(WARNING) << errMsg;
       ThrowIfFailed(res);
     }
+
+    if (impl.rootSignature.Get()) {
+      _deviceResources.addReferenceToInFlightFrames(impl.rootSignature);
+      impl.rootSignature = nullptr;
+    }
     ThrowIfFailed(_deviceDependent.device->CreateRootSignature(
             0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&impl.rootSignature)));
 
-    std::wstring debugName = impl.name + L" (CompiledMaterial=" + oe::utf8_decode(impl.compilerInputs.name) + L")";
+    std::wstring debugName = impl.name + L" (CompiledMaterial=" + impl.materialName + L")";
     SetObjectName(impl.rootSignature.Get(), debugName.c_str());
   }
 }
@@ -564,9 +533,9 @@ void D3D12_material_manager::createMeshBufferViews(
   LOG(G3LOG_DEBUG) << "Adding vertex attributes";
 
   impl.inputElementDescs.clear();
-  impl.inputElementDescs.reserve(impl.compilerInputs.vsInputs.size());
-  for (auto inputSlot = 0U; inputSlot < impl.compilerInputs.vsInputs.size(); ++inputSlot) {
-    const auto attrSemantic = impl.compilerInputs.vsInputs[inputSlot];
+  impl.inputElementDescs.reserve(vsInputs.size());
+  for (auto inputSlot = 0U; inputSlot < vsInputs.size(); ++inputSlot) {
+    const auto attrSemantic = vsInputs[inputSlot];
     const auto semanticName = Vertex_attribute_meta::semanticName(attrSemantic.semantic.attribute);
     OE_CHECK(!semanticName.empty());
     LOG(DEBUG) << "  " << semanticName << " to slot " << inputSlot;
@@ -593,44 +562,14 @@ void D3D12_material_manager::createPipelineState(Material_context_impl& impl)
   psoDesc.pRootSignature = impl.rootSignature.Get();
   psoDesc.VS = CD3DX12_SHADER_BYTECODE(impl.vertexShader.Get());
   psoDesc.PS = CD3DX12_SHADER_BYTECODE(impl.pixelShader.Get());
-  psoDesc.PrimitiveTopologyType = getMeshDataTopology(impl.compilerInputs.meshIndexType);
+  psoDesc.PrimitiveTopologyType = impl.primitiveTopologyType;
   psoDesc.SampleMask = UINT_MAX;// TODO
   psoDesc.SampleDesc.Count = 1; // TODO - set quality and sample counts
 
   // Rasterizer state
-  if (impl.pipelineStateInputs.wireframe) {
-    psoDesc.RasterizerState = DirectX::CommonStates::Wireframe;
-  }
-  else if (impl.cullMode == Material_face_cull_mode::Back_face) {
-    psoDesc.RasterizerState = DirectX::CommonStates::CullClockwise;
-  }
-  else if (impl.cullMode == Material_face_cull_mode::Front_face) {
-    psoDesc.RasterizerState = DirectX::CommonStates::CullCounterClockwise;
-  }
-  else if (impl.cullMode == Material_face_cull_mode::None) {
-    psoDesc.RasterizerState = DirectX::CommonStates::CullNone;
-  }
-  else {
-    OE_THROW(std::invalid_argument("Invalid cull mode"));
-  }
-
-  // Blend state
-  switch (impl.compilerInputs.depthStencilConfig.getBlendMode()) {
-    case (Render_pass_blend_mode::Opaque):
-      psoDesc.BlendState = DirectX::CommonStates::Opaque;
-      break;
-    case (Render_pass_blend_mode::Blended_alpha):
-      psoDesc.BlendState = DirectX::CommonStates::AlphaBlend;
-      break;
-    case (Render_pass_blend_mode::Additive):
-      psoDesc.BlendState = DirectX::CommonStates::Additive;
-      break;
-    default:
-      OE_THROW(std::runtime_error("Invalid blend state"));
-  }
-
-  // Depth/Stencil
-  psoDesc.DepthStencilState = getD12DepthStencilDesc(impl.compilerInputs.depthStencilConfig);
+  psoDesc.RasterizerState = impl.pipelineStateDesc.rasterizerDesc;
+  psoDesc.BlendState = impl.blendDesc;
+  psoDesc.DepthStencilState = impl.depthStencilDesc;
   if (psoDesc.DepthStencilState.DepthEnable || psoDesc.DepthStencilState.StencilEnable) {
     psoDesc.DSVFormat = _deviceResources.getDepthStencilFormat();
   }
@@ -645,8 +584,43 @@ void D3D12_material_manager::createPipelineState(Material_context_impl& impl)
     }
   }
 
+  if (impl.pipelineState) {
+    _deviceResources.addReferenceToInFlightFrames(impl.pipelineState);
+    impl.pipelineState.Reset();
+  }
   ThrowIfFailed(_deviceDependent.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&impl.pipelineState)));
+  LOG(INFO) << "Creating PSO for " << utf8_encode(impl.name);
+  SetObjectName(impl.pipelineState.Get(), impl.name.c_str());
 }
+
+Material_context_impl* D3D12_material_manager::getMaterialContextImpl(Material_context_handle handle)
+{
+  if (handle <= 0) {
+    return nullptr;
+  }
+
+  size_t index = materialContextHandleToIndex(handle);
+  if (index >= _deviceDependent.materialContexts.size()) {
+    return nullptr;
+  }
+
+  return _deviceDependent.materialContexts.at(index).get();
+}
+
+const Material_context_impl* D3D12_material_manager::getMaterialContextImpl(Material_context_handle handle) const
+{
+  if (handle <= 0) {
+    return nullptr;
+  }
+
+  size_t index = materialContextHandleToIndex(handle);
+  if (index >= _deviceDependent.materialContexts.size()) {
+    return nullptr;
+  }
+
+  return _deviceDependent.materialContexts.at(index).get();
+}
+
 D3D12_DEPTH_STENCIL_DESC
 D3D12_material_manager::getD12DepthStencilDesc(const Depth_stencil_config& depthStencilConfig) const
 {
@@ -683,23 +657,28 @@ D3D12_material_manager::getD12DepthStencilDesc(const Depth_stencil_config& depth
   return desc;
 }
 
-void D3D12_material_manager::bindMaterialContextToDevice(const Material_context& materialContext)
+void D3D12_material_manager::bindMaterialContextToDevice(Material_context_handle materialContextHandle)
 {
-  const Material_context_impl& impl = getMaterialContextImpl(materialContext);
+  Material_context_impl* impl = getMaterialContextImpl(materialContextHandle);
+  OE_CHECK_MSG(impl != nullptr, "bindMaterialContextToDevice: Invalid material context handle");
+
+  auto& frameResources = _deviceResources.getCurrentFrameResources();
+
+  _deviceDependent.commandList->SetPipelineState(impl->pipelineState.Get());
 
   Root_signature_layout layout{
-          impl.rootSignature.Get(), impl.constantBufferCount > 0 ? 0 : Root_signature_layout::kSlotInvalid};
-  _deviceResources.getCurrentFrameResources().setCurrentBoundRootSignature(layout);
-  _deviceDependent.commandList->SetGraphicsRootSignature(impl.rootSignature.Get());
+          impl->rootSignature.Get(), impl->constantBufferCount > 0 ? 0 : Root_signature_layout::kSlotInvalid};
+  frameResources.setCurrentBoundRootSignature(layout);
+  _deviceDependent.commandList->SetGraphicsRootSignature(impl->rootSignature.Get());
+
   auto constantBufferAllVisParamIndex = static_cast<uint32_t>(layout.constantBufferAllVisParamIndex);
-  for (uint32_t index = 0; index < impl.rootSignatureRootDescriptorTables.size(); ++index) {
+  for (uint32_t index = 0; index < impl->rootSignatureRootDescriptorTables.size(); ++index) {
     if (index == constantBufferAllVisParamIndex) {
       continue;
     }
     _deviceDependent.commandList->SetGraphicsRootDescriptorTable(
-            index, impl.rootSignatureRootDescriptorTables.at(index));
+            index, impl->rootSignatureRootDescriptorTables.at(index));
   }
-  _deviceDependent.commandList->SetPipelineState(impl.pipelineState.Get());
 }
 
 void D3D12_material_manager::unbind()

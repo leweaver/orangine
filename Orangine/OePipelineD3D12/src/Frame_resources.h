@@ -26,12 +26,15 @@ class Frame_resources {
 
   const Root_signature_layout& getCurrentBoundRootSignature();
 
+  void addReferenceForFrame(const Microsoft::WRL::ComPtr<IUnknown>& ptr);
+
   void reset();
 
  private:
 
   std::array<std::unique_ptr<Constant_buffer_pool>, 3> _constantBufferPools;
   std::vector<std::unique_ptr<Constant_buffer_pool>> _retiredPools;
+  std::vector<Microsoft::WRL::ComPtr<IUnknown>> _referenceForFrame;
 
   ID3D12Device4* _device;
   Root_signature_layout _currentRootSignatureLayout;

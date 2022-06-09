@@ -117,6 +117,8 @@ class D3D12_device_resources : public IDevice_resources {
   Descriptor_heap_pool& getSrvHeap() { return *m_srvDescriptorHeapPool; }
   Descriptor_heap_pool& getSamplerHeap() { return *m_samplerDescriptorHeapPool; }
 
+  void addReferenceToInFlightFrames(const Microsoft::WRL::ComPtr<IUnknown>& ptr);
+
  private:
   struct Render_pipeline {
     static const std::size_t frameCount = 2;

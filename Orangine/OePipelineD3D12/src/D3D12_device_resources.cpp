@@ -751,3 +751,8 @@ size_t D3D12_device_resources::getCurrentFrameIndex() const
   return _renderPipeline.frameIndex;
 }
 
+void D3D12_device_resources::addReferenceToInFlightFrames(const ComPtr<IUnknown>& ptr) {
+  for (auto& frameReference : _renderPipeline.frameResources) {
+    frameReference->addReferenceForFrame(ptr);
+  }
+}

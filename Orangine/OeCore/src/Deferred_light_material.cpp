@@ -111,7 +111,7 @@ Material::Shader_resources Deferred_light_material::shaderResources(
   sr.textures.push_back({_color2Texture});
   sr.samplerDescriptors.push_back(samplerDesc);
 
-  sr.textures.push_back({_depthTexture});
+  sr.textures.push_back({_depthTexture, Shader_texture_resource_format::Depth_r24x8});
   sr.samplerDescriptors.push_back(samplerDesc);
 
   if (flags.find(g_flag_iblEnabled) != flags.end()) {

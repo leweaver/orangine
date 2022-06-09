@@ -50,15 +50,16 @@ std::shared_ptr<Entity> Sample_scene::addFloor()
   const auto& floor = _entityManager.instantiate("Floor", *_root);
   auto material = std::make_unique<PBR_material>();
   material->setBaseColor(Color(0.7f, 0.7f, 0.7f, 1.0f));
+  material->setMetallicFactor(0);
+  material->setRoughnessFactor(1);
 
   auto& renderable = floor->addComponent<Renderable_component>();
   renderable.setMaterial(std::unique_ptr<Material>(material.release()));
   renderable.setCastShadow(false);
 
-  const auto meshData = _primitiveMeshDataFactory.createQuad(20, 20);
+  const auto meshData = _primitiveMeshDataFactory.createBox({20, 0.25, 20});
   floor->addComponent<Mesh_data_component>().setMeshData(meshData);
 
-  floor->setRotation(SSE::Quat::rotationX(math::pi * -0.5f));
   floor->setPosition({0.0f, -1.5f, 0.0f});
   floor->setBoundSphere(oe::BoundingSphere(SSE::Vector3(0), 10.0f));
 
@@ -105,7 +106,7 @@ Sample_scene::addSphere(const SSE::Vector3& center, const Color& color, float me
   auto& renderable = sphere->addComponent<Renderable_component>();
   renderable.setMaterial(std::unique_ptr<Material>(material.release()));
   renderable.setWireframe(false);
-  renderable.setCastShadow(false);
+  renderable.setCastShadow(true);
 
   const auto meshData = _primitiveMeshDataFactory.createSphere();
   sphere->addComponent<Mesh_data_component>().setMeshData(meshData);
@@ -119,13 +120,13 @@ std::shared_ptr<Entity> Sample_scene::addDefaultCamera()
   auto cameraDollyAnchor = _entityManager.instantiate("CameraDollyAnchor");
 
   auto camera = _entityManager.instantiate("Camera", *cameraDollyAnchor);
-  camera->setPosition({0.0f, 0.0f, 15});
+  camera->setPosition({0.0f, 3.0f, 0.1});
 
   cameraDollyAnchor->computeWorldTransform();
 
   auto& component = camera->addComponent<Camera_component>();
   component.setFov(degrees_to_radians(60.0f));
-  component.setFarPlane(20.0f);
+  component.setFarPlane(60.0f);
   component.setNearPlane(0.5f);
 
   camera->lookAt({0, 0, 0}, math::up);

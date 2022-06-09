@@ -1,6 +1,5 @@
 ﻿#include <OeCore/Material_manager.h>
 
-#include <OeCore/Material_context.h>
 #include <OeCore/Mesh_utils.h>
 
 #include <locale>
@@ -14,8 +13,8 @@ const std::string g_flag_disable_optimisation = "disableOptimizations";
 
 Material_manager::Material_manager(IAsset_manager& assetManager)
     : Manager_base()
-      , Manager_tickable()
-      , Manager_deviceDependent()
+    , Manager_tickable()
+    , Manager_deviceDependent()
     , _assetManager(assetManager)
 {}
 
@@ -23,56 +22,53 @@ void Material_manager::setShaderPath(const std::string& path) { _shaderPath = pa
 
 const std::string& Material_manager::shaderPath() const { return _shaderPath; }
 
-void Material_manager::initialize() {
+void Material_manager::initialize()
+{
   _shaderPath = _assetManager.makeAbsoluteAssetPath("OeCore/shaders");
   setRendererFeaturesEnabled(Renderer_features_enabled());
 }
 
-void Material_manager::tick() {
+void Material_manager::tick()
+{
   if (_boundMaterial) {
-    OE_THROW(
-        std::logic_error("Material is still bound after rendering complete! Did you forget to call "
-                         "IMaterial_manager::unbind() ?"));
+    OE_THROW(std::logic_error("Material is still bound after rendering complete! Did you forget to call "
+                              "IMaterial_manager::unbind() ?"));
   }
 }
 
 void Material_manager::updateMaterialContext(
-    Material_context& materialContext,
-    std::shared_ptr<const Material> material,
-    const Mesh_vertex_layout& meshVertexLayout,
-    const Mesh_gpu_data& meshGpuData,
-    const Render_light_data* renderLightData,
-    const Depth_stencil_config& depthStencilConfig,
-    bool enablePixelShader, bool wireframe) {
-  LOG(INFO) << "Binding material " << material->materialType();
+        Material_context_handle materialContextHandle, std::shared_ptr<const Material> material,
+        const Mesh_vertex_layout& meshVertexLayout, const Mesh_gpu_data& meshGpuData,
+        const Render_light_data* renderLightData, const Depth_stencil_config& depthStencilConfig,
+        bool enablePixelShader, bool wireframe)
+{
+  LOG(DEBUG) << "Binding material " << material->materialType();
   OE_CHECK(!_boundMaterial);
 
   const auto materialHash = material->ensureCompilerPropertiesHash();
-  auto& compiledMaterial = materialContext.compilerInputs;
-  auto rebuildConfig = false;
-  if (!materialContext.compilerInputsValid) {
-    rebuildConfig = true;
-  } else {
-    if (materialContext.compilerInputs.depthStencilConfig.getModeHash() != depthStencilConfig.getModeHash()) {
+  Material_state_identifier stateIdentifier{};
+  bool rebuildConfig = !getMaterialStateIdentifier(materialContextHandle, stateIdentifier);
+  if (!rebuildConfig) {
+    if (stateIdentifier.depthStencilModeHash != depthStencilConfig.getModeHash()) {
       LOG(DEBUG) << "Rendering material with a different depth stencil config than last frame. This "
                     "will be a big performance hit.\n"
-                 << "Previous config: " << materialContext.compilerInputs.depthStencilConfig << "\n"
-              << "New config: " << depthStencilConfig;
+                 << "New config: " << depthStencilConfig;
       rebuildConfig = true;
-    } else if (compiledMaterial.meshHash != meshVertexLayout.propertiesHash()) {
+    }
+    else if (stateIdentifier.meshHash != meshVertexLayout.propertiesHash()) {
       LOG(WARNING) << "Rendering material with a different mesh vertex layout than last frame. This "
                       "will be a big performance hit.";
       rebuildConfig = true;
-    } else if (compiledMaterial.materialHash != materialHash) {
+    }
+    else if (stateIdentifier.materialHash != materialHash) {
       LOG(DEBUG) << "Material hash changed.";
       rebuildConfig = true;
-    } else if (compiledMaterial.rendererFeaturesHash != _rendererFeaturesHash) {
+    }
+    else if (stateIdentifier.rendererFeaturesHash != _rendererFeaturesHash) {
       LOG(DEBUG) << "Renderer features hash changed.";
       rebuildConfig = true;
     }
   }
-
-  bool updatePipelineState = rebuildConfig || materialContext.pipelineStateInputs.wireframe != wireframe;
 
   if (rebuildConfig) {
     auto flags = material->configFlags(_rendererFeatures, depthStencilConfig.getBlendMode(), meshVertexLayout);
@@ -95,78 +91,79 @@ void Material_manager::updateMaterialContext(
       }
     }
     if (waitingOnTextureLoad) {
+      setDataReady(materialContextHandle, false);
       return;
     }
 
     bool requiresRecompile = true;
+    /*
     // Skip recompile if the flags are actually the same.
     if (flags.size() == compiledMaterial.flags.size() &&
-        std::equal(flags.begin(), flags.end(), compiledMaterial.flags.begin())) {
+        std::equal(flags.begin(), flags.end(), compiledMaterial.flags.begin()))
+    {
       requiresRecompile = false;
     }
-    compiledMaterial.rendererFeaturesHash = _rendererFeaturesHash;
+     */
+    stateIdentifier.rendererFeaturesHash = _rendererFeaturesHash;
 
     if (requiresRecompile) {
+
+#if !defined(NDEBUG)
+      bool enableOptimizations = false;
+#else
+      bool enableOptimizations = true;
+#endif
+
+      Material_compiler_inputs compilerInputs{depthStencilConfig,  material->vertexInputs(flags),
+                                              std::move(flags),    meshVertexLayout.getMeshIndexType(),
+                                              enableOptimizations, material->materialType()};
       LOG(INFO) << "Recompiling shaders for material";
 
-      // Make sure that the shader resource views and SamplerStates vectors are empty.
-      materialContext.releaseResources();
-
       // TODO: Look in a cache for a compiled material that matches the hash
-      compiledMaterial.materialHash = materialHash;
-      compiledMaterial.meshHash = meshVertexLayout.propertiesHash();
-      compiledMaterial.meshIndexType = meshVertexLayout.getMeshIndexType();
+      stateIdentifier.depthStencilModeHash = depthStencilConfig.getModeHash();
+      stateIdentifier.materialHash = materialHash;
+      stateIdentifier.meshHash = meshVertexLayout.propertiesHash();
 
       try {
-        compiledMaterial.depthStencilConfig = depthStencilConfig;
-        compiledMaterial.flags = std::move(flags);
-
-        compiledMaterial.vsInputs = material->vertexInputs(compiledMaterial.flags);
-        compiledMaterial.name = material->materialType();
-
-        materialContext.compilerInputs = compiledMaterial;
-        materialContext.compilerInputsValid = true;
-
-        loadMaterialToContext(*material, materialContext, _rendererFeatures.enableShaderOptimization);
-
-      } catch (std::exception& ex) {
-        materialContext.compilerInputsValid = false;
+        loadMaterialToContext(materialContextHandle, *material, stateIdentifier, compilerInputs);
+      }
+      catch (std::exception& ex) {
         OE_THROW(std::runtime_error(
-            "Failed to create resources in Material_manager::updateMaterialContext. "s + ex.what()));
+                "Failed to create resources in Material_manager::updateMaterialContext. "s + ex.what()));
       }
     }
 
-    loadResourcesToContext(shaderResources, meshVertexLayout.vertexLayout(), materialContext);
+    loadResourcesToContext(materialContextHandle, shaderResources, meshVertexLayout.vertexLayout());
   }
 
+  bool updatePipelineState = rebuildConfig || stateIdentifier.wireframeEnabled != wireframe;
   if (updatePipelineState) {
-    materialContext.pipelineStateInputs.wireframe = wireframe;
-    loadPipelineStateToContext(materialContext);
+    Pipeline_state_inputs pipelineStateInputs{wireframe};
+    loadPipelineStateToContext(materialContextHandle, pipelineStateInputs);
   }
+  setDataReady(materialContextHandle, true);
 }
 
-void Material_manager::bind(Material_context& materialContext)
+void Material_manager::bind(Material_context_handle materialContextHandle)
 {
   OE_CHECK(!_boundMaterial);
 
-  bindMaterialContextToDevice(materialContext);
+  bindMaterialContextToDevice(materialContextHandle);
 
   _boundMaterial = true;
 }
 
 
-void Material_manager::unbind() {
-  LOG(INFO) << "Unbinding material";
-  _boundMaterial = false;
-}
+void Material_manager::unbind() { _boundMaterial = false; }
 
-void Material_manager::setRendererFeaturesEnabled(
-    const Renderer_features_enabled& renderer_feature_enabled) {
+void Material_manager::setRendererFeaturesEnabled(const Renderer_features_enabled& renderer_feature_enabled)
+{
   _rendererFeatures = renderer_feature_enabled;
   _rendererFeaturesHash = _rendererFeatures.hash();
 }
 
-void Material_manager::debugLogSettings(const char* prefix, const Material::Shader_compile_settings& settings) const {
+void Material_manager::debugLogSettings(const char* prefix, const Material::Shader_compile_settings& settings) const
+{
   if (g3::logLevel(DEBUG)) {
     LOG(DEBUG) << prefix << " compile settings: "
                << nlohmann::json({{"defines", settings.defines},
@@ -177,6 +174,4 @@ void Material_manager::debugLogSettings(const char* prefix, const Material::Shad
   }
 }
 
-const Renderer_features_enabled& Material_manager::rendererFeatureEnabled() const {
-  return _rendererFeatures;
-}
+const Renderer_features_enabled& Material_manager::rendererFeatureEnabled() const { return _rendererFeatures; }

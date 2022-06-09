@@ -15,6 +15,9 @@ namespace oe {
 // can be passed to some structs to invoke the explicit constructor that initializes default values.
 struct Default_values {};
 
+using Material_context_handle = int64_t;
+inline static constexpr Material_context_handle kInvalidMaterialContext = 0;
+
 inline const uint32_t g_max_bone_transforms = 96;
 
 // Alignment size of 16 bits. Primarily used for shader constants
@@ -37,9 +40,18 @@ struct Vertex_attribute_semantic {
 };
 
 struct Vertex_attribute_element {
-  Vertex_attribute_semantic semantic;
-  Element_type type;
-  Element_component component;
+  Vertex_attribute_element() = delete;
+  Vertex_attribute_element(Vertex_attribute_semantic semantic, Element_type type, Element_component component)
+      : semantic(semantic)
+      , type(type)
+      , component(component)
+  {}
+  Vertex_attribute_element(const Vertex_attribute_element& other)
+      : Vertex_attribute_element(other.semantic, other.type, other.component)
+  {}
+  const Vertex_attribute_semantic semantic;
+  const Element_type type;
+  const Element_component component;
 };
 
 struct Sampler_descriptor {
@@ -230,20 +242,37 @@ class Shader_layout_constant_buffer {
   };
 
   Shader_layout_constant_buffer()
-      : Shader_layout_constant_buffer(0, Shader_constant_buffer_visibility::Num_shader_constant_buffer_visibility, Usage_per_draw_data{0})
+      : Shader_layout_constant_buffer(
+                0, Shader_constant_buffer_visibility::Num_shader_constant_buffer_visibility, Usage_per_draw_data{0})
   {}
-  Shader_layout_constant_buffer(uint32_t registerIndex, Shader_constant_buffer_visibility visibility, Usage_per_draw_data data)
-      : _registerIndex(registerIndex), _usage(Shader_constant_buffer_usage::Per_draw), _visibility(visibility), _usagePerDraw(data)
+  Shader_layout_constant_buffer(
+          uint32_t registerIndex, Shader_constant_buffer_visibility visibility, Usage_per_draw_data data)
+      : _registerIndex(registerIndex)
+      , _usage(Shader_constant_buffer_usage::Per_draw)
+      , _visibility(visibility)
+      , _usagePerDraw(data)
   {}
-  Shader_layout_constant_buffer(uint32_t registerIndex, Shader_constant_buffer_visibility visibility, Usage_external_buffer_data data)
-      : _registerIndex(registerIndex), _usage(Shader_constant_buffer_usage::External_buffer), _visibility(visibility), _usageExternalBuffer(data)
+  Shader_layout_constant_buffer(
+          uint32_t registerIndex, Shader_constant_buffer_visibility visibility, Usage_external_buffer_data data)
+      : _registerIndex(registerIndex)
+      , _usage(Shader_constant_buffer_usage::External_buffer)
+      , _visibility(visibility)
+      , _usageExternalBuffer(data)
   {}
 
   const uint32_t getRegisterIndex() const { return _registerIndex; }
   const Shader_constant_buffer_usage getUsage() const { return _usage; }
   const Shader_constant_buffer_visibility getVisibility() const { return _visibility; }
-  const Usage_per_draw_data& getUsagePerDraw() const { OE_CHECK(_usage == Shader_constant_buffer_usage::Per_draw); return _usagePerDraw; }
-  const Usage_external_buffer_data& getUsageExternalBuffer() const { OE_CHECK(_usage == Shader_constant_buffer_usage::External_buffer); return _usageExternalBuffer; }
+  const Usage_per_draw_data& getUsagePerDraw() const
+  {
+    OE_CHECK(_usage == Shader_constant_buffer_usage::Per_draw);
+    return _usagePerDraw;
+  }
+  const Usage_external_buffer_data& getUsageExternalBuffer() const
+  {
+    OE_CHECK(_usage == Shader_constant_buffer_usage::External_buffer);
+    return _usageExternalBuffer;
+  }
 
  private:
   const uint32_t _registerIndex;

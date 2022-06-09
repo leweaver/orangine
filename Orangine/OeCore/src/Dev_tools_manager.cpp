@@ -130,7 +130,7 @@ void Dev_tools_manager::destroyDeviceDependentResources()
   for (auto& debugShape : _debugShapes) {
     const auto& renderable = std::get<std::shared_ptr<Renderable>>(debugShape);
     renderable->rendererData.reset();
-    renderable->materialContext.reset();
+    renderable->materialContext = {};
   }
 }
 

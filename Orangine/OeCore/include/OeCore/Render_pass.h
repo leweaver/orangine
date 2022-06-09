@@ -22,9 +22,6 @@ class Render_pass {
   }
   void clearCustomRenderTargets();
 
-  void setStencilRef(uint32_t stencilRef) { _stencilRef = stencilRef; }
-  uint32_t stencilRef() const { return _stencilRef; }
-
   void setDepthStencilConfig(const Depth_stencil_config& config) { _depthStencilConfig = config; }
   Depth_stencil_config getDepthStencilConfig() const { return _depthStencilConfig; }
 
@@ -34,7 +31,5 @@ class Render_pass {
   std::vector<std::shared_ptr<Texture>> _renderTargets = {};
   bool _renderTargetsChanged = false;
   Depth_stencil_config _depthStencilConfig;
-
-  uint32_t _stencilRef = 0;
 };
 } // namespace oe

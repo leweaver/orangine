@@ -2,7 +2,6 @@
 
 #include "Component.h"
 #include "Material.h"
-#include "Material_context.h"
 #include "Renderer_data.h"
 
 namespace oe {
@@ -31,9 +30,9 @@ class Renderable_component : public Component {
     _rendererData = std::move(rendererData);
   }
 
-  const std::weak_ptr<Material_context>& materialContext() const { return _materialContext; }
-  void setMaterialContext(std::weak_ptr<Material_context>&& materialContext) {
-    _materialContext = std::move(materialContext);
+  Material_context_handle getMaterialContext() const { return _materialContextHandle; }
+  void setMaterialContext(Material_context_handle materialContextHandle) {
+    _materialContextHandle = materialContextHandle;
   }
 
  private:
@@ -45,7 +44,7 @@ class Renderable_component : public Component {
 
   // Runtime, non-serializable
   std::weak_ptr<Mesh_gpu_data> _rendererData;
-  std::weak_ptr<Material_context> _materialContext;
+  Material_context_handle _materialContextHandle {};
   std::shared_ptr<Material> _material;
 };
 

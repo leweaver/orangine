@@ -414,7 +414,7 @@ void PBR_material::updateVsConstantBufferValues(
   constants.viewProjection = inputs.projectionMatrix * inputs.viewMatrix;
   constants.world = inputs.worldTransform;
   constants.worldViewProjection = constants.viewProjection * constants.world;
-  constants.worldInvTranspose = SSE::inverse(SSE::transpose(constants.world));
+  constants.worldInvTranspose = SSE::transpose(SSE::inverse(constants.world));
   static_assert(sizeof(Float4) / sizeof(float) * 2 == Renderer_animation_data::morphWeightsSize);
   constants.morphWeights[0] = {inputs.rendererAnimationData.morphWeights[0],
                                inputs.rendererAnimationData.morphWeights[1],

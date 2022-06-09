@@ -111,8 +111,8 @@ void Render_step_manager::createRenderSteps()
     auto pass = createShadowMapRenderPass();
     Depth_stencil_config stencilConfig{
             Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Read_write, Render_pass_stencil_mode::Enabled};
+    stencilConfig.setStencilWriteMask(1);
     pass->setDepthStencilConfig(stencilConfig);
-    pass->setStencilRef(1);
 
     _renderSteps.emplace_back(std::make_unique<Render_step>(std::move(pass), L"Shadow Map"));
   }
@@ -212,7 +212,7 @@ void Render_step_manager::createRenderSteps()
             });
     drawDebugElementsPass->setDepthStencilConfig(
             Depth_stencil_config(Render_pass_blend_mode::Opaque, Render_pass_depth_mode::Write_only));
-    _renderSteps.emplace_back(std::make_unique<Render_step>(std::move(drawDebugElementsPass), L"Debug Elements"));
+    //_renderSteps.emplace_back(std::make_unique<Render_step>(std::move(drawDebugElementsPass), L"Debug Elements"));
   }
 
   // Sky box
@@ -256,7 +256,6 @@ void Render_step_manager::createWindowSizeDependentResources(HWND /*window*/, in
     deferredLightMaterial->setColor0Texture(gbufferRenderTargets.at(0));
     deferredLightMaterial->setColor1Texture(gbufferRenderTargets.at(1));
     deferredLightMaterial->setColor2Texture(gbufferRenderTargets.at(2));
-    deferredLightMaterial->setDepthTexture(_renderPassDeferredData.deferredLightMaterial->depthTexture());
     deferredLightMaterial->setShadowMapArrayTexture(_shadowmapManager.getShadowMapTextureArray());
   }
 

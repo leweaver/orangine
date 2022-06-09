@@ -13,11 +13,11 @@ namespace oe
 		struct User_data
 		{
 			std::shared_ptr<Mesh_data> meshData;
-			const Mesh_vertex_buffer_accessor *positionAccessor;
-			const Mesh_vertex_buffer_accessor *normalAccessor;
-			const Mesh_vertex_buffer_accessor *texCoordAccessor;
-			Mesh_vertex_buffer_accessor *tangentAccessor;
-			Mesh_vertex_buffer_accessor *bitangentAccessor;
+			const Mesh_vertex_buffer_accessor *positionAccessor = nullptr;
+			const Mesh_vertex_buffer_accessor *normalAccessor = nullptr;
+			const Mesh_vertex_buffer_accessor *texCoordAccessor = nullptr;
+			Mesh_vertex_buffer_accessor *tangentAccessor = nullptr;
+			Mesh_vertex_buffer_accessor *bitangentAccessor = nullptr;
 		};
 
 		SMikkTSpaceInterface m_interface;
@@ -33,11 +33,12 @@ namespace oe
 		 * If a bitangent accessor is provided, bitangents will also be populated unless
 		 * generateBitangentsIfPresent == false.
 		 */
-		explicit Mikk_tspace_triangle_mesh_interface(const std::shared_ptr<Mesh_data>& meshData,
-            Vertex_attribute_semantic texCoordAttribute = { Vertex_attribute::Tex_coord, 0 },
-			bool generateBitangentsIfPresent = true);
-		
-		SMikkTSpaceInterface *getInterface() { return &m_interface; }
+   explicit Mikk_tspace_triangle_mesh_interface(
+           const std::shared_ptr<Mesh_data>& meshData,
+           Vertex_attribute_semantic texCoordAttribute = {Vertex_attribute::Tex_coord, 0},
+           bool generateBitangentsIfPresent = true);
+
+   SMikkTSpaceInterface *getInterface() { return &m_interface; }
 		void* userData() { return &_userData; }
 
 	private:

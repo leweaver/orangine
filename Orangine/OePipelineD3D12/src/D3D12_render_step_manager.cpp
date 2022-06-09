@@ -2,6 +2,7 @@
 #include "D3D12_device_resources.h"
 #include "D3D12_texture_manager.h"
 #include "Render_pass_copy_depth_to_resource.h"
+#include "D3D12_render_pass_shadow.h"
 
 #include <OeCore/Perf_timer.h>
 #include <OeCore/Render_pass_generic.h>
@@ -63,7 +64,7 @@ void D3D12_render_step_manager::clearDepthStencil(float depth, uint8_t stencil)
 
 std::unique_ptr<Render_pass> D3D12_render_step_manager::createShadowMapRenderPass()
 {
-  return std::make_unique<Render_pass_generic>([](const Camera_data&, const Render_pass&) {});
+  return std::make_unique<D3D12_render_pass_shadow>(*_deviceResources, _sceneGraphManager, _shadowmapManager, _textureManagerD3D12, _entityRenderManager);
 }
 
 std::unique_ptr<Render_pass> D3D12_render_step_manager::createResourceUploadBeginPass()
@@ -246,7 +247,7 @@ void D3D12_render_step_manager::renderStep(
     }
 
     auto depthStencil = _deviceResources->getDepthStencil();
-    if (pass.stencilRef() == 0 && !renderPassData.renderTargetDescriptors.empty()) {
+    if (!renderPassData.renderTargetDescriptors.empty()) {
       CD3DX12_CPU_DESCRIPTOR_HANDLE* depthStencilHandle = nullptr;
       if (Render_pass_depth_mode::Disabled != depthStencilConfig.getDepthMode()) {
         depthStencilHandle = &depthStencil.cpuHandle;

@@ -41,9 +41,10 @@ std::unique_ptr<Gpu_buffer> Gpu_buffer::create(
   return std::unique_ptr<Gpu_buffer>(new Gpu_buffer(std::move(resource), gpuBufferSize, stride, bufferState));
 }
 
-D3D12_VERTEX_BUFFER_VIEW Gpu_buffer::getAsVertexBufferView() const
+D3D12_VERTEX_BUFFER_VIEW Gpu_buffer::getAsVertexBufferView(size_t offset) const
 {
-  return {_gpuBuffer->GetGPUVirtualAddress(), _gpuBufferSizeInBytes, _gpuBufferStride};
+  OE_CHECK(offset < _gpuBufferSizeInBytes + _gpuBufferStride);
+  return {_gpuBuffer->GetGPUVirtualAddress() + offset, _gpuBufferSizeInBytes - static_cast<uint32_t>(offset), _gpuBufferStride};
 }
 
 D3D12_INDEX_BUFFER_VIEW Gpu_buffer::getAsIndexBufferView(DXGI_FORMAT format) const

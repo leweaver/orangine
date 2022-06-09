@@ -29,9 +29,9 @@ void Render_pass_copy_depth_to_resource::render(const Camera_data& cameraData)
 
     // TODO: Support non-depth textures.
     _preCopyBarriers[idx * 2] = CD3DX12_RESOURCE_BARRIER::Transition(
-            fromResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            fromResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_COPY_SOURCE);
     _postCopyBarriers[idx * 2] = CD3DX12_RESOURCE_BARRIER::Transition(
-            fromResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+            fromResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
     _preCopyBarriers[idx * 2 + 1] = CD3DX12_RESOURCE_BARRIER::Transition(
             toResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
@@ -42,6 +42,7 @@ void Render_pass_copy_depth_to_resource::render(const Camera_data& cameraData)
   auto commandList = _deviceResources.GetPipelineCommandList();
 
   commandList->OMSetRenderTargets(0, nullptr, false, nullptr);
+
 
   commandList->ResourceBarrier(_preCopyBarriers.size(), _preCopyBarriers.data());
 

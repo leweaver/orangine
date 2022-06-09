@@ -5,7 +5,7 @@
 #include "Renderer_types.h"
 
 #include <cstdint>
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -24,7 +24,7 @@ class Mesh_data {
 
   Mesh_vertex_layout vertexLayout;
 
-  std::map<Vertex_attribute_semantic, std::unique_ptr<Mesh_vertex_buffer_accessor>> vertexBufferAccessors;
+  std::unordered_map<Vertex_attribute_semantic, std::unique_ptr<Mesh_vertex_buffer_accessor>> vertexBufferAccessors;
 
   std::string name;
 
@@ -84,7 +84,9 @@ struct Mesh_vertex_buffer_accessor : Mesh_buffer_accessor {
   Mesh_vertex_buffer_accessor(
           const std::shared_ptr<Mesh_buffer>& buffer, Vertex_attribute_element attribute, uint32_t count,
           uint32_t stride, uint32_t offset);
-  virtual ~Mesh_vertex_buffer_accessor() = default;
+  ~Mesh_vertex_buffer_accessor() {
+    return;
+  }
 
   const Vertex_attribute_element attributeElement;
 };

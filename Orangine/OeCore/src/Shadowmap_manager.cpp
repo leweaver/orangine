@@ -35,7 +35,6 @@ std::shared_ptr<Texture> Shadowmap_manager::borrowTextureSlice() {
     _textureManager.load(*texture);
   }
 
-  OE_CHECK(texture->isValid());
   return texture;
 }
 

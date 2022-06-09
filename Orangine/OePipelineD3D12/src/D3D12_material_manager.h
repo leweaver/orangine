@@ -6,7 +6,6 @@
 #include "Descriptor_heap_pool.h"
 #include "Gpu_buffer.h"
 
-#include <OeCore/Material_context.h>
 #include <OeCore/Material_manager.h>
 
 #include <vector>
@@ -28,48 +27,7 @@ struct Material_gpu_constant_buffers {
   VisibilityGpuConstantBufferTablePairs tables;
 };
 
-class Material_context_impl : public Material_context {
- public:
-  Material_context_impl() = default;
-  Material_context_impl(const Material_context_impl&) = delete;
-  Material_context_impl(Material_context_impl&&) = default;
-  Material_context_impl& operator=(const Material_context_impl&) = delete;
-  Material_context_impl& operator=(Material_context_impl&&) = default;
-
-  ~Material_context_impl() { releaseResources(); }
-
-  void releaseResources() override { releasePipelineState(); };
-
-  void releasePipelineState()
-  {
-    vertexShader.Reset();
-    pixelShader.Reset();
-    pipelineState.Reset();
-    rootSignature.Reset();
-  }
-
-  Microsoft::WRL::ComPtr<ID3DBlob> vertexShader;
-  Microsoft::WRL::ComPtr<ID3DBlob> pixelShader;
-  Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
-  Descriptor_range samplerDescriptorTable;
-
-  std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
-
-  uint32_t constantBufferCount;
-  Material_gpu_constant_buffers perDrawConstantBuffers;
-  Material_gpu_constant_buffers* perMaterialConstantBuffers = nullptr;
-  bool perDrawConstantBuffersInitialized = false;
-  Material_face_cull_mode cullMode;
-
-  // Texture formats of the render target views.
-  std::vector<DXGI_FORMAT> rtvFormats;
-
-  std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> rootSignatureRootDescriptorTables;
-  Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
-
-  // Optional: used primarily for debugging purposes.
-  std::wstring name;
-};
+class Material_context_impl;
 
 class D3D12_material_manager : public Material_manager {
  public:
@@ -93,19 +51,29 @@ class D3D12_material_manager : public Material_manager {
   void destroyDeviceDependentResources() override;
 
   // IMaterial_manager implementation
-  std::weak_ptr<Material_context> createMaterialContext(const std::string& name) override;
+  Material_context_handle createMaterialContext(const std::string& name) override;
+
+  bool getMaterialStateIdentifier(Material_context_handle handle, Material_state_identifier& stateIdentifier) override;
+
   const std::string& name() const override { return _name; }
 
-  void loadMaterialToContext(const Material& material, Material_context& materialContext, bool enableOptimizations);
+  void loadMaterialToContext(
+          Material_context_handle materialContextHandle, const Material& material,
+          const Material_state_identifier& stateIdentifier,
+          const Material_compiler_inputs& materialCompilerInputs) override;
 
   void loadResourcesToContext(
-          const Material::Shader_resources& shaderResources,
-          const std::vector<Vertex_attribute_element>& vsInputs,
-          Material_context& materialContext) override;
+          Material_context_handle materialContextHandle, const Material::Shader_resources& shader_resources,
+          const std::vector<Vertex_attribute_element>& vsInputs) override;
 
-  void loadPipelineStateToContext(Material_context& materialContext) override;
+  void loadPipelineStateToContext(
+          Material_context_handle materialContextHandle, const Pipeline_state_inputs& inputs) override;
 
-  void bindMaterialContextToDevice(const Material_context& materialContext) override;
+  void bindMaterialContextToDevice(Material_context_handle materialContext) override;
+
+  bool isMaterialContextDataReady(Material_context_handle materialContext) const override;
+
+  void setDataReady(Material_context_handle materialContextHandle, bool ready) override;
 
   void unbind() override;
 
@@ -114,42 +82,18 @@ class D3D12_material_manager : public Material_manager {
  private:
   void queueTextureLoad(const Texture& texture) override;
 
-  inline static Material_context_impl& getMaterialContextImpl(Material_context& context)
-  {
-    return static_cast<Material_context_impl&>(context);
-  }
-
-  inline const Material_context_impl& getMaterialContextImpl(const Material_context& context) const
-  {
-    return static_cast<const Material_context_impl&>(context);
-  }
-
   static D3D12_PRIMITIVE_TOPOLOGY_TYPE getMeshDataTopology(Mesh_index_type meshIndexType);
 
   void compileShader(
-          const Material::Shader_compile_settings& compileSettings, const std::string& shaderTarget,
-          ID3DBlob** result) const;
+          const Material::Shader_compile_settings& compileSettings, bool enableOptimizations,
+          const std::string& shaderTarget, ID3DBlob** result) const;
 
-  void createVertexShader(
-          bool enableOptimizations, const Material& material, Material_context_impl& materialContext) const;
-
-  void createPixelShader(
-          bool enableOptimizations, const Material& material, Material_context_impl& materialContext) const;
-
-  void createStaticConstantBuffers(const Material& material, Material_context_impl& materialContext);
-
-  // Adds mappings of shader visibility to buffer table. Any buffer visibilities on the material will be split up into
-  // duplicate entries for both PIXEL and VERTEX D3D12 visibilities.
-  void createStaticConstantBuffersForUsage(
-          const Material& material, const Shader_constant_buffer_usage& usage,
-          Material_gpu_constant_buffers& constantBuffers);
-
-  void createRootSignature(
-          const oe::Material::Shader_resources& shaderResources, Material_context_impl& impl);
-  void createMeshBufferViews(
-          const std::vector<Vertex_attribute_element>& vsInputs,
-          Material_context_impl& impl);
+  void createRootSignature(const oe::Material::Shader_resources& shaderResources, Material_context_impl& impl);
+  void createMeshBufferViews(const std::vector<Vertex_attribute_element>& vsInputs, Material_context_impl& impl);
   void createPipelineState(Material_context_impl& impl);
+
+  Material_context_impl* getMaterialContextImpl(Material_context_handle handle);
+  const Material_context_impl* getMaterialContextImpl(Material_context_handle handle) const;
 
   IAsset_manager& _assetManager;
   D3D12_texture_manager& _textureManager;

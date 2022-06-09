@@ -188,16 +188,8 @@ void Entity_render_manager::renderEntity(
       renderableComponent.setRendererData(std::weak_ptr(rendererData));
     }
 
-    auto materialContext = renderableComponent.materialContext().lock();
-    // This may be null if the device was reset since the last render.
-    if (materialContext == nullptr) {
+    if (renderableComponent.getMaterialContext() == kInvalidMaterialContext) {
       renderableComponent.setMaterialContext(_materialManager.createMaterialContext(entity.getName()));
-
-      materialContext = renderableComponent.materialContext().lock();
-
-      if (materialContext == nullptr) {
-        OE_THROW(std::runtime_error("Failed to create a material context"));
-      }
     }
 
     const auto lightMode = material->lightMode();
@@ -283,7 +275,7 @@ void Entity_render_manager::renderEntity(
 
     drawRendererData(
             cameraData, *worldTransform, *rendererData, depthStencilConfig, *renderLightData, material, meshData->vertexLayout,
-            *materialContext, _rendererAnimationData, renderableComponent.wireframe());
+            renderableComponent.getMaterialContext(), _rendererAnimationData, renderableComponent.wireframe());
   }
   catch (std::runtime_error& e) {
     renderableComponent.setVisible(false);
@@ -317,15 +309,9 @@ void Entity_render_manager::renderRenderable(
     renderable.rendererData = std::weak_ptr(rendererData);
   }
 
-  auto materialContext = renderable.materialContext.lock();
   // This may be null if the device was reset since the last render.
-  if (materialContext == nullptr) {
+  if (renderable.materialContext == kInvalidMaterialContext) {
     renderable.materialContext = _materialManager.createMaterialContext("Anonymous renderable");
-    materialContext = renderable.materialContext.lock();
-
-    if (materialContext == nullptr) {
-      OE_THROW(std::runtime_error("Failed to create a material context"));
-    }
   }
 
   const auto lightMode = material->lightMode();
@@ -362,7 +348,7 @@ void Entity_render_manager::renderRenderable(
 
   drawRendererData(
           cameraData, worldMatrix, *rendererData, depthStencilConfig, *renderLightData, material,
-          renderable.meshData->vertexLayout, *materialContext, *rendererAnimationData, wireFrame);
+          renderable.meshData->vertexLayout, renderable.materialContext, *rendererAnimationData, wireFrame);
 }
 
 Renderable Entity_render_manager::createScreenSpaceQuad(std::shared_ptr<Material> material)

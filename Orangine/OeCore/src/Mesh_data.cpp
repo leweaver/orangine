@@ -111,7 +111,9 @@ Mesh_buffer_accessor::Mesh_buffer_accessor(
 
 Mesh_buffer_accessor::Mesh_buffer_accessor() : buffer(nullptr), count(0), stride(0), offset(0) {}
 
-Mesh_buffer_accessor::~Mesh_buffer_accessor() { buffer = nullptr; }
+Mesh_buffer_accessor::~Mesh_buffer_accessor() {
+  buffer = nullptr;
+}
 
 Mesh_vertex_buffer_accessor::Mesh_vertex_buffer_accessor(
     const std::shared_ptr<Mesh_buffer>& buffer,

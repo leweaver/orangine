@@ -54,6 +54,8 @@ void Frame_resources::reset()
     LOG(INFO) << "Retiring " << _retiredPools.size() << " constant buffer pools";
     _retiredPools.clear();
   }
+
+  _referenceForFrame.clear();
 }
 
 void Frame_resources::setCurrentBoundRootSignature(Root_signature_layout rootSignatureLayout)
@@ -63,3 +65,7 @@ void Frame_resources::setCurrentBoundRootSignature(Root_signature_layout rootSig
 }
 
 const Root_signature_layout& Frame_resources::getCurrentBoundRootSignature() { return _currentRootSignatureLayout; }
+
+void Frame_resources::addReferenceForFrame(const Microsoft::WRL::ComPtr<IUnknown>& ptr) {
+  _referenceForFrame.push_back(ptr);
+}

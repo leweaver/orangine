@@ -85,7 +85,7 @@ std::shared_ptr<Mesh_gpu_data> D3D12_entity_render_manager::createRendererData(
     name << " (count: " << std::to_string(rendererData->indexCount) << ")";
     std::shared_ptr<Gpu_buffer_reference> vertexGpuBuffer = getOrCreateUsage(name.str(), meshAccessor->buffer, meshAccessor->stride);
     rendererData->vertexBuffers[vertexAttr] = vertexGpuBuffer;
-    *(viewIter++) = vertexGpuBuffer->gpuBuffer->getAsVertexBufferView();
+    *(viewIter++) = vertexGpuBuffer->gpuBuffer->getAsVertexBufferView(static_cast<size_t>(meshAccessor->offset));
   }
 
   _deviceDependent.createdRendererData.push_back(rendererData);
@@ -120,7 +120,7 @@ void D3D12_entity_render_manager::drawRendererData(
         const oe::Camera_data& cameraData, const Matrix4& worldTransform, oe::Mesh_gpu_data& rendererData,
         const Depth_stencil_config& depthStencilConfig, const oe::Render_light_data& renderLightData,
         std::shared_ptr<Material> material, const oe::Mesh_vertex_layout& meshVertexLayout,
-        oe::Material_context& materialContext, oe::Renderer_animation_data& rendererAnimationData, bool wireframe)
+        oe::Material_context_handle materialContext, oe::Renderer_animation_data& rendererAnimationData, bool wireframe)
 {
   if (rendererData.failedRendering || rendererData.vertexBuffers.empty()) {
     return;
@@ -136,7 +136,7 @@ void D3D12_entity_render_manager::drawRendererData(
             materialContext, material, meshVertexLayout, rendererData, &renderLightData, depthStencilConfig,
             cameraData.enablePixelShader, wireframe);
 
-    if (!materialContext.compilerInputsValid) {
+    if (!_materialManager.isMaterialContextDataReady(materialContext)) {
       // Material is not ready for rendering. Might still be loading textures
       return;
     }
@@ -169,7 +169,7 @@ void D3D12_entity_render_manager::drawRendererData(
                 constantBufferInfo.getUsagePerDraw().bufferSizeInBytes, cpuBuffer, gpuBufferAddress);
         material->updatePerDrawConstantBuffer(cpuBuffer, constantBufferInfo, cbInputs);
       }
-      else if (constantBufferInfo.getUsage() == Shader_constant_buffer_usage::Per_draw) {
+      else if (constantBufferInfo.getUsage() == Shader_constant_buffer_usage::External_buffer) {
         // TODO: Custom handles.
         // TODO: Skeleton animation data.
         auto handle = constantBufferInfo.getUsageExternalBuffer().handle;
@@ -185,7 +185,7 @@ void D3D12_entity_render_manager::drawRendererData(
     }
 
     // Set our constant buffers descriptor table address
-    LOG(INFO) << "  Root[" << rootSignatureLayout.constantBufferAllVisParamIndex << "] = CBV Table (size=" << descriptorRange.descriptorCount << ")";
+    LOG(DEBUG) << "  Root[" << rootSignatureLayout.constantBufferAllVisParamIndex << "] = CBV Table (size=" << descriptorRange.descriptorCount << ")";
     commandList->SetGraphicsRootDescriptorTable(
             rootSignatureLayout.constantBufferAllVisParamIndex,
             descriptorRange.gpuHandle);

@@ -24,8 +24,9 @@ class D3D12_entity_render_manager : public internal::Entity_render_manager {
   void drawRendererData(
           const Camera_data& cameraData, const Matrix4& worldTransform, Mesh_gpu_data& rendererData,
           const Depth_stencil_config& depthStencilConfig, const Render_light_data& renderLightData,
-          std::shared_ptr<Material> ptr, const Mesh_vertex_layout& meshVertexLayout, Material_context& materialContext,
-          Renderer_animation_data& rendererAnimationData, bool wireframe) override;
+          std::shared_ptr<Material> ptr, const Mesh_vertex_layout& meshVertexLayout,
+          Material_context_handle materialContext, Renderer_animation_data& rendererAnimationData,
+          bool wireframe) override;
 
   std::shared_ptr<Mesh_gpu_data> createRendererData(
           std::shared_ptr<Mesh_data> meshData, const std::vector<Vertex_attribute_element>& vertexAttributes,
@@ -34,7 +35,8 @@ class D3D12_entity_render_manager : public internal::Entity_render_manager {
   std::shared_ptr<Gpu_buffer_reference>
   getOrCreateUsage(const std::string_view& name, const std::shared_ptr<Mesh_buffer>& meshData, size_t vertexSize);
 
-  void acquireConstantBufferForSize(size_t requiredSize, gsl::span<uint8_t>& cpuBuffer, D3D12_GPU_VIRTUAL_ADDRESS& gpuAddress);
+  void acquireConstantBufferForSize(
+          size_t requiredSize, gsl::span<uint8_t>& cpuBuffer, D3D12_GPU_VIRTUAL_ADDRESS& gpuAddress);
 
  private:
   D3D12_device_resources& _deviceResources;

@@ -18,7 +18,7 @@ void oe::create_manager(
 namespace oe::pipeline_d3d12 {
 
 static constexpr int64_t kSwapchainBackbufferTextureId = -1;
-static constexpr int64_t kSwapchainDepthStencilTextureId = -1;
+static constexpr int64_t kSwapchainDepthStencilTextureId = -2;
 
 bool isSwapchainTexture(Texture_internal_id id)
 {
@@ -178,7 +178,8 @@ class D3D12_texture_swapchain_resource : public D3D12_texture {
 };
 
 ///////////
-// D3D12_depth_stencil_texture
+// D3D12_depth_stencil_texture\
+// TODO: Name this something more generic; and allow whatever type of format
 class D3D12_depth_stencil_texture : public D3D12_texture {
  public:
   D3D12_depth_stencil_texture() = default;
@@ -198,7 +199,7 @@ class D3D12_depth_stencil_texture : public D3D12_texture {
     D3D12_RESOURCE_DESC textureDesc = deviceResources.getDepthStencil().resource->GetDesc();
     // Not actually a real depth stencil; we're using it as a shader resource. So this format won't match an actual
     // depth buffer
-    textureDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    textureDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
     textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
     CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
@@ -290,17 +291,17 @@ class D3D12_shadow_map_texture_array_slice : public D3D12_texture {
 
   const std::string& getTextureTypeName() const override
   {
-    static std::string textureTypeName = "D3D_shadow_map_texture_array_slice";
+    static std::string textureTypeName = "D3D12_shadow_map_texture_array_slice";
     return textureTypeName;
   }
 
-  virtual void load(D3D12_device_resources& deviceResources) override
+  void load(D3D12_device_resources& deviceResources) override
   {
     if (!_arrayTexture->isValid()) {
       _arrayTexture->load(deviceResources);
       OE_CHECK(_arrayTexture->isValid());
     }
-    setResource(_arrayTexture->getResource());
+    setResource(_arrayTexture->getResource(), false);
   };
 
  private:
@@ -328,6 +329,7 @@ class D3D12_shadow_map_texture_pool : public Shadow_map_texture_pool {
   {
     OE_CHECK_MSG(!_availableSlices.empty(), "shadow map pool is exhausted");
     auto texture = _slices.at(_availableSlices.back());
+    OE_CHECK(texture);
     _availableSlices.pop_back();
     return texture;
   }

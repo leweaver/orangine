@@ -21,11 +21,11 @@ class IMaterial_manager {
   virtual const std::string& shaderPath() const = 0;
 
   // Creates a material context that may be destroyed when the device is reset or shutdown.
-  virtual std::weak_ptr<Material_context> createMaterialContext(const std::string& name) = 0;
+  virtual Material_context_handle createMaterialContext(const std::string& name) = 0;
 
   // Compiles (if needed) pixel and vertex shaders, uploads samplers & textures.
   virtual void updateMaterialContext(
-          Material_context& materialContext,
+          Material_context_handle materialContext,
           std::shared_ptr<const Material> material,
           const Mesh_vertex_layout& meshVertexLayout,
           const Mesh_gpu_data& meshGpuData,
@@ -34,8 +34,10 @@ class IMaterial_manager {
           bool enablePixelShader,
           bool wireframe) = 0;
 
+  virtual bool isMaterialContextDataReady(Material_context_handle materialContext) const = 0;
+
   // Sets the given material context for rendering
-  virtual void bind(Material_context& materialContext) = 0;
+  virtual void bind(Material_context_handle materialContext) = 0;
 
   // Unbinds the current material. Must be called when rendering of an object is complete.
   virtual void unbind() = 0;

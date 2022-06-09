@@ -55,7 +55,7 @@ class Entity_render_manager : public IEntity_render_manager, public Manager_base
   virtual void drawRendererData(
           const Camera_data& cameraData, const SSE::Matrix4& worldTransform, Mesh_gpu_data& rendererData,
           const Depth_stencil_config& depthStencilConfig, const Render_light_data& renderLightData,
-          std::shared_ptr<Material>, const Mesh_vertex_layout& meshVertexLayout, Material_context& materialContext,
+          std::shared_ptr<Material>, const Mesh_vertex_layout& meshVertexLayout, Material_context_handle materialContext,
           Renderer_animation_data& rendererAnimationData, bool wireframe) = 0;
 
   /**

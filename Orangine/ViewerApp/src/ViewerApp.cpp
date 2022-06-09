@@ -11,6 +11,7 @@
 #include <OeScripting/Statics.h>
 #include <OePipelineD3D12/Statics.h>
 
+#include <OeCore/Test_component.h>
 #include <filesystem>
 
 using namespace oe;
@@ -35,7 +36,8 @@ class ViewerApp : public App {
             getRenderStepManager(), getSceneGraphManager(), getInputManager(), getEntityScriptingManager(),
             getAssetManager(), getPrimitiveMeshDataFactory(), std::vector<std::string>{extraAssetPath});
 
-    CreateHelloWorldScene(*_sampleScene);
+    //CreateHelloWorldScene(*_sampleScene);
+    CreateShadowTestScene(*_sampleScene);
 
     // LoadGLTF("Avocado", true)->setScale({ 120, 120, 120 });
     // LoadGLTF("NormalTangentTest", false)->setScale({ 7, 7, 7 });
@@ -107,10 +109,12 @@ class ViewerApp : public App {
 
   void CreateHelloWorldScene(Sample_scene& sampleScene) {
     sampleScene.addFloor();
-    sampleScene.addSphere({2,0,0}, {1,0,0,1}, 0.0, 1.0);
-    sampleScene.addSphere({0,0,2}, {0,1,0,1}, 0.0, 1.0);
-    sampleScene.addSphere({-2,0,0}, {0,0,1,1}, 0.0, 1.0);
-    sampleScene.addSphere({0,0,-2}, {1,1,1,1}, 0.0, 1.0);
+    sampleScene.addSphere({2,0,0}, {1,0,0,1}, 0.5, 0.5);
+    sampleScene.addSphere({0,0,2}, {0,1,0,1}, 0.5, 0.5);
+    sampleScene.addSphere({-2,0,0}, {0,0,1,1}, 0.5, 0.5);
+    sampleScene.addSphere({0,0,-2}, {1,1,1,1}, 0.5, 0.5);
+
+    CreateThreePointLights(sampleScene);
   }
 
 

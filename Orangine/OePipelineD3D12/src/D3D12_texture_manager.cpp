@@ -178,7 +178,7 @@ class D3D12_texture_swapchain_resource : public D3D12_texture {
 };
 
 ///////////
-// D3D12_depth_stencil_texture\
+// D3D12_depth_stencil_texture - copy destination for the main depth stencil
 // TODO: Name this something more generic; and allow whatever type of format
 class D3D12_depth_stencil_texture : public D3D12_texture {
  public:
@@ -238,11 +238,16 @@ class D3D12_shadow_map_texture_array_texture : public D3D12_texture {
 
     CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 
+    D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+    depthOptimizedClearValue.Format = deviceResources.getDepthStencilFormat();
+    depthOptimizedClearValue.DepthStencil.Depth = 1.0F;
+    depthOptimizedClearValue.DepthStencil.Stencil = 0;
+
     Microsoft::WRL::ComPtr<ID3D12Resource> texture;
     D3D12_RESOURCE_DESC textureDesc = createShadowMapArrayDesc(_dimension, _textureArraySize);
     auto hr = deviceResources.GetD3DDevice()->CreateCommittedResource(
             &defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &textureDesc, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-            nullptr, IID_PPV_ARGS(&texture));
+            &depthOptimizedClearValue, IID_PPV_ARGS(&texture));
 
     ThrowIfFailed(hr, "Failed to creating RenderTarget resource");
     setResource(std::move(texture));

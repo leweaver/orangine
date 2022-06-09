@@ -295,11 +295,6 @@ void D3D12_device_resources::resizePipelineResources(
             getDepthStencilFormat(), backBufferWidth, backBufferHeight, 1, 1, 1, 0,
             D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
-    // TODO: What is d3d12 equiv of this? Do I need to toggle state between D3D12_RESOURCE_STATE_DEPTH_READ and
-    //       D3D12_RESOURCE_STATE_DEPTH_WRITE between render steps?
-    //       Alternative - do a copy from depth -> another texture that's accessible from shaders. What's the perf difference?
-    // depthStencilDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
-
     auto heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
     ThrowIfFailed(m_d3dDevice->CreateCommittedResource(
             &heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, resourceState, &depthOptimizedClearValue,

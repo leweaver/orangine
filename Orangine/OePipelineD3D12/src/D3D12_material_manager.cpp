@@ -92,7 +92,6 @@ class Material_context_impl {
 
   Microsoft::WRL::ComPtr<ID3DBlob> vertexShader;
   Microsoft::WRL::ComPtr<ID3DBlob> pixelShader;
-  Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
   Descriptor_range samplerDescriptorTable;
 
   std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
@@ -104,14 +103,14 @@ class Material_context_impl {
 
   // Texture formats of the render target views.
   std::vector<DXGI_FORMAT> rtvFormats;
-
-  // Only used to create pipeline state objects - can be modified independently for the purposes of recreating only
-  // the PSO
-  struct {
-    D3D12_BLEND_DESC blendDesc;
-    D3D12_RASTERIZER_DESC rasterizerDesc;
-    D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
-  } pipelineStateDesc;
+  struct Compiled_pipeline_state {
+    bool wireframe;
+    size_t blendModeHash;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
+  };
+  static inline constexpr size_t kMaxCompiledPipelineStates = 5;
+  std::vector<Compiled_pipeline_state> allPipelineStates;
+  ComPtr<ID3D12PipelineState> currentPipelineState;
 
   std::vector<D3D12_GPU_DESCRIPTOR_HANDLE> rootSignatureRootDescriptorTables;
   Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
@@ -192,6 +191,12 @@ void D3D12_material_manager::loadMaterialToContext(
   Material_context_impl* impl = getMaterialContextImpl(materialContextHandle);
   OE_CHECK_MSG(impl != nullptr, "loadMaterialToContext: Invalid material context handle");
 
+  // All previously created pipeline states will now be invalid - clear them.
+  for (const auto& pipelineState : impl->allPipelineStates) {
+    _deviceResources.addReferenceToInFlightFrames(pipelineState.pipelineState);
+  }
+  impl->allPipelineStates.clear();
+
   // Create vertex shader
   {
     auto vertexCompileSettings = material.vertexShaderSettings(materialCompilerInputs.flags);
@@ -243,42 +248,28 @@ void D3D12_material_manager::loadPipelineStateToContext(
   Material_context_impl* impl = getMaterialContextImpl(materialContextHandle);
   OE_CHECK_MSG(impl != nullptr, "loadPipelineStateToContext: Invalid material context handle");
 
-  // Rasterizer Desc
-  if (inputs.wireframe) {
-    impl->pipelineStateDesc.rasterizerDesc = DirectX::CommonStates::Wireframe;
-  }
-  else if (impl->cullMode == Material_face_cull_mode::Back_face) {
-    impl->pipelineStateDesc.rasterizerDesc = DirectX::CommonStates::CullClockwise;
-  }
-  else if (impl->cullMode == Material_face_cull_mode::Front_face) {
-    impl->pipelineStateDesc.rasterizerDesc = DirectX::CommonStates::CullCounterClockwise;
-  }
-  else if (impl->cullMode == Material_face_cull_mode::None) {
-    impl->pipelineStateDesc.rasterizerDesc = DirectX::CommonStates::CullNone;
-  }
-  else {
-    OE_THROW(std::invalid_argument("Invalid cull mode"));
+  impl->currentPipelineState = nullptr;
+  for (const auto& compiledPipelineState : impl->allPipelineStates) {
+    if (inputs.depthStencilConfig.getModeHash() == compiledPipelineState.blendModeHash && inputs.wireframe == compiledPipelineState.wireframe)
+    {
+      impl->currentPipelineState = compiledPipelineState.pipelineState;
+    }
   }
 
-  // Blend Desc
-  switch (inputs.depthStencilConfig.getBlendMode()) {
-    case (Render_pass_blend_mode::Opaque):
-      impl->pipelineStateDesc.blendDesc = DirectX::CommonStates::Opaque;
-      break;
-    case (Render_pass_blend_mode::Blended_alpha):
-      impl->pipelineStateDesc.blendDesc = DirectX::CommonStates::AlphaBlend;
-      break;
-    case (Render_pass_blend_mode::Additive):
-      impl->pipelineStateDesc.blendDesc = DirectX::CommonStates::Additive;
-      break;
-    default:
-      OE_THROW(std::runtime_error("Invalid blend state"));
+  if (impl->currentPipelineState == nullptr) {
+    impl->currentPipelineState = createPipelineState(*impl, inputs);
+
+    // Keep a short list of recently used pipeline states. This helps in cases where the same mesh is used in multiple
+    // depth/stencil modes - such as for shadow mapping.
+    if (impl->allPipelineStates.size() > Material_context_impl::kMaxCompiledPipelineStates) {
+      for (const auto& pipelineState : impl->allPipelineStates) {
+        _deviceResources.addReferenceToInFlightFrames(pipelineState.pipelineState);
+      }
+      impl->allPipelineStates.clear();
+    }
+    impl->allPipelineStates.push_back(
+            {inputs.wireframe, inputs.depthStencilConfig.getModeHash(), impl->currentPipelineState});
   }
-
-  // Depth Stencil Desc
-  impl->pipelineStateDesc.depthStencilDesc = getD12DepthStencilDesc(inputs.depthStencilConfig);
-
-  createPipelineState(*impl);
 
   impl->stateIdentifier.depthStencilModeHash = inputs.depthStencilConfig.getModeHash();
   impl->stateIdentifier.wireframeEnabled = inputs.wireframe;
@@ -554,7 +545,7 @@ void D3D12_material_manager::createMeshBufferViews(
   }
 }
 
-void D3D12_material_manager::createPipelineState(Material_context_impl& impl)
+ComPtr<ID3D12PipelineState> D3D12_material_manager::createPipelineState(const Material_context_impl& impl, const Pipeline_state_inputs& inputs)
 {
   // Describe and create the graphics pipeline state object (PSO).
 
@@ -570,10 +561,41 @@ void D3D12_material_manager::createPipelineState(Material_context_impl& impl)
   psoDesc.SampleMask = UINT_MAX;// TODO
   psoDesc.SampleDesc.Count = 1; // TODO - set quality and sample counts
 
-  // Rasterizer state
-  psoDesc.RasterizerState = impl.pipelineStateDesc.rasterizerDesc;
-  psoDesc.BlendState = impl.pipelineStateDesc.blendDesc;
-  psoDesc.DepthStencilState = impl.pipelineStateDesc.depthStencilDesc;
+  // Rasterizer Desc
+  if (inputs.wireframe) {
+    psoDesc.RasterizerState = DirectX::CommonStates::Wireframe;
+  }
+  else if (impl.cullMode == Material_face_cull_mode::Back_face) {
+    psoDesc.RasterizerState = DirectX::CommonStates::CullClockwise;
+  }
+  else if (impl.cullMode == Material_face_cull_mode::Front_face) {
+    psoDesc.RasterizerState = DirectX::CommonStates::CullCounterClockwise;
+  }
+  else if (impl.cullMode == Material_face_cull_mode::None) {
+    psoDesc.RasterizerState = DirectX::CommonStates::CullNone;
+  }
+  else {
+    OE_THROW(std::invalid_argument("Invalid cull mode"));
+  }
+
+  // Blend Desc
+  switch (inputs.depthStencilConfig.getBlendMode()) {
+    case (Render_pass_blend_mode::Opaque):
+      psoDesc.BlendState = DirectX::CommonStates::Opaque;
+      break;
+    case (Render_pass_blend_mode::Blended_alpha):
+      psoDesc.BlendState = DirectX::CommonStates::AlphaBlend;
+      break;
+    case (Render_pass_blend_mode::Additive):
+      psoDesc.BlendState = DirectX::CommonStates::Additive;
+      break;
+    default:
+      OE_THROW(std::runtime_error("Invalid blend state"));
+  }
+
+  // Depth Stencil Desc
+  psoDesc.DepthStencilState = getD12DepthStencilDesc(inputs.depthStencilConfig);
+
   if (psoDesc.DepthStencilState.DepthEnable || psoDesc.DepthStencilState.StencilEnable) {
     psoDesc.DSVFormat = _deviceResources.getDepthStencilFormat();
   }
@@ -588,13 +610,12 @@ void D3D12_material_manager::createPipelineState(Material_context_impl& impl)
     }
   }
 
-  if (impl.pipelineState) {
-    _deviceResources.addReferenceToInFlightFrames(impl.pipelineState);
-    impl.pipelineState.Reset();
-  }
-  ThrowIfFailed(_deviceDependent.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&impl.pipelineState)));
+  ComPtr<ID3D12PipelineState> currentPipelineState;
+  ThrowIfFailed(_deviceDependent.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&currentPipelineState)));
   LOG(INFO) << "Creating PSO for " << utf8_encode(impl.name);
-  SetObjectName(impl.pipelineState.Get(), impl.name.c_str());
+  SetObjectName(currentPipelineState.Get(), impl.name.c_str());
+
+  return currentPipelineState;
 }
 
 Material_context_impl* D3D12_material_manager::getMaterialContextImpl(Material_context_handle handle)
@@ -668,7 +689,7 @@ void D3D12_material_manager::bindMaterialContextToDevice(Material_context_handle
 
   auto& frameResources = _deviceResources.getCurrentFrameResources();
 
-  _deviceDependent.commandList->SetPipelineState(impl->pipelineState.Get());
+  _deviceDependent.commandList->SetPipelineState(impl->currentPipelineState.Get());
 
   Root_signature_layout layout{
           impl->rootSignature.Get(), impl->constantBufferCount > 0 ? 0 : Root_signature_layout::kSlotInvalid};

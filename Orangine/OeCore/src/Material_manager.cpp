@@ -42,7 +42,6 @@ void Material_manager::updateMaterialContext(
         const Render_light_data* renderLightData, const Depth_stencil_config& depthStencilConfig,
         Render_pass_target_layout targetLayout, bool enablePixelShader, bool wireframe)
 {
-  LOG(DEBUG) << "Binding material " << material->materialType();
   OE_CHECK(!_boundMaterial);
 
   const auto materialHash = material->ensureCompilerPropertiesHash();

@@ -90,7 +90,8 @@ class D3D12_material_manager : public Material_manager {
 
   void createRootSignature(const oe::Material::Shader_resources& shaderResources, Material_context_impl& impl);
   void createMeshBufferViews(const std::vector<Vertex_attribute_element>& vsInputs, Material_context_impl& impl);
-  void createPipelineState(Material_context_impl& impl);
+
+  Microsoft::WRL::ComPtr<ID3D12PipelineState> createPipelineState(const Material_context_impl& impl, const Pipeline_state_inputs& inputs);
 
   Material_context_impl* getMaterialContextImpl(Material_context_handle handle);
   const Material_context_impl* getMaterialContextImpl(Material_context_handle handle) const;

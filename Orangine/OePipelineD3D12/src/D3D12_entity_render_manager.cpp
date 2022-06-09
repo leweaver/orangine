@@ -185,8 +185,6 @@ void D3D12_entity_render_manager::drawRendererData(
     }
 
     // Set our constant buffers descriptor table address
-    LOG(DEBUG) << "  Root[" << rootSignatureLayout.constantBufferAllVisParamIndex
-               << "] = CBV Table (size=" << descriptorRange.descriptorCount << ")";
     commandList->SetGraphicsRootDescriptorTable(
             rootSignatureLayout.constantBufferAllVisParamIndex, descriptorRange.gpuHandle);
 
